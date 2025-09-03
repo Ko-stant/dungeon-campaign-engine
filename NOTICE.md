@@ -1,0 +1,2 @@
+This repository contains original software for a generic tabletop adventure engine. It does not include or distribute any third‑party game content (rule text, quest text, art, audio, logos, or trademarks).
+“HeroQuest” and related marks are trademarks of Hasbro (Avalon Hill) and/or its affiliates. This project is not affiliated with, endorsed, sponsored, or specifically approved by Hasbro or Avalon Hill.
