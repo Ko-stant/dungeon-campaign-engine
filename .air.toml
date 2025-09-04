@@ -8,7 +8,7 @@ tmp_dir = "tmp"
   delay = 1000
   exclude_dir = ["migrations", "testdata", "assets", "tmp", "build", "vendor", "node_modules", "packs", "docs", ".git"]
   full_bin = "tmp/main"
-  include_ext = ["go", "templ"]
+  include_ext = ["go"]
   log = "build-errors.log"
 
   args_bin = []
