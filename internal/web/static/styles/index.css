@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-surface: 20 22 28;
+  --color-surface-2: 26 29 36;
+  --color-content: 231 236 243;
+  --color-border: 95 104 123;
+  --color-border-rgb: rgb(var(--color-border));
+  --color-brand: 130 166 255;
+  --color-accent: 255 160 122;
+  --color-positive: 74 222 128;
+  --color-warning: 250 204 21;
+  --color-danger: 248 113 113;
+}
+
+html[data-theme="classic"] {
+  color-scheme: dark;
+  --theme-name: classic;
+}
+
+.bg-surface {
+  background-color: rgb(var(--color-surface));
+}
+.bg-surface-2 {
+  background-color: rgb(var(--color-surface-2));
+}
+.text-content {
+  color: rgb(var(--color-content));
+}
+.border-border {
+  border-color: rgb(var(--color-border));
+}

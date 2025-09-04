@@ -46,10 +46,13 @@ tools:
 	@$(GO) install $(GOOSE_MODULE)@$(GOOSE_VERSION)
 
 dev:
-	@echo "==> Starting development mode (Templ --watch + Air)..."
+	@echo "==> Starting development mode (tailwind:watch + Templ --watch + Air)..."
+	npm run tailwind:build && \
+	npm run tailwind:watch & \
+	PID_TW=$$!; \
 	$(TOOLS_DIRECTORY)/templ generate --watch --proxy="http://localhost:$(APP_PORT)" --open-browser=false -path=./internal/web/views & \
 	PID_TEMPL=$$!; \
-	trap "kill $$PID_TEMPL 2>/dev/null || true" EXIT; \
+	trap "kill $$PID_TW $$PID_TEMPL 2>/dev/null || true" EXIT; \
 	$(TOOLS_DIRECTORY)/air -c .air.toml
 
 
@@ -119,3 +122,14 @@ db-migrate-up:
 
 db-migrate-down:
 	$(TOOLS_DIRECTORY)/goose down
+
+# --- Tailwind commands ---
+tailwind-build:
+	@npm run tailwind:build
+
+tailwind-watch:
+	@npm run tailwind:watch
+
+build: tailwind-build
+	@$(TOOLS_DIRECTORY)/templ generate -path=./internal/web/views
+	@$(GO) build -trimpath -ldflags="-s -w" -o $(BINARY_OUTPUT_PATH) ./cmd/server

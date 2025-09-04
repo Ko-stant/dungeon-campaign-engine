@@ -5,3 +5,5 @@ packs/
 .env
 db/backups/
 tmp/
+internal/web/static/styles/app.css
+node_modules/
