@@ -24,6 +24,9 @@ type Snapshot struct {
 	PackID          string         `json:"packId"`
 	Turn            int            `json:"turn"`
 	LastEventID     int64          `json:"lastEventId"`
+	MapWidth        int            `json:"mapWidth"`
+	MapHeight       int            `json:"mapHeight"`
+	RegionsCount    int            `json:"regionsCount"`
 	DoorStates      []byte         `json:"doorStates"`
 	RevealedRegions []byte         `json:"revealedRegions"`
 	Entities        []EntityLite   `json:"entities"`

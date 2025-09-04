@@ -8,7 +8,6 @@ if (snapshotElement) {
 const canvas = document.getElementById("board");
 const canvasContext = canvas.getContext("2d");
 const patchCountElement = document.getElementById("patchCount");
-
 let patchCount = 0;
 
 function resizeCanvas() {
@@ -22,18 +21,38 @@ function resizeCanvas() {
 function drawPlaceholder() {
   const clientRect = canvas.getBoundingClientRect();
   canvasContext.clearRect(0, 0, clientRect.width, clientRect.height);
+
   canvasContext.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--color-surface-2");
   canvasContext.fillRect(0, 0, clientRect.width, clientRect.height);
+
   canvasContext.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--color-border-rgb");
   canvasContext.globalAlpha = 0.25;
-  const tileSize = Math.floor(clientRect.width / 26);
-  for (let y = 0; y < 19; y++) {
-    for (let x = 0; x < 26; x++) {
-      canvasContext.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
+
+  const cols = snapshot?.mapWidth ?? 26;
+  const rows = snapshot?.mapHeight ?? 19;
+  const tileSize = Math.floor(Math.min(clientRect.width / cols, clientRect.height / rows));
+
+  const gridWidth = tileSize * cols;
+  const gridHeight = tileSize * rows;
+
+  // center offsets
+  const offsetX = Math.floor((clientRect.width - gridWidth) / 2);
+  const offsetY = Math.floor((clientRect.height - gridHeight) / 2);
+
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      canvasContext.strokeRect(
+        offsetX + x * tileSize,
+        offsetY + y * tileSize,
+        tileSize,
+        tileSize
+      );
     }
   }
+
   canvasContext.globalAlpha = 1;
 }
+
 
 function applyPatch(patch) {
   if (patch.type === "VariablesChanged" && patch.payload && patch.payload.entries) {
@@ -50,7 +69,9 @@ function openStream() {
     try {
       const patch = JSON.parse(event.data);
       applyPatch(patch);
-    } catch (_e) {}
+    } catch (error) {
+      console.error("Failed to parse patch:", error);
+    }
   };
   socket.onclose = () => {
     setTimeout(openStream, 2000);
