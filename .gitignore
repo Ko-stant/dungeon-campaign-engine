@@ -1,3 +1,7 @@
 content/
 assets/
 packs/
+.bin/
+.env
+db/backups/
+tmp/
