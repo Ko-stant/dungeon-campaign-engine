@@ -1,3 +1,10 @@
+const snapshotElement = document.getElementById("snapshot");
+let snapshot = null;
+if (snapshotElement) {
+  snapshot = JSON.parse(snapshotElement.textContent);
+  window.__SNAPSHOT__ = snapshot;
+}
+
 const canvas = document.getElementById("board");
 const canvasContext = canvas.getContext("2d");
 
@@ -6,8 +13,9 @@ function resizeCanvas() {
   const devicePixelRatioValue = window.devicePixelRatio || 1;
   canvas.width = Math.floor(clientRect.width * devicePixelRatioValue);
   canvas.height = Math.floor(clientRect.height * devicePixelRatioValue);
-  canvasContext.scale(devicePixelRatioValue, devicePixelRatioValue);
+  canvasContext.setTransform(devicePixelRatioValue, 0, 0, devicePixelRatioValue, 0, 0);
 }
+
 function drawPlaceholder() {
   const clientRect = canvas.getBoundingClientRect();
   canvasContext.clearRect(0, 0, clientRect.width, clientRect.height);
@@ -23,9 +31,11 @@ function drawPlaceholder() {
   }
   canvasContext.globalAlpha = 1;
 }
+
 window.addEventListener("resize", () => {
   resizeCanvas();
   drawPlaceholder();
 });
+
 resizeCanvas();
 drawPlaceholder();

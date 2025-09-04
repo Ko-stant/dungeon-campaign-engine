@@ -8,7 +8,9 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func IndexPage(mapId string, packId string, turnNumber int, protocolVersion string) templ.Component {
+import "github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
+
+func IndexPage(snapshot protocol.Snapshot) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,14 +31,14 @@ func IndexPage(mapId string, packId string, turnNumber int, protocolVersion stri
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" data-theme=\"classic\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Dungeon Campaign Engine</title><link rel=\"stylesheet\" type=\"text/css\" href=\"/static/styles/app.css\"></head><body class=\"min-h-screen bg-surface text-content antialiased\"><header class=\"border-b border-border/60 bg-surface/80 backdrop-blur\"><div class=\"mx-auto max-w-6xl px-4 py-3 flex items-center justify-between\"><div class=\"text-lg font-semibold\">Dungeon Campaign Engine</div><div class=\"flex items-center gap-4 text-sm\"><div class=\"opacity-80\">map: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" data-theme=\"classic\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Dungeon Campaign Engine</title><link rel=\"stylesheet\" href=\"/static/styles/app.css\"></head><body class=\"min-h-screen bg-surface text-content antialiased\"><header class=\"border-b border-border/60 bg-surface/80 backdrop-blur\"><div class=\"mx-auto max-w-6xl px-4 py-3 flex items-center justify-between\"><div class=\"text-lg font-semibold\">Dungeon Campaign Engine</div><div class=\"flex items-center gap-4 text-sm\"><div class=\"opacity-80\">map: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(mapId)
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(snapshot.MapID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 17, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 19, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -47,9 +49,9 @@ func IndexPage(mapId string, packId string, turnNumber int, protocolVersion stri
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(packId)
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(snapshot.PackID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 18, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 20, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -60,9 +62,9 @@ func IndexPage(mapId string, packId string, turnNumber int, protocolVersion stri
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(turnNumber)
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(snapshot.Turn)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 19, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 21, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -73,15 +75,23 @@ func IndexPage(mapId string, packId string, turnNumber int, protocolVersion stri
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(protocolVersion)
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(snapshot.ProtocolVersion)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 20, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 22, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div></div></header><main class=\"mx-auto max-w-6xl px-4 py-6\"><section class=\"grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6\"><div class=\"rounded-lg border border-border/60 bg-surface/60 p-3\"><canvas id=\"board\" class=\"w-full aspect-[26/19] rounded-md border border-border/60 bg-surface\"></canvas></div><aside class=\"rounded-lg border border-border/60 bg-surface/60 p-4\"><h2 class=\"text-base font-semibold mb-2\">Dev HUD</h2><ul class=\"space-y-1 text-sm\"><li><span class=\"opacity-70\">Status:</span> Ready</li><li><span class=\"opacity-70\">Patches:</span> <span id=\"patchCount\">0</span></li></ul></aside></section></main><script type=\"module\" src=\"/static/app.js\" defer></script></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div></div></header><main class=\"mx-auto max-w-6xl px-4 py-6\"><section class=\"grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6\"><div class=\"rounded-lg border border-border/60 bg-surface/60 p-3\"><canvas id=\"board\" class=\"w-full aspect-[26/19] rounded-md border border-border/60 bg-surface\"></canvas></div><aside class=\"rounded-lg border border-border/60 bg-surface/60 p-4\"><h2 class=\"text-base font-semibold mb-2\">Dev HUD</h2><ul class=\"space-y-1 text-sm\"><li><span class=\"opacity-70\">Status:</span> Ready</li><li><span class=\"opacity-70\">Patches:</span> <span id=\"patchCount\">0</span></li></ul></aside></section></main>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ.JSONScript("snapshot", snapshot).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<script type=\"module\" src=\"/static/app.js\" defer></script></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

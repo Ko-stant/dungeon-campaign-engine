@@ -1,26 +1,29 @@
 package views
 
-templ IndexPage(mapId string, packId string, turnNumber int, protocolVersion string) {
-	<!DOCTYPE html>
+import "github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
+
+templ IndexPage(snapshot protocol.Snapshot) {
+	<!doctype html>
 	<html lang="en" data-theme="classic">
 		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1">
 			<title>Dungeon Campaign Engine</title>
-			<link rel="stylesheet" type="text/css" href="/static/styles/app.css"/>
+			<link rel="stylesheet" href="/static/styles/app.css">
 		</head>
 		<body class="min-h-screen bg-surface text-content antialiased">
 			<header class="border-b border-border/60 bg-surface/80 backdrop-blur">
 				<div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
 					<div class="text-lg font-semibold">Dungeon Campaign Engine</div>
 					<div class="flex items-center gap-4 text-sm">
-						<div class="opacity-80">map: { mapId }</div>
-						<div class="opacity-80">pack: { packId }</div>
-						<div class="opacity-80">turn: { turnNumber }</div>
-						<div class="opacity-60">proto: { protocolVersion }</div>
+						<div class="opacity-80">map: { snapshot.MapID }</div>
+						<div class="opacity-80">pack: { snapshot.PackID }</div>
+						<div class="opacity-80">turn: { snapshot.Turn }</div>
+						<div class="opacity-60">proto: { snapshot.ProtocolVersion }</div>
 					</div>
 				</div>
 			</header>
+
 			<main class="mx-auto max-w-6xl px-4 py-6">
 				<section class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
 					<div class="rounded-lg border border-border/60 bg-surface/60 p-3">
@@ -35,6 +38,8 @@ templ IndexPage(mapId string, packId string, turnNumber int, protocolVersion str
 					</aside>
 				</section>
 			</main>
+
+			@templ.JSONScript("snapshot", snapshot)
 			<script type="module" src="/static/app.js" defer></script>
 		</body>
 	</html>
