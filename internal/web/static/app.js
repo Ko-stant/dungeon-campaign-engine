@@ -7,6 +7,9 @@ if (snapshotElement) {
 
 const canvas = document.getElementById("board");
 const canvasContext = canvas.getContext("2d");
+const patchCountElement = document.getElementById("patchCount");
+
+let patchCount = 0;
 
 function resizeCanvas() {
   const clientRect = canvas.getBoundingClientRect();
@@ -32,6 +35,28 @@ function drawPlaceholder() {
   canvasContext.globalAlpha = 1;
 }
 
+function applyPatch(patch) {
+  if (patch.type === "VariablesChanged" && patch.payload && patch.payload.entries) {
+    patchCount += 1;
+    if (patchCountElement) patchCountElement.textContent = String(patchCount);
+  }
+}
+
+function openStream() {
+  const scheme = location.protocol === "https:" ? "wss" : "ws";
+  const url = `${scheme}://${location.host}/stream`;
+  const socket = new WebSocket(url);
+  socket.onmessage = (event) => {
+    try {
+      const patch = JSON.parse(event.data);
+      applyPatch(patch);
+    } catch (_e) {}
+  };
+  socket.onclose = () => {
+    setTimeout(openStream, 2000);
+  };
+}
+
 window.addEventListener("resize", () => {
   resizeCanvas();
   drawPlaceholder();
@@ -39,3 +64,4 @@ window.addEventListener("resize", () => {
 
 resizeCanvas();
 drawPlaceholder();
+openStream();
