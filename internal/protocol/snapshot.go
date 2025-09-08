@@ -19,17 +19,27 @@ type EntityLite struct {
 	Tags []string    `json:"tags,omitempty"`
 }
 
+type DoorSocketLite struct {
+	ID          string `json:"id"`
+	X           int    `json:"x"`
+	Y           int    `json:"y"`
+	Orientation string `json:"orientation"`
+	State       string `json:"state"`
+}
+
 type Snapshot struct {
-	MapID           string         `json:"mapId"`
-	PackID          string         `json:"packId"`
-	Turn            int            `json:"turn"`
-	LastEventID     int64          `json:"lastEventId"`
-	MapWidth        int            `json:"mapWidth"`
-	MapHeight       int            `json:"mapHeight"`
-	RegionsCount    int            `json:"regionsCount"`
-	DoorStates      []byte         `json:"doorStates"`
-	RevealedRegions []byte         `json:"revealedRegions"`
-	Entities        []EntityLite   `json:"entities"`
-	Variables       map[string]any `json:"variables"`
-	ProtocolVersion string         `json:"protocolVersion"`
+	MapID             string           `json:"mapId"`
+	PackID            string           `json:"packId"`
+	Turn              int              `json:"turn"`
+	LastEventID       int64            `json:"lastEventId"`
+	MapWidth          int              `json:"mapWidth"`
+	MapHeight         int              `json:"mapHeight"`
+	RegionsCount      int              `json:"regionsCount"`
+	TileRegionIDs     []int            `json:"tileRegionIds"`
+	RevealedRegionIDs []int            `json:"revealedRegionIds"`
+	DoorStates        []byte           `json:"doorStates"`
+	DoorSockets       []DoorSocketLite `json:"doorSockets"`
+	Entities          []EntityLite     `json:"entities"`
+	Variables         map[string]any   `json:"variables"`
+	ProtocolVersion   string           `json:"protocolVersion"`
 }

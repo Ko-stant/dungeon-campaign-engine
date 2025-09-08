@@ -3,16 +3,16 @@ package views
 import (
 	"fmt"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
-	)
+)
 
 templ IndexPage(snapshot protocol.Snapshot) {
-	<!doctype html>
+	<!DOCTYPE html>
 	<html lang="en" data-theme="classic">
 		<head>
-			<meta charset="utf-8">
-			<meta name="viewport" content="width=device-width, initial-scale=1">
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>Dungeon Campaign Engine</title>
-			<link rel="stylesheet" href="/static/styles/app.css">
+			<link rel="stylesheet" href="/static/styles/app.css"/>
 		</head>
 		<body class="min-h-screen bg-surface text-content antialiased">
 			<header class="border-b border-border/60 bg-surface/80 backdrop-blur">
@@ -26,17 +26,21 @@ templ IndexPage(snapshot protocol.Snapshot) {
 					</div>
 				</div>
 			</header>
-
 			<main class="mx-auto max-w-6xl px-4 py-6">
 				<section class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
 					<div class="rounded-lg border border-border/60 bg-surface/60 p-3">
 						<canvas
 							id="board"
-							class={fmt.Sprintf("w-full rounded-md border border-border/60 bg-surface aspect-[%d/%d]", snapshot.MapWidth, snapshot.MapHeight)}>
-						</canvas>
+							class={ fmt.Sprintf("w-full rounded-md border border-border/60 bg-surface aspect-[%d/%d]", snapshot.MapWidth, snapshot.MapHeight) }
+						></canvas>
 					</div>
 					<aside class="rounded-lg border border-border/60 bg-surface/60 p-4">
-						<h2 class="text-base font-semibold mb-2">Dev HUD</h2>
+						<div class="flex items-center justify-between mb-3">
+							<h2 class="text-base font-semibold">Dev HUD</h2>
+							<button id="toggleDoor" class="text-xs px-2 py-1 rounded border border-border/60 hover:bg-surface-2">
+								Toggle Door
+							</button>
+						</div>
 						<ul class="space-y-1 text-sm">
 							<li><span class="opacity-70">Status:</span> Ready</li>
 							<li><span class="opacity-70">Patches:</span> <span id="patchCount">0</span></li>
@@ -44,7 +48,6 @@ templ IndexPage(snapshot protocol.Snapshot) {
 					</aside>
 				</section>
 			</main>
-
 			@templ.JSONScript("snapshot", snapshot)
 			<script type="module" src="/static/app.js" defer></script>
 		</body>

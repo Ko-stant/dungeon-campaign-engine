@@ -10,3 +10,12 @@ type PatchEnvelope struct {
 type VariablesChanged struct {
 	Entries map[string]any `json:"entries"`
 }
+
+type DoorStateChanged struct {
+	ThresholdID string `json:"thresholdId"`
+	State       string `json:"state"`
+}
+
+type RegionsRevealed struct {
+	IDs []int `json:"ids"`
+}
