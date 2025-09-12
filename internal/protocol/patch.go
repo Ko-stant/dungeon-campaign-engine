@@ -19,3 +19,8 @@ type DoorStateChanged struct {
 type RegionsRevealed struct {
 	IDs []int `json:"ids"`
 }
+
+type EntityUpdated struct {
+	ID   string      `json:"id"`
+	Tile TileAddress `json:"tile"`
+}

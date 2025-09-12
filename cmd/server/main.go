@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -18,41 +17,78 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/ws"
 )
 
-type DoorInfo struct {
-	Edge    geometry.EdgeAddress
-	RegionA int
-	RegionB int
-	State   string
-}
-
 type GameState struct {
 	Segment         geometry.Segment
 	RegionMap       geometry.RegionMap
-	Doors           map[string]*DoorInfo
+	BlockedEdges    map[geometry.EdgeAddress]bool
+	Entities        map[string]protocol.TileAddress
 	RevealedRegions map[int]bool
 	Lock            sync.Mutex
 }
 
-func makeDoorID(segmentID string, e geometry.EdgeAddress) string {
-	return fmt.Sprintf("%s:%d:%d:%s", segmentID, e.X, e.Y, e.Orientation)
+func buildBlockedEdges(seg geometry.Segment) map[geometry.EdgeAddress]bool {
+	m := make(map[geometry.EdgeAddress]bool, len(seg.WallsVertical)+len(seg.WallsHorizontal)+len(seg.DoorSockets))
+	for _, e := range seg.WallsVertical {
+		m[e] = true
+	}
+	for _, e := range seg.WallsHorizontal {
+		m[e] = true
+	}
+	for _, e := range seg.DoorSockets {
+		m[e] = true
+	}
+	return m
+}
+
+func firstCorridorTile(seg geometry.Segment, rm geometry.RegionMap) (int, int) {
+	for y := 0; y < seg.Height; y++ {
+		for x := 0; x < seg.Width; x++ {
+			idx := y*seg.Width + x
+			rid := rm.TileRegionIDs[idx]
+			if rid == 0 {
+				return x, y
+			}
+		}
+	}
+	return 1, 1
+}
+
+func edgeForStep(x, y, dx, dy int) geometry.EdgeAddress {
+	if dx == 1 && dy == 0 {
+		return geometry.EdgeAddress{X: x, Y: y, Orientation: geometry.Vertical}
+	}
+	if dx == -1 && dy == 0 {
+		return geometry.EdgeAddress{X: x - 1, Y: y, Orientation: geometry.Vertical}
+	}
+	if dx == 0 && dy == 1 {
+		return geometry.EdgeAddress{X: x, Y: y, Orientation: geometry.Horizontal}
+	}
+	return geometry.EdgeAddress{X: x, Y: y - 1, Orientation: geometry.Horizontal}
 }
 
 func main() {
-	segment := geometry.DevSegment()
+	segment := geometry.CorridorsAndRoomsSegment(26, 19)
 	regionMap := geometry.BuildRegionMap(segment)
+	blocked := buildBlockedEdges(segment)
 
-	doorEdge := segment.DoorSockets[0]
-	doorID := makeDoorID(segment.ID, doorEdge)
-	a, b := geometry.RegionsAcrossDoor(regionMap, segment, doorEdge)
+	corridorRegion := regionMap.TileRegionIDs[0]
+	for i, rid := range regionMap.TileRegionIDs {
+		if rid < corridorRegion {
+			corridorRegion = rid
+		}
+		_ = i
+	}
+
+	startX, startY := firstCorridorTile(segment, regionMap)
+	hero := protocol.TileAddress{SegmentID: segment.ID, X: startX, Y: startY}
 
 	state := &GameState{
 		Segment:         segment,
 		RegionMap:       regionMap,
-		Doors:           map[string]*DoorInfo{doorID: {Edge: doorEdge, RegionA: a, RegionB: b, State: "closed"}},
-		RevealedRegions: map[int]bool{a: true},
+		BlockedEdges:    blocked,
+		Entities:        map[string]protocol.TileAddress{"hero-1": hero},
+		RevealedRegions: map[int]bool{corridorRegion: true},
 	}
-	fmt.Printf("STATE: %v\n\n", state.Doors)
-	fmt.Printf("doorID: %v\n\n", doorID)
 
 	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir("internal/web/static"))
@@ -89,56 +125,48 @@ func main() {
 					continue
 				}
 				switch env.Type {
-				case "RequestToggleDoor":
-					var req protocol.RequestToggleDoor
+				case "RequestMove":
+					var req protocol.RequestMove
 					if err := json.Unmarshal(env.Payload, &req); err != nil {
-						fmt.Printf("Err with unmarshal %s\n", err.Error())
+						continue
+					}
+					if req.DX == 0 && req.DY == 0 {
+						continue
+					}
+					if (req.DX != 0 && req.DY != 0) || (req.DX < -1 || req.DX > 1) || (req.DY < -1 || req.DY > 1) {
 						continue
 					}
 					state.Lock.Lock()
-					info, ok := state.Doors[req.ThresholdID]
+					tile, ok := state.Entities[req.EntityID]
 					if !ok {
-						fmt.Printf("Err, id not in state %s\n", req.ThresholdID)
 						state.Lock.Unlock()
 						continue
 					}
-					fmt.Println(info.State)
-					next := "open"
-					if info.State == "open" {
-						next = "closed"
+					nx := tile.X + req.DX
+					ny := tile.Y + req.DY
+					if nx < 0 || ny < 0 || nx >= state.Segment.Width || ny >= state.Segment.Height {
+						state.Lock.Unlock()
+						continue
 					}
-					info.State = next
-					var toReveal []int
-					if next == "open" {
-						if state.RevealedRegions[info.RegionA] && !state.RevealedRegions[info.RegionB] {
-							state.RevealedRegions[info.RegionB] = true
-							toReveal = append(toReveal, info.RegionB)
-						} else if state.RevealedRegions[info.RegionB] && !state.RevealedRegions[info.RegionA] {
-							state.RevealedRegions[info.RegionA] = true
-							toReveal = append(toReveal, info.RegionA)
-						}
+					edge := edgeForStep(tile.X, tile.Y, req.DX, req.DY)
+					if state.BlockedEdges[edge] {
+						state.Lock.Unlock()
+						continue
 					}
+					tile.X = nx
+					tile.Y = ny
+					state.Entities[req.EntityID] = tile
 					state.Lock.Unlock()
 
 					seq := atomic.AddUint64(&sequence, 1)
-					b1, _ := json.Marshal(protocol.PatchEnvelope{
+					out := protocol.PatchEnvelope{
 						Sequence: seq,
 						EventID:  0,
-						Type:     "DoorStateChanged",
-						Payload:  protocol.DoorStateChanged{ThresholdID: req.ThresholdID, State: next},
-					})
-					hub.Broadcast(b1)
-
-					if len(toReveal) > 0 {
-						seq2 := atomic.AddUint64(&sequence, 1)
-						b2, _ := json.Marshal(protocol.PatchEnvelope{
-							Sequence: seq2,
-							EventID:  0,
-							Type:     "RegionsRevealed",
-							Payload:  protocol.RegionsRevealed{IDs: toReveal},
-						})
-						hub.Broadcast(b2)
+						Type:     "EntityUpdated",
+						Payload:  protocol.EntityUpdated{ID: req.EntityID, Tile: tile},
 					}
+					b, _ := json.Marshal(out)
+					hub.Broadcast(b)
 				default:
 				}
 			}
@@ -149,6 +177,9 @@ func main() {
 		var revealed []int
 		for id := range state.RevealedRegions {
 			revealed = append(revealed, id)
+		}
+		entities := []protocol.EntityLite{
+			{ID: "hero-1", Kind: "hero", Tile: state.Entities["hero-1"]},
 		}
 		s := protocol.Snapshot{
 			MapID:             "dev-map",
@@ -161,7 +192,7 @@ func main() {
 			TileRegionIDs:     regionMap.TileRegionIDs,
 			RevealedRegionIDs: revealed,
 			DoorStates:        []byte{},
-			Entities:          []protocol.EntityLite{},
+			Entities:          entities,
 			Variables:         map[string]any{"ui.debug": true},
 			ProtocolVersion:   "v0",
 		}

@@ -10,3 +10,9 @@ type IntentEnvelope struct {
 type RequestToggleDoor struct {
 	ThresholdID string `json:"thresholdId"`
 }
+
+type RequestMove struct {
+	EntityID string `json:"entityId"`
+	DX       int    `json:"dx"`
+	DY       int    `json:"dy"`
+}
