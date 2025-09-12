@@ -114,15 +114,8 @@ function drawBoard() {
     }
   }
 
-  canvasContext.strokeStyle = `rgb(${colorBorder})`;
-  canvasContext.globalAlpha = 0.25;
-  for (let y = 0; y < m.rows; y++) {
-    for (let x = 0; x < m.cols; x++) {
-      const r = tileRect(x, y, m.tile, m.ox, m.oy);
-      canvasContext.strokeRect(r.x, r.y, r.w, r.h);
-    }
-  }
-  canvasContext.globalAlpha = 1;
+  drawGrid();          // subtle per-cell grid for counting
+  drawRegionBorders(); // bold room/corridor outlines
 
   for (const [id, t] of entityPositions.entries()) {
     if (!t) continue;
@@ -133,6 +126,93 @@ function drawBoard() {
     canvasContext.fillStyle = `rgb(${cs.getPropertyValue("--color-accent").trim()})`;
     canvasContext.fill();
   }
+}
+
+/**
+ * Draw a subtle per-cell grid across the whole board for movement counting.
+ * Uses half-pixel alignment for crisp 1px lines.
+ */
+function drawGrid() {
+  const m = gridMetrics();
+  const cs = getComputedStyle(document.documentElement);
+  const borderRGB = cs.getPropertyValue("--color-border").trim(); // "r g b"
+
+  canvasContext.save();
+  canvasContext.strokeStyle = `rgb(${borderRGB})`;
+  canvasContext.lineWidth = 1;
+  canvasContext.globalAlpha = 0.18;
+
+  // Vertical grid lines (x = 0..cols)
+  canvasContext.beginPath();
+  for (let x = 0; x <= m.cols; x++) {
+    const xLine = m.ox + x * m.tile + 0.5;
+    canvasContext.moveTo(xLine, m.oy);
+    canvasContext.lineTo(xLine, m.oy + m.tile * m.rows);
+  }
+  canvasContext.stroke();
+
+  // Horizontal grid lines (y = 0..rows)
+  canvasContext.beginPath();
+  for (let y = 0; y <= m.rows; y++) {
+    const yLine = m.oy + y * m.tile + 0.5;
+    canvasContext.moveTo(m.ox, yLine);
+    canvasContext.lineTo(m.ox + m.tile * m.cols, yLine);
+  }
+  canvasContext.stroke();
+
+  canvasContext.restore();
+}
+
+/**
+ * Draw thin region borders only where neighbor tiles belong to different regions.
+ * Uses a stronger color so rooms/corridors remain visually distinct when revealed.
+ */
+function drawRegionBorders() {
+  const m = gridMetrics();
+  const ids = snapshot?.tileRegionIds;
+  if (!Array.isArray(ids)) return;
+
+  const cs = getComputedStyle(document.documentElement);
+  const brandRGB = cs.getPropertyValue("--color-brand").trim(); // "r g b"
+
+  canvasContext.save();
+  canvasContext.strokeStyle = `rgb(${brandRGB})`;
+  canvasContext.lineWidth = 1;
+  canvasContext.globalAlpha = 0.85;
+
+  // Vertical borders: between (x,y) and (x+1,y)
+  for (let y = 0; y < m.rows; y++) {
+    for (let x = 0; x < m.cols - 1; x++) {
+      const a = ids[y * m.cols + x];
+      const b = ids[y * m.cols + (x + 1)];
+      if (a !== b) {
+        const r = tileRect(x, y, m.tile, m.ox, m.oy);
+        const xLine = r.x + r.w + 0.5;
+        canvasContext.beginPath();
+        canvasContext.moveTo(xLine, r.y);
+        canvasContext.lineTo(xLine, r.y + r.h);
+        canvasContext.stroke();
+      }
+    }
+  }
+
+  // Horizontal borders: between (x,y) and (x,y+1)
+  for (let y = 0; y < m.rows - 1; y++) {
+    for (let x = 0; x < m.cols; x++) {
+      const a = ids[y * m.cols + x];
+      const b = ids[(y + 1) * m.cols + x];
+      if (a !== b) {
+        const r = tileRect(x, y, m.tile, m.ox, m.oy);
+        const yLine = r.y + r.h + 0.5;
+        canvasContext.beginPath();
+        canvasContext.moveTo(r.x, yLine);
+        canvasContext.lineTo(r.x + r.w, yLine);
+        canvasContext.stroke();
+      }
+    }
+  }
+
+  canvasContext.restore();
 }
 
 function applyPatch(patch) {
@@ -166,7 +246,7 @@ function openStream() {
     try {
       const patch = JSON.parse(event.data);
       applyPatch(patch);
-    } catch {}
+    } catch { }
   };
   socket.onclose = () => {
     setTimeout(openStream, 2000);
