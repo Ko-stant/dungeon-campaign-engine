@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"sync/atomic"
 
 	"github.com/coder/websocket"
@@ -16,27 +18,48 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/ws"
 )
 
-func main() {
-	mux := http.NewServeMux()
+type DoorInfo struct {
+	Edge    geometry.EdgeAddress
+	RegionA int
+	RegionB int
+	State   string
+}
 
+type GameState struct {
+	Segment         geometry.Segment
+	RegionMap       geometry.RegionMap
+	Doors           map[string]*DoorInfo
+	RevealedRegions map[int]bool
+	Lock            sync.Mutex
+}
+
+func makeDoorID(segmentID string, e geometry.EdgeAddress) string {
+	return fmt.Sprintf("%s:%d:%d:%s", segmentID, e.X, e.Y, e.Orientation)
+}
+
+func main() {
+	segment := geometry.DevSegment()
+	regionMap := geometry.BuildRegionMap(segment)
+
+	doorEdge := segment.DoorSockets[0]
+	doorID := makeDoorID(segment.ID, doorEdge)
+	a, b := geometry.RegionsAcrossDoor(regionMap, segment, doorEdge)
+
+	state := &GameState{
+		Segment:         segment,
+		RegionMap:       regionMap,
+		Doors:           map[string]*DoorInfo{doorID: {Edge: doorEdge, RegionA: a, RegionB: b, State: "closed"}},
+		RevealedRegions: map[int]bool{a: true},
+	}
+	fmt.Printf("STATE: %v\n\n", state.Doors)
+	fmt.Printf("doorID: %v\n\n", doorID)
+
+	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir("internal/web/static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
 
 	hub := ws.NewHub()
 	var sequence uint64
-
-	segment := geometry.DevSegment()
-	regionMap := geometry.BuildRegionMap(segment)
-
-	door := segment.DoorSockets[0]
-	doorID := "dev-door-12-9-v"
-
-	leftTileIndex := door.Y*segment.Width + door.X
-	rightTileIndex := door.Y*segment.Width + (door.X + 1)
-	leftRegionID := regionMap.TileRegionIDs[leftTileIndex]
-	rightRegionID := regionMap.TileRegionIDs[rightTileIndex]
-
-	var doorOpen atomic.Bool
 
 	mux.HandleFunc("/stream", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{InsecureSkipVerify: true})
@@ -57,51 +80,76 @@ func main() {
 			defer hub.Remove(c)
 			defer c.Close(websocket.StatusNormalClosure, "")
 			for {
-				_, _, err := c.Read(context.Background())
+				_, data, err := c.Read(context.Background())
 				if err != nil {
 					return
+				}
+				var env protocol.IntentEnvelope
+				if err := json.Unmarshal(data, &env); err != nil {
+					continue
+				}
+				switch env.Type {
+				case "RequestToggleDoor":
+					var req protocol.RequestToggleDoor
+					if err := json.Unmarshal(env.Payload, &req); err != nil {
+						fmt.Printf("Err with unmarshal %s\n", err.Error())
+						continue
+					}
+					state.Lock.Lock()
+					info, ok := state.Doors[req.ThresholdID]
+					if !ok {
+						fmt.Printf("Err, id not in state %s\n", req.ThresholdID)
+						state.Lock.Unlock()
+						continue
+					}
+					fmt.Println(info.State)
+					next := "open"
+					if info.State == "open" {
+						next = "closed"
+					}
+					info.State = next
+					var toReveal []int
+					if next == "open" {
+						if state.RevealedRegions[info.RegionA] && !state.RevealedRegions[info.RegionB] {
+							state.RevealedRegions[info.RegionB] = true
+							toReveal = append(toReveal, info.RegionB)
+						} else if state.RevealedRegions[info.RegionB] && !state.RevealedRegions[info.RegionA] {
+							state.RevealedRegions[info.RegionA] = true
+							toReveal = append(toReveal, info.RegionA)
+						}
+					}
+					state.Lock.Unlock()
+
+					seq := atomic.AddUint64(&sequence, 1)
+					b1, _ := json.Marshal(protocol.PatchEnvelope{
+						Sequence: seq,
+						EventID:  0,
+						Type:     "DoorStateChanged",
+						Payload:  protocol.DoorStateChanged{ThresholdID: req.ThresholdID, State: next},
+					})
+					hub.Broadcast(b1)
+
+					if len(toReveal) > 0 {
+						seq2 := atomic.AddUint64(&sequence, 1)
+						b2, _ := json.Marshal(protocol.PatchEnvelope{
+							Sequence: seq2,
+							EventID:  0,
+							Type:     "RegionsRevealed",
+							Payload:  protocol.RegionsRevealed{IDs: toReveal},
+						})
+						hub.Broadcast(b2)
+					}
+				default:
 				}
 			}
 		}(conn)
 	})
 
-	mux.HandleFunc("/dev/toggle-door", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		newOpen := !doorOpen.Load()
-		doorOpen.Store(newOpen)
-
-		seq := atomic.AddUint64(&sequence, 1)
-		ds := protocol.DoorStateChanged{
-			ThresholdID: doorID,
-			State:       map[bool]string{true: "open", false: "closed"}[newOpen],
-		}
-		b1, _ := json.Marshal(protocol.PatchEnvelope{
-			Sequence: seq,
-			EventID:  0,
-			Type:     "DoorStateChanged",
-			Payload:  ds,
-		})
-		hub.Broadcast(b1)
-
-		if newOpen {
-			seq2 := atomic.AddUint64(&sequence, 1)
-			rr := protocol.RegionsRevealed{IDs: []int{rightRegionID}}
-			b2, _ := json.Marshal(protocol.PatchEnvelope{
-				Sequence: seq2,
-				EventID:  0,
-				Type:     "RegionsRevealed",
-				Payload:  rr,
-			})
-			hub.Broadcast(b2)
-		}
-
-		w.WriteHeader(http.StatusNoContent)
-	})
-
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		var revealed []int
+		for id := range state.RevealedRegions {
+			revealed = append(revealed, id)
+		}
 		s := protocol.Snapshot{
 			MapID:             "dev-map",
 			PackID:            "dev-pack@v1",
@@ -111,14 +159,11 @@ func main() {
 			MapHeight:         segment.Height,
 			RegionsCount:      regionMap.RegionsCount,
 			TileRegionIDs:     regionMap.TileRegionIDs,
-			RevealedRegionIDs: []int{leftRegionID},
+			RevealedRegionIDs: revealed,
 			DoorStates:        []byte{},
-			DoorSockets: []protocol.DoorSocketLite{
-				{ID: doorID, X: door.X, Y: door.Y, Orientation: "vertical", State: "closed"},
-			},
-			Entities:        []protocol.EntityLite{},
-			Variables:       map[string]any{"ui.debug": true},
-			ProtocolVersion: "v0",
+			Entities:          []protocol.EntityLite{},
+			Variables:         map[string]any{"ui.debug": true},
+			ProtocolVersion:   "v0",
 		}
 		if err := views.IndexPage(s).Render(r.Context(), w); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -129,7 +174,6 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-
 	log.Printf("listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }

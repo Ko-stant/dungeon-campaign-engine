@@ -108,7 +108,7 @@ func IndexPage(snapshot protocol.Snapshot) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\"></canvas></div><aside class=\"rounded-lg border border-border/60 bg-surface/60 p-4\"><div class=\"flex items-center justify-between mb-3\"><h2 class=\"text-base font-semibold\">Dev HUD</h2><button id=\"toggleDoor\" class=\"text-xs px-2 py-1 rounded border border-border/60 hover:bg-surface-2\">Toggle Door</button></div><ul class=\"space-y-1 text-sm\"><li><span class=\"opacity-70\">Status:</span> Ready</li><li><span class=\"opacity-70\">Patches:</span> <span id=\"patchCount\">0</span></li></ul></aside></section></main>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\"></canvas></div><aside class=\"rounded-lg border border-border/60 bg-surface/60 p-4\"><div class=\"flex items-center justify-between mb-3\"><h2 class=\"text-base font-semibold\">Dev HUD</h2><button id=\"toggleDoor\" class=\"px-3 py-1 rounded-md border border-border/60 bg-surface-2\">Toggle Door</button></div><ul class=\"space-y-1 text-sm\"><li><span class=\"opacity-70\">Status:</span> Ready</li><li><span class=\"opacity-70\">Patches:</span> <span id=\"patchCount\">0</span></li></ul></aside></section></main>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
