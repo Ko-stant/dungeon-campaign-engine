@@ -89,10 +89,10 @@ clean:
 
 # --- Docker / Postgres ---
 db-up:
-	@$(call with_dotenv, docker compose --env-file .env up -d postgres)
+	@$(docker compose --env-file .env up -d postgres)
 
 db-up-all:
-	@$(call with_dotenv, docker compose --env-file .env up -d)
+	@$(docker compose --env-file .env up -d)
 
 db-down:
 	@docker compose --env-file .env down
@@ -104,14 +104,14 @@ db-logs:
 	@docker compose --env-file .env logs -f postgres
 
 db-psql:
-	@$(call with_dotenv, docker exec -it hq_postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB)
+	@$(docker exec -it hq_postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB)
 
 db-backup:
-	@$(call with_dotenv, mkdir -p db/backups && docker exec -t hq_postgres pg_dump -U $$POSTGRES_USER -d $$POSTGRES_DB > db/backups/backup-$$(date +%Y%m%d-%H%M%S).sql)
+	@$(mkdir -p db/backups && docker exec -t hq_postgres pg_dump -U $$POSTGRES_USER -d $$POSTGRES_DB > db/backups/backup-$$(date +%Y%m%d-%H%M%S).sql)
 
 db-restore:
 	@read -p "backup file path: " file; \
-	$(call with_dotenv, cat $$file | docker exec -i hq_postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB)
+	$(cat $$file | docker exec -i hq_postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB)
 
 # --- Goose migrations ---
 db-migrate-new:
