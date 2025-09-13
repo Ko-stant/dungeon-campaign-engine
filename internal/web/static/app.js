@@ -23,6 +23,10 @@
  * @property {number[]} revealedRegionIds
  * @property {EntityLite[]} entities
  * @property {string} protocolVersion
+ * @property {ThresholdLite[]} thresholds
+ * @property {number[]} visibleRegionIds
+ * @property {number} corridorRegionId
+ * @property {number[]} knownRegionIds
  */
 
 /**
@@ -68,6 +72,13 @@ if (Array.isArray(snapshot?.entities)) {
 
 /** @type {ThresholdLite[]} */
 let thresholds = Array.isArray(snapshot?.thresholds) ? snapshot.thresholds.slice() : [];
+/** @type {Set<number>} */
+let visibleNow = new Set(Array.isArray(snapshot?.visibleRegionIds) ? snapshot.visibleRegionIds : []);
+/** @type {number} */
+const corridorRegionId = typeof snapshot?.corridorRegionId === "number" ? snapshot.corridorRegionId : 0;
+/** @type {Set<number>} */
+let knownRegions = new Set(Array.isArray(snapshot?.knownRegionIds) ? snapshot.knownRegionIds : []);
+
 
 function resizeCanvas() {
   const clientRect = canvas.getBoundingClientRect();
@@ -264,7 +275,7 @@ function drawRegionBorders() {
   if (!Array.isArray(ids)) return;
 
   const cs = getComputedStyle(document.documentElement);
-  const brandRGB = cs.getPropertyValue("--color-brand").trim(); // "r g b"
+  const brandRGB = cs.getPropertyValue("--color-brand").trim();
 
   canvasContext.save();
   canvasContext.strokeStyle = `rgb(${brandRGB})`;
@@ -277,34 +288,49 @@ function drawRegionBorders() {
       const a = ids[y * m.cols + x];
       const b = ids[y * m.cols + (x + 1)];
       if (a !== b) {
-        const r = tileRect(x, y, m.tile, m.ox, m.oy);
-        const xLine = r.x + r.w + 0.5;
-        canvasContext.beginPath();
-        canvasContext.moveTo(xLine, r.y);
-        canvasContext.lineTo(xLine, r.y + r.h);
-        canvasContext.stroke();
+        const roomSideA = (a !== corridorRegionId) ? a : null;
+        const roomSideB = (b !== corridorRegionId) ? b : null;
+
+        const show =
+          (roomSideA !== null && (knownRegions.has(roomSideA) || revealedRegions.has(roomSideA))) ||
+          (roomSideB !== null && (knownRegions.has(roomSideB) || revealedRegions.has(roomSideB)));
+        if (show) {
+          const r = tileRect(x, y, m.tile, m.ox, m.oy);
+          const xLine = r.x + r.w + 0.5;
+          canvasContext.beginPath();
+          canvasContext.moveTo(xLine, r.y);
+          canvasContext.lineTo(xLine, r.y + r.h);
+          canvasContext.stroke();
+        }
       }
     }
   }
-
   // Horizontal borders: between (x,y) and (x,y+1)
   for (let y = 0; y < m.rows - 1; y++) {
     for (let x = 0; x < m.cols; x++) {
       const a = ids[y * m.cols + x];
       const b = ids[(y + 1) * m.cols + x];
       if (a !== b) {
-        const r = tileRect(x, y, m.tile, m.ox, m.oy);
-        const yLine = r.y + r.h + 0.5;
-        canvasContext.beginPath();
-        canvasContext.moveTo(r.x, yLine);
-        canvasContext.lineTo(r.x + r.w, yLine);
-        canvasContext.stroke();
+        const roomSideA = (a !== corridorRegionId) ? a : null;
+        const roomSideB = (b !== corridorRegionId) ? b : null;
+
+        const show =
+          (roomSideA !== null && (knownRegions.has(roomSideA) || revealedRegions.has(roomSideA))) ||
+          (roomSideB !== null && (knownRegions.has(roomSideB) || revealedRegions.has(roomSideB)));
+        if (show) {
+          const r = tileRect(x, y, m.tile, m.ox, m.oy);
+          const yLine = r.y + r.h + 0.5;
+          canvasContext.beginPath();
+          canvasContext.moveTo(r.x, yLine);
+          canvasContext.lineTo(r.x + r.w, yLine);
+          canvasContext.stroke();
+        }
       }
     }
   }
-
   canvasContext.restore();
 }
+
 
 function applyPatch(patch) {
   if (patch.type === "VariablesChanged" && patch.payload && patch.payload.entries) {
@@ -329,6 +355,16 @@ function applyPatch(patch) {
     if (patchCountElement) patchCountElement.textContent = String(patchCount);
     const p = patch.payload;
     entityPositions.set(p.id, p.tile);
+    drawBoard();
+  } else if (patch.type === "VisibleNow" && patch.payload && Array.isArray(patch.payload.ids)) {
+    visibleNow = new Set(patch.payload.ids);
+    patchCount += 1;
+    if (patchCountElement) patchCountElement.textContent = String(patchCount);
+    drawBoard();
+  } else if (patch.type === "RegionsKnown" && patch.payload && Array.isArray(patch.payload.ids)) {
+    for (const id of patch.payload.ids) knownRegions.add(id);
+    patchCount += 1;
+    if (patchCountElement) patchCountElement.textContent = String(patchCount);
     drawBoard();
   }
 }

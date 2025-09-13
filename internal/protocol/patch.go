@@ -24,3 +24,11 @@ type EntityUpdated struct {
 	ID   string      `json:"id"`
 	Tile TileAddress `json:"tile"`
 }
+
+type VisibleNow struct {
+	IDs []int `json:"ids"`
+}
+
+type RegionsKnown struct {
+	IDs []int `json:"ids"`
+}

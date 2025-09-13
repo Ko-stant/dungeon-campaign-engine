@@ -42,4 +42,7 @@ type Snapshot struct {
 	Thresholds        []ThresholdLite `json:"thresholds"`
 	Variables         map[string]any  `json:"variables"`
 	ProtocolVersion   string          `json:"protocolVersion"`
+	VisibleRegionIDs  []int           `json:"visibleRegionIds"`
+	CorridorRegionID  int             `json:"corridorRegionId"`
+	KnownRegionIDs    []int           `json:"knownRegionIds"`
 }
