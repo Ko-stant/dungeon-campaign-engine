@@ -16,3 +16,7 @@ type RequestMove struct {
 	DX       int    `json:"dx"`
 	DY       int    `json:"dy"`
 }
+
+type RequestToggleAdjacentDoor struct {
+	EntityID string `json:"entityId"`
+}

@@ -25,6 +25,16 @@
  * @property {string} protocolVersion
  */
 
+/**
+ * @typedef {Object} ThresholdLite
+ * @property {string} id
+ * @property {number} x
+ * @property {number} y
+ * @property {"vertical"|"horizontal"} orientation
+ * @property {"DoorSocket"} kind
+ * @property {"open"|"closed"} [state]
+ */
+
 const snapshotElement = document.getElementById("snapshot");
 /** @type {Snapshot|null} */
 let snapshot = null;
@@ -42,6 +52,9 @@ const patchCountElement = document.getElementById("patchCount");
 /** @type {HTMLButtonElement|null} */
 const toggleDoorButton = document.getElementById("toggleDoor");
 
+/** @type {string|null} */
+let selectedDoorId = null;
+
 let patchCount = 0;
 /** @type {Set<number>} */
 let revealedRegions = new Set(Array.isArray(snapshot?.revealedRegionIds) ? snapshot.revealedRegionIds : []);
@@ -52,6 +65,9 @@ let entityPositions = new Map();
 if (Array.isArray(snapshot?.entities)) {
   for (const e of snapshot.entities) entityPositions.set(e.id, structuredClone(e.tile));
 }
+
+/** @type {ThresholdLite[]} */
+let thresholds = Array.isArray(snapshot?.thresholds) ? snapshot.thresholds.slice() : [];
 
 function resizeCanvas() {
   const clientRect = canvas.getBoundingClientRect();
@@ -89,6 +105,80 @@ function tileRect(x, y, tile, ox, oy) {
   return { x: px, y: py, w: tile, h: tile, cx, cy };
 }
 
+function drawDoorOverlays() {
+  const m = gridMetrics();
+  if (!Array.isArray(thresholds) || thresholds.length === 0) return;
+
+  const cs = getComputedStyle(document.documentElement);
+  const closedRGB = cs.getPropertyValue("--color-brand").trim();
+  const openRGB = cs.getPropertyValue("--color-positive").trim();
+
+  canvasContext.save();
+  canvasContext.lineWidth = 2;
+  for (const t of thresholds) {
+    const cs = getComputedStyle(document.documentElement);
+    const closedRGB = cs.getPropertyValue("--color-brand").trim();
+    const openRGB = cs.getPropertyValue("--color-positive").trim();
+    const accentRGB = cs.getPropertyValue("--color-accent").trim();
+
+    const isSelected = selectedDoorId === t.id;
+    const base = t.state === "open" ? openRGB : closedRGB;
+    canvasContext.strokeStyle = `rgb(${isSelected ? accentRGB : base})`;
+    canvasContext.lineWidth = isSelected ? 3 : 2;
+
+    const m = gridMetrics();
+    const gap = Math.max(2, Math.floor(m.tile * 0.15));
+    if (t.orientation === "vertical") {
+      const xLine = m.ox + (t.x + 1) * m.tile + 0.5;
+      const y1 = m.oy + t.y * m.tile + gap + 0.5;
+      const y2 = y1 + (m.tile - 2 * gap);
+      canvasContext.beginPath();
+      canvasContext.moveTo(xLine, y1);
+      canvasContext.lineTo(xLine, y2);
+      canvasContext.stroke();
+    } else {
+      const yLine = m.oy + (t.y + 1) * m.tile + 0.5;
+      const x1 = m.ox + t.x * m.tile + gap + 0.5;
+      const x2 = x1 + (m.tile - 2 * gap);
+      canvasContext.beginPath();
+      canvasContext.moveTo(x1, yLine);
+      canvasContext.lineTo(x2, yLine);
+      canvasContext.stroke();
+    }
+  }
+
+  canvasContext.restore();
+}
+
+/**
+ * @param {string} entityId
+ * @param {number} dx
+ * @param {number} dy
+ * @returns {string|null}
+ */
+function findAdjacentDoorIdFromDirection(entityId, dx, dy) {
+  const pos = entityPositions.get(entityId);
+  if (!pos) return null;
+  /** @type {{x:number,y:number,orientation:"vertical"|"horizontal"}|null} */
+  let edge = null;
+  if (dx === 1 && dy === 0) edge = { x: pos.x, y: pos.y, orientation: "vertical" };
+  else if (dx === -1 && dy === 0) edge = { x: pos.x - 1, y: pos.y, orientation: "vertical" };
+  else if (dx === 0 && dy === 1) edge = { x: pos.x, y: pos.y, orientation: "horizontal" };
+  else if (dx === 0 && dy === -1) edge = { x: pos.x, y: pos.y - 1, orientation: "horizontal" };
+  if (!edge) return null;
+  const t = thresholds.find(d => d.orientation === edge.orientation && d.x === edge.x && d.y === edge.y);
+  return t ? t.id : null;
+}
+
+/**
+ * @param {number} dx
+ * @param {number} dy
+ */
+function selectDoorInDirection(dx, dy) {
+  selectedDoorId = findAdjacentDoorIdFromDirection("hero-1", dx, dy);
+  drawBoard();
+}
+
 function drawBoard() {
   const m = gridMetrics();
 
@@ -116,6 +206,7 @@ function drawBoard() {
 
   drawGrid();          // subtle per-cell grid for counting
   drawRegionBorders(); // bold room/corridor outlines
+  drawDoorOverlays();  // door overlays on top of regions
 
   for (const [id, t] of entityPositions.entries()) {
     if (!t) continue;
@@ -227,6 +318,12 @@ function applyPatch(patch) {
   } else if (patch.type === "DoorStateChanged") {
     patchCount += 1;
     if (patchCountElement) patchCountElement.textContent = String(patchCount);
+    const p = patch.payload;
+    const idx = thresholds.findIndex(d => d.id === p.thresholdId);
+    if (idx !== -1) {
+      thresholds[idx] = { ...thresholds[idx], state: p.state };
+      drawBoard();
+    }
   } else if (patch.type === "EntityUpdated" && patch.payload && patch.payload.tile) {
     patchCount += 1;
     if (patchCountElement) patchCountElement.textContent = String(patchCount);
@@ -282,15 +379,24 @@ function keyToStep(ev) {
 
 window.addEventListener("keydown", (ev) => {
   const step = keyToStep(ev);
-  if (!step) return;
-  if (!socketRef || socketRef.readyState !== WebSocket.OPEN) return;
-  const msg = {
-    type: "RequestMove",
-    payload: { entityId: "hero-1", dx: step.dx, dy: step.dy }
-  };
-  socketRef.send(JSON.stringify(msg));
-  ev.preventDefault();
+  if (step) {
+    selectDoorInDirection(step.dx, step.dy); // always update selection
+    if (socketRef && socketRef.readyState === WebSocket.OPEN) {
+      const msg = { type: "RequestMove", payload: { entityId: "hero-1", dx: step.dx, dy: step.dy } };
+      socketRef.send(JSON.stringify(msg));
+    }
+    ev.preventDefault();
+    return;
+  }
+  if (ev.key === "e" || ev.key === "E") {
+    if (selectedDoorId && socketRef && socketRef.readyState === WebSocket.OPEN) {
+      const msg = { type: "RequestToggleDoor", payload: { thresholdId: selectedDoorId } };
+      socketRef.send(JSON.stringify(msg));
+    }
+    ev.preventDefault();
+  }
 });
+
 
 window.addEventListener("resize", () => {
   resizeCanvas();
