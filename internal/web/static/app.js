@@ -366,20 +366,42 @@ function applyPatch(patch) {
     patchCount += 1;
     if (patchCountElement) patchCountElement.textContent = String(patchCount);
     drawBoard();
+  } else if (patch.type === "DoorsVisible" && patch.payload && Array.isArray(patch.payload.doors)) {
+    console.log("Received DoorsVisible patch:", patch.payload.doors.length, "new doors");
+    // Add newly visible doors to existing ones (never remove doors once seen)
+    for (const newDoor of patch.payload.doors) {
+      const existingIndex = thresholds.findIndex(d => d.id === newDoor.id);
+      if (existingIndex === -1) {
+        thresholds.push(newDoor);
+        console.log("Added new door:", newDoor.id);
+      } else {
+        // Update existing door (in case state changed)
+        thresholds[existingIndex] = newDoor;
+      }
+    }
+    patchCount += 1;
+    if (patchCountElement) patchCountElement.textContent = String(patchCount);
+    drawBoard();
   }
 }
 
 function openStream() {
+  console.log("openStream() called");
   const scheme = location.protocol === "https:" ? "wss" : "ws";
   const url = `${scheme}://${location.host}/stream`;
+  console.log("Attempting WebSocket connection to:", url);
   const socket = new WebSocket(url);
   socketRef = socket;
 
   socket.onmessage = (event) => {
     try {
+      console.log("Raw WebSocket message:", event.data);
       const patch = JSON.parse(event.data);
+      console.log("Parsed patch:", patch.type, patch);
       applyPatch(patch);
-    } catch { }
+    } catch (err) {
+      console.error("Failed to parse WebSocket message:", err, event.data);
+    }
   };
   socket.onclose = () => {
     setTimeout(openStream, 2000);
@@ -442,3 +464,4 @@ window.addEventListener("resize", () => {
 resizeCanvas();
 drawBoard();
 openStream();
+console.log('App initialized');

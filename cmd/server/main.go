@@ -36,6 +36,7 @@ type GameState struct {
 	RevealedRegions map[int]bool
 	Lock            sync.Mutex
 	KnownRegions    map[int]bool
+	KnownDoors      map[string]bool
 	CorridorRegion  int
 }
 
@@ -51,10 +52,14 @@ func buildBlockedWalls(seg geometry.Segment) map[geometry.EdgeAddress]bool {
 }
 
 func firstCorridorTile(seg geometry.Segment, rm geometry.RegionMap) (int, int) {
+	// Find the corridor region ID (region of tile at 0,0)
+	corridorRegion := rm.TileRegionIDs[0]
+
+	// Start from top-left and find the first corridor tile
 	for y := 0; y < seg.Height; y++ {
 		for x := 0; x < seg.Width; x++ {
 			idx := y*seg.Width + x
-			if rm.TileRegionIDs[idx] == rm.TileRegionIDs[0] {
+			if rm.TileRegionIDs[idx] == corridorRegion {
 				return x, y
 			}
 		}
@@ -105,6 +110,7 @@ func main() {
 		Entities:        map[string]protocol.TileAddress{"hero-1": hero},
 		RevealedRegions: map[int]bool{corridorRegion: true},
 		KnownRegions:    map[int]bool{corridorRegion: true},
+		KnownDoors:      map[string]bool{},
 		CorridorRegion:  corridorRegion,
 	}
 
@@ -218,6 +224,43 @@ func main() {
 						hub.Broadcast(b3)
 					}
 
+					// Check for newly visible doors
+					newlyVisibleDoors := make([]protocol.ThresholdLite, 0)
+					for id, info := range state.Doors {
+						visible := isEdgeVisible(state, hero.X, hero.Y, info.Edge)
+						if visible && !state.KnownDoors[id] {
+							state.KnownDoors[id] = true
+							newlyVisibleDoors = append(newlyVisibleDoors, protocol.ThresholdLite{
+								ID:          id,
+								X:           info.Edge.X,
+								Y:           info.Edge.Y,
+								Orientation: string(info.Edge.Orientation),
+								Kind:        "DoorSocket",
+								State:       info.State,
+							})
+							log.Printf("newly discovered door %s at (%d,%d,%s)", id, info.Edge.X, info.Edge.Y, info.Edge.Orientation)
+						}
+					}
+
+					// Send newly visible doors to client (client will add them to existing ones)
+					if len(newlyVisibleDoors) > 0 {
+						log.Printf("sending %d newly visible doors to client", len(newlyVisibleDoors))
+						seq4 := atomic.AddUint64(&sequence, 1)
+						envelope := protocol.PatchEnvelope{
+							Sequence: seq4,
+							EventID:  0,
+							Type:     "DoorsVisible",
+							Payload:  protocol.DoorsVisible{Doors: newlyVisibleDoors},
+						}
+						b4, err := json.Marshal(envelope)
+						if err != nil {
+							log.Printf("failed to marshal DoorsVisible: %v", err)
+						} else {
+							log.Printf("broadcasting DoorsVisible: %s", string(b4))
+							hub.Broadcast(b4)
+						}
+					}
+
 				case "RequestToggleDoor":
 					var req protocol.RequestToggleDoor
 					if err := json.Unmarshal(env.Payload, &req); err != nil {
@@ -285,6 +328,35 @@ func main() {
 						})
 						hub.Broadcast(b4)
 					}
+
+					// Check for newly visible doors after opening door
+					newlyVisibleDoors := make([]protocol.ThresholdLite, 0)
+					for id, info := range state.Doors {
+						visible := isEdgeVisible(state, hero.X, hero.Y, info.Edge)
+						if visible && !state.KnownDoors[id] {
+							state.KnownDoors[id] = true
+							newlyVisibleDoors = append(newlyVisibleDoors, protocol.ThresholdLite{
+								ID:          id,
+								X:           info.Edge.X,
+								Y:           info.Edge.Y,
+								Orientation: string(info.Edge.Orientation),
+								Kind:        "DoorSocket",
+								State:       info.State,
+							})
+							log.Printf("newly discovered door after opening %s at (%d,%d,%s)", id, info.Edge.X, info.Edge.Y, info.Edge.Orientation)
+						}
+					}
+
+					if len(newlyVisibleDoors) > 0 {
+						seq5 := atomic.AddUint64(&sequence, 1)
+						b5, _ := json.Marshal(protocol.PatchEnvelope{
+							Sequence: seq5,
+							EventID:  0,
+							Type:     "DoorsVisible",
+							Payload:  protocol.DoorsVisible{Doors: newlyVisibleDoors},
+						})
+						hub.Broadcast(b5)
+					}
 				default:
 				}
 			}
@@ -301,18 +373,28 @@ func main() {
 		entities := []protocol.EntityLite{
 			{ID: "hero-1", Kind: "hero", Tile: state.Entities["hero-1"]},
 		}
-		thresholds := make([]protocol.ThresholdLite, 0, len(state.Doors))
+		// Add currently visible doors to known doors
 		for id, info := range state.Doors {
-			thresholds = append(thresholds, protocol.ThresholdLite{
-				ID:          id,
-				X:           info.Edge.X,
-				Y:           info.Edge.Y,
-				Orientation: string(info.Edge.Orientation),
-				Kind:        "DoorSocket",
-				State:       info.State,
-			})
-			log.Printf("door %s at (%d,%d,%s) regions=%d|%d state=%s",
-				id, info.Edge.X, info.Edge.Y, info.Edge.Orientation, info.RegionA, info.RegionB, info.State)
+			if isEdgeVisible(state, hero.X, hero.Y, info.Edge) {
+				state.KnownDoors[id] = true
+			}
+		}
+
+		// Include all known doors in initial snapshot
+		thresholds := make([]protocol.ThresholdLite, 0, len(state.KnownDoors))
+		for id := range state.KnownDoors {
+			if info, exists := state.Doors[id]; exists {
+				thresholds = append(thresholds, protocol.ThresholdLite{
+					ID:          id,
+					X:           info.Edge.X,
+					Y:           info.Edge.Y,
+					Orientation: string(info.Edge.Orientation),
+					Kind:        "DoorSocket",
+					State:       info.State,
+				})
+				log.Printf("known door %s at (%d,%d,%s) regions=%d|%d state=%s",
+					id, info.Edge.X, info.Edge.Y, info.Edge.Orientation, info.RegionA, info.RegionB, info.State)
+			}
 		}
 		log.Printf("corridorRegion=%d", corridorRegion)
 		known := make([]int, 0, len(state.KnownRegions))

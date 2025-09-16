@@ -32,3 +32,7 @@ type VisibleNow struct {
 type RegionsKnown struct {
 	IDs []int `json:"ids"`
 }
+
+type DoorsVisible struct {
+	Doors []ThresholdLite `json:"doors"`
+}
