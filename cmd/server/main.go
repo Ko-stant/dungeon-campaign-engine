@@ -85,21 +85,29 @@ func makeDoorID(segmentID string, e geometry.EdgeAddress) string {
 }
 
 func main() {
-	segment := geometry.CorridorsAndRoomsWithDoorsSegment(26, 19)
-	regionMap := geometry.BuildRegionMap(segment)
-
-	doors := make(map[string]*DoorInfo, len(segment.DoorSockets))
-	doorByEdge := make(map[geometry.EdgeAddress]string, len(segment.DoorSockets))
-	for _, e := range segment.DoorSockets {
-		id := makeDoorID(segment.ID, e)
-		a, b := geometry.RegionsAcrossDoor(regionMap, segment, e)
-		doors[id] = &DoorInfo{Edge: e, RegionA: a, RegionB: b, State: "closed"}
-		doorByEdge[e] = id
+	// Load the static HeroQuest board
+	board, err := geometry.LoadBoardFromFile("content/base/board.json")
+	if err != nil {
+		log.Fatalf("Failed to load board: %v", err)
 	}
 
+	segment := geometry.CreateSegmentFromBoard(board)
+	regionMap := geometry.CreateRegionMapFromBoard(board)
+
+	// No doors initially - they will be loaded per quest
+	doors := make(map[string]*DoorInfo)
+	doorByEdge := make(map[geometry.EdgeAddress]string)
+
+	// Start in corridor (region 0) - find first corridor tile
 	startX, startY := firstCorridorTile(segment, regionMap)
 	hero := protocol.TileAddress{SegmentID: segment.ID, X: startX, Y: startY}
 	corridorRegion := regionMap.TileRegionIDs[startY*segment.Width+startX]
+
+	// Initialize known regions - all rooms are "known" (borders visible) but only corridor is "revealed" (accessible)
+	knownRegions := make(map[int]bool)
+	for i := 0; i < regionMap.RegionsCount; i++ {
+		knownRegions[i] = true
+	}
 
 	state := &GameState{
 		Segment:         segment,
@@ -109,7 +117,7 @@ func main() {
 		DoorByEdge:      doorByEdge,
 		Entities:        map[string]protocol.TileAddress{"hero-1": hero},
 		RevealedRegions: map[int]bool{corridorRegion: true},
-		KnownRegions:    map[int]bool{corridorRegion: true},
+		KnownRegions:    knownRegions,
 		KnownDoors:      map[string]bool{},
 		CorridorRegion:  corridorRegion,
 	}
