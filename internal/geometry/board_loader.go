@@ -77,54 +77,45 @@ func generateWallsFromRooms(board *BoardDefinition, roomTiles map[string]bool) (
 	var verticalWalls []EdgeAddress
 	var horizontalWalls []EdgeAddress
 
+	// Create region map for each tile to check different regions
+	regionMap := CreateRegionMapFromBoard(board)
+
 	// Check each tile position to see if walls are needed
 	for y := 0; y < board.Dimensions.Height; y++ {
 		for x := 0; x < board.Dimensions.Width; x++ {
-			tileKey := fmt.Sprintf("%d,%d", x, y)
-			isRoom := roomTiles[tileKey]
+			currentIdx := y*board.Dimensions.Width + x
+			currentRegion := regionMap.TileRegionIDs[currentIdx]
 
 			// Check need for vertical wall to the right (between x,y and x+1,y)
 			if x < board.Dimensions.Width-1 {
-				rightTileKey := fmt.Sprintf("%d,%d", x+1, y)
-				isRightRoom := roomTiles[rightTileKey]
+				rightIdx := y*board.Dimensions.Width + (x + 1)
+				rightRegion := regionMap.TileRegionIDs[rightIdx]
 
-				// Add wall if one side is room and other is corridor (or out of bounds)
-				if isRoom != isRightRoom {
+				// Add wall if regions are different
+				// Wall should be at the left edge of the right tile (x+1,y)
+				if currentRegion != rightRegion {
 					verticalWalls = append(verticalWalls, EdgeAddress{
-						X:           x,
+						X:           x + 1,
 						Y:           y,
 						Orientation: Vertical,
 					})
 				}
-			} else if isRoom {
-				// Add wall at right boundary if this is a room tile
-				verticalWalls = append(verticalWalls, EdgeAddress{
-					X:           x,
-					Y:           y,
-					Orientation: Vertical,
-				})
 			}
 
 			// Check need for horizontal wall below (between x,y and x,y+1)
 			if y < board.Dimensions.Height-1 {
-				belowTileKey := fmt.Sprintf("%d,%d", x, y+1)
-				isBelowRoom := roomTiles[belowTileKey]
+				belowIdx := (y+1)*board.Dimensions.Width + x
+				belowRegion := regionMap.TileRegionIDs[belowIdx]
 
-				// Add wall if one side is room and other is corridor (or out of bounds)
-				if isRoom != isBelowRoom {
+				// Add wall if regions are different
+				// Wall should be at the top edge of the below tile (x,y+1)
+				if currentRegion != belowRegion {
 					horizontalWalls = append(horizontalWalls, EdgeAddress{
 						X:           x,
-						Y:           y,
+						Y:           y + 1,
 						Orientation: Horizontal,
 					})
 				}
-			} else if isRoom {
-				// Add wall at bottom boundary if this is a room tile
-				horizontalWalls = append(horizontalWalls, EdgeAddress{
-					X:           x,
-					Y:           y,
-					Orientation: Horizontal,
-				})
 			}
 		}
 	}
@@ -139,31 +130,31 @@ func generateWallsFromRooms(board *BoardDefinition, roomTiles map[string]bool) (
 func addBoundaryWalls(board *BoardDefinition, verticalWalls, horizontalWalls []EdgeAddress) ([]EdgeAddress, []EdgeAddress) {
 	// Top and bottom boundary walls
 	for x := 0; x < board.Dimensions.Width; x++ {
-		// Top boundary
+		// Top boundary - top edge of tile (x,0)
 		horizontalWalls = append(horizontalWalls, EdgeAddress{
 			X:           x,
-			Y:           -1,
+			Y:           0,
 			Orientation: Horizontal,
 		})
-		// Bottom boundary
+		// Bottom boundary - top edge of tile (x,Height) which is outside the board
 		horizontalWalls = append(horizontalWalls, EdgeAddress{
 			X:           x,
-			Y:           board.Dimensions.Height - 1,
+			Y:           board.Dimensions.Height,
 			Orientation: Horizontal,
 		})
 	}
 
 	// Left and right boundary walls
 	for y := 0; y < board.Dimensions.Height; y++ {
-		// Left boundary
+		// Left boundary - left edge of tile (0,y)
 		verticalWalls = append(verticalWalls, EdgeAddress{
-			X:           -1,
+			X:           0,
 			Y:           y,
 			Orientation: Vertical,
 		})
-		// Right boundary
+		// Right boundary - left edge of tile (Width,y) which is outside the board
 		verticalWalls = append(verticalWalls, EdgeAddress{
-			X:           board.Dimensions.Width - 1,
+			X:           board.Dimensions.Width,
 			Y:           y,
 			Orientation: Vertical,
 		})

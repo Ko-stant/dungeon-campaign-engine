@@ -38,6 +38,14 @@
  * @property {"DoorSocket"} kind
  * @property {"open"|"closed"} [state]
  */
+/**
+ * @typedef {Object} BlockingWallLite
+ * @property {string} id
+ * @property {number} x
+ * @property {number} y
+ * @property {"vertical"|"horizontal"} orientation
+ * @property {number} size
+ */
 
 const snapshotElement = document.getElementById("snapshot");
 /** @type {Snapshot|null} */
@@ -72,6 +80,8 @@ if (Array.isArray(snapshot?.entities)) {
 
 /** @type {ThresholdLite[]} */
 let thresholds = Array.isArray(snapshot?.thresholds) ? snapshot.thresholds.slice() : [];
+/** @type {BlockingWallLite[]} */
+let blockingWalls = Array.isArray(snapshot?.blockingWalls) ? snapshot.blockingWalls.slice() : [];
 /** @type {Set<number>} */
 let visibleNow = new Set(Array.isArray(snapshot?.visibleRegionIds) ? snapshot.visibleRegionIds : []);
 /** @type {number} */
@@ -140,7 +150,8 @@ function drawDoorOverlays() {
     const m = gridMetrics();
     const gap = Math.max(2, Math.floor(m.tile * 0.15));
     if (t.orientation === "vertical") {
-      const xLine = m.ox + (t.x + 1) * m.tile + 0.5;
+      // Vertical door at (x,y) = left edge of tile (x,y)
+      const xLine = m.ox + t.x * m.tile + 0.5;
       const y1 = m.oy + t.y * m.tile + gap + 0.5;
       const y2 = y1 + (m.tile - 2 * gap);
       canvasContext.beginPath();
@@ -148,12 +159,62 @@ function drawDoorOverlays() {
       canvasContext.lineTo(xLine, y2);
       canvasContext.stroke();
     } else {
-      const yLine = m.oy + (t.y + 1) * m.tile + 0.5;
+      // Horizontal door at (x,y) = top edge of tile (x,y)
+      const yLine = m.oy + t.y * m.tile + 0.5;
       const x1 = m.ox + t.x * m.tile + gap + 0.5;
       const x2 = x1 + (m.tile - 2 * gap);
       canvasContext.beginPath();
       canvasContext.moveTo(x1, yLine);
       canvasContext.lineTo(x2, yLine);
+      canvasContext.stroke();
+    }
+  }
+
+  canvasContext.restore();
+}
+
+function drawBlockingWalls() {
+  const m = gridMetrics();
+  if (!Array.isArray(blockingWalls) || blockingWalls.length === 0) return;
+
+  const cs = getComputedStyle(document.documentElement);
+  const wallColor = cs.getPropertyValue("--color-danger").trim(); // Use danger color for blocking walls
+
+  canvasContext.save();
+  canvasContext.fillStyle = `rgb(${wallColor})`;
+  canvasContext.strokeStyle = `rgb(${wallColor})`;
+  canvasContext.lineWidth = 2;
+
+  for (const wall of blockingWalls) {
+    const size = wall.size || 1;
+
+    for (let i = 0; i < size; i++) {
+      let tileX = wall.x;
+      let tileY = wall.y;
+
+      // Offset for multi-tile walls
+      if (wall.orientation === "horizontal") {
+        tileX += i;
+      } else {
+        tileY += i;
+      }
+
+      // Draw blocking wall as a filled tile with an X pattern
+      const r = tileRect(tileX, tileY, m.tile, m.ox, m.oy);
+
+      // Fill the tile with a semi-transparent background
+      canvasContext.save();
+      canvasContext.globalAlpha = 0.3;
+      canvasContext.fillRect(r.x, r.y, r.w, r.h);
+      canvasContext.restore();
+
+      // Draw X pattern to indicate blocked tile
+      const margin = Math.floor(m.tile * 0.2);
+      canvasContext.beginPath();
+      canvasContext.moveTo(r.x + margin, r.y + margin);
+      canvasContext.lineTo(r.x + r.w - margin, r.y + r.h - margin);
+      canvasContext.moveTo(r.x + r.w - margin, r.y + margin);
+      canvasContext.lineTo(r.x + margin, r.y + r.h - margin);
       canvasContext.stroke();
     }
   }
@@ -172,10 +233,13 @@ function findAdjacentDoorIdFromDirection(entityId, dx, dy) {
   if (!pos) return null;
   /** @type {{x:number,y:number,orientation:"vertical"|"horizontal"}|null} */
   let edge = null;
-  if (dx === 1 && dy === 0) edge = { x: pos.x, y: pos.y, orientation: "vertical" };
-  else if (dx === -1 && dy === 0) edge = { x: pos.x - 1, y: pos.y, orientation: "vertical" };
-  else if (dx === 0 && dy === 1) edge = { x: pos.x, y: pos.y, orientation: "horizontal" };
-  else if (dx === 0 && dy === -1) edge = { x: pos.x, y: pos.y - 1, orientation: "horizontal" };
+  // Updated to match new coordinate system:
+  // Horizontal door (x,y) = top edge of tile (x,y)
+  // Vertical door (x,y) = left edge of tile (x,y)
+  if (dx === 1 && dy === 0) edge = { x: pos.x + 1, y: pos.y, orientation: "vertical" };      // right: left edge of tile to the right
+  else if (dx === -1 && dy === 0) edge = { x: pos.x, y: pos.y, orientation: "vertical" };   // left: left edge of current tile
+  else if (dx === 0 && dy === 1) edge = { x: pos.x, y: pos.y + 1, orientation: "horizontal" }; // down: top edge of tile below
+  else if (dx === 0 && dy === -1) edge = { x: pos.x, y: pos.y, orientation: "horizontal" };     // up: top edge of current tile
   if (!edge) return null;
   const t = thresholds.find(d => d.orientation === edge.orientation && d.x === edge.x && d.y === edge.y);
   return t ? t.id : null;
@@ -218,6 +282,7 @@ function drawBoard() {
   drawGrid();          // subtle per-cell grid for counting
   drawRegionBorders(); // bold room/corridor outlines
   drawDoorOverlays();  // door overlays on top of regions
+  drawBlockingWalls(); // blocking walls on top of regions
 
   for (const [id, t] of entityPositions.entries()) {
     if (!t) continue;
@@ -377,6 +442,22 @@ function applyPatch(patch) {
       } else {
         // Update existing door (in case state changed)
         thresholds[existingIndex] = newDoor;
+      }
+    }
+    patchCount += 1;
+    if (patchCountElement) patchCountElement.textContent = String(patchCount);
+    drawBoard();
+  } else if (patch.type === "BlockingWallsVisible" && patch.payload && Array.isArray(patch.payload.blockingWalls)) {
+    console.log("Received BlockingWallsVisible patch:", patch.payload.blockingWalls.length, "new blocking walls");
+    // Add newly visible blocking walls to existing ones (never remove blocking walls once seen)
+    for (const newWall of patch.payload.blockingWalls) {
+      const existingIndex = blockingWalls.findIndex(w => w.id === newWall.id);
+      if (existingIndex === -1) {
+        blockingWalls.push(newWall);
+        console.log("Added new blocking wall:", newWall.id);
+      } else {
+        // Update existing blocking wall
+        blockingWalls[existingIndex] = newWall;
       }
     }
     patchCount += 1;

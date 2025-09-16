@@ -27,22 +27,31 @@ type ThresholdLite struct {
 	State       string `json:"state,omitempty"`
 }
 
+type BlockingWallLite struct {
+	ID          string `json:"id"`
+	X           int    `json:"x"`
+	Y           int    `json:"y"`
+	Orientation string `json:"orientation"`
+	Size        int    `json:"size"`
+}
+
 type Snapshot struct {
-	MapID             string          `json:"mapId"`
-	PackID            string          `json:"packId"`
-	Turn              int             `json:"turn"`
-	LastEventID       int64           `json:"lastEventId"`
-	MapWidth          int             `json:"mapWidth"`
-	MapHeight         int             `json:"mapHeight"`
-	RegionsCount      int             `json:"regionsCount"`
-	TileRegionIDs     []int           `json:"tileRegionIds"`
-	RevealedRegionIDs []int           `json:"revealedRegionIds"`
-	DoorStates        []byte          `json:"doorStates"`
-	Entities          []EntityLite    `json:"entities"`
-	Thresholds        []ThresholdLite `json:"thresholds"`
-	Variables         map[string]any  `json:"variables"`
-	ProtocolVersion   string          `json:"protocolVersion"`
-	VisibleRegionIDs  []int           `json:"visibleRegionIds"`
-	CorridorRegionID  int             `json:"corridorRegionId"`
-	KnownRegionIDs    []int           `json:"knownRegionIds"`
+	MapID             string             `json:"mapId"`
+	PackID            string             `json:"packId"`
+	Turn              int                `json:"turn"`
+	LastEventID       int64              `json:"lastEventId"`
+	MapWidth          int                `json:"mapWidth"`
+	MapHeight         int                `json:"mapHeight"`
+	RegionsCount      int                `json:"regionsCount"`
+	TileRegionIDs     []int              `json:"tileRegionIds"`
+	RevealedRegionIDs []int              `json:"revealedRegionIds"`
+	DoorStates        []byte             `json:"doorStates"`
+	Entities          []EntityLite       `json:"entities"`
+	Thresholds        []ThresholdLite    `json:"thresholds"`
+	BlockingWalls     []BlockingWallLite `json:"blockingWalls"`
+	Variables         map[string]any     `json:"variables"`
+	ProtocolVersion   string             `json:"protocolVersion"`
+	VisibleRegionIDs  []int              `json:"visibleRegionIds"`
+	CorridorRegionID  int                `json:"corridorRegionId"`
+	KnownRegionIDs    []int              `json:"knownRegionIds"`
 }

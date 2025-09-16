@@ -36,3 +36,7 @@ type RegionsKnown struct {
 type DoorsVisible struct {
 	Doors []ThresholdLite `json:"doors"`
 }
+
+type BlockingWallsVisible struct {
+	BlockingWalls []BlockingWallLite `json:"blockingWalls"`
+}
