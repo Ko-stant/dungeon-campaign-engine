@@ -40,3 +40,15 @@ type DoorsVisible struct {
 type BlockingWallsVisible struct {
 	BlockingWalls []BlockingWallLite `json:"blockingWalls"`
 }
+
+type TurnStateChanged struct {
+	TurnNumber     int    `json:"turnNumber"`
+	CurrentTurn    string `json:"currentTurn"`
+	CurrentPhase   string `json:"currentPhase"`
+	ActivePlayerID string `json:"activePlayerId"`
+	ActionsLeft    int    `json:"actionsLeft"`
+	MovementLeft   int    `json:"movementLeft"`
+	HasMoved       bool   `json:"hasMoved"`
+	ActionTaken    bool   `json:"actionTaken"`
+	CanEndTurn     bool   `json:"canEndTurn"`
+}
