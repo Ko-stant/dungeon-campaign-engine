@@ -1,0 +1,51 @@
+{
+  "id": "",
+  "name": "",
+  "category": "gold|gems|potion|hazard|special|item",
+  "subcategory": "currency|healing|buff|trap|monster_encounter|unique_treasure",
+  "description": "",
+  "monetaryValue": {
+    "goldCoins": 0,
+    "recordOnSheet": true,
+    "returnToDeck": false
+  },
+  "consumableEffect": {
+    "isConsumable": false,
+    "healingAmount": 0,
+    "healingType": "body_points|mind_points|full_restore",
+    "usageRestrictions": {
+      "cannotExceedStarting": false,
+      "singleUse": true,
+      "returnToDeck": false
+    }
+  },
+  "hazardEffects": {
+    "isHazard": false,
+    "damageAmount": 0,
+    "damageType": "body_points|mind_points",
+    "endsTurn": false,
+    "immediateEffect": true
+  },
+  "encounterMechanics": {
+    "spawnsMonster": false,
+    "monsterType": "",
+    "placement": "adjacent|any_square|line_of_sight",
+    "immediateAttack": false
+  },
+  "specialAbilities": {
+    "movementEnhancement": false,
+    "combatBonus": {
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "duration": ""
+    },
+    "uniqueEffects": []
+  },
+  "deckBehavior": {
+    "returnToDeck": false,
+    "returnToBottom": false,
+    "removeFromGame": false,
+    "shuffleBack": false
+  },
+  "rarity": "common|uncommon|rare"
+}

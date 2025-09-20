@@ -12,7 +12,7 @@ type MockLogger struct {
 	messages []string
 }
 
-func (m *MockLogger) Printf(format string, v ...interface{}) {
+func (m *MockLogger) Printf(format string, v ...any) {
 	// Store messages for verification in tests
 	m.messages = append(m.messages, format)
 }
@@ -81,23 +81,23 @@ func createTestGameState() *GameState {
 		Height: 10,
 	}
 	regionMap := geometry.RegionMap{
-		RegionsCount:    5,
-		TileRegionIDs:   make([]int, 100), // 10x10 grid
+		RegionsCount:  5,
+		TileRegionIDs: make([]int, 100), // 10x10 grid
 	}
 
 	state := &GameState{
-		Segment:         segment,
-		RegionMap:       regionMap,
-		BlockedWalls:    make(map[geometry.EdgeAddress]bool),
-		BlockedTiles:    make(map[protocol.TileAddress]bool),
-		Doors:           make(map[string]*DoorInfo),
-		DoorByEdge:      make(map[geometry.EdgeAddress]string),
-		Entities:        make(map[string]protocol.TileAddress),
-		RevealedRegions: make(map[int]bool),
-		KnownRegions:    make(map[int]bool),
-		KnownDoors:      make(map[string]bool),
+		Segment:            segment,
+		RegionMap:          regionMap,
+		BlockedWalls:       make(map[geometry.EdgeAddress]bool),
+		BlockedTiles:       make(map[protocol.TileAddress]bool),
+		Doors:              make(map[string]*DoorInfo),
+		DoorByEdge:         make(map[geometry.EdgeAddress]string),
+		Entities:           make(map[string]protocol.TileAddress),
+		RevealedRegions:    make(map[int]bool),
+		KnownRegions:       make(map[int]bool),
+		KnownDoors:         make(map[string]bool),
 		KnownBlockingWalls: make(map[string]bool),
-		CorridorRegion:  0,
+		CorridorRegion:     0,
 	}
 
 	// Add test entity

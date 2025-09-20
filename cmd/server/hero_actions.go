@@ -12,23 +12,23 @@ import (
 type HeroAction string
 
 const (
-	AttackAction           HeroAction = "attack"
-	CastSpellAction        HeroAction = "cast_spell"
-	SearchTreasureAction   HeroAction = "search_treasure"
-	SearchTrapsAction      HeroAction = "search_traps"
-	SearchSecretAction     HeroAction = "search_secret"
-	DisarmTrapAction       HeroAction = "disarm_trap"
+	AttackAction         HeroAction = "attack"
+	CastSpellAction      HeroAction = "cast_spell"
+	SearchTreasureAction HeroAction = "search_treasure"
+	SearchTrapsAction    HeroAction = "search_traps"
+	SearchSecretAction   HeroAction = "search_secret"
+	DisarmTrapAction     HeroAction = "disarm_trap"
 )
 
 // InstantAction represents actions that don't consume the hero's main action
 type InstantAction string
 
 const (
-	OpenDoorInstant   InstantAction = "open_door"
-	UsePotionInstant  InstantAction = "use_potion"
-	UseItemInstant    InstantAction = "use_item"
-	TradeItemInstant  InstantAction = "trade_item"
-	PassTurnInstant   InstantAction = "pass_turn"
+	OpenDoorInstant  InstantAction = "open_door"
+	UsePotionInstant InstantAction = "use_potion"
+	UseItemInstant   InstantAction = "use_item"
+	TradeItemInstant InstantAction = "trade_item"
+	PassTurnInstant  InstantAction = "pass_turn"
 )
 
 // MovementAction represents the special movement action (once per turn, before or after main action)
@@ -41,70 +41,70 @@ const (
 
 // ActionRequest represents a request to perform a main action (consumes the turn action)
 type ActionRequest struct {
-	PlayerID   string                 `json:"playerId"`
-	EntityID   string                 `json:"entityId"`
-	Action     HeroAction             `json:"action"`
-	Parameters map[string]interface{} `json:"parameters"`
+	PlayerID   string         `json:"playerId"`
+	EntityID   string         `json:"entityId"`
+	Action     HeroAction     `json:"action"`
+	Parameters map[string]any `json:"parameters"`
 }
 
 // InstantActionRequest represents a request for an instant action (doesn't consume turn action)
 type InstantActionRequest struct {
-	PlayerID   string                 `json:"playerId"`
-	EntityID   string                 `json:"entityId"`
-	Action     InstantAction          `json:"action"`
-	Parameters map[string]interface{} `json:"parameters"`
+	PlayerID   string         `json:"playerId"`
+	EntityID   string         `json:"entityId"`
+	Action     InstantAction  `json:"action"`
+	Parameters map[string]any `json:"parameters"`
 }
 
 // MovementRequest represents a request for movement (once per turn, before or after main action)
 type MovementRequest struct {
-	PlayerID   string                 `json:"playerId"`
-	EntityID   string                 `json:"entityId"`
-	Action     MovementAction         `json:"action"`
-	Parameters map[string]interface{} `json:"parameters"`
+	PlayerID   string         `json:"playerId"`
+	EntityID   string         `json:"entityId"`
+	Action     MovementAction `json:"action"`
+	Parameters map[string]any `json:"parameters"`
 }
 
 // ActionResult contains the results of performing an action
 type ActionResult struct {
-	Success        bool             `json:"success"`
-	Action         HeroAction       `json:"action"`
-	PlayerID       string           `json:"playerId"`
-	EntityID       string           `json:"entityId"`
-	DiceRolls      []DiceRoll       `json:"diceRolls,omitempty"`
-	Damage         int              `json:"damage,omitempty"`
-	ItemsFound     []Item           `json:"itemsFound,omitempty"`
-	SecretRevealed *SecretDoor      `json:"secretRevealed,omitempty"`
-	SpellEffect    *SpellEffect     `json:"spellEffect,omitempty"`
-	Message        string           `json:"message"`
-	StateChanges   []StateChange    `json:"stateChanges,omitempty"`
-	Timestamp      time.Time        `json:"timestamp"`
+	Success        bool          `json:"success"`
+	Action         HeroAction    `json:"action"`
+	PlayerID       string        `json:"playerId"`
+	EntityID       string        `json:"entityId"`
+	DiceRolls      []DiceRoll    `json:"diceRolls,omitempty"`
+	Damage         int           `json:"damage,omitempty"`
+	ItemsFound     []Item        `json:"itemsFound,omitempty"`
+	SecretRevealed *SecretDoor   `json:"secretRevealed,omitempty"`
+	SpellEffect    *SpellEffect  `json:"spellEffect,omitempty"`
+	Message        string        `json:"message"`
+	StateChanges   []StateChange `json:"stateChanges,omitempty"`
+	Timestamp      time.Time     `json:"timestamp"`
 }
 
 // DiceRoll represents a single dice roll
 type DiceRoll struct {
 	Die        Die    `json:"die"`
 	Result     int    `json:"result"`
-	Type       string `json:"type"`        // "attack", "defense", "movement", "search"
-	IsDefended bool   `json:"isDefended"`  // For attack dice that were blocked
-	IsCritical bool   `json:"isCritical"`  // For special results
+	Type       string `json:"type"`       // "attack", "defense", "movement", "search"
+	IsDefended bool   `json:"isDefended"` // For attack dice that were blocked
+	IsCritical bool   `json:"isCritical"` // For special results
 }
 
 // Die represents different types of dice
 type Die string
 
 const (
-	CombatDie    Die = "combat"    // White/red combat dice
-	MovementDie  Die = "movement"  // Blue movement dice
-	SearchDie    Die = "search"    // Special search dice
+	CombatDie   Die = "combat"   // White/red combat dice
+	MovementDie Die = "movement" // Blue movement dice
+	SearchDie   Die = "search"   // Special search dice
 )
 
 // Item represents treasure or equipment
 type Item struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Type        ItemType  `json:"type"`
-	Description string    `json:"description"`
-	Value       int       `json:"value"`
-	Effects     []Effect  `json:"effects,omitempty"`
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Type        ItemType `json:"type"`
+	Description string   `json:"description"`
+	Value       int      `json:"value"`
+	Effects     []Effect `json:"effects,omitempty"`
 }
 
 type ItemType string
@@ -119,36 +119,36 @@ const (
 
 // SecretDoor represents a hidden door revealed by searching
 type SecretDoor struct {
-	ID       string                   `json:"id"`
-	Position protocol.TileAddress    `json:"position"`
-	LeadsTo  string                   `json:"leadsTo"`
+	ID       string               `json:"id"`
+	Position protocol.TileAddress `json:"position"`
+	LeadsTo  string               `json:"leadsTo"`
 }
 
 // SpellEffect represents the effect of casting a spell
 type SpellEffect struct {
-	SpellID     string        `json:"spellId"`
-	Name        string        `json:"name"`
-	Duration    int           `json:"duration"`    // Turns remaining
-	Effects     []Effect      `json:"effects"`
-	TargetType  string        `json:"targetType"`  // "self", "ally", "enemy", "area"
-	TargetID    string        `json:"targetId,omitempty"`
+	SpellID    string   `json:"spellId"`
+	Name       string   `json:"name"`
+	Duration   int      `json:"duration"` // Turns remaining
+	Effects    []Effect `json:"effects"`
+	TargetType string   `json:"targetType"` // "self", "ally", "enemy", "area"
+	TargetID   string   `json:"targetId,omitempty"`
 }
 
 // Effect represents a game effect
 type Effect struct {
-	Type        string `json:"type"`        // "damage_bonus", "defense_bonus", "movement_bonus"
+	Type        string `json:"type"` // "damage_bonus", "defense_bonus", "movement_bonus"
 	Value       int    `json:"value"`
 	Description string `json:"description"`
 }
 
 // HeroActionSystem handles hero action processing
 type HeroActionSystem struct {
-	gameState    *GameState
-	turnManager  *TurnManager
-	diceSystem   *DiceSystem
-	broadcaster  Broadcaster
-	logger       Logger
-	debugSystem  *DebugSystem
+	gameState   *GameState
+	turnManager *TurnManager
+	diceSystem  *DiceSystem
+	broadcaster Broadcaster
+	logger      Logger
+	debugSystem *DebugSystem
 }
 
 // NewHeroActionSystem creates a new hero action system
@@ -227,9 +227,9 @@ func (has *HeroActionSystem) processSearchTreasure(request ActionRequest, result
 	case 3, 4:
 		// Found gold
 		treasure := Item{
-			ID:   fmt.Sprintf("gold_%d", time.Now().Unix()),
-			Name: "Gold Coins",
-			Type: Gold,
+			ID:    fmt.Sprintf("gold_%d", time.Now().Unix()),
+			Name:  "Gold Coins",
+			Type:  Gold,
 			Value: searchResult * 50, // 150 or 200 gold
 		}
 		result.ItemsFound = []Item{treasure}

@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 
 [build]
   bin = "tmp/main"
-  cmd = "go build -o ./tmp/main ./cmd/server/main.go"
+  cmd = "go build -o ./tmp/main ./cmd/server"
   delay = 1000
   exclude_dir = ["migrations", "testdata", "assets", "tmp", "build", "vendor", "node_modules", "packs", "docs", ".git"]
   full_bin = "tmp/main"

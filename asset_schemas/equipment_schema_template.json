@@ -1,0 +1,43 @@
+{
+  "id": "",
+  "name": "",
+  "category": "weapon|armor|consumable|tool",
+  "subcategory": "melee_weapon|ranged_weapon|light_armor|heavy_armor|shield|potion|utility",
+  "description": "",
+  "cost": 0,
+  "effects": {
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "combatDiceBonus": 0,
+    "specialRules": []
+  },
+  "weaponStats": {
+    "attackDice": 0,
+    "range": 1,
+    "isRanged": false,
+    "ammunitionRequired": false,
+    "unlimitedAmmo": false
+  },
+  "armorStats": {
+    "defenseDice": 0,
+    "armorType": "light|heavy|shield",
+    "canCombineWith": []
+  },
+  "consumable": {
+    "isConsumable": false,
+    "uses": 1,
+    "effect": "",
+    "triggerCondition": ""
+  },
+  "restrictions": {
+    "cannotBeUsedBy": [],
+    "requirements": [],
+    "limitations": []
+  },
+  "gameplayMechanics": {
+    "rerollMechanic": false,
+    "rangeAttack": false,
+    "adjacencyRequired": false,
+    "specialAbilities": []
+  }
+}

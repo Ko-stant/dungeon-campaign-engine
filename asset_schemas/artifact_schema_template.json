@@ -1,0 +1,61 @@
+{
+  "id": "",
+  "name": "",
+  "category": "weapon|armor|ring|wand|scroll|item",
+  "subcategory": "magical_weapon|stat_enhancer|spell_scroll|utility",
+  "description": "",
+  "weaponStats": {
+    "isWeapon": false,
+    "baseType": "sword|dagger|staff|bow",
+    "attackDice": 0,
+    "specialAttackRules": {
+      "conditionalDice": [],
+      "armorPiercing": false,
+      "specialTargeting": ""
+    }
+  },
+  "statEnhancements": {
+    "bodyPointsBonus": 0,
+    "mindPointsBonus": 0,
+    "attackDiceBonus": 0,
+    "defenseDiceBonus": 0,
+    "movementDiceBonus": 0
+  },
+  "magicalAbilities": {
+    "spellcasting": {
+      "allowsMultipleSpells": false,
+      "spellsPerTurn": 1,
+      "spellEnhancements": []
+    },
+    "specialPowers": {
+      "doorManipulation": false,
+      "teleportation": false,
+      "lifeExtension": false,
+      "combatEnhancements": []
+    }
+  },
+  "scrollProperties": {
+    "isScroll": false,
+    "containedSpell": "",
+    "singleUse": true,
+    "crumblesAfterUse": true
+  },
+  "usageRules": {
+    "usesPerQuest": "unlimited|once|limited",
+    "triggerConditions": [],
+    "restrictions": {
+      "cannotBeUsedBy": [],
+      "requiresConditions": []
+    }
+  },
+  "questMechanics": {
+    "allowsExtraActions": false,
+    "modifiesGameRules": false,
+    "permanentEffects": false,
+    "returnMechanics": {
+      "canReturn": false,
+      "returnConditions": []
+    }
+  },
+  "rarity": "common|uncommon|rare|legendary|unique"
+}

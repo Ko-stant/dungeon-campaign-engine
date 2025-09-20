@@ -13,12 +13,12 @@ import (
 
 // DebugConfig holds debug mode configuration
 type DebugConfig struct {
-	Enabled           bool
-	AllowStateChanges bool
+	Enabled            bool
+	AllowStateChanges  bool
 	AllowTeleportation bool
-	AllowMapReveal    bool
-	AllowDiceOverride bool
-	LogDebugActions   bool
+	AllowMapReveal     bool
+	AllowDiceOverride  bool
+	LogDebugActions    bool
 }
 
 // DebugSystem provides development and testing utilities
@@ -41,14 +41,37 @@ func NewDebugSystem(config DebugConfig, gameState *GameState, broadcaster Broadc
 	}
 }
 
+// SetDiceOverride sets an override for a specific dice roll type (for testing)
+func (ds *DebugSystem) SetDiceOverride(rollType string, value int) {
+	if ds.config.AllowDiceOverride {
+		ds.diceOverride[rollType] = value
+	}
+}
+
+// GetDiceOverride gets a dice override if one exists
+func (ds *DebugSystem) GetDiceOverride(rollType string) (int, bool) {
+	if !ds.config.AllowDiceOverride {
+		return 0, false
+	}
+	value, exists := ds.diceOverride[rollType]
+	return value, exists
+}
+
+// ClearDiceOverride removes a dice override
+func (ds *DebugSystem) ClearDiceOverride(rollType string) {
+	if ds.config.AllowDiceOverride {
+		delete(ds.diceOverride, rollType)
+	}
+}
+
 // DebugAction represents a debug action taken
 type DebugAction struct {
-	Type        string                 `json:"type"`
-	Parameters  map[string]interface{} `json:"parameters"`
-	Success     bool                   `json:"success"`
-	Message     string                 `json:"message"`
-	Timestamp   string                 `json:"timestamp"`
-	StateChange *StateChange           `json:"stateChange,omitempty"`
+	Type        string         `json:"type"`
+	Parameters  map[string]any `json:"parameters"`
+	Success     bool           `json:"success"`
+	Message     string         `json:"message"`
+	Timestamp   string         `json:"timestamp"`
+	StateChange *StateChange   `json:"stateChange,omitempty"`
 }
 
 // StateChange represents changes made to game state
@@ -147,14 +170,14 @@ func (ds *DebugSystem) handleHeroTeleport(w http.ResponseWriter, r *http.Request
 	})
 
 	// Log debug action
-	ds.logDebugAction("hero_teleport", map[string]interface{}{
+	ds.logDebugAction("hero_teleport", map[string]any{
 		"entityId": req.EntityID,
 		"from":     fmt.Sprintf("(%d,%d)", oldPos.X, oldPos.Y),
 		"to":       fmt.Sprintf("(%d,%d)", req.X, req.Y),
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Teleported %s to (%d,%d)", req.EntityID, req.X, req.Y),
 	})
@@ -203,13 +226,13 @@ func (ds *DebugSystem) handleRevealMap(w http.ResponseWriter, r *http.Request) {
 	}
 	ds.broadcaster.BroadcastEvent("DoorsVisible", protocol.DoorsVisible{Doors: doors})
 
-	ds.logDebugAction("reveal_map", map[string]interface{}{
+	ds.logDebugAction("reveal_map", map[string]any{
 		"regionsRevealed": len(allRegions),
 		"doorsRevealed":   len(doors),
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Revealed entire map (%d regions, %d doors)", len(allRegions), len(doors)),
 	})
@@ -237,12 +260,12 @@ func (ds *DebugSystem) handleOpenAllDoors(w http.ResponseWriter, r *http.Request
 	}
 	ds.gameState.Lock.Unlock()
 
-	ds.logDebugAction("open_all_doors", map[string]interface{}{
+	ds.logDebugAction("open_all_doors", map[string]any{
 		"doorsOpened": doorCount,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Opened %d doors", doorCount),
 	})
@@ -255,20 +278,20 @@ func (ds *DebugSystem) handleGetDebugInfo(w http.ResponseWriter, r *http.Request
 	}
 
 	ds.gameState.Lock.Lock()
-	debugInfo := map[string]interface{}{
-		"gameState": map[string]interface{}{
-			"entities":           ds.gameState.Entities,
-			"revealedRegions":    len(ds.gameState.RevealedRegions),
-			"knownRegions":       len(ds.gameState.KnownRegions),
-			"knownDoors":         len(ds.gameState.KnownDoors),
-			"totalDoors":         len(ds.gameState.Doors),
-			"totalRegions":       ds.gameState.RegionMap.RegionsCount,
+	debugInfo := map[string]any{
+		"gameState": map[string]any{
+			"entities":        ds.gameState.Entities,
+			"revealedRegions": len(ds.gameState.RevealedRegions),
+			"knownRegions":    len(ds.gameState.KnownRegions),
+			"knownDoors":      len(ds.gameState.KnownDoors),
+			"totalDoors":      len(ds.gameState.Doors),
+			"totalRegions":    ds.gameState.RegionMap.RegionsCount,
 		},
-		"mapInfo": map[string]interface{}{
+		"mapInfo": map[string]any{
 			"width":  ds.gameState.Segment.Width,
 			"height": ds.gameState.Segment.Height,
 		},
-		"debugConfig": ds.config,
+		"debugConfig":   ds.config,
 		"diceOverrides": ds.diceOverride,
 	}
 	ds.gameState.Lock.Unlock()
@@ -300,13 +323,13 @@ func (ds *DebugSystem) handleDiceOverride(w http.ResponseWriter, r *http.Request
 
 	ds.diceOverride[req.DiceType] = req.Value
 
-	ds.logDebugAction("dice_override", map[string]interface{}{
+	ds.logDebugAction("dice_override", map[string]any{
 		"diceType": req.DiceType,
 		"value":    req.Value,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Next %s dice will roll %d", req.DiceType, req.Value),
 	})
@@ -322,7 +345,7 @@ func (ds *DebugSystem) checkDebugEnabled(w http.ResponseWriter) bool {
 	return true
 }
 
-func (ds *DebugSystem) logDebugAction(actionType string, params map[string]interface{}) {
+func (ds *DebugSystem) logDebugAction(actionType string, params map[string]any) {
 	if ds.config.LogDebugActions {
 		ds.logger.Printf("DEBUG ACTION: %s - %+v", actionType, params)
 	}
@@ -331,12 +354,12 @@ func (ds *DebugSystem) logDebugAction(actionType string, params map[string]inter
 // GetDebugConfigFromEnv creates debug config from environment variables
 func GetDebugConfigFromEnv() DebugConfig {
 	return DebugConfig{
-		Enabled:           getEnvBool("DEBUG_MODE", false),
-		AllowStateChanges: getEnvBool("DEBUG_ALLOW_STATE_CHANGES", true),
+		Enabled:            getEnvBool("DEBUG_MODE", false),
+		AllowStateChanges:  getEnvBool("DEBUG_ALLOW_STATE_CHANGES", true),
 		AllowTeleportation: getEnvBool("DEBUG_ALLOW_TELEPORT", true),
-		AllowMapReveal:    getEnvBool("DEBUG_ALLOW_MAP_REVEAL", true),
-		AllowDiceOverride: getEnvBool("DEBUG_ALLOW_DICE_OVERRIDE", true),
-		LogDebugActions:   getEnvBool("DEBUG_LOG_ACTIONS", true),
+		AllowMapReveal:     getEnvBool("DEBUG_ALLOW_MAP_REVEAL", true),
+		AllowDiceOverride:  getEnvBool("DEBUG_ALLOW_DICE_OVERRIDE", true),
+		LogDebugActions:    getEnvBool("DEBUG_LOG_ACTIONS", true),
 	}
 }
 
@@ -374,13 +397,13 @@ func (ds *DebugSystem) handleGodMode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Implement god mode state tracking
-	ds.logDebugAction("god_mode", map[string]interface{}{
+	ds.logDebugAction("god_mode", map[string]any{
 		"entityId": req.EntityID,
 		"enabled":  req.Enabled,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("God mode %s for %s", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled], req.EntityID),
 	})
@@ -406,12 +429,12 @@ func (ds *DebugSystem) handleCompleteQuest(w http.ResponseWriter, r *http.Reques
 	}
 
 	// TODO: Implement quest completion logic
-	ds.logDebugAction("complete_quest", map[string]interface{}{
+	ds.logDebugAction("complete_quest", map[string]any{
 		"questId": req.QuestID,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Quest %s completed", req.QuestID),
 	})
@@ -437,12 +460,12 @@ func (ds *DebugSystem) handleResetQuest(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// TODO: Implement quest reset logic
-	ds.logDebugAction("reset_quest", map[string]interface{}{
+	ds.logDebugAction("reset_quest", map[string]any{
 		"questId": req.QuestID,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Quest %s reset", req.QuestID),
 	})
@@ -481,17 +504,17 @@ func (ds *DebugSystem) handleSpawnMonster(w http.ResponseWriter, r *http.Request
 	}
 
 	// TODO: Implement monster spawning logic
-	ds.logDebugAction("spawn_monster", map[string]interface{}{
+	ds.logDebugAction("spawn_monster", map[string]any{
 		"monsterType": req.MonsterType,
 		"monsterId":   req.MonsterID,
 		"position":    fmt.Sprintf("(%d,%d)", req.X, req.Y),
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Spawned %s at (%d,%d)", req.MonsterType, req.X, req.Y),
-		"data": map[string]interface{}{
+		"data": map[string]any{
 			"monsterId": req.MonsterID,
 		},
 	})
@@ -506,12 +529,12 @@ func (ds *DebugSystem) handleKillAllMonsters(w http.ResponseWriter, r *http.Requ
 	// TODO: Implement monster killing logic
 	killedCount := 0 // Placeholder
 
-	ds.logDebugAction("kill_all_monsters", map[string]interface{}{
+	ds.logDebugAction("kill_all_monsters", map[string]any{
 		"killedCount": killedCount,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Killed %d monsters", killedCount),
 	})
@@ -526,12 +549,12 @@ func (ds *DebugSystem) handleRevealAllMonsters(w http.ResponseWriter, r *http.Re
 	// TODO: Implement monster revelation logic
 	revealedCount := 0 // Placeholder
 
-	ds.logDebugAction("reveal_all_monsters", map[string]interface{}{
+	ds.logDebugAction("reveal_all_monsters", map[string]any{
 		"revealedCount": revealedCount,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Revealed %d monsters", revealedCount),
 	})
@@ -546,12 +569,12 @@ func (ds *DebugSystem) handleClearDiceOverride(w http.ResponseWriter, r *http.Re
 	overrideCount := len(ds.diceOverride)
 	ds.diceOverride = make(map[string]int)
 
-	ds.logDebugAction("clear_dice_override", map[string]interface{}{
+	ds.logDebugAction("clear_dice_override", map[string]any{
 		"clearedCount": overrideCount,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Cleared %d dice overrides", overrideCount),
 	})
@@ -564,7 +587,7 @@ func (ds *DebugSystem) handleExportState(w http.ResponseWriter, r *http.Request)
 	}
 
 	ds.gameState.Lock.Lock()
-	exportData := map[string]interface{}{
+	exportData := map[string]any{
 		"entities":        ds.gameState.Entities,
 		"doors":           ds.gameState.Doors,
 		"revealedRegions": ds.gameState.RevealedRegions,
@@ -575,12 +598,12 @@ func (ds *DebugSystem) handleExportState(w http.ResponseWriter, r *http.Request)
 	}
 	ds.gameState.Lock.Unlock()
 
-	ds.logDebugAction("export_state", map[string]interface{}{
+	ds.logDebugAction("export_state", map[string]any{
 		"exportSize": fmt.Sprintf("%d entities, %d doors", len(ds.gameState.Entities), len(ds.gameState.Doors)),
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"data":    exportData,
 	})
@@ -593,7 +616,7 @@ func (ds *DebugSystem) handleImportState(w http.ResponseWriter, r *http.Request)
 	}
 
 	var req struct {
-		Data map[string]interface{} `json:"data"`
+		Data map[string]any `json:"data"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -602,12 +625,12 @@ func (ds *DebugSystem) handleImportState(w http.ResponseWriter, r *http.Request)
 	}
 
 	// TODO: Implement state import logic with validation
-	ds.logDebugAction("import_state", map[string]interface{}{
+	ds.logDebugAction("import_state", map[string]any{
 		"hasData": req.Data != nil,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "State imported successfully",
 	})
@@ -642,12 +665,12 @@ func (ds *DebugSystem) handleResetState(w http.ResponseWriter, r *http.Request) 
 	ds.gameState.KnownDoors = make(map[string]bool)
 	ds.gameState.Lock.Unlock()
 
-	ds.logDebugAction("reset_state", map[string]interface{}{
+	ds.logDebugAction("reset_state", map[string]any{
 		"message": "Game state reset to initial conditions",
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Game state reset",
 	})
@@ -660,12 +683,12 @@ func (ds *DebugSystem) handleAdvanceTurn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// TODO: Integrate with TurnManager
-	ds.logDebugAction("advance_turn", map[string]interface{}{
+	ds.logDebugAction("advance_turn", map[string]any{
 		"message": "Turn advanced",
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Turn advanced",
 	})
@@ -678,12 +701,12 @@ func (ds *DebugSystem) handleSetGameMasterTurn(w http.ResponseWriter, r *http.Re
 	}
 
 	// TODO: Integrate with TurnManager
-	ds.logDebugAction("set_gamemaster_turn", map[string]interface{}{
+	ds.logDebugAction("set_gamemaster_turn", map[string]any{
 		"message": "Switched to GameMaster turn",
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Switched to GameMaster turn",
 	})
@@ -711,12 +734,12 @@ func (ds *DebugSystem) handleCloseAllDoors(w http.ResponseWriter, r *http.Reques
 	}
 	ds.gameState.Lock.Unlock()
 
-	ds.logDebugAction("close_all_doors", map[string]interface{}{
+	ds.logDebugAction("close_all_doors", map[string]any{
 		"doorsClosed": doorCount,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Closed %d doors", doorCount),
 	})
@@ -729,7 +752,7 @@ func (ds *DebugSystem) handleGetActionHistory(w http.ResponseWriter, r *http.Req
 	}
 
 	// TODO: Implement action history tracking
-	history := []map[string]interface{}{
+	history := []map[string]any{
 		{
 			"type":      "placeholder",
 			"message":   "Action history not yet implemented",
@@ -738,7 +761,7 @@ func (ds *DebugSystem) handleGetActionHistory(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"history": history,
 	})

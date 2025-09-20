@@ -9,122 +9,122 @@ import (
 
 // MonsterActionRequest represents a request to perform a monster action
 type MonsterActionRequest struct {
-	MonsterID  string                 `json:"monsterId"`
-	Action     MonsterActionType      `json:"action"`
-	Parameters map[string]interface{} `json:"parameters"`
+	MonsterID  string            `json:"monsterId"`
+	Action     MonsterActionType `json:"action"`
+	Parameters map[string]any    `json:"parameters"`
 }
 
 // MonsterActionResult contains the results of performing a monster action
 type MonsterActionResult struct {
-	Success     bool                  `json:"success"`
-	Action      MonsterActionType     `json:"action"`
-	MonsterID   string                `json:"monsterId"`
-	DiceRolls   []DiceRoll            `json:"diceRolls,omitempty"`
-	Damage      int                   `json:"damage,omitempty"`
-	Message     string                `json:"message"`
-	Timestamp   time.Time             `json:"timestamp"`
+	Success   bool              `json:"success"`
+	Action    MonsterActionType `json:"action"`
+	MonsterID string            `json:"monsterId"`
+	DiceRolls []DiceRoll        `json:"diceRolls,omitempty"`
+	Damage    int               `json:"damage,omitempty"`
+	Message   string            `json:"message"`
+	Timestamp time.Time         `json:"timestamp"`
 }
 
 // MonsterActionType represents actions a monster can take
 type MonsterActionType string
 
 const (
-	MonsterMoveAction   MonsterActionType = "move"
-	MonsterAttackAction MonsterActionType = "attack"
+	MonsterMoveAction    MonsterActionType = "move"
+	MonsterAttackAction  MonsterActionType = "attack"
 	MonsterSpecialAction MonsterActionType = "special"
-	MonsterWaitAction   MonsterActionType = "wait"
+	MonsterWaitAction    MonsterActionType = "wait"
 )
 
 // Monster represents a monster entity in the game
 type Monster struct {
-	ID            string           `json:"id"`
-	Type          MonsterType      `json:"type"`
-	Position      protocol.TileAddress `json:"position"`
-	Health        int              `json:"health"`
-	MaxHealth     int              `json:"maxHealth"`
-	AttackDice    int              `json:"attackDice"`
-	DefenseDice   int              `json:"defenseDice"`
-	MovementRange int              `json:"movementRange"`
-	IsVisible     bool             `json:"isVisible"`
-	IsAlive       bool             `json:"isAlive"`
-	AIBehavior    AIBehavior       `json:"aiBehavior"`
-	SpecialAbilities []string      `json:"specialAbilities,omitempty"`
-	SpawnedTurn   int              `json:"spawnedTurn"`
-	LastMovedTurn int              `json:"lastMovedTurn"`
+	ID               string               `json:"id"`
+	Type             MonsterType          `json:"type"`
+	Position         protocol.TileAddress `json:"position"`
+	Health           int                  `json:"health"`
+	MaxHealth        int                  `json:"maxHealth"`
+	AttackDice       int                  `json:"attackDice"`
+	DefenseDice      int                  `json:"defenseDice"`
+	MovementRange    int                  `json:"movementRange"`
+	IsVisible        bool                 `json:"isVisible"`
+	IsAlive          bool                 `json:"isAlive"`
+	AIBehavior       AIBehavior           `json:"aiBehavior"`
+	SpecialAbilities []string             `json:"specialAbilities,omitempty"`
+	SpawnedTurn      int                  `json:"spawnedTurn"`
+	LastMovedTurn    int                  `json:"lastMovedTurn"`
 }
 
 // MonsterType defines different monster types
 type MonsterType string
 
 const (
-	Goblin      MonsterType = "goblin"
-	Orc         MonsterType = "orc"
-	Skeleton    MonsterType = "skeleton"
-	Zombie      MonsterType = "zombie"
-	Fimir       MonsterType = "fimir"
-	ChaosMage   MonsterType = "chaos_mage"
-	Gargoyle    MonsterType = "gargoyle"
-	Mummy       MonsterType = "mummy"
+	Goblin    MonsterType = "goblin"
+	Orc       MonsterType = "orc"
+	Skeleton  MonsterType = "skeleton"
+	Zombie    MonsterType = "zombie"
+	Fimir     MonsterType = "fimir"
+	ChaosMage MonsterType = "chaos_mage"
+	Gargoyle  MonsterType = "gargoyle"
+	Mummy     MonsterType = "mummy"
 )
 
 // AIBehavior defines monster AI patterns
 type AIBehavior string
 
 const (
-	Aggressive  AIBehavior = "aggressive"  // Always attack if possible
-	Defensive   AIBehavior = "defensive"   // Prefer defense, guard locations
-	Patrol      AIBehavior = "patrol"      // Move in patterns
-	GuardRoom   AIBehavior = "guard"       // Stay in specific room
-	Wandering   AIBehavior = "wandering"   // Random movement
-	Hunter      AIBehavior = "hunter"      // Seek heroes aggressively
+	Aggressive AIBehavior = "aggressive" // Always attack if possible
+	Defensive  AIBehavior = "defensive"  // Prefer defense, guard locations
+	Patrol     AIBehavior = "patrol"     // Move in patterns
+	GuardRoom  AIBehavior = "guard"      // Stay in specific room
+	Wandering  AIBehavior = "wandering"  // Random movement
+	Hunter     AIBehavior = "hunter"     // Seek heroes aggressively
 )
 
 // MonsterTemplate defines monster stats and behavior
 type MonsterTemplate struct {
-	Type             MonsterType  `json:"type"`
-	Name             string       `json:"name"`
-	MaxHealth        int          `json:"maxHealth"`
-	AttackDice       int          `json:"attackDice"`
-	DefenseDice      int          `json:"defenseDice"`
-	MovementRange    int          `json:"movementRange"`
-	DefaultBehavior  AIBehavior   `json:"defaultBehavior"`
-	SpecialAbilities []string     `json:"specialAbilities,omitempty"`
-	Description      string       `json:"description"`
+	Type             MonsterType `json:"type"`
+	Name             string      `json:"name"`
+	MaxHealth        int         `json:"maxHealth"`
+	AttackDice       int         `json:"attackDice"`
+	DefenseDice      int         `json:"defenseDice"`
+	MovementRange    int         `json:"movementRange"`
+	DefaultBehavior  AIBehavior  `json:"defaultBehavior"`
+	SpecialAbilities []string    `json:"specialAbilities,omitempty"`
+	Description      string      `json:"description"`
 }
 
 // MonsterAction represents an action a monster can take
 type MonsterAction struct {
-	Type       MonsterActionType `json:"type"`
-	MonsterID  string            `json:"monsterId"`
-	TargetID   string            `json:"targetId,omitempty"`
+	Type       MonsterActionType     `json:"type"`
+	MonsterID  string                `json:"monsterId"`
+	TargetID   string                `json:"targetId,omitempty"`
 	Position   *protocol.TileAddress `json:"position,omitempty"`
-	Parameters map[string]interface{} `json:"parameters,omitempty"`
+	Parameters map[string]any        `json:"parameters,omitempty"`
 }
 
 // Remove duplicate - already defined above
 
 // MonsterSystem handles monster management and AI
 type MonsterSystem struct {
-	monsters     map[string]*Monster
-	templates    map[MonsterType]*MonsterTemplate
-	gameState    *GameState
-	turnManager  *TurnManager
-	diceSystem   *DiceSystem
-	broadcaster  Broadcaster
-	logger       Logger
+	monsters      map[string]*Monster
+	templates     map[MonsterType]*MonsterTemplate
+	gameState     *GameState
+	turnManager   *TurnManager
+	diceSystem    *DiceSystem
+	broadcaster   Broadcaster
+	logger        Logger
 	nextMonsterID int
 }
 
 // NewMonsterSystem creates a new monster system
 func NewMonsterSystem(gameState *GameState, turnManager *TurnManager, diceSystem *DiceSystem, broadcaster Broadcaster, logger Logger) *MonsterSystem {
 	ms := &MonsterSystem{
-		monsters:    make(map[string]*Monster),
-		templates:   make(map[MonsterType]*MonsterTemplate),
-		gameState:   gameState,
-		turnManager: turnManager,
-		diceSystem:  diceSystem,
-		broadcaster: broadcaster,
-		logger:      logger,
+		monsters:      make(map[string]*Monster),
+		templates:     make(map[MonsterType]*MonsterTemplate),
+		gameState:     gameState,
+		turnManager:   turnManager,
+		diceSystem:    diceSystem,
+		broadcaster:   broadcaster,
+		logger:        logger,
 		nextMonsterID: 1,
 	}
 
@@ -179,27 +179,27 @@ func (ms *MonsterSystem) initializeMonsterTemplates() {
 	}
 
 	ms.templates[Fimir] = &MonsterTemplate{
-		Type:            Fimir,
-		Name:            "Fimir",
-		MaxHealth:       3,
-		AttackDice:      3,
-		DefenseDice:     3,
-		MovementRange:   2,
-		DefaultBehavior: Hunter,
+		Type:             Fimir,
+		Name:             "Fimir",
+		MaxHealth:        3,
+		AttackDice:       3,
+		DefenseDice:      3,
+		MovementRange:    2,
+		DefaultBehavior:  Hunter,
 		SpecialAbilities: []string{"tail_attack"},
-		Description:     "Dangerous reptilian creatures with tail attacks",
+		Description:      "Dangerous reptilian creatures with tail attacks",
 	}
 
 	ms.templates[ChaosMage] = &MonsterTemplate{
-		Type:            ChaosMage,
-		Name:            "Chaos Mage",
-		MaxHealth:       2,
-		AttackDice:      2,
-		DefenseDice:     2,
-		MovementRange:   2,
-		DefaultBehavior: Defensive,
+		Type:             ChaosMage,
+		Name:             "Chaos Mage",
+		MaxHealth:        2,
+		AttackDice:       2,
+		DefenseDice:      2,
+		MovementRange:    2,
+		DefaultBehavior:  Defensive,
 		SpecialAbilities: []string{"chaos_spell", "teleport"},
-		Description:     "Spell-casting enemies with magical abilities",
+		Description:      "Spell-casting enemies with magical abilities",
 	}
 }
 
@@ -219,20 +219,20 @@ func (ms *MonsterSystem) SpawnMonster(monsterType MonsterType, position protocol
 	ms.nextMonsterID++
 
 	monster := &Monster{
-		ID:            monsterID,
-		Type:          monsterType,
-		Position:      position,
-		Health:        template.MaxHealth,
-		MaxHealth:     template.MaxHealth,
-		AttackDice:    template.AttackDice,
-		DefenseDice:   template.DefenseDice,
-		MovementRange: template.MovementRange,
-		IsVisible:     false, // Monsters start hidden until revealed
-		IsAlive:       true,
-		AIBehavior:    template.DefaultBehavior,
+		ID:               monsterID,
+		Type:             monsterType,
+		Position:         position,
+		Health:           template.MaxHealth,
+		MaxHealth:        template.MaxHealth,
+		AttackDice:       template.AttackDice,
+		DefenseDice:      template.DefenseDice,
+		MovementRange:    template.MovementRange,
+		IsVisible:        false, // Monsters start hidden until revealed
+		IsAlive:          true,
+		AIBehavior:       template.DefaultBehavior,
 		SpecialAbilities: template.SpecialAbilities,
-		SpawnedTurn:   ms.turnManager.GetTurnState().TurnNumber,
-		LastMovedTurn: 0,
+		SpawnedTurn:      ms.turnManager.GetTurnState().TurnNumber,
+		LastMovedTurn:    0,
 	}
 
 	ms.monsters[monsterID] = monster
@@ -435,7 +435,7 @@ func (ms *MonsterSystem) executeMonsterAttackAction(monsterID, targetID string) 
 	ms.logger.Printf("Monster %s attacked %s for %d damage", monsterID, targetID, damage)
 
 	// Broadcast attack result
-	ms.broadcaster.BroadcastEvent("MonsterAttackAction", map[string]interface{}{
+	ms.broadcaster.BroadcastEvent("MonsterAttackAction", map[string]any{
 		"monsterId": monsterID,
 		"targetId":  targetID,
 		"damage":    damage,
@@ -489,8 +489,8 @@ func (ms *MonsterSystem) calculateDistance(pos1, pos2 protocol.TileAddress) int 
 func (ms *MonsterSystem) validatePosition(position protocol.TileAddress) error {
 	// Check bounds
 	if position.X < 0 || position.Y < 0 ||
-	   position.X >= ms.gameState.Segment.Width ||
-	   position.Y >= ms.gameState.Segment.Height {
+		position.X >= ms.gameState.Segment.Width ||
+		position.Y >= ms.gameState.Segment.Height {
 		return fmt.Errorf("position out of bounds")
 	}
 
@@ -528,7 +528,7 @@ func (ms *MonsterSystem) getPossibleMoves(monster *Monster) []protocol.TileAddre
 	var moves []protocol.TileAddress
 
 	// Check all adjacent positions
-	deltas := []struct{dx, dy int}{
+	deltas := []struct{ dx, dy int }{
 		{0, 1}, {0, -1}, {1, 0}, {-1, 0}, // Cardinal directions
 	}
 
@@ -590,7 +590,7 @@ func (ms *MonsterSystem) KillMonster(monsterID string) error {
 	ms.gameState.Lock.Unlock()
 
 	// Broadcast monster death
-	ms.broadcaster.BroadcastEvent("MonsterKilled", map[string]interface{}{
+	ms.broadcaster.BroadcastEvent("MonsterKilled", map[string]any{
 		"monsterId": monsterID,
 	})
 
@@ -599,7 +599,7 @@ func (ms *MonsterSystem) KillMonster(monsterID string) error {
 }
 
 func (ms *MonsterSystem) broadcastMonsterUpdate(monster *Monster) {
-	ms.broadcaster.BroadcastEvent("MonsterUpdate", map[string]interface{}{
+	ms.broadcaster.BroadcastEvent("MonsterUpdate", map[string]any{
 		"monster": monster,
 	})
 }

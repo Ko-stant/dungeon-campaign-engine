@@ -1,0 +1,35 @@
+{
+  "id": "monster_id",
+  "name": "Monster Name",
+  "description": "Optional description of the monster",
+  "stats": {
+    "movementSquares": 10,
+    "attackDice": 2,
+    "defendDice": 1,
+    "bodyPoints": 1,
+    "mindPoints": 1
+  },
+  "rendering": {
+    "cardImage": "assets/cards/monsters/monster_name.jpg",
+    "cardBack": "assets/cards/monsters/monster_background.jpg",
+    "tileImage": "assets/tiles/monsters/monster_name.jpg",
+    "tileImageCleaned": "assets/tiles_cleaned/monsters/monster_name.png",
+    "pixelDimensions": {
+      "width": 157,
+      "height": 157,
+      "comment": "Actual pixel dimensions of the tile image"
+    }
+  },
+  "gridSize": {
+    "width": 1,
+    "height": 1,
+    "comment": "Most monsters are 1x1, but some might be larger"
+  },
+  "gameplayProperties": {
+    "blocksLineOfSight": true,
+    "blocksMovement": true,
+    "faction": "evil",
+    "abilities": [],
+    "customProperties": {}
+  }
+}

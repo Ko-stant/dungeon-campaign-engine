@@ -22,7 +22,7 @@ func NewBroadcaster(hub *ws.Hub, sequence SequenceGenerator) *BroadcasterImpl {
 	}
 }
 
-func (b *BroadcasterImpl) BroadcastEvent(eventType string, payload interface{}) {
+func (b *BroadcasterImpl) BroadcastEvent(eventType string, payload any) {
 	seq := b.sequence.Next()
 	envelope := protocol.PatchEnvelope{
 		Sequence: seq,
@@ -46,7 +46,7 @@ func NewLogger() *LoggerImpl {
 	return &LoggerImpl{}
 }
 
-func (l *LoggerImpl) Printf(format string, v ...interface{}) {
+func (l *LoggerImpl) Printf(format string, v ...any) {
 	log.Printf(format, v...)
 }
 

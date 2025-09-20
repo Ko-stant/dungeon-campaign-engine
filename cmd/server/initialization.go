@@ -104,7 +104,8 @@ func initializeGameState(board *geometry.BoardDefinition, quest *geometry.QuestD
 	}
 
 	// Set hero starting position
-	state.SetHeroPosition("hero-1", startX, startY)
+	// Override to specific position (3,14) for testing
+	state.SetHeroPosition("hero-1", 3, 14)
 
 	// Get hero position for initial discovery
 	hero := state.Entities["hero-1"]

@@ -9,19 +9,24 @@ import (
 
 // Mock implementations for testing handlers
 type MockBroadcaster struct {
-	events []BroadcastEvent
+	events      []BroadcastEvent
+	LastEvent   string // For compatibility with hero_actions_test.go
+	LastPayload any    // For compatibility with hero_actions_test.go
 }
 
 type BroadcastEvent struct {
 	EventType string
-	Payload   interface{}
+	Payload   any
 }
 
-func (m *MockBroadcaster) BroadcastEvent(eventType string, payload interface{}) {
+func (m *MockBroadcaster) BroadcastEvent(eventType string, payload any) {
 	m.events = append(m.events, BroadcastEvent{
 		EventType: eventType,
 		Payload:   payload,
 	})
+	// Also track last event for compatibility
+	m.LastEvent = eventType
+	m.LastPayload = payload
 }
 
 func (m *MockBroadcaster) GetEvents() []BroadcastEvent {

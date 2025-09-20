@@ -24,6 +24,8 @@
  * @property {EntityLite[]} entities
  * @property {string} protocolVersion
  * @property {ThresholdLite[]} thresholds
+ * @property {BlockingWallLite[]} blockingWalls
+ * @property {FurnitureLite[]} furniture
  * @property {number[]} visibleRegionIds
  * @property {number} corridorRegionId
  * @property {number[]} knownRegionIds
@@ -45,6 +47,20 @@
  * @property {number} y
  * @property {"vertical"|"horizontal"} orientation
  * @property {number} size
+ */
+
+/**
+ * @typedef {Object} FurnitureLite
+ * @property {string} id
+ * @property {string} type
+ * @property {TileAddress} tile
+ * @property {{width: number, height: number}} gridSize
+ * @property {string} tileImage
+ * @property {string} tileImageCleaned
+ * @property {{width: number, height: number}} pixelDimensions
+ * @property {boolean} blocksLineOfSight
+ * @property {boolean} blocksMovement
+ * @property {string[]} [contains]
  */
 
 const snapshotElement = document.getElementById("snapshot");
@@ -82,6 +98,9 @@ if (Array.isArray(snapshot?.entities)) {
 let thresholds = Array.isArray(snapshot?.thresholds) ? snapshot.thresholds.slice() : [];
 /** @type {BlockingWallLite[]} */
 let blockingWalls = Array.isArray(snapshot?.blockingWalls) ? snapshot.blockingWalls.slice() : [];
+/** @type {FurnitureLite[]} */
+let furniture = Array.isArray(snapshot?.furniture) ? snapshot.furniture.slice() : [];
+console.log("DEBUG: Furniture data loaded:", furniture.length, "items", furniture);
 /** @type {Set<number>} */
 let visibleNow = new Set(Array.isArray(snapshot?.visibleRegionIds) ? snapshot.visibleRegionIds : []);
 /** @type {number} */
@@ -173,53 +192,279 @@ function drawDoorOverlays() {
   canvasContext.restore();
 }
 
+// Image cache for blocking wall textures
+const blockingWallImageCache = new Map();
+
 function drawBlockingWalls() {
   const m = gridMetrics();
   if (!Array.isArray(blockingWalls) || blockingWalls.length === 0) return;
 
-  const cs = getComputedStyle(document.documentElement);
-  const wallColor = cs.getPropertyValue("--color-danger").trim(); // Use danger color for blocking walls
-
+  console.log("DEBUG: Drawing", blockingWalls.length, "blocking walls");
   canvasContext.save();
-  canvasContext.fillStyle = `rgb(${wallColor})`;
-  canvasContext.strokeStyle = `rgb(${wallColor})`;
-  canvasContext.lineWidth = 2;
 
   for (const wall of blockingWalls) {
     const size = wall.size || 1;
 
-    for (let i = 0; i < size; i++) {
-      let tileX = wall.x;
-      let tileY = wall.y;
-
-      // Offset for multi-tile walls
-      if (wall.orientation === "horizontal") {
-        tileX += i;
-      } else {
-        tileY += i;
-      }
-
-      // Draw blocking wall as a filled tile with an X pattern
-      const r = tileRect(tileX, tileY, m.tile, m.ox, m.oy);
-
-      // Fill the tile with a semi-transparent background
-      canvasContext.save();
-      canvasContext.globalAlpha = 0.3;
-      canvasContext.fillRect(r.x, r.y, r.w, r.h);
-      canvasContext.restore();
-
-      // Draw X pattern to indicate blocked tile
-      const margin = Math.floor(m.tile * 0.2);
-      canvasContext.beginPath();
-      canvasContext.moveTo(r.x + margin, r.y + margin);
-      canvasContext.lineTo(r.x + r.w - margin, r.y + r.h - margin);
-      canvasContext.moveTo(r.x + r.w - margin, r.y + margin);
-      canvasContext.lineTo(r.x + margin, r.y + r.h - margin);
-      canvasContext.stroke();
-    }
+    // Try to load and draw the actual blocking wall image
+    drawBlockingWallWithImage(wall, size, m);
   }
 
   canvasContext.restore();
+}
+
+function drawBlockingWallWithImage(wall, size, m) {
+  // Choose the appropriate blocking wall image based on size
+  const imageUrl = size === 1
+    ? "assets/tiles_cleaned/general/blocked_tile_1x1.png"
+    : "assets/tiles_cleaned/general/blocked_tile_2x1.png";
+
+  // Check if image is already cached
+  if (blockingWallImageCache.has(imageUrl)) {
+    const cachedImage = blockingWallImageCache.get(imageUrl);
+    if (cachedImage && cachedImage.complete && cachedImage.naturalWidth > 0) {
+      console.log("DEBUG: Using cached blocking wall image for size", size);
+      drawBlockingWallImage(cachedImage, wall, size, m);
+      return;
+    } else if (cachedImage === null) {
+      // Image failed to load, use fallback
+      drawBlockingWallFallback(wall, size, m);
+      return;
+    }
+  }
+
+  // Load image if not cached
+  const img = new Image();
+  img.onload = function() {
+    console.log("DEBUG: Blocking wall image loaded successfully for size", size, "from", imageUrl);
+    blockingWallImageCache.set(imageUrl, img);
+    // Redraw the canvas to show the loaded image
+    requestAnimationFrame(() => drawBoard());
+  };
+  img.onerror = function() {
+    console.log("DEBUG: Blocking wall image failed to load for size", size, "from", imageUrl, "using fallback");
+    // Mark as failed so we don't try again
+    blockingWallImageCache.set(imageUrl, null);
+  };
+  img.src = imageUrl;
+
+  // Use fallback while image loads
+  drawBlockingWallFallback(wall, size, m);
+}
+
+function drawBlockingWallImage(img, wall, size, m) {
+  for (let i = 0; i < size; i++) {
+    let tileX = wall.x;
+    let tileY = wall.y;
+
+    // Offset for multi-tile walls
+    if (wall.orientation === "horizontal") {
+      tileX += i;
+    } else {
+      tileY += i;
+    }
+
+    const r = tileRect(tileX, tileY, m.tile, m.ox, m.oy);
+
+    // For multi-tile walls, draw the appropriate section of the image
+    if (size === 1) {
+      // Single tile - draw entire image
+      canvasContext.drawImage(img, r.x, r.y, r.w, r.h);
+    } else {
+      // Multi-tile - draw appropriate section
+      const srcX = wall.orientation === "horizontal" ? (i / size) * img.naturalWidth : 0;
+      const srcY = wall.orientation === "vertical" ? (i / size) * img.naturalHeight : 0;
+      const srcWidth = wall.orientation === "horizontal" ? img.naturalWidth / size : img.naturalWidth;
+      const srcHeight = wall.orientation === "vertical" ? img.naturalHeight / size : img.naturalHeight;
+
+      canvasContext.drawImage(
+        img,
+        srcX, srcY, srcWidth, srcHeight,  // source rectangle
+        r.x, r.y, r.w, r.h               // destination rectangle
+      );
+    }
+  }
+}
+
+function drawBlockingWallFallback(wall, size, m) {
+  const cs = getComputedStyle(document.documentElement);
+  const wallColor = cs.getPropertyValue("--color-danger").trim(); // Use danger color for blocking walls
+
+  canvasContext.fillStyle = `rgb(${wallColor})`;
+  canvasContext.strokeStyle = `rgb(${wallColor})`;
+  canvasContext.lineWidth = 2;
+
+  for (let i = 0; i < size; i++) {
+    let tileX = wall.x;
+    let tileY = wall.y;
+
+    // Offset for multi-tile walls
+    if (wall.orientation === "horizontal") {
+      tileX += i;
+    } else {
+      tileY += i;
+    }
+
+    // Draw blocking wall as a filled tile with an X pattern
+    const r = tileRect(tileX, tileY, m.tile, m.ox, m.oy);
+
+    // Fill the tile with a semi-transparent background
+    canvasContext.save();
+    canvasContext.globalAlpha = 0.3;
+    canvasContext.fillRect(r.x, r.y, r.w, r.h);
+    canvasContext.restore();
+
+    // Draw X pattern to indicate blocked tile
+    const margin = Math.floor(m.tile * 0.2);
+    canvasContext.beginPath();
+    canvasContext.moveTo(r.x + margin, r.y + margin);
+    canvasContext.lineTo(r.x + r.w - margin, r.y + r.h - margin);
+    canvasContext.moveTo(r.x + r.w - margin, r.y + margin);
+    canvasContext.lineTo(r.x + margin, r.y + r.h - margin);
+    canvasContext.stroke();
+  }
+}
+
+// Image cache for furniture textures
+const furnitureImageCache = new Map();
+
+function drawFurniture() {
+  const m = gridMetrics();
+  console.log("DEBUG: drawFurniture called, furniture array:", furniture);
+  if (!Array.isArray(furniture) || furniture.length === 0) {
+    console.log("DEBUG: No furniture to draw");
+    return;
+  }
+
+  console.log("DEBUG: Drawing", furniture.length, "furniture items");
+  canvasContext.save();
+
+  for (const item of furniture) {
+    // Calculate the area this furniture occupies
+    const startX = item.tile.x;
+    const startY = item.tile.y;
+    const gridWidth = item.gridSize.width;
+    const gridHeight = item.gridSize.height;
+
+    // Try to load and draw the actual image, fall back to colored rectangle if needed
+    drawFurnitureWithImage(item, startX, startY, gridWidth, gridHeight, m);
+  }
+
+  canvasContext.restore();
+}
+
+function drawFurnitureWithImage(item, startX, startY, gridWidth, gridHeight, m) {
+  // Prefer cleaned image, fallback to regular tile image
+  const imageUrl = item.tileImageCleaned || item.tileImage;
+
+  if (!imageUrl) {
+    console.log("DEBUG: No image URL for furniture", item.id, "using fallback");
+    drawFurnitureFallback(item, startX, startY, gridWidth, gridHeight, m);
+    return;
+  }
+
+  // Check if image is already cached
+  if (furnitureImageCache.has(imageUrl)) {
+    const cachedImage = furnitureImageCache.get(imageUrl);
+    if (cachedImage.complete && cachedImage.naturalWidth > 0) {
+      console.log("DEBUG: Using cached image for", item.id);
+      drawFurnitureImage(cachedImage, item, startX, startY, gridWidth, gridHeight, m);
+      return;
+    }
+  }
+
+  // Load image if not cached
+  const img = new Image();
+  img.onload = function() {
+    console.log("DEBUG: Image loaded successfully for", item.id, "from", imageUrl);
+    furnitureImageCache.set(imageUrl, img);
+    // Redraw the canvas to show the loaded image
+    requestAnimationFrame(() => drawBoard());
+  };
+  img.onerror = function() {
+    console.log("DEBUG: Image failed to load for", item.id, "from", imageUrl, "using fallback");
+    // Mark as failed so we don't try again
+    furnitureImageCache.set(imageUrl, null);
+  };
+  img.src = imageUrl;
+
+  // Use fallback while image loads
+  drawFurnitureFallback(item, startX, startY, gridWidth, gridHeight, m);
+}
+
+function drawFurnitureImage(img, item, startX, startY, gridWidth, gridHeight, m) {
+  // Draw the furniture image across the grid area it occupies
+  for (let dy = 0; dy < gridHeight; dy++) {
+    for (let dx = 0; dx < gridWidth; dx++) {
+      const r = tileRect(startX + dx, startY + dy, m.tile, m.ox, m.oy);
+
+      // Calculate which part of the source image to use for this tile
+      const srcX = (dx / gridWidth) * img.naturalWidth;
+      const srcY = (dy / gridHeight) * img.naturalHeight;
+      const srcWidth = img.naturalWidth / gridWidth;
+      const srcHeight = img.naturalHeight / gridHeight;
+
+      canvasContext.drawImage(
+        img,
+        srcX, srcY, srcWidth, srcHeight,  // source rectangle
+        r.x, r.y, r.w, r.h               // destination rectangle
+      );
+    }
+  }
+}
+
+function drawFurnitureFallback(item, startX, startY, gridWidth, gridHeight, m) {
+  // Color-coded fallback for different furniture types
+  const cs = getComputedStyle(document.documentElement);
+  let fillColor, strokeColor;
+
+  switch (item.type) {
+    case 'stairwell':
+      fillColor = `rgb(${cs.getPropertyValue("--color-accent").trim()})`;
+      strokeColor = `rgb(${cs.getPropertyValue("--color-content").trim()})`;
+      break;
+    case 'chest':
+      fillColor = `rgb(${cs.getPropertyValue("--color-positive").trim()})`;
+      strokeColor = `rgb(${cs.getPropertyValue("--color-content").trim()})`;
+      break;
+    case 'table':
+    case 'alchemists_table':
+    case 'sorcerers_table':
+      fillColor = `rgb(${cs.getPropertyValue("--color-surface-2").trim()})`;
+      strokeColor = `rgb(${cs.getPropertyValue("--color-border-rgb").trim()})`;
+      break;
+    default:
+      fillColor = `rgb(${cs.getPropertyValue("--color-surface-3", "--color-surface-2").trim()})`;
+      strokeColor = `rgb(${cs.getPropertyValue("--color-border-rgb").trim()})`;
+  }
+
+  // Draw furniture area
+  for (let dy = 0; dy < gridHeight; dy++) {
+    for (let dx = 0; dx < gridWidth; dx++) {
+      const r = tileRect(startX + dx, startY + dy, m.tile, m.ox, m.oy);
+
+      // Fill the tile
+      canvasContext.fillStyle = fillColor;
+      canvasContext.fillRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
+
+      // Draw border
+      canvasContext.strokeStyle = strokeColor;
+      canvasContext.lineWidth = 1;
+      canvasContext.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+    }
+  }
+
+  // Add type indicator in center for multi-tile furniture
+  if (gridWidth > 1 || gridHeight > 1) {
+    const centerR = tileRect(startX, startY, m.tile, m.ox, m.oy);
+    const centerX = centerR.x + (gridWidth * m.tile) / 2;
+    const centerY = centerR.y + (gridHeight * m.tile) / 2;
+
+    canvasContext.fillStyle = strokeColor;
+    canvasContext.font = `${Math.floor(m.tile * 0.2)}px monospace`;
+    canvasContext.textAlign = "center";
+    canvasContext.textBaseline = "middle";
+    canvasContext.fillText(item.type.charAt(0).toUpperCase(), centerX, centerY);
+  }
 }
 
 /**
@@ -281,6 +526,7 @@ function drawBoard() {
 
   drawGrid();          // subtle per-cell grid for counting
   drawRegionBorders(); // bold room/corridor outlines
+  drawFurniture();     // furniture on top of regions
   drawDoorOverlays();  // door overlays on top of regions
   drawBlockingWalls(); // blocking walls on top of regions
 

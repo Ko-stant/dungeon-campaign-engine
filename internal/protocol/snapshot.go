@@ -35,6 +35,25 @@ type BlockingWallLite struct {
 	Size        int    `json:"size"`
 }
 
+type FurnitureLite struct {
+	ID                string      `json:"id"`
+	Type              string      `json:"type"`
+	Tile              TileAddress `json:"tile"`
+	GridSize          struct {
+		Width  int `json:"width"`
+		Height int `json:"height"`
+	} `json:"gridSize"`
+	TileImage         string `json:"tileImage"`
+	TileImageCleaned  string `json:"tileImageCleaned"`
+	PixelDimensions   struct {
+		Width  int `json:"width"`
+		Height int `json:"height"`
+	} `json:"pixelDimensions"`
+	BlocksLineOfSight bool     `json:"blocksLineOfSight"`
+	BlocksMovement    bool     `json:"blocksMovement"`
+	Contains          []string `json:"contains,omitempty"`
+}
+
 type Snapshot struct {
 	MapID             string             `json:"mapId"`
 	PackID            string             `json:"packId"`
@@ -49,6 +68,7 @@ type Snapshot struct {
 	Entities          []EntityLite       `json:"entities"`
 	Thresholds        []ThresholdLite    `json:"thresholds"`
 	BlockingWalls     []BlockingWallLite `json:"blockingWalls"`
+	Furniture         []FurnitureLite    `json:"furniture"`
 	Variables         map[string]any     `json:"variables"`
 	ProtocolVersion   string             `json:"protocolVersion"`
 	VisibleRegionIDs  []int              `json:"visibleRegionIds"`

@@ -1,0 +1,107 @@
+{
+  "id": "",
+  "name": "",
+  "class": "",
+  "description": "",
+  "gender": "male|female|either",
+  "stats": {
+    "bodyPoints": 0,
+    "mindPoints": 0,
+    "attackDice": 0,
+    "defenseDice": 0,
+    "movementDice": 0
+  },
+  "startingEquipment": {
+    "weaponIds": [],
+    "armorIds": [],
+    "itemIds": [],
+    "spellIds": []
+  },
+  "specialAbilities": [
+    {
+      "id": "",
+      "name": "",
+      "description": "",
+      "type": "active|passive|triggered",
+      "cost": 0,
+      "cooldown": "none|per_turn|per_quest|permanent",
+      "requirements": {
+        "equipment": [],
+        "conditions": []
+      },
+      "targetType": "self|ally|enemy|area",
+      "effect": {
+        "type": "damage|heal|buff|debuff|special",
+        "value": "",
+        "duration": ""
+      }
+    }
+  ],
+  "restrictions": {
+    "cannotWear": [],
+    "cannotUse": [],
+    "mustUse": []
+  },
+  "passiveAbilities": [
+    {
+      "id": "",
+      "name": "",
+      "description": "",
+      "triggerCondition": "",
+      "effect": ""
+    }
+  ],
+  "elementalStyles": [
+    {
+      "element": "air|earth|water|fire",
+      "techniques": [
+        {
+          "id": "",
+          "name": "",
+          "description": "",
+          "actionType": "action|reaction",
+          "prerequisites": [],
+          "exhaustsStyle": true,
+          "range": "",
+          "damage": "",
+          "specialEffects": ""
+        }
+      ]
+    }
+  ],
+  "combatRules": {
+    "armorMovementRestriction": false,
+    "trapDisarming": {
+      "canDisarmWithoutTools": false,
+      "combatDieRule": ""
+    },
+    "berserkerRage": {
+      "scalesWithDanger": false
+    },
+    "protectiveAbilities": {
+      "canProtectAllies": false,
+      "requiresEquipment": []
+    }
+  },
+  "recovery": {
+    "elementalStyleRecovery": {
+      "condition": "",
+      "effect": ""
+    }
+  },
+  "questMechanics": {
+    "encounterRoles": [],
+    "limitedUseAbilities": [
+      {
+        "abilityId": "",
+        "usesPerQuest": 1
+      }
+    ]
+  },
+  "spellcasting": {
+    "canCastSpells": false,
+    "elementalSpecialization": "",
+    "spellSlots": 0,
+    "knownSpells": []
+  }
+}

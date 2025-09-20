@@ -158,6 +158,10 @@ func mainWithGameManager() {
 		// Get current turn state for UI
 		turnState := gameManager.GetTurnState()
 
+		// Get furniture data for snapshot
+		furniture := gameManager.GetFurnitureForSnapshot()
+		log.Printf("DEBUG: Snapshot generation - got %d furniture items", len(furniture))
+
 		s := protocol.Snapshot{
 			MapID:             "dev-map",
 			PackID:            "dev-pack@v1",
@@ -183,6 +187,7 @@ func mainWithGameManager() {
 			ProtocolVersion:   "v0",
 			Thresholds:        thresholds,
 			BlockingWalls:     blockingWalls,
+			Furniture:         furniture,
 			VisibleRegionIDs:  visibleNow,
 			CorridorRegionID:  state.CorridorRegion,
 			KnownRegionIDs:    known,
@@ -310,3 +315,4 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		handleWebSocketMessage(data, state, hub, seqPtr, quest)
 	}
 }
+

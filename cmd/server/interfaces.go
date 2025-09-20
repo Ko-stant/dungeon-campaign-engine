@@ -7,12 +7,12 @@ import (
 
 // Broadcaster interface for WebSocket communication
 type Broadcaster interface {
-	BroadcastEvent(eventType string, payload interface{})
+	BroadcastEvent(eventType string, payload any)
 }
 
 // Logger interface for logging abstraction
 type Logger interface {
-	Printf(format string, v ...interface{})
+	Printf(format string, v ...any)
 }
 
 // SequenceGenerator interface for sequence number generation
@@ -29,22 +29,22 @@ type GameEngine interface {
 
 // MoveResult contains the results of a move operation
 type MoveResult struct {
-	EntityUpdated         *protocol.EntityUpdated
-	VisibleRegions        []int
-	NewlyKnownRegions     []int
-	NewlyVisibleDoors     []protocol.ThresholdLite
-	NewlyVisibleWalls     []protocol.BlockingWallLite
-	RegionsToReveal       []int
+	EntityUpdated     *protocol.EntityUpdated
+	VisibleRegions    []int
+	NewlyKnownRegions []int
+	NewlyVisibleDoors []protocol.ThresholdLite
+	NewlyVisibleWalls []protocol.BlockingWallLite
+	RegionsToReveal   []int
 }
 
 // DoorToggleResult contains the results of a door toggle operation
 type DoorToggleResult struct {
-	StateChange           *protocol.DoorStateChanged
-	RegionsToReveal       []int
-	VisibleRegions        []int
-	NewlyKnownRegions     []int
-	NewlyVisibleDoors     []protocol.ThresholdLite
-	NewlyVisibleWalls     []protocol.BlockingWallLite
+	StateChange       *protocol.DoorStateChanged
+	RegionsToReveal   []int
+	VisibleRegions    []int
+	NewlyKnownRegions []int
+	NewlyVisibleDoors []protocol.ThresholdLite
+	NewlyVisibleWalls []protocol.BlockingWallLite
 }
 
 // VisibilityCalculator interface for visibility calculations

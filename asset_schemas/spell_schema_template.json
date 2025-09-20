@@ -1,0 +1,51 @@
+{
+  "id": "",
+  "name": "",
+  "element": "air|earth|fire|water|elf",
+  "description": "",
+  "targeting": {
+    "targetType": "monster|hero|caster|area|self",
+    "targetCount": 1,
+    "range": "any|adjacent|line_of_sight",
+    "restrictions": []
+  },
+  "effects": {
+    "damage": {
+      "bodyPointsDamage": 0,
+      "damageType": "fire|physical|magical",
+      "additionalRolls": []
+    },
+    "combat": {
+      "attackDiceBonus": 0,
+      "defenseDiceBonus": 0,
+      "movementDiceBonus": 0,
+      "rerollMechanic": false
+    },
+    "statusEffects": {
+      "incapacitation": false,
+      "movement": "normal|doubled|prevented",
+      "specialConditions": []
+    },
+    "special": {
+      "extraTurn": false,
+      "timeManipulation": false,
+      "transformation": false
+    }
+  },
+  "duration": {
+    "type": "instant|ongoing|conditional",
+    "breakConditions": [],
+    "endOfTurn": false,
+    "permanent": false
+  },
+  "restrictions": {
+    "cannotTargetTypes": [],
+    "requiresLineOfSight": false,
+    "castingRequirements": []
+  },
+  "mechanics": {
+    "diceRolls": [],
+    "conditionalEffects": [],
+    "chainEffects": []
+  }
+}

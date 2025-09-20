@@ -344,7 +344,7 @@ func filterHorizontalEdges(edges []geometry.EdgeAddress) []geometry.EdgeAddress 
 	return horizontal
 }
 
-func broadcastEvent(hub *ws.Hub, sequence *uint64, eventType string, payload interface{}) {
+func broadcastEvent(hub *ws.Hub, sequence *uint64, eventType string, payload any) {
 	seq := atomic.AddUint64(sequence, 1)
 	envelope := protocol.PatchEnvelope{
 		Sequence: seq,
@@ -372,11 +372,33 @@ func main() {
 		log.Fatalf("Failed to initialize game state: %v", err)
 	}
 
+	// Initialize furniture system
+	log.Printf("DEBUG: Initializing furniture system...")
+	furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
+
+	// Load furniture definitions
+	log.Printf("DEBUG: Loading furniture definitions from content/base...")
+	if err := furnitureSystem.LoadFurnitureDefinitions("content/base"); err != nil {
+		log.Printf("Warning: Failed to load furniture definitions: %v", err)
+	}
+
+	// Create furniture instances from quest
+	log.Printf("DEBUG: Quest has %d furniture items", len(quest.Furniture))
+	if err := furnitureSystem.CreateFurnitureInstancesFromQuest(quest); err != nil {
+		log.Printf("Warning: Failed to create furniture instances: %v", err)
+	}
+
+	log.Printf("DEBUG: Furniture system initialized with %d instances", len(furnitureSystem.GetAllInstances()))
+
 	corridorRegion := state.CorridorRegion
 
 	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir("internal/web/static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+
+	// Serve assets directory for furniture images and other game assets
+	assetsServer := http.FileServer(http.Dir("."))
+	mux.Handle("/assets/", http.StripPrefix("/", assetsServer))
 
 	hub := ws.NewHub()
 	var sequence uint64
@@ -441,6 +463,11 @@ func main() {
 		// Include visible blocking walls
 		blockingWalls, _ := getVisibleBlockingWalls(state, hero, quest)
 
+		// Get furniture data for snapshot
+		log.Printf("DEBUG: Getting furniture for snapshot...")
+		furnitureForSnapshot := getFurnitureForSnapshot(furnitureSystem)
+		log.Printf("DEBUG: Snapshot will include %d furniture items", len(furnitureForSnapshot))
+
 		log.Printf("corridorRegion=%d", corridorRegion)
 		known := make([]int, 0, len(state.KnownRegions))
 		for rid := range state.KnownRegions {
@@ -463,6 +490,7 @@ func main() {
 			ProtocolVersion:   "v0",
 			Thresholds:        thresholds,
 			BlockingWalls:     blockingWalls,
+			Furniture:         furnitureForSnapshot,
 			VisibleRegionIDs:  visibleNow,
 			CorridorRegionID:  state.CorridorRegion,
 			KnownRegionIDs:    known,
@@ -478,4 +506,48 @@ func main() {
 	}
 	log.Printf("listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
+}
+
+// getFurnitureForSnapshot converts furniture instances to protocol format
+func getFurnitureForSnapshot(furnitureSystem *FurnitureSystem) []protocol.FurnitureLite {
+	instances := furnitureSystem.GetAllInstances()
+	furniture := make([]protocol.FurnitureLite, 0, len(instances))
+
+	for _, instance := range instances {
+		if instance.Definition == nil {
+			log.Printf("Warning: Furniture instance %s has no definition", instance.ID)
+			continue
+		}
+
+		furnitureItem := protocol.FurnitureLite{
+			ID:   instance.ID,
+			Type: instance.Type,
+			Tile: instance.Position,
+			GridSize: struct {
+				Width  int `json:"width"`
+				Height int `json:"height"`
+			}{
+				Width:  instance.Definition.GridSize.Width,
+				Height: instance.Definition.GridSize.Height,
+			},
+			TileImage:        instance.Definition.Rendering.TileImage,
+			TileImageCleaned: instance.Definition.Rendering.TileImageCleaned,
+			PixelDimensions: struct {
+				Width  int `json:"width"`
+				Height int `json:"height"`
+			}{
+				Width:  instance.Definition.Rendering.PixelDimensions.Width,
+				Height: instance.Definition.Rendering.PixelDimensions.Height,
+			},
+			BlocksLineOfSight: instance.Definition.BlocksLineOfSight,
+			BlocksMovement:    instance.Definition.BlocksMovement,
+			Contains:          instance.Contains,
+		}
+
+		furniture = append(furniture, furnitureItem)
+		log.Printf("DEBUG: Added furniture to snapshot: %s (%s) at (%d,%d)",
+			instance.ID, instance.Type, instance.Position.X, instance.Position.Y)
+	}
+
+	return furniture
 }

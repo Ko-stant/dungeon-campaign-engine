@@ -1,0 +1,27 @@
+{
+  "id": "furniture_id",
+  "name": "Display Name",
+  "description": "Optional description of the furniture piece",
+  "blocksLineOfSight": true,
+  "blocksMovement": true,
+  "gridSize": {
+    "width": 1,
+    "height": 1,
+    "comment": "Width and height in game tiles (1x1, 2x1, 3x2, etc.)"
+  },
+  "rendering": {
+    "tileImage": "assets/tiles/furniture/furniture_name.jpg",
+    "tileImageCleaned": "assets/tiles_cleaned/furniture/furniture_name.png",
+    "pixelDimensions": {
+      "width": 157,
+      "height": 157,
+      "comment": "Actual pixel dimensions of the tile image"
+    }
+  },
+  "gameplayProperties": {
+    "searchable": false,
+    "container": false,
+    "interactable": false,
+    "customProperties": {}
+  }
+}

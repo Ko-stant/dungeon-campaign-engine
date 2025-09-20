@@ -9,21 +9,22 @@ import (
 
 // GameManager coordinates all game systems
 type GameManager struct {
-	gameState      *GameState
-	turnManager    *TurnManager
-	heroActions    *HeroActionSystem
-	monsterSystem  *MonsterSystem
-	debugSystem    *DebugSystem
-	broadcaster    Broadcaster
-	logger         Logger
-	sequenceGen    SequenceGenerator
-	mutex          sync.RWMutex
+	gameState       *GameState
+	turnManager     *TurnManager
+	heroActions     *HeroActionSystem
+	monsterSystem   *MonsterSystem
+	furnitureSystem *FurnitureSystem
+	debugSystem     *DebugSystem
+	broadcaster     Broadcaster
+	logger          Logger
+	sequenceGen     SequenceGenerator
+	mutex           sync.RWMutex
 }
 
 // NewGameManager creates a new game manager with all systems
 func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig) (*GameManager, error) {
 	// Initialize game state
-	gameState, err := initializeGameStateForManager(logger)
+	gameState, furnitureSystem, err := initializeGameStateForManager(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize game state: %w", err)
 	}
@@ -57,14 +58,15 @@ func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen Sequence
 	}
 
 	return &GameManager{
-		gameState:     gameState,
-		turnManager:   turnManager,
-		heroActions:   heroActions,
-		monsterSystem: monsterSystem,
-		debugSystem:   debugSystem,
-		broadcaster:   broadcaster,
-		logger:        logger,
-		sequenceGen:   sequenceGen,
+		gameState:       gameState,
+		turnManager:     turnManager,
+		heroActions:     heroActions,
+		monsterSystem:   monsterSystem,
+		furnitureSystem: furnitureSystem,
+		debugSystem:     debugSystem,
+		broadcaster:     broadcaster,
+		logger:          logger,
+		sequenceGen:     sequenceGen,
 	}, nil
 }
 
@@ -95,10 +97,10 @@ func (gm *GameManager) ProcessMovement(req protocol.RequestMove) error {
 
 	// Convert legacy movement to movement action (once per turn, before or after main action)
 	movementRequest := MovementRequest{
-		PlayerID:   "player-1", // TODO: Get from request context
-		EntityID:   req.EntityID,
-		Action:     MoveBeforeAction, // Default to move before action
-		Parameters: map[string]interface{}{
+		PlayerID: "player-1", // TODO: Get from request context
+		EntityID: req.EntityID,
+		Action:   MoveBeforeAction, // Default to move before action
+		Parameters: map[string]any{
 			"dx": float64(req.DX),
 			"dy": float64(req.DY),
 		},
@@ -263,18 +265,82 @@ func (gm *GameManager) DebugRevealMap() error {
 }
 
 // Helper function to initialize game state using existing initialization logic
-func initializeGameStateForManager(logger Logger) (*GameState, error) {
+func initializeGameStateForManager(logger Logger) (*GameState, *FurnitureSystem, error) {
 	// Use existing initialization logic
 	board, quest, err := loadGameContent()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load game content: %w", err)
+		return nil, nil, fmt.Errorf("failed to load game content: %w", err)
 	}
 
 	state, _, err := initializeGameState(board, quest)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize game state: %w", err)
+		return nil, nil, fmt.Errorf("failed to initialize game state: %w", err)
 	}
 
-	logger.Printf("Game state initialized with board and quest data")
-	return state, nil
+	// TODO: Re-enable furniture system when using GameManager approach
+	// Create and initialize furniture system
+	// furnitureSystem := NewFurnitureSystem(logger.(*log.Logger))
+
+	// For now, return nil for furnitureSystem since we're using main.go approach
+	var furnitureSystem *FurnitureSystem = nil
+
+	logger.Printf("Game state initialized with board, quest, and furniture data")
+	return state, furnitureSystem, nil
+}
+
+// GetVisibleMonsters returns all visible monsters
+func (gm *GameManager) GetVisibleMonsters() []*Monster {
+	gm.mutex.RLock()
+	defer gm.mutex.RUnlock()
+
+	return gm.monsterSystem.GetVisibleMonsters()
+}
+
+// GetFurnitureForSnapshot returns all furniture in the format needed for client snapshot
+func (gm *GameManager) GetFurnitureForSnapshot() []protocol.FurnitureLite {
+	gm.mutex.RLock()
+	defer gm.mutex.RUnlock()
+
+	instances := gm.furnitureSystem.GetAllInstances()
+	gm.logger.Printf("DEBUG: GetFurnitureForSnapshot called - found %d furniture instances", len(instances))
+	furniture := make([]protocol.FurnitureLite, 0, len(instances))
+
+	for _, instance := range instances {
+		if instance.Definition == nil {
+			gm.logger.Printf("Warning: Furniture instance %s has no definition", instance.ID)
+			continue
+		}
+
+		furnitureItem := protocol.FurnitureLite{
+			ID:   instance.ID,
+			Type: instance.Type,
+			Tile: instance.Position,
+			GridSize: struct {
+				Width  int `json:"width"`
+				Height int `json:"height"`
+			}{
+				Width:  instance.Definition.GridSize.Width,
+				Height: instance.Definition.GridSize.Height,
+			},
+			TileImage:        instance.Definition.Rendering.TileImage,
+			TileImageCleaned: instance.Definition.Rendering.TileImageCleaned,
+			PixelDimensions: struct {
+				Width  int `json:"width"`
+				Height int `json:"height"`
+			}{
+				Width:  instance.Definition.Rendering.PixelDimensions.Width,
+				Height: instance.Definition.Rendering.PixelDimensions.Height,
+			},
+			BlocksLineOfSight: instance.Definition.BlocksLineOfSight,
+			BlocksMovement:    instance.Definition.BlocksMovement,
+			Contains:          instance.Contains,
+		}
+
+		furniture = append(furniture, furnitureItem)
+		gm.logger.Printf("DEBUG: Added furniture item to snapshot: %s (%s) at (%d,%d)",
+			instance.ID, instance.Type, instance.Position.X, instance.Position.Y)
+	}
+
+	gm.logger.Printf("DEBUG: Returning %d furniture items for snapshot", len(furniture))
+	return furniture
 }
