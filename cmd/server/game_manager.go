@@ -52,6 +52,10 @@ func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen Sequence
 		logger.Printf("Warning: Failed to create monsters from quest: %v", err)
 	}
 
+	// Update hero action system with complete movement validator
+	movementValidator := NewMovementValidatorWithSystems(logger, monsterSystem, furnitureSystem)
+	heroActions.SetMovementValidator(movementValidator)
+
 	// Add default player (will be replaced with dynamic player loading later)
 	defaultPlayer := &Player{
 		ID:       "player-1",

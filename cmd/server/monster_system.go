@@ -655,6 +655,16 @@ func (ms *MonsterSystem) GetMonsters() map[string]*Monster {
 	return ms.monsters
 }
 
+// IsMonsterAt checks if there is an alive monster at the specified position
+func (ms *MonsterSystem) IsMonsterAt(x, y int) bool {
+	for _, monster := range ms.monsters {
+		if monster.IsAlive && monster.Position.X == x && monster.Position.Y == y {
+			return true
+		}
+	}
+	return false
+}
+
 // Monster action processors
 
 func (ms *MonsterSystem) processMonsterMoveAction(request MonsterActionRequest, result *MonsterActionResult) (*MonsterActionResult, error) {

@@ -127,11 +127,21 @@ func (e *GameEngineImpl) ProcessDoorToggle(req protocol.RequestToggleDoor) (*Doo
 
 // MovementValidatorImpl implements MovementValidator
 type MovementValidatorImpl struct {
-	logger Logger
+	logger          Logger
+	monsterSystem   *MonsterSystem
+	furnitureSystem *FurnitureSystem
 }
 
 func NewMovementValidator(logger Logger) *MovementValidatorImpl {
 	return &MovementValidatorImpl{logger: logger}
+}
+
+func NewMovementValidatorWithSystems(logger Logger, monsterSystem *MonsterSystem, furnitureSystem *FurnitureSystem) *MovementValidatorImpl {
+	return &MovementValidatorImpl{
+		logger:          logger,
+		monsterSystem:   monsterSystem,
+		furnitureSystem: furnitureSystem,
+	}
 }
 
 func (mv *MovementValidatorImpl) ValidateMove(state *GameState, entityID string, dx, dy int) (*protocol.TileAddress, error) {
@@ -156,6 +166,20 @@ func (mv *MovementValidatorImpl) ValidateMove(state *GameState, entityID string,
 		mv.logger.Printf("DEBUG: Movement blocked by blocking wall tile: from (%d,%d) to (%d,%d)",
 			tile.X, tile.Y, nx, ny)
 		return nil, errors.New("destination tile blocked")
+	}
+
+	// Check if destination tile is blocked by furniture
+	if mv.furnitureSystem != nil && mv.furnitureSystem.BlocksMovement(nx, ny) {
+		mv.logger.Printf("DEBUG: Movement blocked by furniture: from (%d,%d) to (%d,%d)",
+			tile.X, tile.Y, nx, ny)
+		return nil, errors.New("furniture blocks movement")
+	}
+
+	// Check if destination tile is blocked by a monster (heroes cannot move onto monster tiles)
+	if mv.monsterSystem != nil && mv.monsterSystem.IsMonsterAt(nx, ny) {
+		mv.logger.Printf("DEBUG: Movement blocked by monster: from (%d,%d) to (%d,%d)",
+			tile.X, tile.Y, nx, ny)
+		return nil, errors.New("monster blocks movement")
 	}
 
 	// Check walls and doors

@@ -143,24 +143,31 @@ type Effect struct {
 
 // HeroActionSystem handles hero action processing
 type HeroActionSystem struct {
-	gameState   *GameState
-	turnManager *TurnManager
-	diceSystem  *DiceSystem
-	broadcaster Broadcaster
-	logger      Logger
-	debugSystem *DebugSystem
+	gameState        *GameState
+	turnManager      *TurnManager
+	diceSystem       *DiceSystem
+	broadcaster      Broadcaster
+	logger           Logger
+	debugSystem      *DebugSystem
+	movementValidator MovementValidator
 }
 
 // NewHeroActionSystem creates a new hero action system
 func NewHeroActionSystem(gameState *GameState, turnManager *TurnManager, broadcaster Broadcaster, logger Logger, debugSystem *DebugSystem) *HeroActionSystem {
 	return &HeroActionSystem{
-		gameState:   gameState,
-		turnManager: turnManager,
-		diceSystem:  NewDiceSystem(debugSystem),
-		broadcaster: broadcaster,
-		logger:      logger,
-		debugSystem: debugSystem,
+		gameState:         gameState,
+		turnManager:       turnManager,
+		diceSystem:        NewDiceSystem(debugSystem),
+		broadcaster:       broadcaster,
+		logger:            logger,
+		debugSystem:       debugSystem,
+		movementValidator: NewMovementValidator(logger), // Default validator without systems
 	}
+}
+
+// SetMovementValidator sets the movement validator with systems
+func (has *HeroActionSystem) SetMovementValidator(validator MovementValidator) {
+	has.movementValidator = validator
 }
 
 // ProcessAction processes a hero action request
@@ -512,8 +519,7 @@ func (has *HeroActionSystem) processMovement(request MovementRequest, result *Ac
 	}
 
 	// Use existing movement validation
-	validator := NewMovementValidator(has.logger)
-	newTile, err := validator.ValidateMove(has.gameState, request.EntityID, int(dx), int(dy))
+	newTile, err := has.movementValidator.ValidateMove(has.gameState, request.EntityID, int(dx), int(dy))
 	if err != nil {
 		result.Success = false
 		result.Message = fmt.Sprintf("Movement blocked: %s", err.Error())

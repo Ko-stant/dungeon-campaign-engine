@@ -49,6 +49,14 @@ func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, 
 		return
 	}
 
+	// Check if destination tile is blocked by a monster (heroes cannot move onto monster tiles)
+	if monsterSystem.IsMonsterAt(nx, ny) {
+		log.Printf("DEBUG: Movement blocked by monster: from (%d,%d) to (%d,%d)",
+			tile.X, tile.Y, nx, ny)
+		state.Lock.Unlock()
+		return
+	}
+
 	edge := edgeForStep(tile.X, tile.Y, req.DX, req.DY)
 	if state.BlockedWalls[edge] {
 		log.Printf("DEBUG: Movement blocked by wall: from (%d,%d) to (%d,%d), blocked edge: %+v",
