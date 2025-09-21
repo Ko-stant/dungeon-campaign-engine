@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -25,8 +24,10 @@ func ExampleOfNewArchitecture() {
 		log.Fatalf("Failed to load game content: %v", err)
 	}
 
+	furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
+
 	// 2. Initialize game state
-	state, _, err := initializeGameState(board, quest)
+	state, _, err := initializeGameState(board, quest, furnitureSystem)
 	if err != nil {
 		log.Fatalf("Failed to initialize game state: %v", err)
 	}
@@ -68,15 +69,6 @@ func ExampleOfNewArchitecture() {
 			return
 		}
 		hub.Add(conn)
-
-		// Send initial hello message
-		hello, _ := json.Marshal(protocol.PatchEnvelope{
-			Sequence: 0,
-			EventID:  0,
-			Type:     "VariablesChanged",
-			Payload:  protocol.VariablesChanged{Entries: map[string]any{"hello": "world"}},
-		})
-		_ = conn.Write(context.Background(), websocket.MessageText, hello)
 
 		go func(c *websocket.Conn) {
 			defer hub.Remove(c)

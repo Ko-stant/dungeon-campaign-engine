@@ -85,7 +85,7 @@ func createDoorsFromQuest(quest *geometry.QuestDefinition, segment geometry.Segm
 	return doors, doorByEdge
 }
 
-func initializeGameState(board *geometry.BoardDefinition, quest *geometry.QuestDefinition) (*GameState, protocol.TileAddress, error) {
+func initializeGameState(board *geometry.BoardDefinition, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem) (*GameState, protocol.TileAddress, error) {
 	segment, regionMap := createGameSegment(board, quest)
 	doors, _ := createDoorsFromQuest(quest, segment, regionMap)
 
@@ -131,5 +131,27 @@ func initializeGameState(board *geometry.BoardDefinition, quest *geometry.QuestD
 	// Discover initially visible blocking walls
 	_, _ = getVisibleBlockingWalls(state, hero, quest)
 
+	// Discover initially visible furniture
+	initializeVisibleFurniture(state, furnitureSystem, heroRegion)
+
 	return state, hero, nil
+}
+
+func initializeVisibleFurniture(state *GameState, furnitureSystem *FurnitureSystem, heroRegion int) {
+	instances := furnitureSystem.GetAllInstances()
+	for _, instance := range instances {
+		if instance.Definition == nil {
+			continue
+		}
+
+		// Check if furniture is in a revealed region (starting region)
+		furnitureIdx := instance.Position.Y*state.Segment.Width + instance.Position.X
+		furnitureRegion := state.RegionMap.TileRegionIDs[furnitureIdx]
+
+		if state.RevealedRegions[furnitureRegion] {
+			state.KnownFurniture[instance.ID] = true
+			log.Printf("Initially visible furniture %s at (%d,%d) in region %d",
+				instance.ID, instance.Position.X, instance.Position.Y, furnitureRegion)
+		}
+	}
 }

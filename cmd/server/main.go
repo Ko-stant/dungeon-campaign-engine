@@ -367,11 +367,6 @@ func main() {
 		log.Fatalf("Failed to load game content: %v", err)
 	}
 
-	state, _, err := initializeGameState(board, quest)
-	if err != nil {
-		log.Fatalf("Failed to initialize game state: %v", err)
-	}
-
 	// Initialize furniture system
 	log.Printf("DEBUG: Initializing furniture system...")
 	furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
@@ -389,6 +384,11 @@ func main() {
 	}
 
 	log.Printf("DEBUG: Furniture system initialized with %d instances", len(furnitureSystem.GetAllInstances()))
+
+	state, _, err := initializeGameState(board, quest, furnitureSystem)
+	if err != nil {
+		log.Fatalf("Failed to initialize game state: %v", err)
+	}
 
 	corridorRegion := state.CorridorRegion
 
@@ -410,14 +410,6 @@ func main() {
 		}
 		hub.Add(conn)
 
-		hello, _ := json.Marshal(protocol.PatchEnvelope{
-			Sequence: 0,
-			EventID:  0,
-			Type:     "VariablesChanged",
-			Payload:  protocol.VariablesChanged{Entries: map[string]any{"hello": "world"}},
-		})
-		_ = conn.Write(context.Background(), websocket.MessageText, hello)
-
 		go func(c *websocket.Conn) {
 			defer hub.Remove(c)
 			defer c.Close(websocket.StatusNormalClosure, "")
@@ -426,7 +418,7 @@ func main() {
 				if err != nil {
 					return
 				}
-				handleWebSocketMessage(data, state, hub, &sequence, quest)
+				handleWebSocketMessage(data, state, hub, &sequence, quest, furnitureSystem)
 			}
 		}(conn)
 	})
@@ -465,7 +457,7 @@ func main() {
 
 		// Get furniture data for snapshot
 		log.Printf("DEBUG: Getting furniture for snapshot...")
-		furnitureForSnapshot := getFurnitureForSnapshot(furnitureSystem)
+		furnitureForSnapshot := getFurnitureForSnapshot(furnitureSystem, state)
 		log.Printf("DEBUG: Snapshot will include %d furniture items", len(furnitureForSnapshot))
 
 		log.Printf("corridorRegion=%d", corridorRegion)
@@ -508,14 +500,22 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
-// getFurnitureForSnapshot converts furniture instances to protocol format
-func getFurnitureForSnapshot(furnitureSystem *FurnitureSystem) []protocol.FurnitureLite {
+// getFurnitureForSnapshot converts furniture instances to protocol format, only including furniture in revealed regions
+func getFurnitureForSnapshot(furnitureSystem *FurnitureSystem, state *GameState) []protocol.FurnitureLite {
 	instances := furnitureSystem.GetAllInstances()
 	furniture := make([]protocol.FurnitureLite, 0, len(instances))
 
 	for _, instance := range instances {
 		if instance.Definition == nil {
 			log.Printf("Warning: Furniture instance %s has no definition", instance.ID)
+			continue
+		}
+
+		// Check if furniture is in a revealed region
+		furnitureIdx := instance.Position.Y*state.Segment.Width + instance.Position.X
+		furnitureRegion := state.RegionMap.TileRegionIDs[furnitureIdx]
+		if !state.RevealedRegions[furnitureRegion] {
+			log.Printf("DEBUG: Furniture %s in region %d not revealed, skipping", instance.ID, furnitureRegion)
 			continue
 		}
 
@@ -530,8 +530,10 @@ func getFurnitureForSnapshot(furnitureSystem *FurnitureSystem) []protocol.Furnit
 				Width:  instance.Definition.GridSize.Width,
 				Height: instance.Definition.GridSize.Height,
 			},
-			TileImage:        instance.Definition.Rendering.TileImage,
-			TileImageCleaned: instance.Definition.Rendering.TileImageCleaned,
+			Rotation:           instance.Rotation,
+			SwapAspectOnRotate: instance.SwapAspectOnRotate,
+			TileImage:          instance.Definition.Rendering.TileImage,
+			TileImageCleaned:   instance.Definition.Rendering.TileImageCleaned,
 			PixelDimensions: struct {
 				Width  int `json:"width"`
 				Height int `json:"height"`

@@ -9,7 +9,7 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/ws"
 )
 
-func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition) {
+func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem) {
 	if (req.DX != 0 && req.DY != 0) || req.DX < -1 || req.DX > 1 || req.DY < -1 || req.DY > 1 {
 		return
 	}
@@ -36,6 +36,14 @@ func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, 
 	destTile := protocol.TileAddress{X: nx, Y: ny}
 	if state.BlockedTiles[destTile] {
 		log.Printf("DEBUG: Movement blocked by blocking wall tile: from (%d,%d) to (%d,%d)",
+			tile.X, tile.Y, nx, ny)
+		state.Lock.Unlock()
+		return
+	}
+
+	// Check if destination tile is blocked by furniture
+	if furnitureSystem.BlocksMovement(nx, ny) {
+		log.Printf("DEBUG: Movement blocked by furniture: from (%d,%d) to (%d,%d)",
 			tile.X, tile.Y, nx, ny)
 		state.Lock.Unlock()
 		return
@@ -91,7 +99,7 @@ func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, 
 	}
 }
 
-func handleRequestToggleDoor(req protocol.RequestToggleDoor, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition) {
+func handleRequestToggleDoor(req protocol.RequestToggleDoor, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem) {
 	state.Lock.Lock()
 	info, ok := state.Doors[req.ThresholdID]
 	if !ok || info == nil || info.State == "open" {
@@ -139,9 +147,71 @@ func handleRequestToggleDoor(req protocol.RequestToggleDoor, state *GameState, h
 	if len(newlyVisibleBlockingWalls) > 0 {
 		broadcastEvent(hub, sequence, "BlockingWallsVisible", protocol.BlockingWallsVisible{BlockingWalls: newlyVisibleBlockingWalls})
 	}
+
+	// Check for newly visible furniture after door toggle
+	newlyVisibleFurniture := checkForNewlyVisibleFurniture(state, furnitureSystem)
+	if len(newlyVisibleFurniture) > 0 {
+		broadcastEvent(hub, sequence, "FurnitureVisible", protocol.FurnitureVisible{Furniture: newlyVisibleFurniture})
+	}
 }
 
-func handleWebSocketMessage(data []byte, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition) {
+func checkForNewlyVisibleFurniture(state *GameState, furnitureSystem *FurnitureSystem) []protocol.FurnitureLite {
+	var newlyVisible []protocol.FurnitureLite
+
+	instances := furnitureSystem.GetAllInstances()
+	for _, instance := range instances {
+		if instance.Definition == nil {
+			continue
+		}
+
+		// Skip if furniture is already known
+		if state.KnownFurniture[instance.ID] {
+			continue
+		}
+
+		// Check if furniture is in a revealed region
+		furnitureIdx := instance.Position.Y*state.Segment.Width + instance.Position.X
+		furnitureRegion := state.RegionMap.TileRegionIDs[furnitureIdx]
+
+		if state.RevealedRegions[furnitureRegion] {
+			// Mark furniture as known
+			state.KnownFurniture[instance.ID] = true
+
+			furnitureItem := protocol.FurnitureLite{
+				ID:   instance.ID,
+				Type: instance.Type,
+				Tile: instance.Position,
+				GridSize: struct {
+					Width  int `json:"width"`
+					Height int `json:"height"`
+				}{
+					Width:  instance.Definition.GridSize.Width,
+					Height: instance.Definition.GridSize.Height,
+				},
+				Rotation:           instance.Rotation,
+				SwapAspectOnRotate: instance.SwapAspectOnRotate,
+				TileImage:          instance.Definition.Rendering.TileImage,
+				TileImageCleaned:   instance.Definition.Rendering.TileImageCleaned,
+				PixelDimensions: struct {
+					Width  int `json:"width"`
+					Height int `json:"height"`
+				}{
+					Width:  instance.Definition.Rendering.PixelDimensions.Width,
+					Height: instance.Definition.Rendering.PixelDimensions.Height,
+				},
+				BlocksLineOfSight: instance.Definition.BlocksLineOfSight,
+				BlocksMovement:    instance.Definition.BlocksMovement,
+				Contains:          instance.Contains,
+			}
+			newlyVisible = append(newlyVisible, furnitureItem)
+			log.Printf("DEBUG: Newly visible furniture %s in region %d", instance.ID, furnitureRegion)
+		}
+	}
+
+	return newlyVisible
+}
+
+func handleWebSocketMessage(data []byte, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem) {
 	var env protocol.IntentEnvelope
 	if err := json.Unmarshal(data, &env); err != nil {
 		return
@@ -153,14 +223,14 @@ func handleWebSocketMessage(data []byte, state *GameState, hub *ws.Hub, sequence
 		if err := json.Unmarshal(env.Payload, &req); err != nil {
 			return
 		}
-		handleRequestMove(req, state, hub, sequence, quest)
+		handleRequestMove(req, state, hub, sequence, quest, furnitureSystem)
 
 	case "RequestToggleDoor":
 		var req protocol.RequestToggleDoor
 		if err := json.Unmarshal(env.Payload, &req); err != nil {
 			return
 		}
-		handleRequestToggleDoor(req, state, hub, sequence, quest)
+		handleRequestToggleDoor(req, state, hub, sequence, quest, furnitureSystem)
 
 	default:
 		// Unknown message type

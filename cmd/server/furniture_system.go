@@ -40,12 +40,14 @@ type FurnitureDefinition struct {
 
 // FurnitureInstance represents a placed furniture piece in the game world
 type FurnitureInstance struct {
-	ID         string                `json:"id"`
-	Type       string                `json:"type"` // References FurnitureDefinition.ID
-	Position   protocol.TileAddress  `json:"position"`
-	Room       int                   `json:"room"`
-	Contains   []string              `json:"contains,omitempty"`
-	Definition *FurnitureDefinition  `json:"-"` // Runtime reference, not serialized
+	ID                string                `json:"id"`
+	Type              string                `json:"type"` // References FurnitureDefinition.ID
+	Position          protocol.TileAddress  `json:"position"`
+	Room              int                   `json:"room"`
+	Rotation          int                   `json:"rotation,omitempty"` // 0, 90, 180, 270 degrees
+	SwapAspectOnRotate bool                  `json:"swap_aspect_on_rotate,omitempty"` // Whether to swap width/height for 90/270 rotations
+	Contains          []string              `json:"contains,omitempty"`
+	Definition        *FurnitureDefinition  `json:"-"` // Runtime reference, not serialized
 }
 
 // FurnitureSystem manages furniture definitions and instances
@@ -137,9 +139,11 @@ func (fs *FurnitureSystem) CreateFurnitureInstancesFromQuest(quest *geometry.Que
 				X: questFurniture.X,
 				Y: questFurniture.Y,
 			},
-			Room:       questFurniture.Room,
-			Contains:   questFurniture.Contains,
-			Definition: definition,
+			Room:              questFurniture.Room,
+			Rotation:          questFurniture.Rotation,
+			SwapAspectOnRotate: questFurniture.SwapAspectOnRotate,
+			Contains:          questFurniture.Contains,
+			Definition:        definition,
 		}
 
 		fs.instances[instance.ID] = instance
@@ -213,11 +217,21 @@ func (fs *FurnitureSystem) positionOverlaps(x, y int, instance *FurnitureInstanc
 		return false
 	}
 
-	// Check if position is within the furniture's grid area
+	// Get effective grid size considering rotation
+	effectiveWidth := instance.Definition.GridSize.Width
+	effectiveHeight := instance.Definition.GridSize.Height
+
+	// For 90/270 degree rotations, swap width and height if swap_aspect_on_rotate is true
+	if instance.SwapAspectOnRotate && (instance.Rotation == 90 || instance.Rotation == 270) {
+		effectiveWidth = instance.Definition.GridSize.Height
+		effectiveHeight = instance.Definition.GridSize.Width
+	}
+
+	// Check if position is within the furniture's effective grid area
 	startX := instance.Position.X
 	startY := instance.Position.Y
-	endX := startX + instance.Definition.GridSize.Width - 1
-	endY := startY + instance.Definition.GridSize.Height - 1
+	endX := startX + effectiveWidth - 1
+	endY := startY + effectiveHeight - 1
 
 	return x >= startX && x <= endX && y >= startY && y <= endY
 }

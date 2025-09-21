@@ -44,7 +44,9 @@ func mainWithGameManager() {
 	if err != nil {
 		log.Fatalf("Failed to load game content: %v", err)
 	}
-	state, _, err := initializeGameState(board, quest)
+	furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
+
+	state, _, err := initializeGameState(board, quest, furnitureSystem)
 	if err != nil {
 		log.Fatalf("Failed to initialize game state: %v", err)
 	}
@@ -69,25 +71,24 @@ func mainWithGameManager() {
 		}
 		hub.Add(conn)
 
-		// Send initial hello with turn state
+		// Send initial initMessage with turn state
 		turnState := gameManager.GetTurnState()
-		hello, _ := json.Marshal(protocol.PatchEnvelope{
+		initMessage, _ := json.Marshal(protocol.PatchEnvelope{
 			Sequence: 0,
 			EventID:  0,
 			Type:     "VariablesChanged",
 			Payload: protocol.VariablesChanged{
 				Entries: map[string]any{
-					"hello":           "world",
-					"turnNumber":      turnState.TurnNumber,
-					"currentTurn":     turnState.CurrentTurn,
-					"activePlayerID":  turnState.ActivePlayerID,
-					"actionsLeft":     turnState.ActionsLeft,
-					"movementLeft":    turnState.MovementLeft,
-					"canEndTurn":      turnState.CanEndTurn,
+					"turnNumber":     turnState.TurnNumber,
+					"currentTurn":    turnState.CurrentTurn,
+					"activePlayerID": turnState.ActivePlayerID,
+					"actionsLeft":    turnState.ActionsLeft,
+					"movementLeft":   turnState.MovementLeft,
+					"canEndTurn":     turnState.CanEndTurn,
 				},
 			},
 		})
-		_ = conn.Write(context.Background(), websocket.MessageText, hello)
+		_ = conn.Write(context.Background(), websocket.MessageText, initMessage)
 
 		go func(c *websocket.Conn) {
 			defer hub.Remove(c)
@@ -175,22 +176,22 @@ func mainWithGameManager() {
 			DoorStates:        []byte{},
 			Entities:          entities,
 			Variables: map[string]any{
-				"ui.debug":        debugConfig.Enabled,
-				"turn.number":     turnState.TurnNumber,
-				"turn.current":    turnState.CurrentTurn,
-				"turn.phase":      turnState.CurrentPhase,
-				"turn.playerId":   turnState.ActivePlayerID,
-				"turn.actions":    turnState.ActionsLeft,
-				"turn.movement":   turnState.MovementLeft,
-				"turn.canEnd":     turnState.CanEndTurn,
+				"ui.debug":      debugConfig.Enabled,
+				"turn.number":   turnState.TurnNumber,
+				"turn.current":  turnState.CurrentTurn,
+				"turn.phase":    turnState.CurrentPhase,
+				"turn.playerId": turnState.ActivePlayerID,
+				"turn.actions":  turnState.ActionsLeft,
+				"turn.movement": turnState.MovementLeft,
+				"turn.canEnd":   turnState.CanEndTurn,
 			},
-			ProtocolVersion:   "v0",
-			Thresholds:        thresholds,
-			BlockingWalls:     blockingWalls,
-			Furniture:         furniture,
-			VisibleRegionIDs:  visibleNow,
-			CorridorRegionID:  state.CorridorRegion,
-			KnownRegionIDs:    known,
+			ProtocolVersion:  "v0",
+			Thresholds:       thresholds,
+			BlockingWalls:    blockingWalls,
+			Furniture:        furniture,
+			VisibleRegionIDs: visibleNow,
+			CorridorRegionID: state.CorridorRegion,
+			KnownRegionIDs:   known,
 		}
 
 		if err := views.IndexPage(s).Render(r.Context(), w); err != nil {
@@ -220,11 +221,13 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 			return
 		}
 
+		furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
+
 		// Try new GameManager movement first, fall back to legacy
 		if err := gameManager.ProcessMovement(req); err != nil {
 			log.Printf("GameManager movement failed: %v, falling back to legacy", err)
 			seqPtr := &sequenceGen.counter
-			handleRequestMove(req, state, hub, seqPtr, quest)
+			handleRequestMove(req, state, hub, seqPtr, quest, furnitureSystem)
 		}
 
 	case "RequestToggleDoor":
@@ -233,11 +236,12 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 			return
 		}
 
+		furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
 		// Try new GameManager door toggle first, fall back to legacy
 		if err := gameManager.ProcessDoorToggle(req); err != nil {
 			log.Printf("GameManager door toggle failed: %v, falling back to legacy", err)
 			seqPtr := &sequenceGen.counter
-			handleRequestToggleDoor(req, state, hub, seqPtr, quest)
+			handleRequestToggleDoor(req, state, hub, seqPtr, quest, furnitureSystem)
 		}
 
 	case "HeroAction":
@@ -311,8 +315,8 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 
 	default:
 		// Unknown message type - fall back to legacy handler
+		furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
 		seqPtr := &sequenceGen.counter
-		handleWebSocketMessage(data, state, hub, seqPtr, quest)
+		handleWebSocketMessage(data, state, hub, seqPtr, quest, furnitureSystem)
 	}
 }
-

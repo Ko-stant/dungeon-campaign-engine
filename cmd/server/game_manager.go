@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"sync"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
@@ -126,7 +128,7 @@ func (gm *GameManager) ProcessDoorToggle(req protocol.RequestToggleDoor) error {
 	// Use existing door toggle logic directly
 	// TODO: Implement proper quest loading for this to work
 	seqPtr := &gm.sequenceGen.(*SequenceGeneratorImpl).counter
-	handleRequestToggleDoor(req, gm.gameState, gm.broadcaster.(*BroadcasterImpl).hub, seqPtr, nil)
+	handleRequestToggleDoor(req, gm.gameState, gm.broadcaster.(*BroadcasterImpl).hub, seqPtr, nil, nil)
 	return nil
 }
 
@@ -271,18 +273,11 @@ func initializeGameStateForManager(logger Logger) (*GameState, *FurnitureSystem,
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to load game content: %w", err)
 	}
-
-	state, _, err := initializeGameState(board, quest)
+	furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
+	state, _, err := initializeGameState(board, quest, furnitureSystem)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to initialize game state: %w", err)
 	}
-
-	// TODO: Re-enable furniture system when using GameManager approach
-	// Create and initialize furniture system
-	// furnitureSystem := NewFurnitureSystem(logger.(*log.Logger))
-
-	// For now, return nil for furnitureSystem since we're using main.go approach
-	var furnitureSystem *FurnitureSystem = nil
 
 	logger.Printf("Game state initialized with board, quest, and furniture data")
 	return state, furnitureSystem, nil

@@ -43,15 +43,17 @@ type FurnitureLite struct {
 		Width  int `json:"width"`
 		Height int `json:"height"`
 	} `json:"gridSize"`
-	TileImage         string `json:"tileImage"`
-	TileImageCleaned  string `json:"tileImageCleaned"`
+	Rotation          int         `json:"rotation,omitempty"` // 0, 90, 180, 270 degrees
+	SwapAspectOnRotate bool        `json:"swapAspectOnRotate,omitempty"` // Whether to swap width/height for 90/270 rotations
+	TileImage         string      `json:"tileImage"`
+	TileImageCleaned  string      `json:"tileImageCleaned"`
 	PixelDimensions   struct {
 		Width  int `json:"width"`
 		Height int `json:"height"`
 	} `json:"pixelDimensions"`
-	BlocksLineOfSight bool     `json:"blocksLineOfSight"`
-	BlocksMovement    bool     `json:"blocksMovement"`
-	Contains          []string `json:"contains,omitempty"`
+	BlocksLineOfSight bool        `json:"blocksLineOfSight"`
+	BlocksMovement    bool        `json:"blocksMovement"`
+	Contains          []string    `json:"contains,omitempty"`
 }
 
 type Snapshot struct {

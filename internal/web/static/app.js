@@ -55,6 +55,8 @@
  * @property {string} type
  * @property {TileAddress} tile
  * @property {{width: number, height: number}} gridSize
+ * @property {number} [rotation] - 0, 90, 180, 270 degrees
+ * @property {boolean} [swapAspectOnRotate] - Whether to swap width/height for 90/270 rotations
  * @property {string} tileImage
  * @property {string} tileImageCleaned
  * @property {{width: number, height: number}} pixelDimensions
@@ -367,7 +369,7 @@ function drawFurnitureWithImage(item, startX, startY, gridWidth, gridHeight, m) 
     const cachedImage = furnitureImageCache.get(imageUrl);
     if (cachedImage.complete && cachedImage.naturalWidth > 0) {
       console.log("DEBUG: Using cached image for", item.id);
-      drawFurnitureImage(cachedImage, item, startX, startY, gridWidth, gridHeight, m);
+      drawFurnitureImageWithRotation(cachedImage, item, startX, startY, gridWidth, gridHeight, m);
       return;
     }
   }
@@ -391,7 +393,67 @@ function drawFurnitureWithImage(item, startX, startY, gridWidth, gridHeight, m) 
   drawFurnitureFallback(item, startX, startY, gridWidth, gridHeight, m);
 }
 
+function drawFurnitureImageWithRotation(img, item, startX, startY, gridWidth, gridHeight, m) {
+  const rotation = item.rotation || 0;
+
+  console.log("DEBUG: Drawing furniture", item.id, "rotation:", rotation, "swapAspectOnRotate:", item.swapAspectOnRotate, "gridSize:", gridWidth + "x" + gridHeight);
+
+  if (rotation === 0) {
+    // No rotation, use original method
+    console.log("DEBUG: No rotation for", item.id, "using original dimensions", gridWidth + "x" + gridHeight);
+    drawFurnitureImage(img, item, startX, startY, gridWidth, gridHeight, m);
+    return;
+  }
+
+  // For aspect-swapped furniture, we need to handle rotation differently
+  let renderStartX = startX;
+  let renderStartY = startY;
+  let renderWidth = gridWidth;
+  let renderHeight = gridHeight;
+
+  if (item.swapAspectOnRotate && (rotation === 90 || rotation === 270)) {
+    // For aspect-swapped furniture, the visual area changes but we draw the original dimensions
+    // The collision area is swapped (handled elsewhere), but we render with original dimensions
+    // and let the rotation transform handle the visual effect
+
+    // Calculate where to position the original-dimensioned furniture so it appears in the swapped area
+    const swappedWidth = gridHeight;
+    const swappedHeight = gridWidth;
+
+    // Center the original dimensions within the swapped area
+    const widthOffset = (swappedWidth - gridWidth) / 2;
+    const heightOffset = (swappedHeight - gridHeight) / 2;
+
+    renderStartX = startX + widthOffset;
+    renderStartY = startY + heightOffset;
+
+    console.log("DEBUG: Image - Aspect swap positioning: original", gridWidth + "x" + gridHeight, "in swapped area", swappedWidth + "x" + swappedHeight, "offset:", widthOffset + "," + heightOffset);
+  }
+
+  // Calculate the center for rotation (use the render position)
+  const centerX = renderStartX + renderWidth / 2;
+  const centerY = renderStartY + renderHeight / 2;
+  const centerPixelX = centerX * m.tile + m.ox;
+  const centerPixelY = centerY * m.tile + m.oy;
+
+  // Save the current canvas state
+  canvasContext.save();
+
+  // Move to center, rotate, then move back
+  canvasContext.translate(centerPixelX, centerPixelY);
+  canvasContext.rotate((rotation * Math.PI) / 180);
+  canvasContext.translate(-centerPixelX, -centerPixelY);
+
+  // Draw the furniture using original dimensions (rotation handles the visual effect)
+  console.log("DEBUG: About to call drawFurnitureImage with", item.id, "original dimensions:", renderWidth + "x" + renderHeight, "at render position:", renderStartX + "," + renderStartY);
+  drawFurnitureImage(img, item, renderStartX, renderStartY, renderWidth, renderHeight, m);
+
+  // Restore the canvas state
+  canvasContext.restore();
+}
+
 function drawFurnitureImage(img, item, startX, startY, gridWidth, gridHeight, m) {
+  console.log("DEBUG: drawFurnitureImage called for", item.id, "with dimensions", gridWidth + "x" + gridHeight, "at", startX + "," + startY);
   // Draw the furniture image across the grid area it occupies
   for (let dy = 0; dy < gridHeight; dy++) {
     for (let dx = 0; dx < gridWidth; dx++) {
@@ -413,6 +475,65 @@ function drawFurnitureImage(img, item, startX, startY, gridWidth, gridHeight, m)
 }
 
 function drawFurnitureFallback(item, startX, startY, gridWidth, gridHeight, m) {
+  const rotation = item.rotation || 0;
+
+  console.log("DEBUG: Drawing furniture fallback", item.id, "rotation:", rotation, "swapAspectOnRotate:", item.swapAspectOnRotate, "gridSize:", gridWidth + "x" + gridHeight);
+  console.log("DEBUG: Full furniture item:", JSON.stringify(item, null, 2));
+
+  if (rotation === 0) {
+    // No rotation, use original method
+    drawFurnitureFallbackNoRotation(item, startX, startY, gridWidth, gridHeight, m);
+    return;
+  }
+
+  // For aspect-swapped furniture, we need to handle rotation differently
+  let renderStartX = startX;
+  let renderStartY = startY;
+  let renderWidth = gridWidth;
+  let renderHeight = gridHeight;
+
+  if (item.swapAspectOnRotate && (rotation === 90 || rotation === 270)) {
+    // For aspect-swapped furniture, the visual area changes but we draw the original dimensions
+    // The collision area is swapped (handled elsewhere), but we render with original dimensions
+    // and let the rotation transform handle the visual effect
+
+    // Calculate where to position the original-dimensioned furniture so it appears in the swapped area
+    const swappedWidth = gridHeight;
+    const swappedHeight = gridWidth;
+
+    // Center the original dimensions within the swapped area
+    const widthOffset = (swappedWidth - gridWidth) / 2;
+    const heightOffset = (swappedHeight - gridHeight) / 2;
+
+    renderStartX = startX + widthOffset;
+    renderStartY = startY + heightOffset;
+
+    console.log("DEBUG: Fallback - Aspect swap positioning: original", gridWidth + "x" + gridHeight, "in swapped area", swappedWidth + "x" + swappedHeight, "offset:", widthOffset + "," + heightOffset);
+  }
+
+  // Calculate the center for rotation (use the render position)
+  const centerX = renderStartX + renderWidth / 2;
+  const centerY = renderStartY + renderHeight / 2;
+  const centerPixelX = centerX * m.tile + m.ox;
+  const centerPixelY = centerY * m.tile + m.oy;
+
+  // Save the current canvas state
+  canvasContext.save();
+
+  // Move to center, rotate, then move back
+  canvasContext.translate(centerPixelX, centerPixelY);
+  canvasContext.rotate((rotation * Math.PI) / 180);
+  canvasContext.translate(-centerPixelX, -centerPixelY);
+
+  // Draw the furniture using original dimensions (rotation handles the visual effect)
+  console.log("DEBUG: About to call drawFurnitureFallbackNoRotation with", item.id, "original dimensions:", renderWidth + "x" + renderHeight, "at render position:", renderStartX + "," + renderStartY);
+  drawFurnitureFallbackNoRotation(item, renderStartX, renderStartY, renderWidth, renderHeight, m);
+
+  // Restore the canvas state
+  canvasContext.restore();
+}
+
+function drawFurnitureFallbackNoRotation(item, startX, startY, gridWidth, gridHeight, m) {
   // Color-coded fallback for different furniture types
   const cs = getComputedStyle(document.documentElement);
   let fillColor, strokeColor;
@@ -704,6 +825,22 @@ function applyPatch(patch) {
       } else {
         // Update existing blocking wall
         blockingWalls[existingIndex] = newWall;
+      }
+    }
+    patchCount += 1;
+    if (patchCountElement) patchCountElement.textContent = String(patchCount);
+    drawBoard();
+  } else if (patch.type === "FurnitureVisible" && patch.payload && Array.isArray(patch.payload.furniture)) {
+    console.log("Received FurnitureVisible patch:", patch.payload.furniture.length, "new furniture");
+    // Add newly visible furniture to existing ones (never remove furniture once seen)
+    for (const newFurniture of patch.payload.furniture) {
+      const existingIndex = furniture.findIndex(f => f.id === newFurniture.id);
+      if (existingIndex === -1) {
+        furniture.push(newFurniture);
+        console.log("Added new furniture:", newFurniture.id);
+      } else {
+        // Update existing furniture
+        furniture[existingIndex] = newFurniture;
       }
     }
     patchCount += 1;

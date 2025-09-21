@@ -41,6 +41,10 @@ type BlockingWallsVisible struct {
 	BlockingWalls []BlockingWallLite `json:"blockingWalls"`
 }
 
+type FurnitureVisible struct {
+	Furniture []FurnitureLite `json:"furniture"`
+}
+
 type TurnStateChanged struct {
 	TurnNumber     int    `json:"turnNumber"`
 	CurrentTurn    string `json:"currentTurn"`

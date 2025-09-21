@@ -39,14 +39,16 @@ type QuestMonster struct {
 
 // QuestFurniture represents furniture placement
 type QuestFurniture struct {
-	ID             string   `json:"id"`
-	Type           string   `json:"type"`
-	X              int      `json:"x"`
-	Y              int      `json:"y"`
-	Room           int      `json:"room"`
-	BlocksMovement bool     `json:"blocks_movement"`
-	Contains       []string `json:"contains"`
-	Notes          string   `json:"notes"`
+	ID                string   `json:"id"`
+	Type              string   `json:"type"`
+	X                 int      `json:"x"`
+	Y                 int      `json:"y"`
+	Room              int      `json:"room"`
+	Rotation          int      `json:"rotation,omitempty"`          // 0, 90, 180, 270 degrees
+	SwapAspectOnRotate bool     `json:"swap_aspect_on_rotate,omitempty"` // Whether to swap width/height for 90/270 rotations
+	BlocksMovement    bool     `json:"blocks_movement"`
+	Contains          []string `json:"contains"`
+	Notes             string   `json:"notes"`
 }
 
 // QuestObjective represents a quest objective

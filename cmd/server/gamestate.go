@@ -27,6 +27,7 @@ type GameState struct {
 	KnownRegions       map[int]bool
 	KnownDoors         map[string]bool
 	KnownBlockingWalls map[string]bool
+	KnownFurniture     map[string]bool
 	CorridorRegion     int
 }
 
@@ -43,6 +44,7 @@ func NewGameState(segment geometry.Segment, regionMap geometry.RegionMap, quest 
 		KnownRegions:       make(map[int]bool),
 		KnownDoors:         make(map[string]bool),
 		KnownBlockingWalls: make(map[string]bool),
+		KnownFurniture:     make(map[string]bool),
 		CorridorRegion:     0, // Corridor is always region 0
 	}
 
