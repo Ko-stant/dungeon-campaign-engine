@@ -279,8 +279,8 @@ func TestMonsterSystem_MonsterTypes(t *testing.T) {
 		Skeleton,
 		Zombie,
 		Mummy,
-		ChaosMage, // Updated from Chaos_Warrior to use existing type
-		Fimir,
+		DreadWarrior, // Updated from Chaos_Warrior to use existing type
+		Abomination,
 		Gargoyle,
 	}
 
@@ -305,13 +305,13 @@ func TestMonsterSystem_MonsterTypes(t *testing.T) {
 			t.Errorf("%s has invalid defense dice: %d", monsterType, monster.DefenseDice)
 		}
 
-		// Note: Monster struct uses Health/MaxHealth instead of BodyPoints/MindPoints
-		if monster.Health <= 0 {
-			t.Errorf("%s has invalid health: %d", monsterType, monster.Health)
+		// Note: Monster struct uses Body/MaxBody instead of BodyPoints/MindPoints
+		if monster.Body <= 0 {
+			t.Errorf("%s has invalid body: %d", monsterType, monster.Body)
 		}
 
-		if monster.MaxHealth <= 0 {
-			t.Errorf("%s has invalid max health: %d", monsterType, monster.MaxHealth)
+		if monster.MaxBody <= 0 {
+			t.Errorf("%s has invalid max body: %d", monsterType, monster.MaxBody)
 		}
 	}
 

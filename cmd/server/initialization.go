@@ -155,3 +155,51 @@ func initializeVisibleFurniture(state *GameState, furnitureSystem *FurnitureSyst
 		}
 	}
 }
+
+// createMonstersFromQuest creates monster instances from quest monster placements
+func createMonstersFromQuest(quest *geometry.QuestDefinition, monsterSystem *MonsterSystem) error {
+	for _, questMonster := range quest.Monsters {
+		// Convert string type to MonsterType
+		var monsterType MonsterType
+		switch questMonster.Type {
+		case "goblin":
+			monsterType = Goblin
+		case "orc":
+			monsterType = Orc
+		case "skeleton":
+			monsterType = Skeleton
+		case "zombie":
+			monsterType = Zombie
+		case "gargoyle":
+			monsterType = Gargoyle
+		case "mummy":
+			monsterType = Mummy
+		case "dread_warrior":
+			monsterType = DreadWarrior
+		case "abomination":
+			monsterType = Abomination
+		default:
+			log.Printf("Warning: Unknown monster type '%s' in quest, skipping", questMonster.Type)
+			continue
+		}
+
+		// Create monster position
+		position := protocol.TileAddress{
+			X: questMonster.X,
+			Y: questMonster.Y,
+		}
+
+		// Spawn the monster
+		monster, err := monsterSystem.SpawnMonster(monsterType, position)
+		if err != nil {
+			log.Printf("Warning: Failed to spawn monster %s at (%d,%d): %v", questMonster.Type, questMonster.X, questMonster.Y, err)
+			continue
+		}
+
+		log.Printf("Created monster %s (%s) at (%d,%d) in room %d",
+			monster.ID, questMonster.Type, questMonster.X, questMonster.Y, questMonster.Room)
+	}
+
+	log.Printf("Created %d monsters from quest", len(quest.Monsters))
+	return nil
+}

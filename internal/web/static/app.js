@@ -26,6 +26,7 @@
  * @property {ThresholdLite[]} thresholds
  * @property {BlockingWallLite[]} blockingWalls
  * @property {FurnitureLite[]} furniture
+ * @property {MonsterLite[]} monsters
  * @property {number[]} visibleRegionIds
  * @property {number} corridorRegionId
  * @property {number[]} knownRegionIds
@@ -63,6 +64,17 @@
  * @property {boolean} blocksLineOfSight
  * @property {boolean} blocksMovement
  * @property {string[]} [contains]
+ */
+
+/**
+ * @typedef {Object} MonsterLite
+ * @property {string} id
+ * @property {string} type
+ * @property {TileAddress} tile
+ * @property {number} body
+ * @property {number} MaxBody
+ * @property {boolean} isVisible
+ * @property {boolean} isAlive
  */
 
 const snapshotElement = document.getElementById("snapshot");
@@ -103,6 +115,9 @@ let blockingWalls = Array.isArray(snapshot?.blockingWalls) ? snapshot.blockingWa
 /** @type {FurnitureLite[]} */
 let furniture = Array.isArray(snapshot?.furniture) ? snapshot.furniture.slice() : [];
 console.log("DEBUG: Furniture data loaded:", furniture.length, "items", furniture);
+/** @type {MonsterLite[]} */
+let monsters = Array.isArray(snapshot?.monsters) ? snapshot.monsters.slice() : [];
+console.log("DEBUG: Monster data loaded:", monsters.length, "items", monsters);
 /** @type {Set<number>} */
 let visibleNow = new Set(Array.isArray(snapshot?.visibleRegionIds) ? snapshot.visibleRegionIds : []);
 /** @type {number} */
@@ -196,6 +211,7 @@ function drawDoorOverlays() {
 
 // Image cache for blocking wall textures
 const blockingWallImageCache = new Map();
+const monsterImageCache = new Map();
 
 function drawBlockingWalls() {
   const m = gridMetrics();
@@ -648,6 +664,7 @@ function drawBoard() {
   drawGrid();          // subtle per-cell grid for counting
   drawRegionBorders(); // bold room/corridor outlines
   drawFurniture();     // furniture on top of regions
+  drawMonsters();      // monsters on top of furniture
   drawDoorOverlays();  // door overlays on top of regions
   drawBlockingWalls(); // blocking walls on top of regions
 
@@ -846,6 +863,22 @@ function applyPatch(patch) {
     patchCount += 1;
     if (patchCountElement) patchCountElement.textContent = String(patchCount);
     drawBoard();
+  } else if (patch.type === "MonstersVisible" && patch.payload && Array.isArray(patch.payload.monsters)) {
+    console.log("Received MonstersVisible patch:", patch.payload.monsters.length, "new monsters");
+    // Add newly visible monsters to existing ones (never remove monsters once seen)
+    for (const newMonster of patch.payload.monsters) {
+      const existingIndex = monsters.findIndex(m => m.id === newMonster.id);
+      if (existingIndex === -1) {
+        monsters.push(newMonster);
+        console.log("Added new monster:", newMonster.id);
+      } else {
+        // Update existing monster
+        monsters[existingIndex] = newMonster;
+      }
+    }
+    patchCount += 1;
+    if (patchCountElement) patchCountElement.textContent = String(patchCount);
+    drawBoard();
   }
 }
 
@@ -870,6 +903,159 @@ function openStream() {
   socket.onclose = () => {
     setTimeout(openStream, 2000);
   };
+}
+
+function drawMonsters() {
+  const m = gridMetrics();
+  console.log("DEBUG: drawMonsters called, monsters array:", monsters);
+  if (!Array.isArray(monsters) || monsters.length === 0) {
+    console.log("DEBUG: No monsters to draw");
+    return;
+  }
+
+  console.log("DEBUG: Drawing", monsters.length, "monsters");
+  canvasContext.save();
+
+  for (const monster of monsters) {
+    if (!monster.isVisible || !monster.isAlive) {
+      continue; // Only draw visible, alive monsters
+    }
+
+    const x = monster.tile.x;
+    const y = monster.tile.y;
+    const r = tileRect(x, y, m.tile, m.ox, m.oy);
+
+    // Draw monster based on type
+    drawMonsterWithImage(monster, r);
+  }
+
+  canvasContext.restore();
+}
+
+function drawMonsterWithImage(monster, rect) {
+  // Prefer cleaned image, fallback to regular tile image
+  const imageUrl = `assets/tiles_cleaned/monsters/monster_${monster.type}.png`;
+
+  // Check if image is already cached
+  if (monsterImageCache.has(imageUrl)) {
+    const cachedImage = monsterImageCache.get(imageUrl);
+    if (cachedImage && cachedImage.complete && cachedImage.naturalWidth > 0) {
+      console.log("DEBUG: Using cached monster image for", monster.type);
+      drawMonsterImage(cachedImage, monster, rect);
+      return;
+    } else if (cachedImage === null) {
+      // Image failed to load, use fallback
+      drawMonsterFallback(monster, rect);
+      return;
+    }
+  }
+
+  // Load image if not cached
+  const img = new Image();
+  img.onload = function() {
+    console.log("DEBUG: Monster image loaded successfully for", monster.type, "from", imageUrl);
+    monsterImageCache.set(imageUrl, img);
+    drawMonsterImage(img, monster, rect);
+    requestAnimationFrame(redraw); // Redraw to show the loaded image
+  };
+  img.onerror = function() {
+    console.log("DEBUG: Failed to load monster image for", monster.type, "from", imageUrl, "using fallback");
+    // Mark as failed so we don't try again
+    monsterImageCache.set(imageUrl, null);
+    drawMonsterFallback(monster, rect);
+    requestAnimationFrame(redraw); // Redraw to show the fallback
+  };
+  img.src = imageUrl;
+
+  // Don't draw fallback immediately - wait for image to load or fail
+  // This prevents double-rendering issues
+}
+
+function drawMonsterImage(img, monster, rect) {
+  // Draw the monster image to fill the tile
+  canvasContext.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+
+  // Add health indicator if damaged
+  if (monster.body < monster.MaxBody) {
+    canvasContext.fillStyle = 'red';
+    canvasContext.font = '12px monospace';
+    canvasContext.textAlign = 'center';
+    canvasContext.textBaseline = 'middle';
+    canvasContext.fillText(`${monster.body}/${monster.MaxBody}`,
+                          rect.x + rect.w / 2, rect.y + rect.h - 10);
+  }
+}
+
+function drawMonsterFallback(monster, rect) {
+  // Color-coded fallback for different monster types
+  let fillColor, strokeColor;
+
+  switch (monster.type) {
+    case 'goblin':
+      fillColor = 'rgb(34, 139, 34)'; // Forest green
+      strokeColor = 'rgb(0, 100, 0)';
+      break;
+    case 'orc':
+      fillColor = 'rgb(139, 69, 19)'; // Saddle brown
+      strokeColor = 'rgb(101, 67, 33)';
+      break;
+    case 'skeleton':
+      fillColor = 'rgb(245, 245, 220)'; // Beige
+      strokeColor = 'rgb(211, 211, 211)';
+      break;
+    case 'zombie':
+      fillColor = 'rgb(128, 128, 0)'; // Olive
+      strokeColor = 'rgb(85, 107, 47)';
+      break;
+    case 'mummy':
+      fillColor = 'rgb(222, 184, 135)'; // Burlywood
+      strokeColor = 'rgb(139, 69, 19)';
+      break;
+    case 'dread_warrior':
+      fillColor = 'rgb(105, 105, 105)'; // Dim gray
+      strokeColor = 'rgb(47, 79, 79)';
+      break;
+    case 'gargoyle':
+      fillColor = 'rgb(112, 128, 144)'; // Slate gray
+      strokeColor = 'rgb(47, 79, 79)';
+      break;
+    case 'abomination':
+      fillColor = 'rgb(139, 0, 139)'; // Dark magenta
+      strokeColor = 'rgb(75, 0, 130)';
+      break;
+    default:
+      fillColor = 'rgb(220, 20, 60)'; // Crimson (unknown monster)
+      strokeColor = 'rgb(139, 0, 0)';
+  }
+
+  // Fill the tile
+  canvasContext.fillStyle = fillColor;
+  canvasContext.fillRect(rect.x + 2, rect.y + 2, rect.w - 4, rect.h - 4);
+
+  // Draw border
+  canvasContext.strokeStyle = strokeColor;
+  canvasContext.lineWidth = 2;
+  canvasContext.strokeRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2);
+
+  // Add type indicator text
+  canvasContext.fillStyle = 'white';
+  canvasContext.font = '10px monospace';
+  canvasContext.textAlign = 'center';
+  canvasContext.textBaseline = 'middle';
+
+  // Abbreviate monster name for display
+  let displayText = monster.type.charAt(0).toUpperCase();
+  if (monster.type === 'dread_warrior') displayText = 'DW';
+
+  canvasContext.fillText(displayText, rect.x + rect.w / 2, rect.y + rect.h / 2);
+
+  // Add body indicator if damaged
+  if (monster.body < monster.MaxBody) {
+    canvasContext.fillStyle = 'red';
+    canvasContext.font = '8px monospace';
+    canvasContext.fillText(`${monster.body}/${monster.MaxBody}`,
+                          rect.x + rect.w / 2, rect.y + rect.h - 8);
+  }
 }
 
 /**

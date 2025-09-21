@@ -9,7 +9,7 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/ws"
 )
 
-func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem) {
+func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem, monsterSystem *MonsterSystem) {
 	if (req.DX != 0 && req.DY != 0) || req.DX < -1 || req.DX > 1 || req.DY < -1 || req.DY > 1 {
 		return
 	}
@@ -99,7 +99,7 @@ func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, 
 	}
 }
 
-func handleRequestToggleDoor(req protocol.RequestToggleDoor, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem) {
+func handleRequestToggleDoor(req protocol.RequestToggleDoor, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem, monsterSystem *MonsterSystem) {
 	state.Lock.Lock()
 	info, ok := state.Doors[req.ThresholdID]
 	if !ok || info == nil || info.State == "open" {
@@ -152,6 +152,12 @@ func handleRequestToggleDoor(req protocol.RequestToggleDoor, state *GameState, h
 	newlyVisibleFurniture := checkForNewlyVisibleFurniture(state, furnitureSystem)
 	if len(newlyVisibleFurniture) > 0 {
 		broadcastEvent(hub, sequence, "FurnitureVisible", protocol.FurnitureVisible{Furniture: newlyVisibleFurniture})
+	}
+
+	// Check for newly visible monsters after door toggle
+	newlyVisibleMonsters := checkForNewlyVisibleMonsters(state, monsterSystem)
+	if len(newlyVisibleMonsters) > 0 {
+		broadcastEvent(hub, sequence, "MonstersVisible", protocol.MonstersVisible{Monsters: newlyVisibleMonsters})
 	}
 }
 
@@ -211,7 +217,49 @@ func checkForNewlyVisibleFurniture(state *GameState, furnitureSystem *FurnitureS
 	return newlyVisible
 }
 
-func handleWebSocketMessage(data []byte, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem) {
+func checkForNewlyVisibleMonsters(state *GameState, monsterSystem *MonsterSystem) []protocol.MonsterLite {
+	var newlyVisible []protocol.MonsterLite
+
+	// If no monster system provided, return empty list
+	if monsterSystem == nil {
+		return newlyVisible
+	}
+
+	monsters := monsterSystem.GetMonsters()
+	for _, monster := range monsters {
+		// Skip if monster is already known
+		if state.KnownMonsters[monster.ID] {
+			continue
+		}
+
+		// Check if monster is in a revealed region
+		monsterIdx := monster.Position.Y*state.Segment.Width + monster.Position.X
+		monsterRegion := state.RegionMap.TileRegionIDs[monsterIdx]
+
+		if state.RevealedRegions[monsterRegion] {
+			// Mark monster as known and visible
+			state.KnownMonsters[monster.ID] = true
+			monster.IsVisible = true
+
+			monsterItem := protocol.MonsterLite{
+				ID:        monster.ID,
+				Type:      string(monster.Type),
+				Tile:      monster.Position,
+				Body:      monster.Body,
+				MaxBody:   monster.MaxBody,
+				IsVisible: monster.IsVisible,
+				IsAlive:   monster.IsAlive,
+			}
+			newlyVisible = append(newlyVisible, monsterItem)
+			log.Printf("DEBUG: Newly visible monster %s (%s) in region %d at (%d,%d)",
+				monster.ID, monster.Type, monsterRegion, monster.Position.X, monster.Position.Y)
+		}
+	}
+
+	return newlyVisible
+}
+
+func handleWebSocketMessage(data []byte, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem, monsterSystem *MonsterSystem) {
 	var env protocol.IntentEnvelope
 	if err := json.Unmarshal(data, &env); err != nil {
 		return
@@ -223,14 +271,14 @@ func handleWebSocketMessage(data []byte, state *GameState, hub *ws.Hub, sequence
 		if err := json.Unmarshal(env.Payload, &req); err != nil {
 			return
 		}
-		handleRequestMove(req, state, hub, sequence, quest, furnitureSystem)
+		handleRequestMove(req, state, hub, sequence, quest, furnitureSystem, monsterSystem)
 
 	case "RequestToggleDoor":
 		var req protocol.RequestToggleDoor
 		if err := json.Unmarshal(env.Payload, &req); err != nil {
 			return
 		}
-		handleRequestToggleDoor(req, state, hub, sequence, quest, furnitureSystem)
+		handleRequestToggleDoor(req, state, hub, sequence, quest, furnitureSystem, monsterSystem)
 
 	default:
 		// Unknown message type

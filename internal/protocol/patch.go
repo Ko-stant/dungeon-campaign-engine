@@ -45,6 +45,10 @@ type FurnitureVisible struct {
 	Furniture []FurnitureLite `json:"furniture"`
 }
 
+type MonstersVisible struct {
+	Monsters []MonsterLite `json:"monsters"`
+}
+
 type TurnStateChanged struct {
 	TurnNumber     int    `json:"turnNumber"`
 	CurrentTurn    string `json:"currentTurn"`

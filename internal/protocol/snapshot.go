@@ -36,24 +36,34 @@ type BlockingWallLite struct {
 }
 
 type FurnitureLite struct {
-	ID                string      `json:"id"`
-	Type              string      `json:"type"`
-	Tile              TileAddress `json:"tile"`
-	GridSize          struct {
+	ID       string      `json:"id"`
+	Type     string      `json:"type"`
+	Tile     TileAddress `json:"tile"`
+	GridSize struct {
 		Width  int `json:"width"`
 		Height int `json:"height"`
 	} `json:"gridSize"`
-	Rotation          int         `json:"rotation,omitempty"` // 0, 90, 180, 270 degrees
-	SwapAspectOnRotate bool        `json:"swapAspectOnRotate,omitempty"` // Whether to swap width/height for 90/270 rotations
-	TileImage         string      `json:"tileImage"`
-	TileImageCleaned  string      `json:"tileImageCleaned"`
-	PixelDimensions   struct {
+	Rotation           int    `json:"rotation,omitempty"`           // 0, 90, 180, 270 degrees
+	SwapAspectOnRotate bool   `json:"swapAspectOnRotate,omitempty"` // Whether to swap width/height for 90/270 rotations
+	TileImage          string `json:"tileImage"`
+	TileImageCleaned   string `json:"tileImageCleaned"`
+	PixelDimensions    struct {
 		Width  int `json:"width"`
 		Height int `json:"height"`
 	} `json:"pixelDimensions"`
-	BlocksLineOfSight bool        `json:"blocksLineOfSight"`
-	BlocksMovement    bool        `json:"blocksMovement"`
-	Contains          []string    `json:"contains,omitempty"`
+	BlocksLineOfSight bool     `json:"blocksLineOfSight"`
+	BlocksMovement    bool     `json:"blocksMovement"`
+	Contains          []string `json:"contains,omitempty"`
+}
+
+type MonsterLite struct {
+	ID        string      `json:"id"`
+	Type      string      `json:"type"`
+	Tile      TileAddress `json:"tile"`
+	Body      int         `json:"body"`
+	MaxBody   int         `json:"MaxBody"`
+	IsVisible bool        `json:"isVisible"`
+	IsAlive   bool        `json:"isAlive"`
 }
 
 type Snapshot struct {
@@ -71,6 +81,7 @@ type Snapshot struct {
 	Thresholds        []ThresholdLite    `json:"thresholds"`
 	BlockingWalls     []BlockingWallLite `json:"blockingWalls"`
 	Furniture         []FurnitureLite    `json:"furniture"`
+	Monsters          []MonsterLite      `json:"monsters"`
 	Variables         map[string]any     `json:"variables"`
 	ProtocolVersion   string             `json:"protocolVersion"`
 	VisibleRegionIDs  []int              `json:"visibleRegionIds"`

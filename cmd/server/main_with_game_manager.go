@@ -44,6 +44,11 @@ func mainWithGameManager() {
 	if err != nil {
 		log.Fatalf("Failed to load game content: %v", err)
 	}
+
+	// Spawn monsters from quest definition
+	if err := createMonstersFromQuest(quest, gameManager.GetMonsterSystem()); err != nil {
+		log.Fatalf("Failed to create monsters from quest: %v", err)
+	}
 	furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
 
 	state, _, err := initializeGameState(board, quest, furnitureSystem)
@@ -113,21 +118,9 @@ func mainWithGameManager() {
 			revealed = append(revealed, id)
 		}
 
-		// Include monsters in entities
+		// Include only heroes in entities (monsters are handled separately)
 		entities := []protocol.EntityLite{
 			{ID: "hero-1", Kind: "hero", Tile: state.Entities["hero-1"]},
-		}
-
-		// Add visible monsters
-		monsters := gameManager.GetMonsters()
-		for id, monster := range monsters {
-			if monster.IsVisible {
-				entities = append(entities, protocol.EntityLite{
-					ID:   id,
-					Kind: "monster",
-					Tile: monster.Position,
-				})
-			}
 		}
 
 		// Include all known doors in initial snapshot
@@ -163,6 +156,10 @@ func mainWithGameManager() {
 		furniture := gameManager.GetFurnitureForSnapshot()
 		log.Printf("DEBUG: Snapshot generation - got %d furniture items", len(furniture))
 
+		// Get monster data for snapshot
+		monsters := gameManager.GetMonstersForSnapshot()
+		log.Printf("DEBUG: Snapshot generation - got %d monster items", len(monsters))
+
 		s := protocol.Snapshot{
 			MapID:             "dev-map",
 			PackID:            "dev-pack@v1",
@@ -189,6 +186,7 @@ func mainWithGameManager() {
 			Thresholds:       thresholds,
 			BlockingWalls:    blockingWalls,
 			Furniture:        furniture,
+			Monsters:         monsters,
 			VisibleRegionIDs: visibleNow,
 			CorridorRegionID: state.CorridorRegion,
 			KnownRegionIDs:   known,
@@ -227,7 +225,8 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		if err := gameManager.ProcessMovement(req); err != nil {
 			log.Printf("GameManager movement failed: %v, falling back to legacy", err)
 			seqPtr := &sequenceGen.counter
-			handleRequestMove(req, state, hub, seqPtr, quest, furnitureSystem)
+			monsterSystem := gameManager.GetMonsterSystem()
+			handleRequestMove(req, state, hub, seqPtr, quest, furnitureSystem, monsterSystem)
 		}
 
 	case "RequestToggleDoor":
@@ -241,7 +240,8 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		if err := gameManager.ProcessDoorToggle(req); err != nil {
 			log.Printf("GameManager door toggle failed: %v, falling back to legacy", err)
 			seqPtr := &sequenceGen.counter
-			handleRequestToggleDoor(req, state, hub, seqPtr, quest, furnitureSystem)
+			monsterSystem := gameManager.GetMonsterSystem()
+			handleRequestToggleDoor(req, state, hub, seqPtr, quest, furnitureSystem, monsterSystem)
 		}
 
 	case "HeroAction":
@@ -317,6 +317,7 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		// Unknown message type - fall back to legacy handler
 		furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
 		seqPtr := &sequenceGen.counter
-		handleWebSocketMessage(data, state, hub, seqPtr, quest, furnitureSystem)
+		monsterSystem := gameManager.GetMonsterSystem()
+		handleWebSocketMessage(data, state, hub, seqPtr, quest, furnitureSystem, monsterSystem)
 	}
 }

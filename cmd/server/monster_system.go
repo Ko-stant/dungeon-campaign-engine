@@ -40,8 +40,8 @@ type Monster struct {
 	ID               string               `json:"id"`
 	Type             MonsterType          `json:"type"`
 	Position         protocol.TileAddress `json:"position"`
-	Health           int                  `json:"health"`
-	MaxHealth        int                  `json:"maxHealth"`
+	Body             int                  `json:"body"`
+	MaxBody          int                  `json:"MaxBody"`
 	AttackDice       int                  `json:"attackDice"`
 	DefenseDice      int                  `json:"defenseDice"`
 	MovementRange    int                  `json:"movementRange"`
@@ -51,20 +51,21 @@ type Monster struct {
 	SpecialAbilities []string             `json:"specialAbilities,omitempty"`
 	SpawnedTurn      int                  `json:"spawnedTurn"`
 	LastMovedTurn    int                  `json:"lastMovedTurn"`
+	SubType          string               `json:"subType,omitempty"` // e.g., "warrior", "shaman" for orcs
 }
 
 // MonsterType defines different monster types
 type MonsterType string
 
 const (
-	Goblin    MonsterType = "goblin"
-	Orc       MonsterType = "orc"
-	Skeleton  MonsterType = "skeleton"
-	Zombie    MonsterType = "zombie"
-	Fimir     MonsterType = "fimir"
-	ChaosMage MonsterType = "chaos_mage"
-	Gargoyle  MonsterType = "gargoyle"
-	Mummy     MonsterType = "mummy"
+	Goblin       MonsterType = "goblin"
+	Orc          MonsterType = "orc"
+	Skeleton     MonsterType = "skeleton"
+	Zombie       MonsterType = "zombie"
+	Gargoyle     MonsterType = "gargoyle"
+	Mummy        MonsterType = "mummy"
+	DreadWarrior MonsterType = "dread_warrior"
+	Abomination  MonsterType = "abomination"
 )
 
 // AIBehavior defines monster AI patterns
@@ -83,13 +84,14 @@ const (
 type MonsterTemplate struct {
 	Type             MonsterType `json:"type"`
 	Name             string      `json:"name"`
-	MaxHealth        int         `json:"maxHealth"`
+	MaxBody          int         `json:"MaxBody"`
+	MaxMind          int         `json:"maxMind"`
 	AttackDice       int         `json:"attackDice"`
 	DefenseDice      int         `json:"defenseDice"`
 	MovementRange    int         `json:"movementRange"`
-	DefaultBehavior  AIBehavior  `json:"defaultBehavior"`
 	SpecialAbilities []string    `json:"specialAbilities,omitempty"`
 	Description      string      `json:"description"`
+	SubType          string      `json:"subType,omitempty"` // e.g., "undead" for skeletons
 }
 
 // MonsterAction represents an action a monster can take
@@ -135,71 +137,94 @@ func NewMonsterSystem(gameState *GameState, turnManager *TurnManager, diceSystem
 // Initialize monster templates with HeroQuest stats
 func (ms *MonsterSystem) initializeMonsterTemplates() {
 	ms.templates[Goblin] = &MonsterTemplate{
-		Type:            Goblin,
-		Name:            "Goblin",
-		MaxHealth:       1,
-		AttackDice:      2,
-		DefenseDice:     2,
-		MovementRange:   2,
-		DefaultBehavior: Aggressive,
-		Description:     "Weak but numerous creatures",
+		Type:          Goblin,
+		Name:          "Goblin",
+		MaxBody:       1,
+		MaxMind:       1,
+		AttackDice:    2,
+		DefenseDice:   1,
+		MovementRange: 10,
+		Description:   "Weak but numerous creatures",
 	}
 
 	ms.templates[Orc] = &MonsterTemplate{
-		Type:            Orc,
-		Name:            "Orc",
-		MaxHealth:       2,
-		AttackDice:      3,
-		DefenseDice:     2,
-		MovementRange:   2,
-		DefaultBehavior: Aggressive,
-		Description:     "Stronger than goblins, more aggressive",
+		Type:          Orc,
+		Name:          "Orc",
+		MaxBody:       1,
+		MaxMind:       2,
+		AttackDice:    3,
+		DefenseDice:   2,
+		MovementRange: 8,
+		Description:   "Stronger than goblins, more aggressive",
 	}
 
 	ms.templates[Skeleton] = &MonsterTemplate{
-		Type:            Skeleton,
-		Name:            "Skeleton",
-		MaxHealth:       1,
-		AttackDice:      2,
-		DefenseDice:     2,
-		MovementRange:   2,
-		DefaultBehavior: Patrol,
-		Description:     "Undead creatures that guard areas",
+		Type:          Skeleton,
+		Name:          "Skeleton",
+		MaxBody:       1,
+		MaxMind:       0,
+		AttackDice:    2,
+		DefenseDice:   2,
+		MovementRange: 6,
+		Description:   "Undead creatures that guard areas",
+		SubType:       "undead",
 	}
 
 	ms.templates[Zombie] = &MonsterTemplate{
-		Type:            Zombie,
-		Name:            "Zombie",
-		MaxHealth:       2,
-		AttackDice:      2,
-		DefenseDice:     3,
-		MovementRange:   1,
-		DefaultBehavior: Wandering,
-		Description:     "Slow but tough undead",
+		Type:          Zombie,
+		Name:          "Zombie",
+		MaxBody:       1,
+		MaxMind:       0,
+		AttackDice:    2,
+		DefenseDice:   3,
+		MovementRange: 5,
+		Description:   "Slow but tough undead",
+		SubType:       "undead",
 	}
 
-	ms.templates[Fimir] = &MonsterTemplate{
-		Type:             Fimir,
-		Name:             "Fimir",
-		MaxHealth:        3,
-		AttackDice:       3,
-		DefenseDice:      3,
-		MovementRange:    2,
-		DefaultBehavior:  Hunter,
-		SpecialAbilities: []string{"tail_attack"},
-		Description:      "Dangerous reptilian creatures with tail attacks",
+	ms.templates[Mummy] = &MonsterTemplate{
+		Type:          Mummy,
+		Name:          "Mummy",
+		MaxBody:       2,
+		MaxMind:       0,
+		AttackDice:    3,
+		DefenseDice:   4,
+		MovementRange: 4,
+		Description:   "Ancient undead guardians wrapped in bandages",
+		SubType:       "undead",
 	}
 
-	ms.templates[ChaosMage] = &MonsterTemplate{
-		Type:             ChaosMage,
-		Name:             "Chaos Mage",
-		MaxHealth:        2,
-		AttackDice:       2,
-		DefenseDice:      2,
-		MovementRange:    2,
-		DefaultBehavior:  Defensive,
-		SpecialAbilities: []string{"chaos_spell", "teleport"},
-		Description:      "Spell-casting enemies with magical abilities",
+	ms.templates[Gargoyle] = &MonsterTemplate{
+		Type:          Gargoyle,
+		Name:          "Gargoyle",
+		MaxBody:       3,
+		MaxMind:       4,
+		AttackDice:    4,
+		DefenseDice:   5,
+		MovementRange: 6,
+		Description:   "Stone creatures that guard important areas",
+	}
+
+	ms.templates[DreadWarrior] = &MonsterTemplate{
+		Type:          DreadWarrior,
+		Name:          "Dread Warrior",
+		MaxBody:       3,
+		MaxMind:       3,
+		AttackDice:    4,
+		DefenseDice:   4,
+		MovementRange: 7,
+		Description:   "Heavily armored undead warriors",
+	}
+
+	ms.templates[Abomination] = &MonsterTemplate{
+		Type:          Abomination,
+		Name:          "Abomination",
+		MaxBody:       2,
+		MaxMind:       3,
+		AttackDice:    3,
+		DefenseDice:   3,
+		MovementRange: 6,
+		Description:   "Twisted creatures of chaos",
 	}
 }
 
@@ -222,16 +247,15 @@ func (ms *MonsterSystem) SpawnMonster(monsterType MonsterType, position protocol
 		ID:               monsterID,
 		Type:             monsterType,
 		Position:         position,
-		Health:           template.MaxHealth,
-		MaxHealth:        template.MaxHealth,
+		Body:             template.MaxBody,
+		MaxBody:          template.MaxBody,
 		AttackDice:       template.AttackDice,
 		DefenseDice:      template.DefenseDice,
 		MovementRange:    template.MovementRange,
 		IsVisible:        false, // Monsters start hidden until revealed
 		IsAlive:          true,
-		AIBehavior:       template.DefaultBehavior,
 		SpecialAbilities: template.SpecialAbilities,
-		SpawnedTurn:      ms.turnManager.GetTurnState().TurnNumber,
+		SpawnedTurn:      ms.getTurnNumber(),
 		LastMovedTurn:    0,
 	}
 
@@ -277,7 +301,7 @@ func (ms *MonsterSystem) MoveMonster(monsterID string, destination protocol.Tile
 	// Update position
 	oldPosition := monster.Position
 	monster.Position = destination
-	monster.LastMovedTurn = ms.turnManager.GetTurnState().TurnNumber
+	monster.LastMovedTurn = ms.getTurnNumber()
 
 	// Update game state
 	ms.gameState.Lock.Lock()
@@ -299,7 +323,7 @@ func (ms *MonsterSystem) MoveMonster(monsterID string, destination protocol.Tile
 
 // ProcessMonsterTurn handles AI for all monsters during GameMaster turn
 func (ms *MonsterSystem) ProcessMonsterTurn() {
-	if !ms.turnManager.IsGameMasterTurn() {
+	if ms.turnManager != nil && !ms.turnManager.IsGameMasterTurn() {
 		ms.logger.Printf("Attempted to process monster turn during non-GM turn")
 		return
 	}
@@ -582,7 +606,7 @@ func (ms *MonsterSystem) KillMonster(monsterID string) error {
 	}
 
 	monster.IsAlive = false
-	monster.Health = 0
+	monster.Body = 0
 
 	// Remove from game state entities
 	ms.gameState.Lock.Lock()
@@ -696,4 +720,12 @@ func (ms *MonsterSystem) processMonsterWaitAction(request MonsterActionRequest, 
 	result.Success = true
 	result.Message = "Monster is waiting"
 	return result, nil
+}
+
+// getTurnNumber safely gets the current turn number, handling nil TurnManager
+func (ms *MonsterSystem) getTurnNumber() int {
+	if ms.turnManager == nil {
+		return 1 // Default to turn 1 for initialization
+	}
+	return ms.turnManager.GetTurnState().TurnNumber
 }

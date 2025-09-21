@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
 )
 
@@ -26,7 +27,7 @@ type GameManager struct {
 // NewGameManager creates a new game manager with all systems
 func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig) (*GameManager, error) {
 	// Initialize game state
-	gameState, furnitureSystem, err := initializeGameStateForManager(logger)
+	gameState, furnitureSystem, quest, err := initializeGameStateForManager(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize game state: %w", err)
 	}
@@ -45,6 +46,11 @@ func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen Sequence
 
 	// Create monster system
 	monsterSystem := NewMonsterSystem(gameState, turnManager, diceSystem, broadcaster, logger)
+
+	// Create monsters from quest data
+	if err := createMonstersFromQuest(quest, monsterSystem); err != nil {
+		logger.Printf("Warning: Failed to create monsters from quest: %v", err)
+	}
 
 	// Add default player (will be replaced with dynamic player loading later)
 	defaultPlayer := &Player{
@@ -128,7 +134,7 @@ func (gm *GameManager) ProcessDoorToggle(req protocol.RequestToggleDoor) error {
 	// Use existing door toggle logic directly
 	// TODO: Implement proper quest loading for this to work
 	seqPtr := &gm.sequenceGen.(*SequenceGeneratorImpl).counter
-	handleRequestToggleDoor(req, gm.gameState, gm.broadcaster.(*BroadcasterImpl).hub, seqPtr, nil, nil)
+	handleRequestToggleDoor(req, gm.gameState, gm.broadcaster.(*BroadcasterImpl).hub, seqPtr, nil, nil, nil)
 	return nil
 }
 
@@ -267,20 +273,20 @@ func (gm *GameManager) DebugRevealMap() error {
 }
 
 // Helper function to initialize game state using existing initialization logic
-func initializeGameStateForManager(logger Logger) (*GameState, *FurnitureSystem, error) {
+func initializeGameStateForManager(logger Logger) (*GameState, *FurnitureSystem, *geometry.QuestDefinition, error) {
 	// Use existing initialization logic
 	board, quest, err := loadGameContent()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to load game content: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to load game content: %w", err)
 	}
 	furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
 	state, _, err := initializeGameState(board, quest, furnitureSystem)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to initialize game state: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to initialize game state: %w", err)
 	}
 
 	logger.Printf("Game state initialized with board, quest, and furniture data")
-	return state, furnitureSystem, nil
+	return state, furnitureSystem, quest, nil
 }
 
 // GetVisibleMonsters returns all visible monsters
@@ -289,6 +295,11 @@ func (gm *GameManager) GetVisibleMonsters() []*Monster {
 	defer gm.mutex.RUnlock()
 
 	return gm.monsterSystem.GetVisibleMonsters()
+}
+
+// GetMonsterSystem returns the monster system (for legacy handler compatibility)
+func (gm *GameManager) GetMonsterSystem() *MonsterSystem {
+	return gm.monsterSystem
 }
 
 // GetFurnitureForSnapshot returns all furniture in the format needed for client snapshot
@@ -338,4 +349,36 @@ func (gm *GameManager) GetFurnitureForSnapshot() []protocol.FurnitureLite {
 
 	gm.logger.Printf("DEBUG: Returning %d furniture items for snapshot", len(furniture))
 	return furniture
+}
+
+// GetMonstersForSnapshot returns all monsters in the format needed for client snapshot
+func (gm *GameManager) GetMonstersForSnapshot() []protocol.MonsterLite {
+	gm.mutex.RLock()
+	defer gm.mutex.RUnlock()
+
+	allMonsters := gm.monsterSystem.GetMonsters()
+	gm.logger.Printf("DEBUG: GetMonstersForSnapshot called - found %d monster instances", len(allMonsters))
+	monsters := make([]protocol.MonsterLite, 0, len(allMonsters))
+
+	for _, monster := range allMonsters {
+		// Only include monsters that have been discovered
+		if gm.gameState.KnownMonsters[monster.ID] {
+			monsterItem := protocol.MonsterLite{
+				ID:        monster.ID,
+				Type:      string(monster.Type),
+				Tile:      monster.Position,
+				Body:      monster.Body,
+				MaxBody:   monster.MaxBody,
+				IsVisible: monster.IsVisible,
+				IsAlive:   monster.IsAlive,
+			}
+
+			monsters = append(monsters, monsterItem)
+			gm.logger.Printf("DEBUG: Added monster item to snapshot: %s (%s) at (%d,%d) - visible: %v, alive: %v",
+				monster.ID, monster.Type, monster.Position.X, monster.Position.Y, monster.IsVisible, monster.IsAlive)
+		}
+	}
+
+	gm.logger.Printf("DEBUG: Returning %d monster items for snapshot", len(monsters))
+	return monsters
 }

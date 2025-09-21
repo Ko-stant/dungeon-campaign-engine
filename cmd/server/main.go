@@ -403,6 +403,21 @@ func main() {
 	hub := ws.NewHub()
 	var sequence uint64
 
+	// Initialize monster system for legacy main
+	log.Printf("DEBUG: Initializing monster system...")
+	broadcaster := &BroadcasterImpl{hub: hub}
+	logger := &LoggerImpl{}
+	diceSystem := &DiceSystem{}
+	monsterSystem := NewMonsterSystem(state, nil, diceSystem, broadcaster, logger)
+
+	// Create monsters from quest
+	log.Printf("DEBUG: Quest has %d monsters", len(quest.Monsters))
+	if err := createMonstersFromQuest(quest, monsterSystem); err != nil {
+		log.Printf("Warning: Failed to create monsters: %v", err)
+	} else {
+		log.Printf("DEBUG: Monster system initialized")
+	}
+
 	mux.HandleFunc("/stream", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{InsecureSkipVerify: true})
 		if err != nil {
@@ -418,7 +433,7 @@ func main() {
 				if err != nil {
 					return
 				}
-				handleWebSocketMessage(data, state, hub, &sequence, quest, furnitureSystem)
+				handleWebSocketMessage(data, state, hub, &sequence, quest, furnitureSystem, monsterSystem)
 			}
 		}(conn)
 	})
@@ -460,6 +475,10 @@ func main() {
 		furnitureForSnapshot := getFurnitureForSnapshot(furnitureSystem, state)
 		log.Printf("DEBUG: Snapshot will include %d furniture items", len(furnitureForSnapshot))
 
+		// Get monsters for snapshot
+		monstersForSnapshot := getMonstersForSnapshot(monsterSystem, state)
+		log.Printf("DEBUG: Snapshot will include %d monster items", len(monstersForSnapshot))
+
 		log.Printf("corridorRegion=%d", corridorRegion)
 		known := make([]int, 0, len(state.KnownRegions))
 		for rid := range state.KnownRegions {
@@ -483,6 +502,7 @@ func main() {
 			Thresholds:        thresholds,
 			BlockingWalls:     blockingWalls,
 			Furniture:         furnitureForSnapshot,
+			Monsters:          monstersForSnapshot,
 			VisibleRegionIDs:  visibleNow,
 			CorridorRegionID:  state.CorridorRegion,
 			KnownRegionIDs:    known,
@@ -552,4 +572,30 @@ func getFurnitureForSnapshot(furnitureSystem *FurnitureSystem, state *GameState)
 	}
 
 	return furniture
+}
+
+// getMonstersForSnapshot converts monster instances to protocol format, only including known monsters
+func getMonstersForSnapshot(monsterSystem *MonsterSystem, state *GameState) []protocol.MonsterLite {
+	allMonsters := monsterSystem.GetMonsters()
+	monsters := make([]protocol.MonsterLite, 0, len(allMonsters))
+
+	for _, monster := range allMonsters {
+		// Only include monsters that have been discovered
+		if state.KnownMonsters[monster.ID] {
+			monsterItem := protocol.MonsterLite{
+				ID:        monster.ID,
+				Type:      string(monster.Type),
+				Tile:      monster.Position,
+				Body:      monster.Body,
+				MaxBody:   monster.MaxBody,
+				IsVisible: monster.IsVisible,
+				IsAlive:   monster.IsAlive,
+			}
+			monsters = append(monsters, monsterItem)
+			log.Printf("DEBUG: Added monster to snapshot: %s (%s) at (%d,%d) - visible: %v, alive: %v",
+				monster.ID, monster.Type, monster.Position.X, monster.Position.Y, monster.IsVisible, monster.IsAlive)
+		}
+	}
+
+	return monsters
 }
