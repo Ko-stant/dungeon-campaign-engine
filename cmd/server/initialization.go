@@ -28,30 +28,30 @@ func createGameSegment(board *geometry.BoardDefinition, quest *geometry.QuestDef
 	segment := geometry.CreateSegmentFromBoard(board)
 	regionMap := geometry.CreateRegionMapFromBoard(board)
 
-	// Debug: Log walls around room 20 and regions
-	log.Printf("=== Walls around room 20 area ===")
-	for _, wall := range segment.WallsVertical {
-		if wall.X >= 0 && wall.X <= 5 && wall.Y >= 13 && wall.Y <= 18 {
-			log.Printf("Vertical wall at (%d,%d)", wall.X, wall.Y)
-		}
-	}
-	for _, wall := range segment.WallsHorizontal {
-		if wall.X >= 0 && wall.X <= 6 && wall.Y >= 12 && wall.Y <= 18 {
-			log.Printf("Horizontal wall at (%d,%d)", wall.X, wall.Y)
-		}
-	}
+	// // Debug: Log walls around room 20 and regions
+	// log.Printf("=== Walls around room 20 area ===")
+	// for _, wall := range segment.WallsVertical {
+	// 	if wall.X >= 0 && wall.X <= 5 && wall.Y >= 13 && wall.Y <= 18 {
+	// 		log.Printf("Vertical wall at (%d,%d)", wall.X, wall.Y)
+	// 	}
+	// }
+	// for _, wall := range segment.WallsHorizontal {
+	// 	if wall.X >= 0 && wall.X <= 6 && wall.Y >= 12 && wall.Y <= 18 {
+	// 		log.Printf("Horizontal wall at (%d,%d)", wall.X, wall.Y)
+	// 	}
+	// }
 
-	// Debug: Check regions around room 20
-	log.Printf("=== Regions around room 20 ===")
-	for y := 12; y <= 18; y++ {
-		for x := 0; x <= 6; x++ {
-			if x < segment.Width && y < segment.Height {
-				idx := y*segment.Width + x
-				region := regionMap.TileRegionIDs[idx]
-				log.Printf("Tile (%d,%d) = region %d", x, y, region)
-			}
-		}
-	}
+	// // Debug: Check regions around room 20
+	// log.Printf("=== Regions around room 20 ===")
+	// for y := 12; y <= 18; y++ {
+	// 	for x := 0; x <= 6; x++ {
+	// 		if x < segment.Width && y < segment.Height {
+	// 			idx := y*segment.Width + x
+	// 			region := regionMap.TileRegionIDs[idx]
+	// 			log.Printf("Tile (%d,%d) = region %d", x, y, region)
+	// 		}
+	// 	}
+	// }
 
 	// Add quest doors to the segment
 	questDoors := geometry.ConvertQuestDoorsToEdges(quest.Doors)
@@ -78,8 +78,8 @@ func createDoorsFromQuest(quest *geometry.QuestDefinition, segment geometry.Segm
 		a, b := geometry.RegionsAcrossDoor(regionMap, segment, edge)
 		doors[id] = &DoorInfo{Edge: edge, RegionA: a, RegionB: b, State: questDoor.State}
 		doorByEdge[edge] = id
-		log.Printf("loaded quest door %s at (%d,%d,%s) regions=%d|%d state=%s",
-			id, edge.X, edge.Y, edge.Orientation, a, b, questDoor.State)
+		// log.Printf("loaded quest door %s at (%d,%d,%s) regions=%d|%d state=%s",
+		// 	id, edge.X, edge.Y, edge.Orientation, a, b, questDoor.State)
 	}
 
 	return doors, doorByEdge
@@ -90,11 +90,11 @@ func initializeGameState(board *geometry.BoardDefinition, quest *geometry.QuestD
 	doors, _ := createDoorsFromQuest(quest, segment, regionMap)
 
 	// Start hero in the quest's starting room
-	startX, startY, err := geometry.FindStartingTileInRoom(board, quest.StartingRoom)
+	_, _, err := geometry.FindStartingTileInRoom(board, quest.StartingRoom)
 	if err != nil {
 		return nil, protocol.TileAddress{}, fmt.Errorf("failed to find starting position: %v", err)
 	}
-	log.Printf("hero starting in room %d at position (%d,%d)", quest.StartingRoom, startX, startY)
+	// log.Printf("hero starting in room %d at position (%d,%d)", quest.StartingRoom, startX, startY)
 
 	state := NewGameState(segment, regionMap, quest)
 
@@ -123,8 +123,8 @@ func initializeGameState(board *geometry.BoardDefinition, quest *geometry.QuestD
 		// Door is visible if it has line-of-sight OR is on the edge of current room
 		if visible || doorOnCurrentRoom {
 			state.KnownDoors[id] = true
-			log.Printf("Initially visible door %s at (%d,%d) - LOS: %v, OnCurrentRoom: %v",
-				id, info.Edge.X, info.Edge.Y, visible, doorOnCurrentRoom)
+			// log.Printf("Initially visible door %s at (%d,%d) - LOS: %v, OnCurrentRoom: %v",
+			// 	id, info.Edge.X, info.Edge.Y, visible, doorOnCurrentRoom)
 		}
 	}
 
@@ -190,16 +190,16 @@ func createMonstersFromQuest(quest *geometry.QuestDefinition, monsterSystem *Mon
 		}
 
 		// Spawn the monster
-		monster, err := monsterSystem.SpawnMonster(monsterType, position)
+		_, err := monsterSystem.SpawnMonster(monsterType, position)
 		if err != nil {
 			log.Printf("Warning: Failed to spawn monster %s at (%d,%d): %v", questMonster.Type, questMonster.X, questMonster.Y, err)
 			continue
 		}
 
-		log.Printf("Created monster %s (%s) at (%d,%d) in room %d",
-			monster.ID, questMonster.Type, questMonster.X, questMonster.Y, questMonster.Room)
+		// log.Printf("Created monster %s (%s) at (%d,%d) in room %d",
+		// 	monster.ID, questMonster.Type, questMonster.X, questMonster.Y, questMonster.Room)
 	}
 
-	log.Printf("Created %d monsters from quest", len(quest.Monsters))
+	// log.Printf("Created %d monsters from quest", len(quest.Monsters))
 	return nil
 }

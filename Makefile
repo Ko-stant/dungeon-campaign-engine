@@ -32,6 +32,7 @@ bash -lc 'set -a; [ -f .env ] && source ./.env; set +a; $$1'
 endef
 
 .PHONY: all tools dev build run test test-race cover lint fmt tidy clean \
+        test-js test-all \
         db-up db-up-all db-down db-destroy db-logs db-psql \
         db-migrate-new db-migrate-up db-migrate-down db-backup db-restore
 
@@ -56,9 +57,6 @@ dev:
 	$(TOOLS_DIRECTORY)/air -c .air.toml
 
 
-build:
-	@$(TOOLS_DIRECTORY)/templ generate -path=./internal/web/views
-	@$(GO) build -trimpath -ldflags="-s -w" -o $(BINARY_OUTPUT_PATH) ./cmd/server
 
 run:
 	@$(TOOLS_DIRECTORY)/templ generate -path=./internal/web/views
@@ -73,6 +71,13 @@ test-race:
 cover:
 	@$(TOOLS_DIRECTORY)/gotestsum --format testname -- -coverprofile=coverage.out -covermode=atomic $(GO_PACKAGES)
 	@$(GO) tool cover -func=coverage.out | tail -n 1
+
+test-js:
+	@echo "==> Running JavaScript tests..."
+	@npm run test:js
+
+test-all: test test-js
+	@echo "==> All tests completed"
 
 lint:
 	@$(TOOLS_DIRECTORY)/golangci-lint run
@@ -89,10 +94,10 @@ clean:
 
 # --- Docker / Postgres ---
 db-up:
-	@$(docker compose --env-file .env up -d postgres)
+	@docker compose --env-file .env up -d postgres
 
 db-up-all:
-	@$(docker compose --env-file .env up -d)
+	@docker compose --env-file .env up -d
 
 db-down:
 	@docker compose --env-file .env down
@@ -104,14 +109,14 @@ db-logs:
 	@docker compose --env-file .env logs -f postgres
 
 db-psql:
-	@$(docker exec -it hq_postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB)
+	@docker exec -it hq_postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB
 
 db-backup:
-	@$(mkdir -p db/backups && docker exec -t hq_postgres pg_dump -U $$POSTGRES_USER -d $$POSTGRES_DB > db/backups/backup-$$(date +%Y%m%d-%H%M%S).sql)
+	@mkdir -p db/backups && docker exec -t hq_postgres pg_dump -U $$POSTGRES_USER -d $$POSTGRES_DB > db/backups/backup-$$(date +%Y%m%d-%H%M%S).sql
 
 db-restore:
 	@read -p "backup file path: " file; \
-	$(cat $$file | docker exec -i hq_postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB)
+	cat $$file | docker exec -i hq_postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB
 
 # --- Goose migrations ---
 db-migrate-new:

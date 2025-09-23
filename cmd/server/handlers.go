@@ -10,19 +10,25 @@ import (
 )
 
 func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem, monsterSystem *MonsterSystem) {
+	log.Printf("DEBUG: handleRequestMove called - entity=%s dx=%d dy=%d", req.EntityID, req.DX, req.DY)
+
 	if (req.DX != 0 && req.DY != 0) || req.DX < -1 || req.DX > 1 || req.DY < -1 || req.DY > 1 {
+		log.Printf("DEBUG: Movement rejected - invalid dx/dy values")
 		return
 	}
 	if req.DX == 0 && req.DY == 0 {
+		log.Printf("DEBUG: Movement rejected - zero movement")
 		return
 	}
 
 	state.Lock.Lock()
 	tile, ok := state.Entities[req.EntityID]
 	if !ok {
+		log.Printf("DEBUG: Movement rejected - entity %s not found", req.EntityID)
 		state.Lock.Unlock()
 		return
 	}
+	log.Printf("DEBUG: Current entity position: (%d,%d), moving to (%d,%d)", tile.X, tile.Y, tile.X+req.DX, tile.Y+req.DY)
 	nx := tile.X + req.DX
 	ny := tile.Y + req.DY
 	if nx < 0 || ny < 0 || nx >= state.Segment.Width || ny >= state.Segment.Height {
@@ -58,6 +64,7 @@ func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, 
 	}
 
 	edge := edgeForStep(tile.X, tile.Y, req.DX, req.DY)
+	log.Printf("DEBUG: Checking edge for movement: %+v", edge)
 	if state.BlockedWalls[edge] {
 		log.Printf("DEBUG: Movement blocked by wall: from (%d,%d) to (%d,%d), blocked edge: %+v",
 			tile.X, tile.Y, nx, ny, edge)
@@ -65,7 +72,9 @@ func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, 
 		return
 	}
 	if id, ok := state.DoorByEdge[edge]; ok {
+		log.Printf("DEBUG: Found door %s at edge %+v, state: %s", id, edge, state.Doors[id].State)
 		if d := state.Doors[id]; d != nil && d.State != "open" {
+			log.Printf("DEBUG: Movement blocked by closed door: %s (state: %s)", id, d.State)
 			state.Lock.Unlock()
 			return
 		}
@@ -75,6 +84,7 @@ func handleRequestMove(req protocol.RequestMove, state *GameState, hub *ws.Hub, 
 	state.Entities[req.EntityID] = tile
 	state.Lock.Unlock()
 
+	log.Printf("DEBUG: Movement successful - entity %s moved to (%d,%d)", req.EntityID, nx, ny)
 	broadcastEvent(hub, sequence, "EntityUpdated", protocol.EntityUpdated{ID: req.EntityID, Tile: tile})
 
 	hero := state.Entities[req.EntityID]
@@ -250,13 +260,17 @@ func checkForNewlyVisibleMonsters(state *GameState, monsterSystem *MonsterSystem
 			monster.IsVisible = true
 
 			monsterItem := protocol.MonsterLite{
-				ID:        monster.ID,
-				Type:      string(monster.Type),
-				Tile:      monster.Position,
-				Body:      monster.Body,
-				MaxBody:   monster.MaxBody,
-				IsVisible: monster.IsVisible,
-				IsAlive:   monster.IsAlive,
+				ID:          monster.ID,
+				Type:        string(monster.Type),
+				Tile:        monster.Position,
+				Body:        monster.Body,
+				MaxBody:     monster.MaxBody,
+				Mind:        monster.Mind,
+				MaxMind:     monster.MaxMind,
+				AttackDice:  monster.AttackDice,
+				DefenseDice: monster.DefenseDice,
+				IsVisible:   monster.IsVisible,
+				IsAlive:     monster.IsAlive,
 			}
 			newlyVisible = append(newlyVisible, monsterItem)
 			log.Printf("DEBUG: Newly visible monster %s (%s) in region %d at (%d,%d)",

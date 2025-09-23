@@ -81,11 +81,43 @@ type ActionResult struct {
 
 // DiceRoll represents a single dice roll
 type DiceRoll struct {
-	Die        Die    `json:"die"`
-	Result     int    `json:"result"`
-	Type       string `json:"type"`       // "attack", "defense", "movement", "search"
-	IsDefended bool   `json:"isDefended"` // For attack dice that were blocked
-	IsCritical bool   `json:"isCritical"` // For special results
+	Die          Die             `json:"die"`
+	Result       int             `json:"result"`
+	Type         string          `json:"type"`         // "attack", "defense", "movement", "search"
+	CombatResult CombatDiceResult `json:"combatResult"` // For combat dice results
+	IsDefended   bool            `json:"isDefended"`   // For attack dice that were blocked
+	IsCritical   bool            `json:"isCritical"`   // For special results
+}
+
+// CombatDiceResult represents the result of a combat die
+type CombatDiceResult string
+
+const (
+	Skull        CombatDiceResult = "skull"         // Attack success (appears on 3 faces)
+	WhiteShield  CombatDiceResult = "white_shield"  // Defense success (appears on 2 faces)
+	BlackShield  CombatDiceResult = "black_shield"  // Defense success (appears on 1 face)
+	CombatMiss   CombatDiceResult = "miss"          // No effect (never appears in HeroQuest)
+)
+
+// GetCombatResult converts a dice roll result to combat result
+func GetCombatResult(result int, isAttack bool) CombatDiceResult {
+	if isAttack {
+		// Attack dice: 3 skulls (results 4, 5, 6), 3 misses (results 1, 2, 3)
+		if result >= 4 {
+			return Skull
+		}
+		return CombatMiss
+	} else {
+		// Defense dice: 2 white shields (results 4, 5), 1 black shield (result 6), 3 misses (results 1, 2, 3)
+		switch result {
+		case 6:
+			return BlackShield
+		case 4, 5:
+			return WhiteShield
+		default:
+			return CombatMiss
+		}
+	}
 }
 
 // Die represents different types of dice
@@ -143,13 +175,14 @@ type Effect struct {
 
 // HeroActionSystem handles hero action processing
 type HeroActionSystem struct {
-	gameState        *GameState
-	turnManager      *TurnManager
-	diceSystem       *DiceSystem
-	broadcaster      Broadcaster
-	logger           Logger
-	debugSystem      *DebugSystem
+	gameState         *GameState
+	turnManager       *TurnManager
+	diceSystem        *DiceSystem
+	broadcaster       Broadcaster
+	logger            Logger
+	debugSystem       *DebugSystem
 	movementValidator MovementValidator
+	monsterSystem     *MonsterSystem
 }
 
 // NewHeroActionSystem creates a new hero action system
@@ -168,6 +201,11 @@ func NewHeroActionSystem(gameState *GameState, turnManager *TurnManager, broadca
 // SetMovementValidator sets the movement validator with systems
 func (has *HeroActionSystem) SetMovementValidator(validator MovementValidator) {
 	has.movementValidator = validator
+}
+
+// SetMonsterSystem sets the monster system for combat interactions
+func (has *HeroActionSystem) SetMonsterSystem(monsterSystem *MonsterSystem) {
+	has.monsterSystem = monsterSystem
 }
 
 // ProcessAction processes a hero action request
@@ -272,24 +310,114 @@ func (has *HeroActionSystem) processAttack(request ActionRequest, result *Action
 		return result, err
 	}
 
-	// Roll attack dice
-	attackRolls := has.diceSystem.RollDice(CombatDie, 2, "attack") // Heroes typically roll 2 attack dice
-
-	// For now, simple damage calculation (will be enhanced with monster system)
-	damage := 0
-	for _, roll := range attackRolls {
-		if roll.Result >= 3 { // Skulls on 3+ (simplified)
-			damage++
-		}
+	// Get attacking player's character
+	player := has.turnManager.GetCurrentPlayer()
+	if player == nil || player.Character == nil {
+		result.Success = false
+		result.Message = "No active player character"
+		return result, fmt.Errorf("no active player character")
 	}
 
-	result.Success = true
-	result.DiceRolls = attackRolls
-	result.Damage = damage
-	result.Message = fmt.Sprintf("Attacked %s for %d damage", targetID, damage)
+	// Get target monster
+	if has.monsterSystem == nil {
+		result.Success = false
+		result.Message = "Monster system not available"
+		return result, fmt.Errorf("monster system not initialized")
+	}
 
-	has.logger.Printf("Player %s attacked %s for %d damage", request.PlayerID, targetID, damage)
+	targetMonster, err := has.monsterSystem.GetMonsterByID(targetID)
+	if err != nil {
+		result.Success = false
+		result.Message = fmt.Sprintf("Target not found: %s", err.Error())
+		return result, err
+	}
+
+	if !targetMonster.IsAlive {
+		result.Success = false
+		result.Message = "Target is already dead"
+		return result, fmt.Errorf("target monster %s is already dead", targetID)
+	}
+
+	// Roll attack dice based on hero's effective attack dice
+	attackDice := player.Character.GetEffectiveAttackDice()
+	attackRolls := has.diceSystem.RollAttackDice(attackDice)
+
+	// Roll defense dice for monster
+	defenseRolls := has.diceSystem.RollDefenseDice(targetMonster.DefenseDice)
+
+	// Calculate damage
+	damage := CalculateCombatDamage(attackRolls, defenseRolls)
+
+	// Apply damage to monster
+	_, isDead, err := has.monsterSystem.ApplyDamageToMonster(targetID, damage)
+	if err != nil {
+		result.Success = false
+		result.Message = fmt.Sprintf("Failed to apply damage: %s", err.Error())
+		return result, err
+	}
+
+	// Combine all dice rolls for result
+	allRolls := append(attackRolls, defenseRolls...)
+	result.DiceRolls = allRolls
+	result.Damage = damage
+	result.Success = true
+
+	// Create appropriate message
+	if damage > 0 {
+		if isDead {
+			result.Message = fmt.Sprintf("Dealt %d damage to %s (%s) - Monster killed!", damage, targetMonster.Type, targetID)
+		} else {
+			result.Message = fmt.Sprintf("Dealt %d damage to %s (%s) - %d body points remaining", damage, targetMonster.Type, targetID, targetMonster.Body)
+		}
+	} else {
+		result.Message = fmt.Sprintf("Attack blocked! %s (%s) took no damage", targetMonster.Type, targetID)
+	}
+
+	has.logger.Printf("Player %s (%s) attacked %s (%s): %d skulls vs %d shields = %d damage (Monster %s: %d/%d body)",
+		player.Name, player.Class, targetMonster.Type, targetID,
+		countSkulls(attackRolls), countShields(defenseRolls), damage,
+		targetMonster.Type, targetMonster.Body, targetMonster.MaxBody)
+
+	// Broadcast entity update for hero to ensure frontend keeps track of position
+	has.gameState.Lock.Lock()
+	heroTile, exists := has.gameState.Entities[request.EntityID]
+	has.gameState.Lock.Unlock()
+
+	if exists {
+		has.broadcaster.BroadcastEvent("EntityUpdated", protocol.EntityUpdated{
+			ID:   request.EntityID,
+			Tile: heroTile,
+		})
+	}
+
+	// Auto-restore actions for testing when debug mode is enabled
+	if has.debugSystem != nil && has.debugSystem.config.Enabled {
+		has.turnManager.RestoreActions()
+		has.logger.Printf("DEBUG: Auto-restored actions after attack for testing")
+	}
+
 	return result, nil
+}
+
+// Helper functions for combat logging
+func countSkulls(rolls []DiceRoll) int {
+	count := 0
+	for _, roll := range rolls {
+		if roll.CombatResult == Skull {
+			count++
+		}
+	}
+	return count
+}
+
+func countShields(rolls []DiceRoll) int {
+	count := 0
+	for _, roll := range rolls {
+		if roll.CombatResult == WhiteShield || roll.CombatResult == BlackShield {
+			count++
+		}
+	}
+	return count
 }
 
 // Search for traps action
@@ -640,29 +768,111 @@ func NewDiceSystem(debugSystem *DebugSystem) *DiceSystem {
 func (ds *DiceSystem) RollDice(dieType Die, count int, rollType string) []DiceRoll {
 	rolls := make([]DiceRoll, count)
 
+	// Check for debug sequence override first (for multiple dice)
+	if ds.debugSystem != nil {
+		if overrideResults, exists := ds.debugSystem.GetDiceOverrideSequence(rollType, count); exists {
+			for i, result := range overrideResults {
+				roll := DiceRoll{
+					Die:    dieType,
+					Result: result,
+					Type:   rollType,
+				}
+				// Set combat result for combat dice
+				if dieType == CombatDie {
+					roll.CombatResult = GetCombatResult(result, rollType == "attack")
+				}
+				rolls[i] = roll
+			}
+
+			// Fill any remaining rolls with normal dice if sequence was shorter
+			for i := len(overrideResults); i < count; i++ {
+				result := ds.random.Intn(6) + 1
+				roll := DiceRoll{
+					Die:    dieType,
+					Result: result,
+					Type:   rollType,
+				}
+				if dieType == CombatDie {
+					roll.CombatResult = GetCombatResult(result, rollType == "attack")
+				}
+				rolls[i] = roll
+			}
+			return rolls
+		}
+	}
+
+	// Fall back to individual die overrides or normal rolling
 	for i := 0; i < count; i++ {
-		// Check for debug override
+		// Check for debug override (single die)
 		if ds.debugSystem != nil {
-			if override, exists := ds.debugSystem.diceOverride[rollType]; exists {
-				rolls[i] = DiceRoll{
+			if override, exists := ds.debugSystem.GetDiceOverride(rollType); exists {
+				roll := DiceRoll{
 					Die:    dieType,
 					Result: override,
 					Type:   rollType,
 				}
-				// Clear override after use
-				delete(ds.debugSystem.diceOverride, rollType)
+				// Set combat result for combat dice
+				if dieType == CombatDie {
+					roll.CombatResult = GetCombatResult(override, rollType == "attack")
+				}
+				rolls[i] = roll
 				continue
 			}
 		}
 
 		// Normal dice roll
 		result := ds.random.Intn(6) + 1
-		rolls[i] = DiceRoll{
+		roll := DiceRoll{
 			Die:    dieType,
 			Result: result,
 			Type:   rollType,
 		}
+
+		// Set combat result for combat dice
+		if dieType == CombatDie {
+			roll.CombatResult = GetCombatResult(result, rollType == "attack")
+		}
+
+		rolls[i] = roll
 	}
 
 	return rolls
+}
+
+// RollAttackDice rolls attack dice for a character
+func (ds *DiceSystem) RollAttackDice(attackDice int) []DiceRoll {
+	return ds.RollDice(CombatDie, attackDice, "attack")
+}
+
+// RollDefenseDice rolls defense dice for a character
+func (ds *DiceSystem) RollDefenseDice(defenseDice int) []DiceRoll {
+	return ds.RollDice(CombatDie, defenseDice, "defense")
+}
+
+// CalculateCombatDamage calculates damage from attack and defense rolls
+func CalculateCombatDamage(attackRolls, defenseRolls []DiceRoll) int {
+	skulls := 0
+	shields := 0
+
+	// Count skulls from attack rolls
+	for _, roll := range attackRolls {
+		if roll.CombatResult == Skull {
+			skulls++
+		}
+	}
+
+	// Count shields from defense rolls
+	for _, roll := range defenseRolls {
+		if roll.CombatResult == WhiteShield || roll.CombatResult == BlackShield {
+			shields++
+		}
+	}
+
+	// Net damage = skulls - shields (minimum 0)
+	damage := skulls - shields
+	if damage < 0 {
+		damage = 0
+	}
+
+	return damage
 }

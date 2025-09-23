@@ -23,21 +23,23 @@ type DebugConfig struct {
 
 // DebugSystem provides development and testing utilities
 type DebugSystem struct {
-	config       DebugConfig
-	gameState    *GameState
-	broadcaster  Broadcaster
-	logger       Logger
-	diceOverride map[string]int // Override next dice rolls
+	config           DebugConfig
+	gameState        *GameState
+	broadcaster      Broadcaster
+	logger           Logger
+	diceOverride     map[string]int   // Override next dice rolls (single die)
+	diceOverrideSeq  map[string][]int // Override sequences for multiple dice
 }
 
 // NewDebugSystem creates a new debug system
 func NewDebugSystem(config DebugConfig, gameState *GameState, broadcaster Broadcaster, logger Logger) *DebugSystem {
 	return &DebugSystem{
-		config:       config,
-		gameState:    gameState,
-		broadcaster:  broadcaster,
-		logger:       logger,
-		diceOverride: make(map[string]int),
+		config:          config,
+		gameState:       gameState,
+		broadcaster:     broadcaster,
+		logger:          logger,
+		diceOverride:    make(map[string]int),
+		diceOverrideSeq: make(map[string][]int),
 	}
 }
 
@@ -57,10 +59,72 @@ func (ds *DebugSystem) GetDiceOverride(rollType string) (int, bool) {
 	return value, exists
 }
 
+// GetDiceOverrideSequence gets multiple dice results from a sequence
+func (ds *DebugSystem) GetDiceOverrideSequence(rollType string, count int) ([]int, bool) {
+	if !ds.config.AllowDiceOverride {
+		return nil, false
+	}
+
+	sequence, exists := ds.diceOverrideSeq[rollType]
+	if !exists || len(sequence) == 0 {
+		return nil, false
+	}
+
+	// Return up to the requested count, or all available results
+	resultCount := count
+	if resultCount > len(sequence) {
+		resultCount = len(sequence)
+	}
+
+	results := make([]int, resultCount)
+	copy(results, sequence[:resultCount])
+
+	// Remove used results from the sequence
+	ds.diceOverrideSeq[rollType] = sequence[resultCount:]
+
+	// If sequence is empty, remove it
+	if len(ds.diceOverrideSeq[rollType]) == 0 {
+		delete(ds.diceOverrideSeq, rollType)
+	}
+
+	return results, true
+}
+
 // ClearDiceOverride removes a dice override
 func (ds *DebugSystem) ClearDiceOverride(rollType string) {
 	if ds.config.AllowDiceOverride {
 		delete(ds.diceOverride, rollType)
+		delete(ds.diceOverrideSeq, rollType)
+	}
+}
+
+// SetCombatDiceOverride sets multiple dice overrides for testing combat scenarios
+func (ds *DebugSystem) SetCombatDiceOverride(attackResults []int, defenseResults []int) {
+	if !ds.config.AllowDiceOverride {
+		return
+	}
+
+	// Clear existing combat overrides
+	delete(ds.diceOverride, "attack")
+	delete(ds.diceOverride, "defense")
+
+	// Store attack results as comma-separated values
+	if len(attackResults) > 0 {
+		ds.setCombatRollSequence("attack", attackResults)
+	}
+
+	// Store defense results as comma-separated values
+	if len(defenseResults) > 0 {
+		ds.setCombatRollSequence("defense", defenseResults)
+	}
+}
+
+// setCombatRollSequence stores a sequence of dice results for combat testing
+func (ds *DebugSystem) setCombatRollSequence(rollType string, results []int) {
+	if len(results) > 0 {
+		// Store the entire sequence for multi-die rolling
+		ds.diceOverrideSeq[rollType] = make([]int, len(results))
+		copy(ds.diceOverrideSeq[rollType], results)
 	}
 }
 
@@ -110,6 +174,7 @@ func (ds *DebugSystem) RegisterDebugRoutes(mux *http.ServeMux) {
 	// Dice manipulation
 	mux.HandleFunc("/debug/dice/override", ds.handleDiceOverride)
 	mux.HandleFunc("/debug/dice/clear-override", ds.handleClearDiceOverride)
+	mux.HandleFunc("/debug/dice/combat-test", ds.handleCombatDiceTest)
 
 	// State manipulation
 	mux.HandleFunc("/debug/state/export", ds.handleExportState)
@@ -577,6 +642,85 @@ func (ds *DebugSystem) handleClearDiceOverride(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Cleared %d dice overrides", overrideCount),
+	})
+}
+
+// Combat dice test - allows testing dice values from 2-12 for comprehensive combat testing
+func (ds *DebugSystem) handleCombatDiceTest(w http.ResponseWriter, r *http.Request) {
+	if !ds.checkDebugEnabled(w) {
+		return
+	}
+
+	var req struct {
+		AttackDice   []int `json:"attackDice"`   // Array of dice results for attack (1-6 each)
+		DefenseDice  []int `json:"defenseDice"`  // Array of dice results for defense (1-6 each)
+		TestScenario string `json:"testScenario"` // Optional description of test scenario
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Validate dice values (each die must be 1-6)
+	for _, die := range req.AttackDice {
+		if die < 1 || die > 6 {
+			http.Error(w, "Each attack die must be between 1 and 6", http.StatusBadRequest)
+			return
+		}
+	}
+
+	for _, die := range req.DefenseDice {
+		if die < 1 || die > 6 {
+			http.Error(w, "Each defense die must be between 1 and 6", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Clear existing overrides and set new ones
+	ds.SetCombatDiceOverride(req.AttackDice, req.DefenseDice)
+
+	// Calculate what the combat results would be for logging
+	attackSkulls := 0
+	for _, die := range req.AttackDice {
+		if die >= 4 { // Skulls on 4, 5, 6
+			attackSkulls++
+		}
+	}
+
+	defenseShields := 0
+	for _, die := range req.DefenseDice {
+		if die == 6 { // Black shield
+			defenseShields++
+		} else if die == 4 || die == 5 { // White shields
+			defenseShields++
+		}
+	}
+
+	netDamage := attackSkulls - defenseShields
+	if netDamage < 0 {
+		netDamage = 0
+	}
+
+	ds.logDebugAction("combat_dice_test", map[string]any{
+		"attackDice":     req.AttackDice,
+		"defenseDice":    req.DefenseDice,
+		"attackSkulls":   attackSkulls,
+		"defenseShields": defenseShields,
+		"netDamage":      netDamage,
+		"testScenario":   req.TestScenario,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"success":        true,
+		"message":        "Combat dice override set",
+		"attackDice":     req.AttackDice,
+		"defenseDice":    req.DefenseDice,
+		"attackSkulls":   attackSkulls,
+		"defenseShields": defenseShields,
+		"expectedDamage": netDamage,
+		"testScenario":   req.TestScenario,
 	})
 }
 

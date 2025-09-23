@@ -42,16 +42,17 @@ type Monster struct {
 	Position         protocol.TileAddress `json:"position"`
 	Body             int                  `json:"body"`
 	MaxBody          int                  `json:"MaxBody"`
+	Mind             int                  `json:"mind"`
+	MaxMind          int                  `json:"maxMind"`
 	AttackDice       int                  `json:"attackDice"`
 	DefenseDice      int                  `json:"defenseDice"`
 	MovementRange    int                  `json:"movementRange"`
 	IsVisible        bool                 `json:"isVisible"`
 	IsAlive          bool                 `json:"isAlive"`
-	AIBehavior       AIBehavior           `json:"aiBehavior"`
 	SpecialAbilities []string             `json:"specialAbilities,omitempty"`
 	SpawnedTurn      int                  `json:"spawnedTurn"`
 	LastMovedTurn    int                  `json:"lastMovedTurn"`
-	SubType          string               `json:"subType,omitempty"` // e.g., "warrior", "shaman" for orcs
+	SubType          string               `json:"subType,omitempty"` // e.g., "undead" for skeletons
 }
 
 // MonsterType defines different monster types
@@ -66,18 +67,6 @@ const (
 	Mummy        MonsterType = "mummy"
 	DreadWarrior MonsterType = "dread_warrior"
 	Abomination  MonsterType = "abomination"
-)
-
-// AIBehavior defines monster AI patterns
-type AIBehavior string
-
-const (
-	Aggressive AIBehavior = "aggressive" // Always attack if possible
-	Defensive  AIBehavior = "defensive"  // Prefer defense, guard locations
-	Patrol     AIBehavior = "patrol"     // Move in patterns
-	GuardRoom  AIBehavior = "guard"      // Stay in specific room
-	Wandering  AIBehavior = "wandering"  // Random movement
-	Hunter     AIBehavior = "hunter"     // Seek heroes aggressively
 )
 
 // MonsterTemplate defines monster stats and behavior
@@ -249,6 +238,8 @@ func (ms *MonsterSystem) SpawnMonster(monsterType MonsterType, position protocol
 		Position:         position,
 		Body:             template.MaxBody,
 		MaxBody:          template.MaxBody,
+		Mind:             template.MaxMind,
+		MaxMind:          template.MaxMind,
 		AttackDice:       template.AttackDice,
 		DefenseDice:      template.DefenseDice,
 		MovementRange:    template.MovementRange,
@@ -319,256 +310,6 @@ func (ms *MonsterSystem) MoveMonster(monsterID string, destination protocol.Tile
 	}
 
 	return nil
-}
-
-// ProcessMonsterTurn handles AI for all monsters during GameMaster turn
-func (ms *MonsterSystem) ProcessMonsterTurn() {
-	if ms.turnManager != nil && !ms.turnManager.IsGameMasterTurn() {
-		ms.logger.Printf("Attempted to process monster turn during non-GM turn")
-		return
-	}
-
-	visibleMonsters := ms.GetVisibleMonsters()
-	ms.logger.Printf("Processing turn for %d visible monsters", len(visibleMonsters))
-
-	for _, monster := range visibleMonsters {
-		if !monster.IsAlive {
-			continue
-		}
-
-		action := ms.calculateAIAction(monster)
-		if err := ms.executeMonsterAction(action); err != nil {
-			ms.logger.Printf("Error executing action for monster %s: %v", monster.ID, err)
-		}
-	}
-}
-
-// Calculate AI action based on monster behavior
-func (ms *MonsterSystem) calculateAIAction(monster *Monster) MonsterAction {
-	// Get nearby heroes
-	nearbyHeroes := ms.getNearbyHeroes(monster.Position, 3) // Within 3 squares
-
-	switch monster.AIBehavior {
-	case Aggressive:
-		// Attack if adjacent hero, otherwise move toward nearest hero
-		for _, heroPos := range nearbyHeroes {
-			if ms.calculateDistance(monster.Position, heroPos.position) == 1 {
-				return MonsterAction{
-					Type:      MonsterAttackAction,
-					MonsterID: monster.ID,
-					TargetID:  heroPos.entityID,
-				}
-			}
-		}
-		// Move toward nearest hero
-		if len(nearbyHeroes) > 0 {
-			target := ms.findBestMoveToward(monster, nearbyHeroes[0].position)
-			return MonsterAction{
-				Type:      MonsterMoveAction,
-				MonsterID: monster.ID,
-				Position:  &target,
-			}
-		}
-
-	case Defensive:
-		// Only attack if hero is adjacent
-		for _, heroPos := range nearbyHeroes {
-			if ms.calculateDistance(monster.Position, heroPos.position) == 1 {
-				return MonsterAction{
-					Type:      MonsterAttackAction,
-					MonsterID: monster.ID,
-					TargetID:  heroPos.entityID,
-				}
-			}
-		}
-
-	case Hunter:
-		// Aggressively seek heroes
-		if len(nearbyHeroes) > 0 {
-			nearest := nearbyHeroes[0]
-			if ms.calculateDistance(monster.Position, nearest.position) == 1 {
-				return MonsterAction{
-					Type:      MonsterAttackAction,
-					MonsterID: monster.ID,
-					TargetID:  nearest.entityID,
-				}
-			} else {
-				target := ms.findBestMoveToward(monster, nearest.position)
-				return MonsterAction{
-					Type:      MonsterMoveAction,
-					MonsterID: monster.ID,
-					Position:  &target,
-				}
-			}
-		}
-
-	case Patrol:
-		// Move in patterns (simplified - just random movement for now)
-		possibleMoves := ms.getPossibleMoves(monster)
-		if len(possibleMoves) > 0 {
-			target := possibleMoves[0] // Take first available move
-			return MonsterAction{
-				Type:      MonsterMoveAction,
-				MonsterID: monster.ID,
-				Position:  &target,
-			}
-		}
-	}
-
-	// Default: wait
-	return MonsterAction{
-		Type:      MonsterWaitAction,
-		MonsterID: monster.ID,
-	}
-}
-
-// Execute a monster action
-func (ms *MonsterSystem) executeMonsterAction(action MonsterAction) error {
-	switch action.Type {
-	case MonsterMoveAction:
-		if action.Position != nil {
-			return ms.MoveMonster(action.MonsterID, *action.Position)
-		}
-	case MonsterAttackAction:
-		return ms.executeMonsterAttackAction(action.MonsterID, action.TargetID)
-	case MonsterWaitAction:
-		ms.logger.Printf("Monster %s is waiting", action.MonsterID)
-		return nil
-	}
-	return nil
-}
-
-// Execute monster attack
-func (ms *MonsterSystem) executeMonsterAttackAction(monsterID, targetID string) error {
-	monster, exists := ms.monsters[monsterID]
-	if !exists {
-		return fmt.Errorf("monster %s not found", monsterID)
-	}
-
-	// Roll attack dice
-	attackRolls := ms.diceSystem.RollDice(CombatDie, monster.AttackDice, "attack")
-
-	// Calculate damage (simplified)
-	damage := 0
-	for _, roll := range attackRolls {
-		if roll.Result >= 3 { // Skulls on 3+
-			damage++
-		}
-	}
-
-	ms.logger.Printf("Monster %s attacked %s for %d damage", monsterID, targetID, damage)
-
-	// Broadcast attack result
-	ms.broadcaster.BroadcastEvent("MonsterAttackAction", map[string]any{
-		"monsterId": monsterID,
-		"targetId":  targetID,
-		"damage":    damage,
-		"diceRolls": attackRolls,
-	})
-
-	return nil
-}
-
-// Helper methods
-
-type heroPosition struct {
-	entityID string
-	position protocol.TileAddress
-}
-
-func (ms *MonsterSystem) getNearbyHeroes(center protocol.TileAddress, maxDistance int) []heroPosition {
-	var heroes []heroPosition
-
-	ms.gameState.Lock.Lock()
-	defer ms.gameState.Lock.Unlock()
-
-	for entityID, position := range ms.gameState.Entities {
-		// Check if this is a hero entity (simple check for now)
-		if entityID == "hero-1" || (len(entityID) > 4 && entityID[:4] == "hero") {
-			distance := ms.calculateDistance(center, position)
-			if distance <= maxDistance {
-				heroes = append(heroes, heroPosition{
-					entityID: entityID,
-					position: position,
-				})
-			}
-		}
-	}
-
-	return heroes
-}
-
-func (ms *MonsterSystem) calculateDistance(pos1, pos2 protocol.TileAddress) int {
-	dx := pos1.X - pos2.X
-	dy := pos1.Y - pos2.Y
-	if dx < 0 {
-		dx = -dx
-	}
-	if dy < 0 {
-		dy = -dy
-	}
-	return dx + dy // Manhattan distance
-}
-
-func (ms *MonsterSystem) validatePosition(position protocol.TileAddress) error {
-	// Check bounds
-	if position.X < 0 || position.Y < 0 ||
-		position.X >= ms.gameState.Segment.Width ||
-		position.Y >= ms.gameState.Segment.Height {
-		return fmt.Errorf("position out of bounds")
-	}
-
-	// Check if occupied (simplified)
-	ms.gameState.Lock.Lock()
-	defer ms.gameState.Lock.Unlock()
-
-	for _, entityPos := range ms.gameState.Entities {
-		if entityPos.X == position.X && entityPos.Y == position.Y {
-			return fmt.Errorf("position occupied")
-		}
-	}
-
-	return nil
-}
-
-func (ms *MonsterSystem) findBestMoveToward(monster *Monster, target protocol.TileAddress) protocol.TileAddress {
-	possibleMoves := ms.getPossibleMoves(monster)
-
-	bestMove := monster.Position
-	bestDistance := ms.calculateDistance(monster.Position, target)
-
-	for _, move := range possibleMoves {
-		distance := ms.calculateDistance(move, target)
-		if distance < bestDistance {
-			bestDistance = distance
-			bestMove = move
-		}
-	}
-
-	return bestMove
-}
-
-func (ms *MonsterSystem) getPossibleMoves(monster *Monster) []protocol.TileAddress {
-	var moves []protocol.TileAddress
-
-	// Check all adjacent positions
-	deltas := []struct{ dx, dy int }{
-		{0, 1}, {0, -1}, {1, 0}, {-1, 0}, // Cardinal directions
-	}
-
-	for _, delta := range deltas {
-		newPos := protocol.TileAddress{
-			SegmentID: monster.Position.SegmentID,
-			X:         monster.Position.X + delta.dx,
-			Y:         monster.Position.Y + delta.dy,
-		}
-
-		if ms.validatePosition(newPos) == nil {
-			moves = append(moves, newPos)
-		}
-	}
-
-	return moves
 }
 
 // GetVisibleMonsters returns all monsters that are currently visible
@@ -655,6 +396,44 @@ func (ms *MonsterSystem) GetMonsters() map[string]*Monster {
 	return ms.monsters
 }
 
+// GetMonsterByID returns a specific monster by ID
+func (ms *MonsterSystem) GetMonsterByID(monsterID string) (*Monster, error) {
+	monster, exists := ms.monsters[monsterID]
+	if !exists {
+		return nil, fmt.Errorf("monster %s not found", monsterID)
+	}
+	return monster, nil
+}
+
+// ApplyDamageToMonster applies damage to a monster and handles death
+func (ms *MonsterSystem) ApplyDamageToMonster(monsterID string, damage int) (*Monster, bool, error) {
+	monster, exists := ms.monsters[monsterID]
+	if !exists {
+		return nil, false, fmt.Errorf("monster %s not found", monsterID)
+	}
+
+	if !monster.IsAlive {
+		return monster, false, fmt.Errorf("monster %s is already dead", monsterID)
+	}
+
+	// Apply damage
+	monster.Body -= damage
+	isDead := false
+
+	// Check if monster dies
+	if monster.Body <= 0 {
+		monster.Body = 0
+		monster.IsAlive = false
+		isDead = true
+		ms.logger.Printf("Monster %s (%s) has been killed", monster.ID, monster.Type)
+	}
+
+	// Broadcast monster update
+	ms.broadcastMonsterUpdate(monster)
+
+	return monster, isDead, nil
+}
+
 // IsMonsterAt checks if there is an alive monster at the specified position
 func (ms *MonsterSystem) IsMonsterAt(x, y int) bool {
 	for _, monster := range ms.monsters {
@@ -738,4 +517,38 @@ func (ms *MonsterSystem) getTurnNumber() int {
 		return 1 // Default to turn 1 for initialization
 	}
 	return ms.turnManager.GetTurnState().TurnNumber
+}
+
+// Utility functions needed by core monster system
+func (ms *MonsterSystem) validatePosition(position protocol.TileAddress) error {
+	// Basic bounds checking (should be enhanced with actual game board bounds)
+	if position.X < 0 || position.Y < 0 {
+		return fmt.Errorf("position out of bounds: (%d, %d)", position.X, position.Y)
+	}
+	return nil
+}
+
+func (ms *MonsterSystem) calculateDistance(pos1, pos2 protocol.TileAddress) int {
+	dx := pos1.X - pos2.X
+	dy := pos1.Y - pos2.Y
+	if dx < 0 {
+		dx = -dx
+	}
+	if dy < 0 {
+		dy = -dy
+	}
+	return dx + dy // Manhattan distance
+}
+
+// executeMonsterAttackAction - Used by ProcessAction for GM-controlled monster attacks
+func (ms *MonsterSystem) executeMonsterAttackAction(monsterID, targetID string) error {
+	_, exists := ms.monsters[monsterID]
+	if !exists {
+		return fmt.Errorf("monster %s not found", monsterID)
+	}
+
+	// For now, this is a placeholder for GM-controlled attacks
+	// TODO: Implement proper hero damage system when hero damage system is ready
+	ms.logger.Printf("Monster %s attacks %s (GM-controlled action)", monsterID, targetID)
+	return nil
 }

@@ -32,6 +32,27 @@ func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen Sequence
 		return nil, fmt.Errorf("failed to initialize game state: %w", err)
 	}
 
+	return createGameManager(gameState, furnitureSystem, quest, broadcaster, logger, sequenceGen, debugConfig)
+}
+
+// NewGameManagerWithFurniture creates a new game manager with pre-loaded furniture system
+func NewGameManagerWithFurniture(broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig, furnitureSystem *FurnitureSystem, quest *geometry.QuestDefinition) (*GameManager, error) {
+	// Initialize game state using the provided furniture system
+	board, err := geometry.LoadBoardFromFile("content/base/board.json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load board: %w", err)
+	}
+
+	gameState, _, err := initializeGameState(board, quest, furnitureSystem)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize game state: %w", err)
+	}
+
+	return createGameManager(gameState, furnitureSystem, quest, broadcaster, logger, sequenceGen, debugConfig)
+}
+
+// createGameManager is a helper function to create the GameManager with all systems
+func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, quest *geometry.QuestDefinition, broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig) (*GameManager, error) {
 	// Create turn manager
 	turnManager := NewTurnManager(broadcaster, logger)
 
@@ -47,23 +68,13 @@ func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen Sequence
 	// Create monster system
 	monsterSystem := NewMonsterSystem(gameState, turnManager, diceSystem, broadcaster, logger)
 
-	// Create monsters from quest data
-	if err := createMonstersFromQuest(quest, monsterSystem); err != nil {
-		logger.Printf("Warning: Failed to create monsters from quest: %v", err)
-	}
-
-	// Update hero action system with complete movement validator
+	// Update hero action system with complete movement validator and monster system
 	movementValidator := NewMovementValidatorWithSystems(logger, monsterSystem, furnitureSystem)
 	heroActions.SetMovementValidator(movementValidator)
+	heroActions.SetMonsterSystem(monsterSystem)
 
 	// Add default player (will be replaced with dynamic player loading later)
-	defaultPlayer := &Player{
-		ID:       "player-1",
-		Name:     "Hero",
-		EntityID: "hero-1",
-		Class:    Barbarian,
-		IsActive: true,
-	}
+	defaultPlayer := NewPlayer("player-1", "Hero", "hero-1", Barbarian)
 
 	if err := turnManager.AddPlayer(defaultPlayer); err != nil {
 		return nil, fmt.Errorf("failed to add default player: %w", err)
@@ -135,10 +146,22 @@ func (gm *GameManager) ProcessDoorToggle(req protocol.RequestToggleDoor) error {
 	gm.mutex.RLock()
 	defer gm.mutex.RUnlock()
 
+	// Load quest data for door toggle processing
+	_, quest, err := loadGameContent()
+	if err != nil {
+		gm.logger.Printf("Failed to load quest data for door toggle: %v", err)
+		// Continue without quest data - better than crashing
+		quest = nil
+	}
+
+	// Ensure we have valid parameters before calling legacy handler
+	if gm.gameState == nil || gm.broadcaster == nil || gm.furnitureSystem == nil || gm.monsterSystem == nil {
+		return fmt.Errorf("game manager not properly initialized")
+	}
+
 	// Use existing door toggle logic directly
-	// TODO: Implement proper quest loading for this to work
 	seqPtr := &gm.sequenceGen.(*SequenceGeneratorImpl).counter
-	handleRequestToggleDoor(req, gm.gameState, gm.broadcaster.(*BroadcasterImpl).hub, seqPtr, nil, nil, nil)
+	handleRequestToggleDoor(req, gm.gameState, gm.broadcaster.(*BroadcasterImpl).hub, seqPtr, quest, gm.furnitureSystem, gm.monsterSystem)
 	return nil
 }
 
@@ -306,7 +329,7 @@ func (gm *GameManager) GetMonsterSystem() *MonsterSystem {
 	return gm.monsterSystem
 }
 
-// GetFurnitureForSnapshot returns all furniture in the format needed for client snapshot
+// GetFurnitureForSnapshot returns furniture in revealed regions for client snapshot
 func (gm *GameManager) GetFurnitureForSnapshot() []protocol.FurnitureLite {
 	gm.mutex.RLock()
 	defer gm.mutex.RUnlock()
@@ -321,6 +344,11 @@ func (gm *GameManager) GetFurnitureForSnapshot() []protocol.FurnitureLite {
 			continue
 		}
 
+		// Check if furniture is in a revealed region (only include known furniture)
+		if !gm.gameState.KnownFurniture[instance.ID] {
+			continue
+		}
+
 		furnitureItem := protocol.FurnitureLite{
 			ID:   instance.ID,
 			Type: instance.Type,
@@ -332,8 +360,10 @@ func (gm *GameManager) GetFurnitureForSnapshot() []protocol.FurnitureLite {
 				Width:  instance.Definition.GridSize.Width,
 				Height: instance.Definition.GridSize.Height,
 			},
-			TileImage:        instance.Definition.Rendering.TileImage,
-			TileImageCleaned: instance.Definition.Rendering.TileImageCleaned,
+			Rotation:           instance.Rotation,
+			SwapAspectOnRotate: instance.SwapAspectOnRotate,
+			TileImage:          instance.Definition.Rendering.TileImage,
+			TileImageCleaned:   instance.Definition.Rendering.TileImageCleaned,
 			PixelDimensions: struct {
 				Width  int `json:"width"`
 				Height int `json:"height"`
@@ -347,11 +377,11 @@ func (gm *GameManager) GetFurnitureForSnapshot() []protocol.FurnitureLite {
 		}
 
 		furniture = append(furniture, furnitureItem)
-		gm.logger.Printf("DEBUG: Added furniture item to snapshot: %s (%s) at (%d,%d)",
-			instance.ID, instance.Type, instance.Position.X, instance.Position.Y)
+		gm.logger.Printf("DEBUG: Added known furniture item to snapshot: %s (%s) at (%d,%d) rotation=%d",
+			instance.ID, instance.Type, instance.Position.X, instance.Position.Y, instance.Rotation)
 	}
 
-	gm.logger.Printf("DEBUG: Returning %d furniture items for snapshot", len(furniture))
+	gm.logger.Printf("DEBUG: Returning %d known furniture items for snapshot", len(furniture))
 	return furniture
 }
 
@@ -368,13 +398,17 @@ func (gm *GameManager) GetMonstersForSnapshot() []protocol.MonsterLite {
 		// Only include monsters that have been discovered
 		if gm.gameState.KnownMonsters[monster.ID] {
 			monsterItem := protocol.MonsterLite{
-				ID:        monster.ID,
-				Type:      string(monster.Type),
-				Tile:      monster.Position,
-				Body:      monster.Body,
-				MaxBody:   monster.MaxBody,
-				IsVisible: monster.IsVisible,
-				IsAlive:   monster.IsAlive,
+				ID:          monster.ID,
+				Type:        string(monster.Type),
+				Tile:        monster.Position,
+				Body:        monster.Body,
+				MaxBody:     monster.MaxBody,
+				Mind:        monster.Mind,
+				MaxMind:     monster.MaxMind,
+				AttackDice:  monster.AttackDice,
+				DefenseDice: monster.DefenseDice,
+				IsVisible:   monster.IsVisible,
+				IsAlive:     monster.IsAlive,
 			}
 
 			monsters = append(monsters, monsterItem)

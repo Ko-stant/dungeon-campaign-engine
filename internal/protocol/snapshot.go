@@ -57,13 +57,17 @@ type FurnitureLite struct {
 }
 
 type MonsterLite struct {
-	ID        string      `json:"id"`
-	Type      string      `json:"type"`
-	Tile      TileAddress `json:"tile"`
-	Body      int         `json:"body"`
-	MaxBody   int         `json:"MaxBody"`
-	IsVisible bool        `json:"isVisible"`
-	IsAlive   bool        `json:"isAlive"`
+	ID          string      `json:"id"`
+	Type        string      `json:"type"`
+	Tile        TileAddress `json:"tile"`
+	Body        int         `json:"body"`
+	MaxBody     int         `json:"MaxBody"`
+	Mind        int         `json:"mind"`
+	MaxMind     int         `json:"maxMind"`
+	AttackDice  int         `json:"attackDice"`
+	DefenseDice int         `json:"defenseDice"`
+	IsVisible   bool        `json:"isVisible"`
+	IsAlive     bool        `json:"isAlive"`
 }
 
 type Snapshot struct {

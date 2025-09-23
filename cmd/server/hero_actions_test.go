@@ -35,16 +35,46 @@ func createTestHeroActionSystem() *HeroActionSystem {
 	turnManager := NewTurnManager(broadcaster, logger)
 
 	// Add test player
-	player := &Player{
-		ID:       "player-1",
-		Name:     "Test Hero",
-		EntityID: "hero-1",
-		Class:    Barbarian,
-		IsActive: true,
-	}
+	player := NewPlayer("player-1", "Test Hero", "hero-1", Barbarian)
 	turnManager.AddPlayer(player)
 
-	return NewHeroActionSystem(gameState, turnManager, broadcaster, logger, debugSystem)
+	has := NewHeroActionSystem(gameState, turnManager, broadcaster, logger, debugSystem)
+
+	// Add mock monster system for attack tests
+	monsterSystem := createTestMonsterSystem(logger)
+	has.SetMonsterSystem(monsterSystem)
+
+	return has
+}
+
+func createTestMonsterSystem(logger Logger) *MonsterSystem {
+	gameState := &GameState{
+		Entities: make(map[string]protocol.TileAddress),
+		KnownMonsters: make(map[string]bool),
+	}
+	broadcaster := &MockBroadcaster{}
+
+	ms := NewMonsterSystem(gameState, nil, nil, broadcaster, logger)
+
+	// Add a test monster for combat tests
+	testMonster := &Monster{
+		ID:               "monster-1",
+		Type:             Goblin,
+		Position:         protocol.TileAddress{X: 6, Y: 6},
+		Body:             3,
+		MaxBody:          3,
+		AttackDice:       2,
+		DefenseDice:      1,
+		MovementRange:    3,
+		IsVisible:        true,
+		IsAlive:          true,
+		SpecialAbilities: []string{},
+		SpawnedTurn:      1,
+		LastMovedTurn:    0,
+	}
+	ms.monsters["monster-1"] = testMonster
+
+	return ms
 }
 
 // Use existing MockLogger from engine_test.go

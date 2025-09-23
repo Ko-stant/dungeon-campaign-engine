@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Module Tests</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .test-container {
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-output {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0052a3;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #1a5c1a;
+            border: 1px solid #2d8f2d;
+        }
+        .status.error {
+            background: #5c1a1a;
+            border: 1px solid #8f2d2d;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Dungeon Campaign Engine - JavaScript Module Tests</h1>
+
+    <div class="test-container">
+        <h2>Module Loading Test</h2>
+        <p>This page tests if all JavaScript modules can be imported successfully.</p>
+        <button onclick="testModuleLoading()">Test Module Loading</button>
+        <div id="moduleTestOutput" class="test-output"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Unit Tests</h2>
+        <p>Run the geometry utilities test suite.</p>
+        <button onclick="runUnitTests()">Run Unit Tests</button>
+        <div id="unitTestOutput" class="test-output"></div>
+    </div>
+
+    <script type="module">
+        window.testModuleLoading = async function() {
+            const output = document.getElementById('moduleTestOutput');
+            output.textContent = 'Testing module loading...\n';
+
+            const modules = [
+                { name: 'types', path: '../types.js' },
+                { name: 'geometry', path: '../geometry.js' },
+                { name: 'gameState', path: '../gameState.js' },
+                { name: 'rendering', path: '../rendering.js' },
+                { name: 'entityRendering', path: '../entityRendering.js' },
+                { name: 'doorSystem', path: '../doorSystem.js' },
+                { name: 'monsterSystem', path: '../monsterSystem.js' },
+                { name: 'actionSystem', path: '../actionSystem.js' },
+                { name: 'inputHandling', path: '../inputHandling.js' },
+                { name: 'patchSystem', path: '../patchSystem.js' },
+                { name: 'app', path: '../app.js' }
+            ];
+
+            let successful = 0;
+            let failed = 0;
+
+            for (const module of modules) {
+                try {
+                    const imported = await import(module.path);
+                    output.textContent += `${module.name}: loaded successfully\n`;
+                    successful++;
+                } catch (error) {
+                    output.textContent += `${module.name}: ${error.message}\n`;
+                    failed++;
+                }
+            }
+
+            output.textContent += `\nResults: ${successful}/${modules.length} modules loaded successfully\n`;
+
+            if (failed === 0) {
+                output.textContent += 'All modules loaded successfully!\n';
+            } else {
+                output.textContent += `${failed} modules failed to load\n`;
+            }
+        };
+
+        window.runUnitTests = async function() {
+            const output = document.getElementById('unitTestOutput');
+            output.textContent = 'Running unit tests...\n';
+
+            try {
+                const { runAllTests } = await import('./runTests.js');
+
+                // Capture console output
+                const originalLog = console.log;
+                const logs = [];
+                console.log = (...args) => {
+                    logs.push(args.join(' '));
+                    originalLog(...args);
+                };
+
+                await runAllTests();
+
+                // Restore console.log
+                console.log = originalLog;
+
+                output.textContent = logs.join('\n');
+            } catch (error) {
+                output.textContent += `Test runner failed: ${error.message}\n`;
+                console.error('Test runner error:', error);
+            }
+        };
+
+        // Add some basic geometry tests that can run in the browser
+        window.testGeometryBasics = function() {
+            const output = document.getElementById('unitTestOutput');
+            output.textContent = '🔄 Testing basic geometry functions...\n';
+
+            try {
+                // Test if we can import and use geometry functions
+                import('../geometry.js').then(geometry => {
+                    // Test keyToStep
+                    const up = geometry.keyToStep({ key: 'ArrowUp' });
+                    const down = geometry.keyToStep({ key: 'ArrowDown' });
+
+                    if (up.dx === 0 && up.dy === -1) {
+                        output.textContent += 'keyToStep up arrow works\n';
+                    } else {
+                        output.textContent += 'keyToStep up arrow failed\n';
+                    }
+
+                    if (down.dx === 0 && down.dy === 1) {
+                        output.textContent += 'keyToStep down arrow works\n';
+                    } else {
+                        output.textContent += 'keyToStep down arrow failed\n';
+                    }
+
+                    // Test calculateTileRect
+                    const rect = geometry.calculateTileRect(2, 3, 32, 10, 20);
+                    if (rect.x === 74 && rect.y === 116) {
+                        output.textContent += 'calculateTileRect positioning works\n';
+                    } else {
+                        output.textContent += 'calculateTileRect positioning failed\n';
+                    }
+
+                    // Test degreesToRadians
+                    const radians = geometry.degreesToRadians(90);
+                    if (Math.abs(radians - Math.PI / 2) < 0.0001) {
+                        output.textContent += 'degreesToRadians works\n';
+                    } else {
+                        output.textContent += 'degreesToRadians failed\n';
+                    }
+
+                    output.textContent += '\nBasic geometry tests completed\n';
+                }).catch(error => {
+                    output.textContent += `Failed to import geometry module: ${error.message}\n`;
+                });
+            } catch (error) {
+                output.textContent += `Test setup failed: ${error.message}\n`;
+            }
+        };
+
+        // Auto-run module loading test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            testModuleLoading();
+        });
+    </script>
+
+    <div class="test-container">
+        <h2>Quick Geometry Tests</h2>
+        <p>Run a few basic geometry function tests without the full test framework.</p>
+        <button onclick="testGeometryBasics()">Test Geometry Basics</button>
+    </div>
+
+    <div class="test-container">
+        <h2>Instructions</h2>
+        <p>
+            1. <strong>Module Loading Test</strong>: Verifies all JavaScript modules can be imported successfully.<br>
+            2. <strong>Unit Tests</strong>: Runs the complete test suite for the geometry utilities.<br>
+            3. <strong>Quick Geometry Tests</strong>: Basic verification of key geometry functions.
+        </p>
+        <p>
+            Open your browser's developer console (F12) to see additional debugging information.
+        </p>
+    </div>
+</body>
+</html>

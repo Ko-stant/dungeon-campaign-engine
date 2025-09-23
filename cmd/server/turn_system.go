@@ -59,11 +59,32 @@ type TurnManager struct {
 
 // Player represents a game player
 type Player struct {
-	ID       string    `json:"id"`
-	Name     string    `json:"name"`
-	EntityID string    `json:"entityId"`
-	Class    HeroClass `json:"class"`
-	IsActive bool      `json:"isActive"`
+	ID        string         `json:"id"`
+	Name      string         `json:"name"`
+	EntityID  string         `json:"entityId"`
+	Class     HeroClass      `json:"class"`
+	Character *HeroCharacter `json:"character"`
+	IsActive  bool           `json:"isActive"`
+}
+
+// NewPlayer creates a new player with initialized hero character
+func NewPlayer(id, name, entityID string, class HeroClass) *Player {
+	baseStats := GetBaseStatsForClass(class)
+	character := &HeroCharacter{
+		BaseStats:     baseStats,
+		CurrentBody:   baseStats.BodyPoints,
+		CurrentMind:   baseStats.MindPoints,
+		EquipmentMods: StatMods{}, // No equipment bonuses initially
+	}
+
+	return &Player{
+		ID:        id,
+		Name:      name,
+		EntityID:  entityID,
+		Class:     class,
+		Character: character,
+		IsActive:  true,
+	}
 }
 
 // HeroClass defines the hero class types
@@ -75,6 +96,119 @@ const (
 	Elf       HeroClass = "elf"
 	Wizard    HeroClass = "wizard"
 )
+
+// HeroStats represents the base stats for a hero class
+type HeroStats struct {
+	BodyPoints    int `json:"bodyPoints"`
+	MindPoints    int `json:"mindPoints"`
+	AttackDice    int `json:"attackDice"`
+	DefenseDice   int `json:"defenseDice"`
+	MovementDice  int `json:"movementDice"`
+}
+
+// GetBaseStatsForClass returns the base stats for each hero class
+func GetBaseStatsForClass(class HeroClass) HeroStats {
+	switch class {
+	case Barbarian:
+		return HeroStats{
+			BodyPoints:   8,
+			MindPoints:   2,
+			AttackDice:   3,
+			DefenseDice:  2,
+			MovementDice: 2,
+		}
+	case Dwarf:
+		return HeroStats{
+			BodyPoints:   7,
+			MindPoints:   3,
+			AttackDice:   2,
+			DefenseDice:  2,
+			MovementDice: 2,
+		}
+	case Elf:
+		return HeroStats{
+			BodyPoints:   6,
+			MindPoints:   4,
+			AttackDice:   2,
+			DefenseDice:  2,
+			MovementDice: 2,
+		}
+	case Wizard:
+		return HeroStats{
+			BodyPoints:   4,
+			MindPoints:   6,
+			AttackDice:   1,
+			DefenseDice:  2,
+			MovementDice: 2,
+		}
+	default:
+		// Default stats if unknown class
+		return HeroStats{
+			BodyPoints:   6,
+			MindPoints:   4,
+			AttackDice:   2,
+			DefenseDice:  2,
+			MovementDice: 2,
+		}
+	}
+}
+
+// HeroCharacter represents a hero with current stats and equipment
+type HeroCharacter struct {
+	BaseStats     HeroStats `json:"baseStats"`
+	CurrentBody   int       `json:"currentBody"`
+	CurrentMind   int       `json:"currentMind"`
+	EquipmentMods StatMods  `json:"equipmentMods"`
+}
+
+// StatMods represents modifications from equipment
+type StatMods struct {
+	AttackBonus  int `json:"attackBonus"`  // Additional attack dice from weapons
+	DefenseBonus int `json:"defenseBonus"` // Additional defense from armor
+}
+
+// GetEffectiveAttackDice returns total attack dice including equipment
+func (hc *HeroCharacter) GetEffectiveAttackDice() int {
+	total := hc.BaseStats.AttackDice + hc.EquipmentMods.AttackBonus
+	if total < 1 {
+		return 1 // Attack dice never falls below 1
+	}
+	return total
+}
+
+// GetEffectiveDefenseDice returns total defense dice including equipment
+func (hc *HeroCharacter) GetEffectiveDefenseDice() int {
+	return hc.BaseStats.DefenseDice + hc.EquipmentMods.DefenseBonus
+}
+
+// TakeDamage reduces current body points
+func (hc *HeroCharacter) TakeDamage(damage int) {
+	hc.CurrentBody -= damage
+	if hc.CurrentBody < 0 {
+		hc.CurrentBody = 0
+	}
+}
+
+// IsUnconscious checks if hero is unconscious (0 body points)
+func (hc *HeroCharacter) IsUnconscious() bool {
+	return hc.CurrentBody <= 0
+}
+
+// Heal restores body points
+func (hc *HeroCharacter) Heal(amount int) {
+	hc.CurrentBody += amount
+	if hc.CurrentBody > hc.BaseStats.BodyPoints {
+		hc.CurrentBody = hc.BaseStats.BodyPoints
+	}
+}
+
+// RestoreMind restores mind points
+func (hc *HeroCharacter) RestoreMind(amount int) {
+	hc.CurrentMind += amount
+	if hc.CurrentMind > hc.BaseStats.MindPoints {
+		hc.CurrentMind = hc.BaseStats.MindPoints
+	}
+}
 
 // NewTurnManager creates a new turn manager
 func NewTurnManager(broadcaster Broadcaster, logger Logger) *TurnManager {
@@ -243,6 +377,20 @@ func (tm *TurnManager) SetGameMasterTurn() {
 
 	tm.logger.Printf("Forced GameMaster turn")
 	tm.broadcastTurnState()
+}
+
+// RestoreActions restores actions for testing (debug function)
+func (tm *TurnManager) RestoreActions() {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
+
+	if tm.state.CurrentTurn == HeroTurn {
+		tm.state.ActionsLeft = 1 // Reset to standard 1 action per turn
+		tm.state.ActionTaken = false
+		tm.state.CurrentPhase = ActionPhase
+		tm.logger.Printf("DEBUG: Restored actions for testing - ActionsLeft: %d", tm.state.ActionsLeft)
+		tm.broadcastTurnState()
+	}
 }
 
 // Private methods

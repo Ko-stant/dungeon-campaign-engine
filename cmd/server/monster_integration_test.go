@@ -322,11 +322,6 @@ func TestMonsterSystem_MonsterTypes(t *testing.T) {
 	}
 }
 
-func TestMonsterSystem_AIBehavior(t *testing.T) {
-	// Skip AI behavior test - AI system not implemented yet
-	t.Skip("AI behavior system not implemented yet - game is human-driven for now")
-}
-
 func TestMonsterSystem_VisibilityIntegration(t *testing.T) {
 	// Skip integration test that requires content files for now
 	t.Skip("Integration test requires content files - skipping for build validation")
