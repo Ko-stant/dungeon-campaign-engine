@@ -141,23 +141,34 @@ func mainWithGameManager() {
 
 	// Main page handler
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		hero := state.Entities["hero-1"]
-		visibleNow := computeVisibleRoomRegionsNow(state, hero, state.CorridorRegion)
+		// Get current game state for up-to-date entity positions
+		currentGameState := gameManager.GetGameState()
 
+		// Use current hero position, not stale initial position
+		currentGameState.Lock.Lock()
+		hero := currentGameState.Entities["hero-1"]
+
+		// Use current game state for up-to-date revealed regions
 		var revealed []int
-		for id := range state.RevealedRegions {
+		for id := range currentGameState.RevealedRegions {
 			revealed = append(revealed, id)
 		}
+		currentGameState.Lock.Unlock()
+
+		visibleNow := computeVisibleRoomRegionsNow(state, hero, state.CorridorRegion)
 
 		// Include only heroes in entities (monsters are handled separately)
+		// Use current entity position from game manager, not stale initial state
 		entities := []protocol.EntityLite{
-			{ID: "hero-1", Kind: "hero", Tile: state.Entities["hero-1"]},
+			{ID: "hero-1", Kind: "hero", Tile: hero},
 		}
 
 		// Include all known doors in initial snapshot
-		thresholds := make([]protocol.ThresholdLite, 0, len(state.KnownDoors))
-		for id := range state.KnownDoors {
-			if info, exists := state.Doors[id]; exists {
+		// Use current game state for up-to-date door information
+		currentGameState.Lock.Lock()
+		thresholds := make([]protocol.ThresholdLite, 0, len(currentGameState.KnownDoors))
+		for id := range currentGameState.KnownDoors {
+			if info, exists := currentGameState.Doors[id]; exists {
 				thresholds = append(thresholds, protocol.ThresholdLite{
 					ID:          id,
 					X:           info.Edge.X,
@@ -170,6 +181,7 @@ func mainWithGameManager() {
 					id, info.Edge.X, info.Edge.Y, info.Edge.Orientation, info.RegionA, info.RegionB, info.State)
 			}
 		}
+		currentGameState.Lock.Unlock()
 
 		// Include visible blocking walls
 		blockingWalls, _ := getVisibleBlockingWalls(state, hero, quest)
@@ -285,6 +297,21 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		result, err := gameManager.ProcessHeroAction(req)
 		if err != nil {
 			log.Printf("Hero action failed: %v", err)
+			// Send error response to UI
+			errorResult := map[string]interface{}{
+				"success": false,
+				"action":  req.Action,
+				"message": err.Error(),
+			}
+			patch := protocol.PatchEnvelope{
+				Sequence: sequenceGen.Next(),
+				EventID:  int64(sequenceGen.Next()),
+				Type:     "HeroActionResult",
+				Payload:  errorResult,
+			}
+			data, _ := json.Marshal(patch)
+			log.Printf("DEBUG: Broadcasting HeroActionError: %s", string(data))
+			hub.Broadcast(data)
 			return
 		}
 		log.Printf("DEBUG: ProcessHeroAction returned result: %+v", result)
@@ -324,6 +351,28 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		}
 
 		data, _ := json.Marshal(patch)
+		hub.Broadcast(data)
+
+	case "PassGMTurn":
+		// Debug function to pass GM turn and return to hero turn
+		log.Printf("DEBUG: Received PassGMTurn request")
+
+		if err := gameManager.PassGMTurn(); err != nil {
+			log.Printf("PassGMTurn failed: %v", err)
+			return
+		}
+
+		// Broadcast new turn state
+		turnState := gameManager.GetTurnState()
+		patch := protocol.PatchEnvelope{
+			Sequence: sequenceGen.Next(),
+			EventID:  int64(sequenceGen.Next()),
+			Type:     "TurnStateChanged",
+			Payload:  turnState,
+		}
+
+		data, _ := json.Marshal(patch)
+		log.Printf("DEBUG: Broadcasting TurnStateChanged after PassGMTurn: %s", string(data))
 		hub.Broadcast(data)
 
 	case "EndTurn":

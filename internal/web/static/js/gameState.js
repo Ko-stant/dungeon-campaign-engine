@@ -8,6 +8,7 @@ class GameState {
   constructor() {
     this.snapshot = null;
     this.socketRef = null;
+    this.redrawRef = null;
     this.patchCount = 0;
 
     // Entity tracking
@@ -297,7 +298,22 @@ class GameState {
 
     const existingIndex = this.monsters.findIndex(m => m && m.id === updatedMonster.id);
     if (existingIndex !== -1) {
-      this.monsters[existingIndex] = updatedMonster;
+      const existingMonster = this.monsters[existingIndex];
+
+      // Preserve client-side visibility state - only update stats, not visibility
+      // Visibility is managed separately via MonstersVisible patches and region revelation
+      const preservedMonster = {
+        ...updatedMonster,
+        isVisible: existingMonster.isVisible,
+        tile: existingMonster.tile || updatedMonster.tile
+      };
+
+      this.monsters[existingIndex] = preservedMonster;
+
+      console.log('DEBUG: Updated monster', updatedMonster.id,
+        'preserved visibility:', existingMonster.isVisible,
+        'updated body:', updatedMonster.body, '/', updatedMonster.MaxBody,
+        'isAlive:', updatedMonster.isAlive);
 
       // Clear selection if selected monster died
       if (!updatedMonster.isAlive && this.selectedMonsterId === updatedMonster.id) {
@@ -381,6 +397,31 @@ class GameState {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Set redraw function reference
+   * @param {Function} redrawFn
+   */
+  setRedrawFunction(redrawFn) {
+    this.redrawRef = redrawFn;
+  }
+
+  /**
+   * Get redraw function reference
+   * @returns {Function|null}
+   */
+  getRedrawFunction() {
+    return this.redrawRef;
+  }
+
+  /**
+   * Trigger a redraw if function is available
+   */
+  requestRedraw() {
+    if (this.redrawRef) {
+      this.redrawRef();
+    }
   }
 }
 

@@ -181,6 +181,14 @@ func (gm *GameManager) EndTurn() error {
 	return gm.turnManager.EndTurn()
 }
 
+// PassGMTurn skips the current GM turn and advances to the next hero turn (debug function)
+func (gm *GameManager) PassGMTurn() error {
+	gm.mutex.Lock()
+	defer gm.mutex.Unlock()
+
+	return gm.turnManager.PassGMTurn()
+}
+
 // GetGameState returns the current game state (read-only)
 func (gm *GameManager) GetGameState() *GameState {
 	gm.mutex.RLock()

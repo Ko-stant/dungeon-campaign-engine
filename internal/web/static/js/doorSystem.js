@@ -35,6 +35,7 @@ export function findAdjacentDoorIdFromDirection(entityId, dx, dy) {
 export function selectDoorInDirection(dx, dy) {
   const doorId = findAdjacentDoorIdFromDirection('hero-1', dx, dy);
   gameState.setSelectedDoorId(doorId);
+  gameState.requestRedraw();
 }
 
 /**
@@ -77,6 +78,7 @@ export function isDoorSelected() {
  */
 export function clearDoorSelection() {
   gameState.setSelectedDoorId(null);
+  gameState.requestRedraw();
 }
 
 /**

@@ -107,8 +107,8 @@ func TestHeroActions_Attack_Success(t *testing.T) {
 		t.Errorf("Expected action %s, got %s", AttackAction, result.Action)
 	}
 
-	if len(result.DiceRolls) == 0 {
-		t.Error("Expected dice rolls for attack")
+	if len(result.AttackRolls) == 0 {
+		t.Error("Expected attack rolls for attack")
 	}
 }
 
@@ -258,8 +258,8 @@ func TestHeroActions_DisarmTrap_RequiresTrapID(t *testing.T) {
 		t.Fatalf("Expected no error with trap ID, got: %v", err)
 	}
 
-	if len(result.DiceRolls) == 0 {
-		t.Error("Expected dice rolls for disarm attempt")
+	if len(result.SearchRolls) == 0 {
+		t.Error("Expected search rolls for disarm attempt")
 	}
 }
 

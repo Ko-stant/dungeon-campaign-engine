@@ -69,7 +69,9 @@ type ActionResult struct {
 	Action         HeroAction    `json:"action"`
 	PlayerID       string        `json:"playerId"`
 	EntityID       string        `json:"entityId"`
-	DiceRolls      []DiceRoll    `json:"diceRolls,omitempty"`
+	AttackRolls    []DiceRoll    `json:"attackRolls,omitempty"`   // Hero's attack dice
+	DefenseRolls   []DiceRoll    `json:"defenseRolls,omitempty"`  // Monster's defense dice
+	SearchRolls    []DiceRoll    `json:"searchRolls,omitempty"`   // Search action dice
 	Damage         int           `json:"damage,omitempty"`
 	ItemsFound     []Item        `json:"itemsFound,omitempty"`
 	SecretRevealed *SecretDoor   `json:"secretRevealed,omitempty"`
@@ -263,7 +265,7 @@ func (has *HeroActionSystem) processSearchTreasure(request ActionRequest, result
 	searchRolls := has.diceSystem.RollDice(SearchDie, 1, "search_treasure")
 	searchResult := searchRolls[0].Result
 
-	result.DiceRolls = searchRolls
+	result.SearchRolls = searchRolls
 	result.Success = true
 
 	switch searchResult {
@@ -356,9 +358,9 @@ func (has *HeroActionSystem) processAttack(request ActionRequest, result *Action
 		return result, err
 	}
 
-	// Combine all dice rolls for result
-	allRolls := append(attackRolls, defenseRolls...)
-	result.DiceRolls = allRolls
+	// Set separated dice rolls
+	result.AttackRolls = attackRolls
+	result.DefenseRolls = defenseRolls
 	result.Damage = damage
 	result.Success = true
 
@@ -435,7 +437,7 @@ func (has *HeroActionSystem) processSearchTraps(request ActionRequest, result *A
 	searchRolls := has.diceSystem.RollDice(SearchDie, 1, "search_traps")
 	searchResult := searchRolls[0].Result
 
-	result.DiceRolls = searchRolls
+	result.SearchRolls = searchRolls
 	result.Success = true
 
 	if searchResult >= 5 { // Success on 5-6
@@ -465,7 +467,7 @@ func (has *HeroActionSystem) processSearchSecret(request ActionRequest, result *
 	searchRolls := has.diceSystem.RollDice(SearchDie, 1, "search_secret")
 	searchResult := searchRolls[0].Result
 
-	result.DiceRolls = searchRolls
+	result.SearchRolls = searchRolls
 	result.Success = true
 
 	if searchResult == 6 { // Success only on 6
@@ -544,7 +546,7 @@ func (has *HeroActionSystem) processDisarmTrap(request ActionRequest, result *Ac
 	disarmRolls := has.diceSystem.RollDice(SearchDie, 1, "disarm_trap")
 	disarmResult := disarmRolls[0].Result
 
-	result.DiceRolls = disarmRolls
+	result.SearchRolls = disarmRolls
 	result.Success = disarmResult >= 4 // Success on 4-6
 
 	if result.Success {
@@ -850,7 +852,39 @@ func (ds *DiceSystem) RollDefenseDice(defenseDice int) []DiceRoll {
 }
 
 // CalculateCombatDamage calculates damage from attack and defense rolls
+// Note: This function assumes monster defense (only black shields count)
+// For hero defense, use CalculateHeroCombatDamage instead
 func CalculateCombatDamage(attackRolls, defenseRolls []DiceRoll) int {
+	skulls := 0
+	blackShields := 0
+
+	// Count skulls from attack rolls
+	for _, roll := range attackRolls {
+		if roll.CombatResult == Skull {
+			skulls++
+		}
+	}
+
+	// Count only black shields from monster defense rolls
+	// In HeroQuest, monsters can only defend with black shields (1/6 chance)
+	for _, roll := range defenseRolls {
+		if roll.CombatResult == BlackShield {
+			blackShields++
+		}
+	}
+
+	// Net damage = skulls - black shields (minimum 0)
+	damage := skulls - blackShields
+	if damage < 0 {
+		damage = 0
+	}
+
+	return damage
+}
+
+// CalculateHeroCombatDamage calculates damage when a hero is defending
+// Heroes can defend with both white and black shields (3/6 chance total)
+func CalculateHeroCombatDamage(attackRolls, defenseRolls []DiceRoll) int {
 	skulls := 0
 	shields := 0
 
@@ -861,7 +895,7 @@ func CalculateCombatDamage(attackRolls, defenseRolls []DiceRoll) int {
 		}
 	}
 
-	// Count shields from defense rolls
+	// Count both white and black shields from hero defense rolls
 	for _, roll := range defenseRolls {
 		if roll.CombatResult == WhiteShield || roll.CombatResult == BlackShield {
 			shields++

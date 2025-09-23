@@ -354,25 +354,65 @@ export function handleHeroActionResult(result) {
 
   // Show success/failure
   const statusColor = result.success ? 'text-green-300' : 'text-red-300';
+  const message = result.message || result.error || 'Unknown error';
   resultHTML += `<div class="text-sm ${statusColor} mb-2">${result.success ? '✅' : '❌'
-    } ${result.message}</div>`;
+    } ${message}</div>`;
 
-  // Show dice rolls if present
-  if (result.diceRolls && result.diceRolls.length > 0) {
-    resultHTML += '<div class="mb-2 text-sm font-semibold">Dice Rolls:</div>';
-    result.diceRolls.forEach((roll, index) => {
+  // Show separated dice rolls if present (new format)
+  if (result.attackRolls && result.attackRolls.length > 0) {
+    resultHTML += '<div class="mb-2 text-sm font-semibold text-red-300">⚔️ Hero Attack Dice:</div>';
+    result.attackRolls.forEach((roll, index) => {
+      let rollDisplay = `Die ${index + 1}: ${roll.result}`;
+      if (roll.combatResult) {
+        const symbol = roll.combatResult === 'skull' ? '💀' : '🎯';
+        rollDisplay += ` (${symbol} ${roll.combatResult})`;
+      }
+      resultHTML += `<div class="text-xs opacity-80 ml-2">${rollDisplay}</div>`;
+    });
+  }
+
+  if (result.defenseRolls && result.defenseRolls.length > 0) {
+    resultHTML += '<div class="mb-2 text-sm font-semibold text-blue-300">🛡️ Monster Defense Dice:</div>';
+    result.defenseRolls.forEach((roll, index) => {
+      let rollDisplay = `Die ${index + 1}: ${roll.result}`;
+      if (roll.combatResult) {
+        const symbol = roll.combatResult === 'black_shield' ? '⚫' :
+                      roll.combatResult === 'white_shield' ? '⚪' : '❌';
+        rollDisplay += ` (${symbol} ${roll.combatResult})`;
+      }
+      resultHTML += `<div class="text-xs opacity-80 ml-2">${rollDisplay}</div>`;
+    });
+  }
+
+  // Show search dice rolls if present
+  if (result.searchRolls && result.searchRolls.length > 0) {
+    resultHTML += '<div class="mb-2 text-sm font-semibold text-yellow-300">🔍 Search Dice:</div>';
+    result.searchRolls.forEach((roll, index) => {
       let rollDisplay = `Die ${index + 1}: ${roll.result}`;
       if (roll.combatResult) {
         rollDisplay += ` (${roll.combatResult})`;
       }
-      resultHTML += `<div class="text-xs opacity-80">${rollDisplay}</div>`;
+      resultHTML += `<div class="text-xs opacity-80 ml-2">${rollDisplay}</div>`;
     });
+  }
+
+  // Show combat summary for attack actions
+  if (result.action === 'attack' && result.attackRolls && result.defenseRolls) {
+    const skulls = result.attackRolls.filter(roll => roll.combatResult === 'skull').length;
+    // For monster defense, only black shields count (HeroQuest rule)
+    const blackShields = result.defenseRolls.filter(roll => roll.combatResult === 'black_shield').length;
+    // const whiteShields = result.defenseRolls.filter(roll => roll.combatResult === 'white_shield').length;
+
+    resultHTML += `<div class="mt-3 p-2 bg-gray-700 rounded text-center">`;
+    resultHTML += `<div class="text-sm font-semibold">Combat Summary</div>`;
+    resultHTML += `<div class="text-xs mt-1">💀 ${skulls} Skulls - ⚫ ${blackShields} Black Shields = ⚡ ${Math.max(0, skulls - blackShields)} Damage</div>`;
+    resultHTML += `</div>`;
   }
 
   // Show damage if present
   if (result.damage !== undefined) {
     const damageColor = result.damage > 0 ? 'text-red-300' : 'text-green-300';
-    resultHTML += `<div class="mt-2 text-sm font-semibold ${damageColor}">💥 Damage: ${result.damage}</div>`;
+    resultHTML += `<div class="mt-2 text-sm font-semibold ${damageColor}">💥 Final Damage: ${result.damage}</div>`;
   }
 
   // Handle monster death
@@ -392,6 +432,16 @@ export function handleHeroActionResult(result) {
 
   contentDiv.innerHTML = resultHTML;
   resultDiv.style.display = 'block';
+
+  // Auto-clear error messages after 3 seconds
+  if (!result.success) {
+    setTimeout(() => {
+      if (resultDiv.style.display === 'block') {
+        resultDiv.style.display = 'none';
+        contentDiv.innerHTML = '';
+      }
+    }, 3000);
+  }
 
   // Reset button states
   updateActionButtons();
@@ -478,6 +528,33 @@ export function initializeActionUI() {
     .getElementById('executeAction')
     ?.addEventListener('click', executeCurrentAction);
 
+  // Debug button for GM turn passing
+  document
+    .getElementById('passGMTurn')
+    ?.addEventListener('click', passGMTurn);
+
   // Initialize default state
   setActionMode(ACTION_MODES.MOVE);
+}
+
+/**
+ * Debug function to pass GM turn - skips all monster actions and returns to hero turn
+ */
+function passGMTurn() {
+  console.log('DEBUG: Passing GM turn...');
+
+  // Send debug command to server
+  const intent = {
+    type: 'PassGMTurn',
+    payload: {
+      debug: true
+    }
+  };
+
+  const envelope = {
+    type: intent.type,
+    payload: intent.payload
+  };
+
+  gameState.sendMessage(envelope);
 }

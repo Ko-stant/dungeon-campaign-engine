@@ -452,8 +452,8 @@ func TestGameFlow_CombatIntegration(t *testing.T) {
 		t.Fatalf("Expected successful attack, got: %s", result.Message)
 	}
 
-	if len(result.DiceRolls) == 0 {
-		t.Error("Expected dice rolls for attack")
+	if len(result.AttackRolls) == 0 {
+		t.Error("Expected attack rolls for attack")
 	}
 
 	if result.Damage < 0 {

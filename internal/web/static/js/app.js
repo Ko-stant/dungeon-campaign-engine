@@ -85,6 +85,7 @@ export function initializeApp() {
   // Set up cross-module dependencies
   setDrawMainFunction(drawBoard);
   setRedrawFunction(() => requestAnimationFrame(drawBoard));
+  gameState.setRedrawFunction(() => requestAnimationFrame(drawBoard));
 
   // Initialize subsystems
   initializeActionUI();

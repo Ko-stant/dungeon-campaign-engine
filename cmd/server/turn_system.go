@@ -502,3 +502,24 @@ func (tm *TurnManager) IsPlayerTurn(playerID string) bool {
 	defer tm.lock.RUnlock()
 	return tm.state.CurrentTurn == HeroTurn && tm.state.ActivePlayerID == playerID
 }
+
+// PassGMTurn skips the current GM turn and advances to the next hero turn (debug function)
+func (tm *TurnManager) PassGMTurn() error {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
+
+	if tm.state.CurrentTurn == HeroTurn && tm.state.CurrentPhase == EndPhase {
+		// Hero is in end phase (no actions left), advance to GM turn first
+		tm.logger.Printf("DEBUG: Hero in end phase, advancing to GM turn first")
+		tm.advanceToNextHeroOrGameMaster()
+	}
+
+	if tm.state.CurrentTurn != GameMasterTurn {
+		return fmt.Errorf("can only pass GM turn during GameMaster turn, current turn: %s", tm.state.CurrentTurn)
+	}
+
+	tm.logger.Printf("DEBUG: Passing GM turn, advancing to next hero turn")
+	tm.advanceToNextHero()
+	tm.broadcastTurnState()
+	return nil
+}

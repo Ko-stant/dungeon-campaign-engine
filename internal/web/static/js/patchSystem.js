@@ -62,6 +62,10 @@ export function applyPatch(patch) {
       handleHeroActionResultPatch(patch);
       break;
 
+    case 'TurnStateChanged':
+      handleTurnStateChanged(patch);
+      break;
+
     default:
       console.log('Unknown patch type:', patch.type);
   }
@@ -228,6 +232,25 @@ function handleHeroActionResultPatch(patch) {
       gameState.entityPositions.size);
 
     scheduleRedraw();
+  }
+}
+
+/**
+ * Handle TurnStateChanged patch
+ * @param {Object} patch
+ */
+function handleTurnStateChanged(patch) {
+  if (patch.payload) {
+    console.log('DEBUG: Received TurnStateChanged:', patch.payload);
+
+    // Update turn counter in UI
+    const turnCounter = document.getElementById('turnCounter');
+    if (turnCounter && patch.payload.turnNumber !== undefined) {
+      turnCounter.textContent = patch.payload.turnNumber;
+      console.log('DEBUG: Updated turn counter to:', patch.payload.turnNumber);
+    }
+
+    gameState.incrementPatchCount();
   }
 }
 

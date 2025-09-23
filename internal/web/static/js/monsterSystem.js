@@ -35,6 +35,7 @@ export function findAdjacentMonsterIdFromDirection(entityId, dx, dy) {
 export function selectMonsterInDirection(dx, dy) {
   const monsterId = findAdjacentMonsterIdFromDirection('hero-1', dx, dy);
   gameState.setSelectedMonsterId(monsterId);
+  gameState.requestRedraw();
   console.log('Selected monster:', monsterId);
 }
 
@@ -60,6 +61,7 @@ export function isMonsterSelected() {
  */
 export function clearMonsterSelection() {
   gameState.setSelectedMonsterId(null);
+  gameState.requestRedraw();
 }
 
 /**

@@ -21,7 +21,7 @@ templ IndexPage(snapshot protocol.Snapshot) {
 					<div class="flex items-center gap-4 text-sm">
 						<div class="opacity-80">map: { snapshot.MapID }</div>
 						<div class="opacity-80">pack: { snapshot.PackID }</div>
-						<div class="opacity-80">turn: { snapshot.Turn }</div>
+						<div class="opacity-80">turn: <span id="turnCounter">{ snapshot.Turn }</span></div>
 						<div class="opacity-60">proto: { snapshot.ProtocolVersion }</div>
 					</div>
 				</div>
@@ -46,6 +46,14 @@ templ IndexPage(snapshot protocol.Snapshot) {
 								<li><span class="opacity-70">Patches:</span> <span id="patchCount">0</span></li>
 								<li><span class="opacity-70">Mode:</span> <span id="actionMode">Move</span></li>
 							</ul>
+						</div>
+
+						<!-- Debug Section -->
+						<div class="mb-4 p-3 bg-orange-900/20 border border-orange-600/40 rounded-md">
+							<h3 class="text-sm font-semibold mb-2 text-orange-300">🐛 Debug Tools</h3>
+							<button id="passGMTurn" class="w-full px-3 py-2 text-sm bg-orange-600/20 border border-orange-600/40 rounded hover:bg-orange-600/30 text-orange-300">
+								⏭️ Pass GM Turn
+							</button>
 						</div>
 
 						<!-- Monster Details (when selected) -->
