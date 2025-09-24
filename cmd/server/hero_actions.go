@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
 )
 
@@ -24,11 +25,12 @@ const (
 type InstantAction string
 
 const (
-	OpenDoorInstant  InstantAction = "open_door"
-	UsePotionInstant InstantAction = "use_potion"
-	UseItemInstant   InstantAction = "use_item"
-	TradeItemInstant InstantAction = "trade_item"
-	PassTurnInstant  InstantAction = "pass_turn"
+	OpenDoorInstant    InstantAction = "open_door"
+	UsePotionInstant   InstantAction = "use_potion"
+	UseItemInstant     InstantAction = "use_item"
+	TradeItemInstant   InstantAction = "trade_item"
+	PassTurnInstant    InstantAction = "pass_turn"
+	RollMovementInstant InstantAction = "roll_movement"
 )
 
 // MovementAction represents the special movement action (once per turn, before or after main action)
@@ -72,6 +74,7 @@ type ActionResult struct {
 	AttackRolls    []DiceRoll    `json:"attackRolls,omitempty"`   // Hero's attack dice
 	DefenseRolls   []DiceRoll    `json:"defenseRolls,omitempty"`  // Monster's defense dice
 	SearchRolls    []DiceRoll    `json:"searchRolls,omitempty"`   // Search action dice
+	MovementRolls  []DiceRoll    `json:"movementRolls,omitempty"` // Movement dice rolls
 	Damage         int           `json:"damage,omitempty"`
 	ItemsFound     []Item        `json:"itemsFound,omitempty"`
 	SecretRevealed *SecretDoor   `json:"secretRevealed,omitempty"`
@@ -185,6 +188,7 @@ type HeroActionSystem struct {
 	debugSystem       *DebugSystem
 	movementValidator MovementValidator
 	monsterSystem     *MonsterSystem
+	quest             *geometry.QuestDefinition
 }
 
 // NewHeroActionSystem creates a new hero action system
@@ -208,6 +212,11 @@ func (has *HeroActionSystem) SetMovementValidator(validator MovementValidator) {
 // SetMonsterSystem sets the monster system for combat interactions
 func (has *HeroActionSystem) SetMonsterSystem(monsterSystem *MonsterSystem) {
 	has.monsterSystem = monsterSystem
+}
+
+// SetQuest sets the quest definition for visibility calculations
+func (has *HeroActionSystem) SetQuest(quest *geometry.QuestDefinition) {
+	has.quest = quest
 }
 
 // ProcessAction processes a hero action request
@@ -593,6 +602,8 @@ func (has *HeroActionSystem) ProcessInstantAction(request InstantActionRequest) 
 		return has.processTradeItem(request, result)
 	case PassTurnInstant:
 		return has.processPassTurn(request, result)
+	case RollMovementInstant:
+		return has.processRollMovement(request, result)
 	default:
 		return nil, fmt.Errorf("unknown instant action: %s", request.Action)
 	}
@@ -624,6 +635,16 @@ func (has *HeroActionSystem) ProcessMovement(request MovementRequest) (*ActionRe
 // Instant action processors
 
 func (has *HeroActionSystem) processMovement(request MovementRequest, result *ActionResult) (*ActionResult, error) {
+	// Check if we're switching movement action types mid-turn
+	turnState := has.turnManager.GetTurnState()
+	requestAction := string(request.Action)
+
+	if turnState.MovementStarted && turnState.MovementAction != "" && turnState.MovementAction != requestAction {
+		result.Success = false
+		result.Message = "Player cannot move right now"
+		return result, fmt.Errorf("player cannot move right now")
+	}
+
 	dx, ok1 := request.Parameters["dx"].(float64)
 	dy, ok2 := request.Parameters["dy"].(float64)
 
@@ -641,18 +662,18 @@ func (has *HeroActionSystem) processMovement(request MovementRequest, result *Ac
 		return result, fmt.Errorf("no movement")
 	}
 
-	// Check if player has enough movement (but don't consume action)
-	if err := has.turnManager.ConsumeMovement(distance); err != nil {
-		result.Success = false
-		result.Message = err.Error()
-		return result, err
-	}
-
-	// Use existing movement validation
+	// Validate movement first BEFORE consuming movement points
 	newTile, err := has.movementValidator.ValidateMove(has.gameState, request.EntityID, int(dx), int(dy))
 	if err != nil {
 		result.Success = false
 		result.Message = fmt.Sprintf("Movement blocked: %s", err.Error())
+		return result, err
+	}
+
+	// Only consume movement points if the move is valid
+	if err := has.turnManager.ConsumeMovement(distance, requestAction); err != nil {
+		result.Success = false
+		result.Message = err.Error()
 		return result, err
 	}
 
@@ -661,11 +682,30 @@ func (has *HeroActionSystem) processMovement(request MovementRequest, result *Ac
 	has.gameState.Entities[request.EntityID] = *newTile
 	has.gameState.Lock.Unlock()
 
-	// Broadcast update
+	// Broadcast entity position update
 	has.broadcaster.BroadcastEvent("EntityUpdated", protocol.EntityUpdated{
 		ID:   request.EntityID,
 		Tile: *newTile,
 	})
+
+	// Check for newly visible doors after movement (only if game state is fully initialized)
+	hero := *newTile
+	heroIdx := hero.Y*has.gameState.Segment.Width + hero.X
+	if len(has.gameState.RegionMap.TileRegionIDs) > heroIdx {
+		if newlyVisibleDoors := checkForNewlyVisibleDoors(has.gameState, hero); len(newlyVisibleDoors) > 0 {
+			has.logger.Printf("Movement revealed %d new doors", len(newlyVisibleDoors))
+			has.broadcaster.BroadcastEvent("DoorsVisible", protocol.DoorsVisible{Doors: newlyVisibleDoors})
+		}
+	}
+
+	// Check for newly visible blocking walls after movement
+	if has.quest != nil {
+		_, newlyVisibleWalls := getVisibleBlockingWalls(has.gameState, hero, has.quest)
+		if len(newlyVisibleWalls) > 0 {
+			has.logger.Printf("Movement revealed %d new blocking walls", len(newlyVisibleWalls))
+			has.broadcaster.BroadcastEvent("BlockingWallsVisible", protocol.BlockingWallsVisible{BlockingWalls: newlyVisibleWalls})
+		}
+	}
 
 	result.Success = true
 	result.Message = fmt.Sprintf("Moved to (%d,%d)", newTile.X, newTile.Y)
@@ -742,6 +782,31 @@ func (has *HeroActionSystem) processPassTurn(request InstantActionRequest, resul
 	result.Success = true
 	result.Message = "Passed turn"
 	has.logger.Printf("Player %s passed their turn", request.PlayerID)
+	return result, nil
+}
+
+func (has *HeroActionSystem) processRollMovement(request InstantActionRequest, result *ActionResult) (*ActionResult, error) {
+	// Roll movement dice for the current player
+	diceRolls, err := has.turnManager.RollMovementDice()
+	if err != nil {
+		result.Success = false
+		result.Message = err.Error()
+		return result, err
+	}
+
+	// Convert dice rolls to expected format
+	movementRolls := make([]DiceRoll, len(diceRolls))
+	totalMovement := 0
+	for i, roll := range diceRolls {
+		movementRolls[i] = roll
+		totalMovement += roll.Result
+	}
+
+	result.Success = true
+	result.Message = fmt.Sprintf("Rolled movement dice: %d points", totalMovement)
+	result.MovementRolls = movementRolls
+	has.logger.Printf("Player %s rolled movement dice: total %d points", request.PlayerID, totalMovement)
+
 	return result, nil
 }
 

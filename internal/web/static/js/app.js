@@ -20,14 +20,12 @@ import {
 import { initializeActionUI } from './actionSystem.js';
 import { initializeInputHandling } from './inputHandling.js';
 import { openWebSocket, setRedrawFunction } from './patchSystem.js';
+import { initMovementPlanning, drawMovementPlanning } from './movementPlanning.js';
 
 /**
  * Main drawing function that renders the entire game board
  */
 export function drawBoard() {
-  console.log('DEBUG: drawBoard() called, entityPositions size:', gameState.entityPositions.size,
-    'contents:', Array.from(gameState.entityPositions.entries()));
-
   // Draw in layers from back to front
   drawBackground();           // Background tiles based on region visibility
   drawGrid();                 // Subtle per-cell grid for counting
@@ -36,6 +34,7 @@ export function drawBoard() {
   drawMonsters();             // Monsters on top of furniture
   drawDoors();                // Door overlays on top of regions
   drawBlockingWalls();        // Blocking walls on top of regions
+  drawMovementPlanning(gameState.canvasContext); // Movement planning overlays
   drawEntities();             // Heroes and other entities on top
 }
 
@@ -43,7 +42,6 @@ export function drawBoard() {
  * Initialize the application
  */
 export function initializeApp() {
-  console.log('Initializing Dungeon Campaign Engine app...');
 
   // Get snapshot data from the page
   const snapshotElement = document.getElementById('snapshot');
@@ -90,6 +88,7 @@ export function initializeApp() {
   // Initialize subsystems
   initializeActionUI();
   initializeInputHandling();
+  initMovementPlanning();
 
   // Set up window resize handler
   window.addEventListener('resize', () => {
@@ -107,14 +106,16 @@ export function initializeApp() {
   window.drawBoard = drawBoard;
   window.gameState = gameState;
 
-  console.log('App initialized successfully');
+  // Make movement planning available globally for testing
+  import('./movementPlanning.js').then(module => {
+    window.movementPlanningModule = module;
+  });
 }
 
 /**
  * Cleanup function for when the app is unloaded
  */
 export async function cleanupApp() {
-  console.log('Cleaning up Dungeon Campaign Engine app...');
 
   // Close WebSocket connection
   const { closeWebSocket } = await import('./patchSystem.js');
@@ -127,8 +128,6 @@ export async function cleanupApp() {
   // Clear global references
   delete window.drawBoard;
   delete window.gameState;
-
-  console.log('App cleanup complete');
 }
 
 // Auto-initialize when DOM is loaded

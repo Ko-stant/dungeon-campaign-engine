@@ -32,20 +32,52 @@ const (
 	GMEndPhase           TurnPhase = "gm_end"
 )
 
+// MovementSegmentType defines the type of movement segment
+type MovementSegmentType string
+
+const (
+	ManualMovement  MovementSegmentType = "manual"
+	PlannedMovement MovementSegmentType = "planned"
+)
+
+// MovementStep represents a single movement step
+type MovementStep struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+// MovementSegment represents a sequence of related movement steps
+type MovementSegment struct {
+	Type          MovementSegmentType `json:"type"`
+	StartPosition MovementStep        `json:"startPosition"`
+	Path          []MovementStep      `json:"path"`
+	StartTime     time.Time           `json:"startTime"`
+	EndTime       *time.Time          `json:"endTime,omitempty"`
+	Executed      bool                `json:"executed"`
+	ExecutedTime  *time.Time          `json:"executedTime,omitempty"`
+}
+
 // TurnState represents the current state of the turn system
 type TurnState struct {
-	TurnNumber      int           `json:"turnNumber"`
-	CurrentTurn     TurnType      `json:"currentTurn"`
-	CurrentPhase    TurnPhase     `json:"currentPhase"`
-	ActivePlayerID  string        `json:"activePlayerId"`
-	ActionsLeft     int           `json:"actionsLeft"`
-	MovementLeft    int           `json:"movementLeft"`
-	HasMoved        bool          `json:"hasMoved"`        // Whether player has used their movement this turn
-	ActionTaken     bool          `json:"actionTaken"`     // Whether player has used their main action
-	TurnStartTime   time.Time     `json:"turnStartTime"`
-	TurnTimeLimit   time.Duration `json:"turnTimeLimit"`
-	CanEndTurn      bool          `json:"canEndTurn"`
-	NextTurnType    TurnType      `json:"nextTurnType"`
+	TurnNumber         int           `json:"turnNumber"`
+	CurrentTurn        TurnType      `json:"currentTurn"`
+	CurrentPhase       TurnPhase     `json:"currentPhase"`
+	ActivePlayerID     string        `json:"activePlayerId"`
+	ActionsLeft        int           `json:"actionsLeft"`
+	MovementLeft       int           `json:"movementLeft"`
+	MovementDiceRolled bool          `json:"movementDiceRolled"` // Whether movement dice have been rolled
+	MovementRolls      []int         `json:"movementRolls"`      // The actual dice rolls for movement
+	HasMoved           bool          `json:"hasMoved"`           // Whether player has used their movement this turn
+	MovementStarted    bool          `json:"movementStarted"`    // Whether movement action has been started
+	MovementAction     string        `json:"movementAction"`     // Which movement action was used (move_before/move_after)
+	ActionTaken        bool          `json:"actionTaken"`        // Whether player has used their main action
+	TurnStartTime      time.Time     `json:"turnStartTime"`
+	TurnTimeLimit        time.Duration      `json:"turnTimeLimit"`
+	CanEndTurn           bool               `json:"canEndTurn"`
+	NextTurnType         TurnType           `json:"nextTurnType"`
+	MovementHistory      []MovementSegment  `json:"movementHistory"`      // Complete movement history for this turn
+	CurrentSegment       *MovementSegment   `json:"currentSegment"`       // Currently active movement segment
+	InitialHeroPosition  *MovementStep      `json:"initialHeroPosition"`  // Hero position at start of turn
 }
 
 // TurnManager handles turn progression and validation
@@ -54,6 +86,7 @@ type TurnManager struct {
 	players     map[string]*Player // Player ID -> Player
 	broadcaster Broadcaster
 	logger      Logger
+	diceSystem  *DiceSystem // For rolling movement dice
 	lock        sync.RWMutex
 }
 
@@ -211,21 +244,24 @@ func (hc *HeroCharacter) RestoreMind(amount int) {
 }
 
 // NewTurnManager creates a new turn manager
-func NewTurnManager(broadcaster Broadcaster, logger Logger) *TurnManager {
+func NewTurnManager(broadcaster Broadcaster, logger Logger, diceSystem *DiceSystem) *TurnManager {
 	return &TurnManager{
 		state: &TurnState{
-			TurnNumber:    1,
-			CurrentTurn:   HeroTurn,
-			CurrentPhase:  MovementPhase,
-			ActionsLeft:   1, // Heroes get 1 action per turn
-			MovementLeft:  2, // Heroes can move up to 2 squares
-			TurnTimeLimit: 5 * time.Minute,
-			CanEndTurn:    true,
-			NextTurnType:  GameMasterTurn,
+			TurnNumber:         1,
+			CurrentTurn:        HeroTurn,
+			CurrentPhase:       MovementPhase,
+			ActionsLeft:        1, // Heroes get 1 action per turn
+			MovementLeft:       0, // Will be set by dice roll
+			MovementDiceRolled: false,
+			MovementRolls:      []int{},
+			TurnTimeLimit:      5 * time.Minute,
+			CanEndTurn:         true,
+			NextTurnType:       GameMasterTurn,
 		},
 		players:     make(map[string]*Player),
 		broadcaster: broadcaster,
 		logger:      logger,
+		diceSystem:  diceSystem,
 	}
 }
 
@@ -273,7 +309,7 @@ func (tm *TurnManager) CanPlayerAct(playerID string) bool {
 }
 
 // ConsumeMovement reduces remaining movement points and marks movement as used
-func (tm *TurnManager) ConsumeMovement(squares int) error {
+func (tm *TurnManager) ConsumeMovement(squares int, movementAction string) error {
 	tm.lock.Lock()
 	defer tm.lock.Unlock()
 
@@ -281,7 +317,12 @@ func (tm *TurnManager) ConsumeMovement(squares int) error {
 		return fmt.Errorf("movement can only be consumed during hero turns")
 	}
 
-	if tm.state.HasMoved {
+	if !tm.state.MovementDiceRolled {
+		return fmt.Errorf("must roll movement dice before moving")
+	}
+
+	// Allow movement to continue within the same action type
+	if tm.state.HasMoved && (!tm.state.MovementStarted || tm.state.MovementAction != movementAction) {
 		return fmt.Errorf("movement already used this turn")
 	}
 
@@ -290,8 +331,40 @@ func (tm *TurnManager) ConsumeMovement(squares int) error {
 	}
 
 	tm.state.MovementLeft -= squares
-	tm.state.HasMoved = true
+
+	// Mark movement as started on first step and track action type
+	if !tm.state.MovementStarted {
+		tm.state.MovementStarted = true
+		tm.state.MovementAction = movementAction
+		tm.state.HasMoved = true // Set immediately when any movement action starts
+	}
+
 	tm.logger.Printf("Consumed %d movement, %d remaining", squares, tm.state.MovementLeft)
+
+	tm.broadcastTurnState()
+	return nil
+}
+
+// EndMovement marks movement as finished for the current turn
+func (tm *TurnManager) EndMovement() error {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
+
+	if tm.state.CurrentTurn != HeroTurn {
+		return fmt.Errorf("movement can only be ended during hero turns")
+	}
+
+	if !tm.state.MovementDiceRolled {
+		return fmt.Errorf("no movement to end - dice not rolled")
+	}
+
+	if tm.state.HasMoved {
+		return fmt.Errorf("movement already ended this turn")
+	}
+
+	tm.state.HasMoved = true
+	tm.state.MovementStarted = true
+	tm.logger.Printf("Movement ended with %d points remaining", tm.state.MovementLeft)
 
 	tm.broadcastTurnState()
 	return nil
@@ -302,7 +375,57 @@ func (tm *TurnManager) CanMove() bool {
 	tm.lock.RLock()
 	defer tm.lock.RUnlock()
 
-	return tm.state.CurrentTurn == HeroTurn && !tm.state.HasMoved && tm.state.MovementLeft > 0
+	// Allow movement if dice rolled and either:
+	// 1. No movement started yet, OR
+	// 2. Movement started but still has points remaining
+	return tm.state.CurrentTurn == HeroTurn &&
+		tm.state.MovementDiceRolled &&
+		tm.state.MovementLeft > 0 &&
+		(!tm.state.HasMoved || tm.state.MovementStarted)
+}
+
+// RollMovementDice rolls movement dice for the current player and sets available movement
+func (tm *TurnManager) RollMovementDice() ([]DiceRoll, error) {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
+
+	if tm.state.CurrentTurn != HeroTurn {
+		return nil, fmt.Errorf("movement dice can only be rolled during hero turns")
+	}
+
+	if tm.state.MovementDiceRolled {
+		return nil, fmt.Errorf("movement dice already rolled this turn")
+	}
+
+	// Get current player's movement dice count
+	player := tm.players[tm.state.ActivePlayerID]
+	if player == nil {
+		return nil, fmt.Errorf("no active player found")
+	}
+
+	movementDiceCount := player.Character.BaseStats.MovementDice
+
+	// Roll the dice
+	diceRolls := tm.diceSystem.RollDice(MovementDie, movementDiceCount, "movement")
+
+	// Calculate total movement points
+	totalMovement := 0
+	movementValues := make([]int, len(diceRolls))
+	for i, roll := range diceRolls {
+		movementValues[i] = roll.Result
+		totalMovement += roll.Result
+	}
+
+	// Update state
+	tm.state.MovementDiceRolled = true
+	tm.state.MovementRolls = movementValues
+	tm.state.MovementLeft = totalMovement
+
+	tm.logger.Printf("Player %s rolled movement dice: %v (total: %d)",
+		tm.state.ActivePlayerID, movementValues, totalMovement)
+
+	tm.broadcastTurnState()
+	return diceRolls, nil
 }
 
 // ConsumeAction reduces remaining action points and marks action as taken
@@ -424,13 +547,28 @@ func (tm *TurnManager) advanceToNextHero() {
 }
 
 func (tm *TurnManager) resetHeroTurn() {
+	tm.resetHeroTurnWithPosition(nil)
+}
+
+func (tm *TurnManager) resetHeroTurnWithPosition(heroPos *protocol.TileAddress) {
 	tm.state.CurrentPhase = MovementPhase
 	tm.state.ActionsLeft = 1
-	tm.state.MovementLeft = 2
+	tm.state.MovementLeft = 0 // Will be set by dice roll
+	tm.state.MovementDiceRolled = false
+	tm.state.MovementRolls = []int{}
 	tm.state.HasMoved = false
+	tm.state.MovementStarted = false
+	tm.state.MovementAction = ""
 	tm.state.ActionTaken = false
 	tm.state.TurnStartTime = time.Now()
 	tm.state.CanEndTurn = true
+
+	// Reset movement history for new turn
+	if heroPos != nil {
+		tm.state.MovementHistory = []MovementSegment{}
+		tm.state.CurrentSegment = nil
+		tm.state.InitialHeroPosition = &MovementStep{X: heroPos.X, Y: heroPos.Y}
+	}
 }
 
 func (tm *TurnManager) getNextActivePlayer() *Player {
@@ -522,4 +660,99 @@ func (tm *TurnManager) PassGMTurn() error {
 	tm.advanceToNextHero()
 	tm.broadcastTurnState()
 	return nil
+}
+
+// Movement History Management Functions
+
+// StartMovementSegment begins tracking a new movement segment
+func (tm *TurnManager) StartMovementSegment(segmentType MovementSegmentType, startPos protocol.TileAddress) {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
+
+	// Complete any existing segment first
+	if tm.state.CurrentSegment != nil {
+		tm.completeCurrentSegmentLocked()
+	}
+
+	now := time.Now()
+	tm.state.CurrentSegment = &MovementSegment{
+		Type:          segmentType,
+		StartPosition: MovementStep{X: startPos.X, Y: startPos.Y},
+		Path:          []MovementStep{},
+		StartTime:     now,
+		Executed:      false,
+	}
+}
+
+// AddMovementStep adds a step to the current movement segment
+func (tm *TurnManager) AddMovementStep(pos protocol.TileAddress) {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
+
+	if tm.state.CurrentSegment != nil {
+		tm.state.CurrentSegment.Path = append(tm.state.CurrentSegment.Path, MovementStep{X: pos.X, Y: pos.Y})
+	}
+}
+
+// CompleteMovementSegment completes the current movement segment
+func (tm *TurnManager) CompleteMovementSegment() {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
+	tm.completeCurrentSegmentLocked()
+}
+
+// completeCurrentSegmentLocked completes the current segment (must hold lock)
+func (tm *TurnManager) completeCurrentSegmentLocked() {
+	if tm.state.CurrentSegment != nil {
+		now := time.Now()
+		tm.state.CurrentSegment.EndTime = &now
+		tm.state.MovementHistory = append(tm.state.MovementHistory, *tm.state.CurrentSegment)
+		tm.state.CurrentSegment = nil
+	}
+}
+
+// MarkSegmentExecuted marks a planned segment as executed
+func (tm *TurnManager) MarkSegmentExecuted(segmentIndex int) {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
+
+	if segmentIndex >= 0 && segmentIndex < len(tm.state.MovementHistory) {
+		now := time.Now()
+		tm.state.MovementHistory[segmentIndex].Executed = true
+		tm.state.MovementHistory[segmentIndex].ExecutedTime = &now
+	}
+}
+
+// GetMovementHistory returns a copy of the current movement history
+func (tm *TurnManager) GetMovementHistory() []MovementSegment {
+	tm.lock.RLock()
+	defer tm.lock.RUnlock()
+
+	history := make([]MovementSegment, len(tm.state.MovementHistory))
+	copy(history, tm.state.MovementHistory)
+	return history
+}
+
+// ResetMovementHistory clears movement history for a new turn
+func (tm *TurnManager) ResetMovementHistory(heroPos protocol.TileAddress) {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
+
+	tm.state.MovementHistory = []MovementSegment{}
+	tm.state.CurrentSegment = nil
+	tm.state.InitialHeroPosition = &MovementStep{X: heroPos.X, Y: heroPos.Y}
+}
+
+// GetMovementVisualizationData returns structured data for movement visualization
+func (tm *TurnManager) GetMovementVisualizationData() map[string]interface{} {
+	tm.lock.RLock()
+	defer tm.lock.RUnlock()
+
+	return map[string]interface{}{
+		"history":           tm.state.MovementHistory,
+		"currentSegment":    tm.state.CurrentSegment,
+		"initialPosition":   tm.state.InitialHeroPosition,
+		"movementLeft":      tm.state.MovementLeft,
+		"movementDiceRolled": tm.state.MovementDiceRolled,
+	}
 }

@@ -3,6 +3,7 @@
  */
 
 import { ACTION_MODES } from './types.js';
+import { restoreMovementStateFromSnapshot } from './movementPlanning.js';
 
 class GameState {
   constructor() {
@@ -70,8 +71,8 @@ class GameState {
     this.knownRegions = new Set(Array.isArray(snapshot?.knownRegionIds) ? snapshot.knownRegionIds : []);
     this.corridorRegionId = typeof snapshot?.corridorRegionId === 'number' ? snapshot.corridorRegionId : 0;
 
-    console.log('DEBUG: Furniture data loaded:', this.furniture.length, 'items', this.furniture);
-    console.log('DEBUG: Monster data loaded:', this.monsters.length, 'items', this.monsters);
+    // Restore movement state from snapshot
+    restoreMovementStateFromSnapshot(snapshot);
   }
 
   /**
@@ -215,9 +216,15 @@ class GameState {
    * @param {"open"|"closed"} state
    */
   updateThresholdState(thresholdId, state) {
+    // console.log(`GAMESTATE-DOOR: Searching for threshold with ID ${thresholdId}`);
+    // console.log(`GAMESTATE-DOOR: Available thresholds:`, this.thresholds.map(t => `${t.id}(${t.x},${t.y})`).join(', '));
     const idx = this.thresholds.findIndex(d => d.id === thresholdId);
     if (idx !== -1) {
+      // console.log(`GAMESTATE-DOOR: Found threshold at index ${idx}, updating state from ${this.thresholds[idx].state} to ${state}`);
       this.thresholds[idx] = { ...this.thresholds[idx], state };
+      // console.log(`GAMESTATE-DOOR: Updated threshold:`, this.thresholds[idx]);
+    } else {
+      // console.log(`GAMESTATE-DOOR: WARNING - Threshold with ID ${thresholdId} not found!`);
     }
   }
 
@@ -273,7 +280,6 @@ class GameState {
   addVisibleMonsters(newMonsters) {
     for (const newMonster of newMonsters) {
       if (!newMonster || !newMonster.id || !newMonster.tile) {
-        console.log('DEBUG: Skipping invalid monster:', newMonster);
         continue;
       }
 
@@ -292,7 +298,6 @@ class GameState {
    */
   updateMonster(updatedMonster) {
     if (!updatedMonster || !updatedMonster.id) {
-      console.log('DEBUG: Skipping invalid monster update:', updatedMonster);
       return;
     }
 
@@ -310,15 +315,9 @@ class GameState {
 
       this.monsters[existingIndex] = preservedMonster;
 
-      console.log('DEBUG: Updated monster', updatedMonster.id,
-        'preserved visibility:', existingMonster.isVisible,
-        'updated body:', updatedMonster.body, '/', updatedMonster.MaxBody,
-        'isAlive:', updatedMonster.isAlive);
-
       // Clear selection if selected monster died
       if (!updatedMonster.isAlive && this.selectedMonsterId === updatedMonster.id) {
         this.selectedMonsterId = null;
-        console.log('Cleared selection for dead monster:', updatedMonster.id);
       }
     }
   }
@@ -357,7 +356,6 @@ class GameState {
   cleanupMonsters() {
     const validMonsters = this.monsters.filter(monster => monster && monster.tile);
     if (validMonsters.length !== this.monsters.length) {
-      console.log('DEBUG: Found', this.monsters.length - validMonsters.length, 'invalid monsters, cleaning up');
       this.monsters.length = 0;
       this.monsters.push(...validMonsters);
     }

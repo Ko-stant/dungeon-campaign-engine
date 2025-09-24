@@ -82,7 +82,6 @@ export function drawBlockingWalls() {
     return;
   }
 
-  console.log('DEBUG: Drawing', blockingWalls.length, 'blocking walls');
 
   for (const wall of blockingWalls) {
     const size = wall.size || 1;
@@ -105,7 +104,7 @@ function drawBlockingWall(wall, size, metrics) {
     imageUrl,
     gameState.blockingWallImageCache,
     () => scheduleRedraw(() => drawMain()),
-    () => console.log('DEBUG: Blocking wall image failed to load for size', size),
+    () => console.error('Failed to load blocking wall image for size', size),
   );
 
   if (img) {
@@ -202,13 +201,9 @@ export function drawFurniture() {
   const m = getGridMetrics();
   const furniture = gameState.furniture;
 
-  console.log('DEBUG: drawFurniture called, furniture array:', furniture);
   if (!Array.isArray(furniture) || furniture.length === 0) {
-    console.log('DEBUG: No furniture to draw');
     return;
   }
-
-  console.log('DEBUG: Drawing', furniture.length, 'furniture items');
 
   for (const item of furniture) {
     const startX = item.tile.x;
@@ -233,7 +228,6 @@ function drawFurnitureItem(item, startX, startY, gridWidth, gridHeight, metrics)
   const imageUrl = item.tileImageCleaned || item.tileImage;
 
   if (!imageUrl) {
-    console.log('DEBUG: No image URL for furniture', item.id, 'using fallback');
     drawFurnitureFallback(item, startX, startY, gridWidth, gridHeight, metrics);
     return;
   }
@@ -242,7 +236,7 @@ function drawFurnitureItem(item, startX, startY, gridWidth, gridHeight, metrics)
     imageUrl,
     gameState.furnitureImageCache,
     () => scheduleRedraw(() => drawMain()),
-    () => console.log('DEBUG: Furniture image failed to load for', item.id),
+    () => console.error('Failed to load furniture image for', item.id),
   );
 
   if (img) {
@@ -391,15 +385,9 @@ export function drawMonsters() {
   // Clean up invalid monsters
   gameState.cleanupMonsters();
 
-  console.log('DEBUG: drawMonsters called, monsters array length:', monsters?.length,
-    'visible monsters:', monsters?.filter(m => m.isVisible && m.isAlive).length);
-
   if (!Array.isArray(monsters) || monsters.length === 0) {
-    console.log('DEBUG: No monsters to draw');
     return;
   }
-
-  console.log('DEBUG: Drawing', monsters.length, 'monsters');
 
   for (const monster of monsters) {
     if (!monster || !monster.tile || !monster.isVisible || !monster.isAlive) {
@@ -435,7 +423,7 @@ function drawMonster(monster, rect) {
     imageUrl,
     gameState.monsterImageCache,
     () => scheduleRedraw(() => drawMain()),
-    () => console.log('DEBUG: Failed to load monster image for', monster.type),
+    () => console.error('Failed to load monster image for', monster.type),
   );
 
   if (img) {

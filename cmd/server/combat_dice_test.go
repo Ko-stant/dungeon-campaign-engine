@@ -163,7 +163,7 @@ func TestCombatDiceDebugOverride(t *testing.T) {
 				t.Errorf("Expected %d shields, got %d", scenario.expectedShie, shields)
 			}
 
-			t.Logf("✅ %s: %d skulls vs %d shields = %d damage",
+			t.Logf("PASS %s: %d skulls vs %d shields = %d damage",
 				scenario.description, skulls, shields, damage)
 		})
 	}

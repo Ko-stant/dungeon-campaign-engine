@@ -11,7 +11,6 @@ import { updateMonsterDetailsUI } from './monsterSystem.js';
  * @param {Object} patch
  */
 export function applyPatch(patch) {
-  console.log('Parsed patch:', patch.type, patch);
 
   switch (patch.type) {
     case 'VariablesChanged':
@@ -62,12 +61,20 @@ export function applyPatch(patch) {
       handleHeroActionResultPatch(patch);
       break;
 
+    case 'InstantActionResult':
+      handleInstantActionResultPatch(patch);
+      break;
+
     case 'TurnStateChanged':
       handleTurnStateChanged(patch);
       break;
 
+    case 'MovementHistorySync':
+      handleMovementHistorySync(patch);
+      break;
+
     default:
-      console.log('Unknown patch type:', patch.type);
+      console.error('Unknown patch type:', patch.type);
   }
 }
 
@@ -98,11 +105,21 @@ function handleRegionsRevealed(patch) {
  * @param {Object} patch
  */
 function handleDoorStateChanged(patch) {
+  // console.log(`DOOR-PATCH: Received DoorStateChanged patch:`, patch);
   if (patch.payload) {
     const { thresholdId, state } = patch.payload;
+    // console.log(`DOOR-PATCH: Updating threshold ${thresholdId} to state ${state}`);
     gameState.updateThresholdState(thresholdId, state);
     gameState.incrementPatchCount();
+
+    // Recalculate movement range if in planning mode (door opening/closing affects accessible areas)
+    import('./movementPlanning.js').then(movementModule => {
+      movementModule.refreshMovementRange();
+    });
+
     scheduleRedraw();
+  } else {
+    // console.log(`DOOR-PATCH: No payload in DoorStateChanged patch`);
   }
 }
 
@@ -113,14 +130,28 @@ function handleDoorStateChanged(patch) {
 function handleEntityUpdated(patch) {
   if (patch.payload && patch.payload.tile) {
     const { id, tile } = patch.payload;
-    console.log('DEBUG: EntityUpdated patch received for', id, 'new position:', tile,
-      'entityPositions size before:', gameState.entityPositions.size);
+
+    // Get previous position before updating for movement cost calculation
+    const previousPosition = gameState.getEntityPosition(id);
 
     gameState.updateEntityPosition(id, tile);
     gameState.incrementPatchCount();
 
-    console.log('DEBUG: entityPositions size after:', gameState.entityPositions.size,
-      'contents:', Array.from(gameState.entityPositions.entries()));
+    // Update movement planning if hero moved
+    if (id === 'hero-1') {
+      import('./movementPlanning.js').then(module => {
+        module.handleEntityMovement(id, tile, previousPosition);
+      });
+
+      // Update movement UI after manual movement
+      Promise.all([
+        import('./actionSystem.js'),
+        import('./movementPlanning.js')
+      ]).then(([actionModule, movementModule]) => {
+        const movementState = movementModule.getMovementState();
+        actionModule.updateMovementStatusUI(movementState);
+      });
+    }
 
     scheduleRedraw();
   }
@@ -156,7 +187,6 @@ function handleRegionsKnown(patch) {
  */
 function handleDoorsVisible(patch) {
   if (patch.payload && Array.isArray(patch.payload.doors)) {
-    console.log('Received DoorsVisible patch:', patch.payload.doors.length, 'new doors');
     gameState.addVisibleThresholds(patch.payload.doors);
     gameState.incrementPatchCount();
     scheduleRedraw();
@@ -169,7 +199,6 @@ function handleDoorsVisible(patch) {
  */
 function handleBlockingWallsVisible(patch) {
   if (patch.payload && Array.isArray(patch.payload.blockingWalls)) {
-    console.log('Received BlockingWallsVisible patch:', patch.payload.blockingWalls.length, 'new blocking walls');
     gameState.addVisibleBlockingWalls(patch.payload.blockingWalls);
     gameState.incrementPatchCount();
     scheduleRedraw();
@@ -182,7 +211,6 @@ function handleBlockingWallsVisible(patch) {
  */
 function handleFurnitureVisible(patch) {
   if (patch.payload && Array.isArray(patch.payload.furniture)) {
-    console.log('Received FurnitureVisible patch:', patch.payload.furniture.length, 'new furniture');
     gameState.addVisibleFurniture(patch.payload.furniture);
     gameState.incrementPatchCount();
     scheduleRedraw();
@@ -195,7 +223,6 @@ function handleFurnitureVisible(patch) {
  */
 function handleMonstersVisible(patch) {
   if (patch.payload && Array.isArray(patch.payload.monsters)) {
-    console.log('Received MonstersVisible patch:', patch.payload.monsters.length, 'new monsters');
     gameState.addVisibleMonsters(patch.payload.monsters);
     gameState.incrementPatchCount();
     scheduleRedraw();
@@ -208,7 +235,6 @@ function handleMonstersVisible(patch) {
  */
 function handleMonsterUpdate(patch) {
   if (patch.payload && patch.payload.monster) {
-    console.log('Received MonsterUpdate patch:', patch.payload.monster);
     gameState.updateMonster(patch.payload.monster);
     gameState.incrementPatchCount();
     updateMonsterDetailsUI();
@@ -222,14 +248,22 @@ function handleMonsterUpdate(patch) {
  */
 function handleHeroActionResultPatch(patch) {
   if (patch.payload) {
-    console.log('DEBUG: Received HeroActionResult:', patch.payload,
-      'entityPositions size before:', gameState.entityPositions.size);
-
     handleHeroActionResult(patch.payload);
     gameState.incrementPatchCount();
 
-    console.log('DEBUG: About to call scheduleRedraw() after HeroActionResult, entityPositions size:',
-      gameState.entityPositions.size);
+    scheduleRedraw();
+  }
+}
+
+/**
+ * Handle InstantActionResult patch (for movement dice, etc.)
+ * @param {Object} patch
+ */
+function handleInstantActionResultPatch(patch) {
+  if (patch.payload) {
+    // Use the same handler for instant actions (like movement dice)
+    handleHeroActionResult(patch.payload);
+    gameState.incrementPatchCount();
 
     scheduleRedraw();
   }
@@ -241,16 +275,29 @@ function handleHeroActionResultPatch(patch) {
  */
 function handleTurnStateChanged(patch) {
   if (patch.payload) {
-    console.log('DEBUG: Received TurnStateChanged:', patch.payload);
-
     // Update turn counter in UI
     const turnCounter = document.getElementById('turnCounter');
     if (turnCounter && patch.payload.turnNumber !== undefined) {
       turnCounter.textContent = patch.payload.turnNumber;
-      console.log('DEBUG: Updated turn counter to:', patch.payload.turnNumber);
     }
 
     gameState.incrementPatchCount();
+  }
+}
+
+/**
+ * Handle MovementHistorySync patch
+ * @param {Object} patch
+ */
+function handleMovementHistorySync(patch) {
+  if (patch.payload) {
+    // Sync movement history with server data
+    import('./movementPlanning.js').then(movementModule => {
+      movementModule.syncMovementHistoryFromServer(patch.payload);
+    });
+
+    gameState.incrementPatchCount();
+    scheduleRedraw();
   }
 }
 
@@ -263,17 +310,14 @@ let reconnectTimeout = null;
  * Open WebSocket connection
  */
 export function openWebSocket() {
-  console.log('openStream() called');
   const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
   const url = `${scheme}://${location.host}/stream`;
-  console.log('Attempting WebSocket connection to:', url);
 
   const socket = new WebSocket(url);
   gameState.setSocket(socket);
 
   socket.onmessage = (event) => {
     try {
-      console.log('Raw WebSocket message:', event.data);
       const patch = JSON.parse(event.data);
       applyPatch(patch);
     } catch (err) {
@@ -282,7 +326,6 @@ export function openWebSocket() {
   };
 
   socket.onclose = () => {
-    console.log('WebSocket connection closed, will reconnect in 2 seconds');
     gameState.setSocket(null);
 
     // Clear any existing timeout
@@ -295,7 +338,6 @@ export function openWebSocket() {
   };
 
   socket.onopen = () => {
-    console.log('WebSocket connection opened');
     // Clear reconnect timeout if connection succeeds
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout);

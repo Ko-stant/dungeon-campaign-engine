@@ -60,3 +60,26 @@ type TurnStateChanged struct {
 	ActionTaken    bool   `json:"actionTaken"`
 	CanEndTurn     bool   `json:"canEndTurn"`
 }
+
+type MovementHistorySync struct {
+	History           []MovementSegment `json:"history"`
+	CurrentSegment    *MovementSegment  `json:"currentSegment"`
+	InitialPosition   *MovementStep     `json:"initialPosition"`
+	MovementLeft      int               `json:"movementLeft"`
+	MovementDiceRolled bool             `json:"movementDiceRolled"`
+}
+
+type MovementStep struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type MovementSegment struct {
+	Type          string        `json:"type"`
+	StartPosition MovementStep  `json:"startPosition"`
+	Path          []MovementStep `json:"path"`
+	StartTime     string        `json:"startTime"`
+	EndTime       *string       `json:"endTime,omitempty"`
+	Executed      bool          `json:"executed"`
+	ExecutedTime  *string       `json:"executedTime,omitempty"`
+}

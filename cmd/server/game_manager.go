@@ -53,17 +53,17 @@ func NewGameManagerWithFurniture(broadcaster Broadcaster, logger Logger, sequenc
 
 // createGameManager is a helper function to create the GameManager with all systems
 func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, quest *geometry.QuestDefinition, broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig) (*GameManager, error) {
-	// Create turn manager
-	turnManager := NewTurnManager(broadcaster, logger)
-
-	// Create debug system
+	// Create debug system first
 	debugSystem := NewDebugSystem(debugConfig, gameState, broadcaster, logger)
+
+	// Create dice system
+	diceSystem := NewDiceSystem(debugSystem)
+
+	// Create turn manager with dice system
+	turnManager := NewTurnManager(broadcaster, logger, diceSystem)
 
 	// Create hero action system
 	heroActions := NewHeroActionSystem(gameState, turnManager, broadcaster, logger, debugSystem)
-
-	// Create dice system for monsters
-	diceSystem := NewDiceSystem(debugSystem)
 
 	// Create monster system
 	monsterSystem := NewMonsterSystem(gameState, turnManager, diceSystem, broadcaster, logger)
@@ -72,6 +72,7 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 	movementValidator := NewMovementValidatorWithSystems(logger, monsterSystem, furnitureSystem)
 	heroActions.SetMovementValidator(movementValidator)
 	heroActions.SetMonsterSystem(monsterSystem)
+	heroActions.SetQuest(quest)
 
 	// Add default player (will be replaced with dynamic player loading later)
 	defaultPlayer := NewPlayer("player-1", "Hero", "hero-1", Barbarian)
@@ -99,6 +100,14 @@ func (gm *GameManager) ProcessHeroAction(request ActionRequest) (*ActionResult, 
 	defer gm.mutex.RUnlock()
 
 	return gm.heroActions.ProcessAction(request)
+}
+
+// ProcessInstantAction processes an instant action (doesn't consume main action)
+func (gm *GameManager) ProcessInstantAction(request InstantActionRequest) (*ActionResult, error) {
+	gm.mutex.RLock()
+	defer gm.mutex.RUnlock()
+
+	return gm.heroActions.ProcessInstantAction(request)
 }
 
 // ProcessMonsterAction processes a monster action during GameMaster turn
@@ -139,6 +148,14 @@ func (gm *GameManager) ProcessMovement(req protocol.RequestMove) error {
 	}
 
 	return nil
+}
+
+// ProcessMovementRequest handles new turn-based movement requests
+func (gm *GameManager) ProcessMovementRequest(req MovementRequest) (*ActionResult, error) {
+	gm.mutex.RLock()
+	defer gm.mutex.RUnlock()
+
+	return gm.heroActions.ProcessMovement(req)
 }
 
 // ProcessDoorToggle handles legacy door toggle requests

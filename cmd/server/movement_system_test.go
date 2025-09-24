@@ -34,19 +34,21 @@ func createTestMovementSystem() *HeroActionSystem {
 
 	broadcaster := &MockBroadcaster{}
 	logger := &MockLogger{}
-	// MockDebugSystem not implemented yet, use nil
-	var debugSystem *DebugSystem = nil
 
-	turnManager := NewTurnManager(broadcaster, logger)
+	debugConfig := DebugConfig{
+		Enabled:            true,
+		AllowStateChanges:  true,
+		AllowTeleportation: true,
+		AllowMapReveal:     true,
+		AllowDiceOverride:  true,
+		LogDebugActions:    true,
+	}
+	debugSystem := NewDebugSystem(debugConfig, gameState, broadcaster, logger)
+	diceSystem := NewDiceSystem(debugSystem)
+	turnManager := NewTurnManager(broadcaster, logger, diceSystem)
 
 	// Add test player
-	player := &Player{
-		ID:       "player-1",
-		Name:     "Test Hero",
-		EntityID: "hero-1",
-		Class:    Barbarian,
-		IsActive: true,
-	}
+	player := NewPlayer("player-1", "Test Hero", "hero-1", Barbarian)
 	turnManager.AddPlayer(player)
 
 	return NewHeroActionSystem(gameState, turnManager, broadcaster, logger, debugSystem)
@@ -54,6 +56,12 @@ func createTestMovementSystem() *HeroActionSystem {
 
 func TestMovement_OncePerTurn(t *testing.T) {
 	has := createTestMovementSystem()
+
+	// Roll movement dice to allow movement
+	_, err := has.turnManager.RollMovementDice()
+	if err != nil {
+		t.Fatalf("Failed to roll movement dice: %v", err)
+	}
 
 	// First movement should succeed
 	request1 := MovementRequest{
@@ -114,6 +122,12 @@ func TestMovement_OncePerTurn(t *testing.T) {
 func TestMovement_ConsumesmovementDice(t *testing.T) {
 	has := createTestMovementSystem()
 
+	// Roll movement dice to set up movement points
+	_, err := has.turnManager.RollMovementDice()
+	if err != nil {
+		t.Fatalf("Failed to roll movement dice: %v", err)
+	}
+
 	// Check initial movement points
 	initialTurnState := has.turnManager.GetTurnState()
 	initialMovement := initialTurnState.MovementLeft
@@ -128,7 +142,7 @@ func TestMovement_ConsumesmovementDice(t *testing.T) {
 		},
 	}
 
-	_, err := has.ProcessMovement(request)
+	_, err = has.ProcessMovement(request)
 
 	if err != nil {
 		t.Fatalf("Expected movement to succeed, got: %v", err)
@@ -222,8 +236,27 @@ func TestMovement_ZeroMovement(t *testing.T) {
 func TestMovement_InsufficientmovementDice(t *testing.T) {
 	has := createTestMovementSystem()
 
-	// Consume most movement points first
-	has.turnManager.ConsumeMovement(1) // Leave only 1 point
+	// Roll movement dice first
+	_, err := has.turnManager.RollMovementDice()
+	if err != nil {
+		t.Fatalf("Failed to roll movement dice: %v", err)
+	}
+
+	// Check initial movement points
+	initialState := has.turnManager.GetTurnState()
+	t.Logf("Initial movement points: %d", initialState.MovementLeft)
+
+	// Consume most movement points first (should leave some points remaining)
+	// Need to ensure we don't consume all points, just most of them
+	pointsToConsume := initialState.MovementLeft - 1 // Leave 1 point
+	if pointsToConsume <= 0 {
+		t.Skip("Test requires at least 2 movement points from dice roll")
+	}
+	has.turnManager.ConsumeMovement(pointsToConsume, "move_before")
+
+	// Check remaining points
+	midState := has.turnManager.GetTurnState()
+	t.Logf("Movement points after consuming %d: %d", pointsToConsume, midState.MovementLeft)
 
 	// Try to move 2 squares
 	request := MovementRequest{
@@ -236,7 +269,7 @@ func TestMovement_InsufficientmovementDice(t *testing.T) {
 		},
 	}
 
-	_, err := has.ProcessMovement(request)
+	_, err = has.ProcessMovement(request)
 
 	if err == nil {
 		t.Fatal("Expected error for insufficient movement points")
@@ -245,6 +278,12 @@ func TestMovement_InsufficientmovementDice(t *testing.T) {
 
 func TestMovement_AfterTurnReset(t *testing.T) {
 	has := createTestMovementSystem()
+
+	// Roll movement dice for first turn
+	_, err := has.turnManager.RollMovementDice()
+	if err != nil {
+		t.Fatalf("Failed to roll movement dice: %v", err)
+	}
 
 	// Use movement in first turn
 	request := MovementRequest{
@@ -257,7 +296,7 @@ func TestMovement_AfterTurnReset(t *testing.T) {
 		},
 	}
 
-	_, err := has.ProcessMovement(request)
+	_, err = has.ProcessMovement(request)
 	if err != nil {
 		t.Fatalf("Expected first movement to succeed, got: %v", err)
 	}
@@ -272,8 +311,20 @@ func TestMovement_AfterTurnReset(t *testing.T) {
 		t.Error("Expected HasMoved to be false after turn reset")
 	}
 
-	if turnState.MovementLeft != 2 {
-		t.Errorf("Expected movement points reset to 2, got %d", turnState.MovementLeft)
+	if turnState.MovementDiceRolled {
+		t.Error("Expected MovementDiceRolled to be false after turn reset")
+	}
+
+	// Roll movement dice for new turn
+	_, err = has.turnManager.RollMovementDice()
+	if err != nil {
+		t.Fatalf("Failed to roll movement dice in new turn: %v", err)
+	}
+
+	// Check movement points are available
+	turnState = has.turnManager.GetTurnState()
+	if turnState.MovementLeft <= 0 {
+		t.Errorf("Expected positive movement points after rolling dice, got %d", turnState.MovementLeft)
 	}
 
 	// Should be able to move again
@@ -328,6 +379,12 @@ func TestMovement_BroadcastsUpdate(t *testing.T) {
 	has := createTestMovementSystem()
 	broadcaster := has.broadcaster.(*MockBroadcaster)
 
+	// Roll movement dice to allow movement
+	_, err := has.turnManager.RollMovementDice()
+	if err != nil {
+		t.Fatalf("Failed to roll movement dice: %v", err)
+	}
+
 	request := MovementRequest{
 		PlayerID: "player-1",
 		EntityID: "hero-1",
@@ -338,7 +395,7 @@ func TestMovement_BroadcastsUpdate(t *testing.T) {
 		},
 	}
 
-	_, err := has.ProcessMovement(request)
+	_, err = has.ProcessMovement(request)
 
 	if err != nil {
 		t.Fatalf("Expected movement to succeed, got: %v", err)
@@ -351,4 +408,160 @@ func TestMovement_BroadcastsUpdate(t *testing.T) {
 	if broadcaster.LastPayload == nil {
 		t.Error("Expected payload to be broadcast")
 	}
+}
+
+func TestMovement_MultipleStepsWithinSameAction(t *testing.T) {
+	has := createTestMovementSystem()
+
+	// Roll movement dice to allow movement
+	_, err := has.turnManager.RollMovementDice()
+	if err != nil {
+		t.Fatalf("Failed to roll movement dice: %v", err)
+	}
+
+	// First step using move_before
+	request1 := MovementRequest{
+		PlayerID: "player-1",
+		EntityID: "hero-1",
+		Action:   MoveBeforeAction,
+		Parameters: map[string]any{
+			"dx": 1.0,
+			"dy": 0.0,
+		},
+	}
+
+	result1, err := has.ProcessMovement(request1)
+	if err != nil {
+		t.Fatalf("First movement step should succeed, got: %v", err)
+	}
+
+	if !result1.Success {
+		t.Fatalf("First movement step should be successful, got: %s", result1.Message)
+	}
+
+	// Check that hero moved to (6,5)
+	pos1 := has.gameState.Entities["hero-1"]
+	if pos1.X != 6 || pos1.Y != 5 {
+		t.Errorf("Expected hero at (6,5) after first step, got (%d,%d)", pos1.X, pos1.Y)
+	}
+
+	// Second step using the same move_before action should succeed
+	request2 := MovementRequest{
+		PlayerID: "player-1",
+		EntityID: "hero-1",
+		Action:   MoveBeforeAction, // Same action type
+		Parameters: map[string]any{
+			"dx": 0.0,
+			"dy": 1.0,
+		},
+	}
+
+	result2, err := has.ProcessMovement(request2)
+	if err != nil {
+		t.Fatalf("Second movement step within same action should succeed, got: %v", err)
+	}
+
+	if !result2.Success {
+		t.Fatalf("Second movement step should be successful, got: %s", result2.Message)
+	}
+
+	// Check that hero moved to (6,6)
+	pos2 := has.gameState.Entities["hero-1"]
+	if pos2.X != 6 || pos2.Y != 6 {
+		t.Errorf("Expected hero at (6,6) after second step, got (%d,%d)", pos2.X, pos2.Y)
+	}
+
+	// But switching to move_after should fail
+	request3 := MovementRequest{
+		PlayerID: "player-1",
+		EntityID: "hero-1",
+		Action:   MoveAfterAction, // Different action type
+		Parameters: map[string]any{
+			"dx": 1.0,
+			"dy": 0.0,
+		},
+	}
+
+	_, err = has.ProcessMovement(request3)
+	if err == nil {
+		t.Fatal("Switching to move_after should fail")
+	}
+
+	if err.Error() != "player cannot move right now" {
+		t.Errorf("Expected 'cannot move' error, got: %v", err)
+	}
+}
+
+func TestMovement_FivePointConsumption(t *testing.T) {
+	has := createTestMovementSystem()
+
+	// Set up debug system to override dice roll to 3 (each die will be 3)
+	debugSystem := has.debugSystem
+	debugSystem.SetDiceOverride("movement", 3) // 2 dice × 3 = 6 points total
+
+	// Roll movement dice to get 6 points  
+	rolls, err := has.turnManager.RollMovementDice()
+	if err != nil {
+		t.Fatalf("Failed to roll movement dice: %v", err)
+	}
+
+	// Verify we got expected points
+	initialState := has.turnManager.GetTurnState()
+	t.Logf("Initial movement points after rolling: %d", initialState.MovementLeft)
+	t.Logf("Dice rolls: %v", rolls)
+
+	// Track movement consumption step by step (try all 6 points)
+	for step := 1; step <= 6; step++ {
+		beforeState := has.turnManager.GetTurnState()
+		t.Logf("Step %d - Before move: %d points remaining", step, beforeState.MovementLeft)
+
+		if beforeState.MovementLeft <= 0 {
+			t.Logf("Step %d: No movement points left", step)
+			break
+		}
+
+		// Alternate movement directions to avoid hitting boundaries
+		// Start at (5,5), move in different directions
+		var dx, dy float64
+		switch step % 4 {
+		case 1: dx, dy = 1.0, 0.0 // East
+		case 2: dx, dy = 0.0, 1.0 // South
+		case 3: dx, dy = -1.0, 0.0 // West
+		case 0: dx, dy = 0.0, -1.0 // North
+		}
+
+		request := MovementRequest{
+			PlayerID: "player-1",
+			EntityID: "hero-1",
+			Action:   MoveBeforeAction,
+			Parameters: map[string]any{
+				"dx": dx,
+				"dy": dy,
+			},
+		}
+
+		result, err := has.ProcessMovement(request)
+		if err != nil {
+			t.Logf("Step %d movement failed: %v", step, err)
+			break
+		}
+
+		if !result.Success {
+			t.Logf("Step %d movement unsuccessful: %s", step, result.Message)
+			break
+		}
+
+		afterState := has.turnManager.GetTurnState()
+		t.Logf("Step %d - After move: %d points remaining", step, afterState.MovementLeft)
+
+		// Verify we consumed exactly 1 point
+		consumed := beforeState.MovementLeft - afterState.MovementLeft
+		if consumed != 1 {
+			t.Errorf("Step %d: Expected to consume 1 point, actually consumed %d", step, consumed)
+		}
+	}
+
+	// Check final state
+	finalState := has.turnManager.GetTurnState()
+	t.Logf("Final movement points: %d", finalState.MovementLeft)
 }

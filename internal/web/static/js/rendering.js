@@ -196,10 +196,7 @@ export function drawEntities() {
   const ctx = gameState.canvasContext;
   const accentRGB = getCSSColor('--color-accent');
 
-  console.log('DEBUG: Drawing entities - entityPositions entries:', gameState.entityPositions.size);
-
-  for (const [id, t] of gameState.entityPositions.entries()) {
-    console.log('DEBUG: Drawing entity', id, 'at', t);
+  for (const [, t] of gameState.entityPositions.entries()) {
     if (!t) {
       continue;
     }

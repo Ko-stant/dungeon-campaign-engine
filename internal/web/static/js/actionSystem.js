@@ -4,6 +4,7 @@
 
 import { ACTION_MODES, ACTION_NAMES } from './types.js';
 import { gameState } from './gameState.js';
+import { startMovementPlanning, endMovementPlanning, resetMovementPlan, executeMovementPlan, getMovementState, setMovementDiceRoll, getRemainingMovement, turnMovementState } from './movementPlanning.js';
 import {
   isMonsterSelected,
   clearMonsterSelection,
@@ -16,7 +17,6 @@ import { clearDoorSelection } from './doorSystem.js';
  * @param {string} mode
  */
 export function setActionMode(mode) {
-  console.log('Setting action mode to:', mode);
   gameState.setCurrentActionMode(mode);
 
   // Update UI indicators
@@ -112,13 +112,6 @@ export function canExecuteCurrentAction() {
 export function executeCurrentAction() {
   const mode = getCurrentActionMode();
 
-  console.log('Execute action called:', {
-    canExecute: canExecuteCurrentAction(),
-    socketReady: gameState.isSocketReady(),
-    currentActionMode: mode,
-    selectedMonsterId: gameState.getSelectedMonsterId(),
-  });
-
   if (!canExecuteCurrentAction() || !gameState.isSocketReady()) {
     return false;
   }
@@ -126,7 +119,6 @@ export function executeCurrentAction() {
   const msg = createActionMessage(mode);
   if (msg) {
     gameState.sendMessage(msg);
-    console.log('Sent action:', msg);
     return true;
   }
 
@@ -206,21 +198,27 @@ function createActionMessage(mode) {
 }
 
 /**
- * Roll movement dice (local, no server needed)
+ * Roll movement dice (server-side processing)
  */
 export function rollMovementDice() {
-  const roll1 = Math.floor(Math.random() * 6) + 1;
-  const roll2 = Math.floor(Math.random() * 6) + 1;
-  const total = roll1 + roll2;
+  const socket = gameState.getSocket();
+  if (!socket) {
+    console.error('WebSocket not connected');
+    return;
+  }
 
-  displayDiceResult(
-    'Movement',
-    [
-      { die: 'movement', result: roll1 },
-      { die: 'movement', result: roll2 },
-    ],
-    `Total: ${total} squares`,
-  );
+  const instantActionRequest = {
+    playerID: 'player-1', // TODO: Get actual player ID
+    entityID: 'hero-1',   // TODO: Get actual entity ID
+    action: 'roll_movement',
+    parameters: {}
+  };
+
+  // Send the instant action request
+  socket.send(JSON.stringify({
+    type: 'InstantActionRequest',
+    payload: instantActionRequest
+  }));
 }
 
 /**
@@ -228,14 +226,8 @@ export function rollMovementDice() {
  */
 export function rollAttackDice() {
   if (getCurrentActionMode() !== ACTION_MODES.ATTACK || !isMonsterSelected()) {
-    console.log('Attack blocked:', {
-      currentActionMode: getCurrentActionMode(),
-      selectedMonsterId: gameState.getSelectedMonsterId(),
-    });
     return false;
   }
-
-  console.log('Executing attack against:', gameState.getSelectedMonsterId());
 
   const msg = {
     type: 'HeroAction',
@@ -341,7 +333,6 @@ export function displayDiceResult(rollType, dice, summary = null) {
  * @param {HeroActionResult} result
  */
 export function handleHeroActionResult(result) {
-  console.log('Processing hero action result:', result);
 
   const resultDiv = document.getElementById('diceResults');
   const contentDiv = document.getElementById('diceResultsContent');
@@ -355,30 +346,30 @@ export function handleHeroActionResult(result) {
   // Show success/failure
   const statusColor = result.success ? 'text-green-300' : 'text-red-300';
   const message = result.message || result.error || 'Unknown error';
-  resultHTML += `<div class="text-sm ${statusColor} mb-2">${result.success ? '✅' : '❌'
+  resultHTML += `<div class="text-sm ${statusColor} mb-2">${result.success ? 'SUCCESS' : 'FAILED'
     } ${message}</div>`;
 
   // Show separated dice rolls if present (new format)
   if (result.attackRolls && result.attackRolls.length > 0) {
-    resultHTML += '<div class="mb-2 text-sm font-semibold text-red-300">⚔️ Hero Attack Dice:</div>';
+    resultHTML += '<div class="mb-2 text-sm font-semibold text-red-300">Hero Attack Dice:</div>';
     result.attackRolls.forEach((roll, index) => {
       let rollDisplay = `Die ${index + 1}: ${roll.result}`;
       if (roll.combatResult) {
-        const symbol = roll.combatResult === 'skull' ? '💀' : '🎯';
-        rollDisplay += ` (${symbol} ${roll.combatResult})`;
+        const symbol = roll.combatResult === 'skull' ? 'SKULL' : 'HIT';
+        rollDisplay += ` (${symbol})`;
       }
       resultHTML += `<div class="text-xs opacity-80 ml-2">${rollDisplay}</div>`;
     });
   }
 
   if (result.defenseRolls && result.defenseRolls.length > 0) {
-    resultHTML += '<div class="mb-2 text-sm font-semibold text-blue-300">🛡️ Monster Defense Dice:</div>';
+    resultHTML += '<div class="mb-2 text-sm font-semibold text-blue-300">Monster Defense Dice:</div>';
     result.defenseRolls.forEach((roll, index) => {
       let rollDisplay = `Die ${index + 1}: ${roll.result}`;
       if (roll.combatResult) {
-        const symbol = roll.combatResult === 'black_shield' ? '⚫' :
-                      roll.combatResult === 'white_shield' ? '⚪' : '❌';
-        rollDisplay += ` (${symbol} ${roll.combatResult})`;
+        const symbol = roll.combatResult === 'black_shield' ? 'BLACK_SHIELD' :
+                      roll.combatResult === 'white_shield' ? 'WHITE_SHIELD' : 'MISS';
+        rollDisplay += ` (${symbol})`;
       }
       resultHTML += `<div class="text-xs opacity-80 ml-2">${rollDisplay}</div>`;
     });
@@ -396,6 +387,32 @@ export function handleHeroActionResult(result) {
     });
   }
 
+  // Show movement dice rolls if present
+  if (result.movementRolls && result.movementRolls.length > 0) {
+    resultHTML += '<div class="mb-2 text-sm font-semibold text-blue-300">🎲 Movement Dice:</div>';
+    let totalMovement = 0;
+    result.movementRolls.forEach((roll, index) => {
+      resultHTML += `<div class="text-xs opacity-80 ml-2">Die ${index + 1}: ${roll.result}</div>`;
+      totalMovement += roll.result;
+    });
+
+    resultHTML += `<div class="mt-1 p-1 bg-blue-900/30 rounded text-center text-sm font-semibold text-blue-300">Total Movement: ${totalMovement} squares</div>`;
+
+    // Set movement dice roll for turn tracking
+    setMovementDiceRoll(totalMovement);
+
+    // Start movement planning with the rolled movement points
+    // Small delay to ensure dice result UI is updated first
+    setTimeout(() => {
+      try {
+        startMovementPlanning();
+        showMovementPlanningControls();
+      } catch (error) {
+        console.error('Error in movement planning:', error);
+      }
+    }, 100);
+  }
+
   // Show combat summary for attack actions
   if (result.action === 'attack' && result.attackRolls && result.defenseRolls) {
     const skulls = result.attackRolls.filter(roll => roll.combatResult === 'skull').length;
@@ -405,7 +422,7 @@ export function handleHeroActionResult(result) {
 
     resultHTML += `<div class="mt-3 p-2 bg-gray-700 rounded text-center">`;
     resultHTML += `<div class="text-sm font-semibold">Combat Summary</div>`;
-    resultHTML += `<div class="text-xs mt-1">💀 ${skulls} Skulls - ⚫ ${blackShields} Black Shields = ⚡ ${Math.max(0, skulls - blackShields)} Damage</div>`;
+    resultHTML += `<div class="text-xs mt-1">${skulls} Skulls - ${blackShields} Black Shields = ${Math.max(0, skulls - blackShields)} Damage</div>`;
     resultHTML += `</div>`;
   }
 
@@ -424,7 +441,7 @@ export function handleHeroActionResult(result) {
     if (result.damage > 0) {
       if (result.message.includes('killed')) {
         resultHTML +=
-          '<div class="mt-2 text-sm text-red-300">💀 Monster defeated!</div>';
+          '<div class="mt-2 text-sm text-red-300">Monster defeated!</div>';
         clearMonsterSelection();
       }
     }
@@ -523,10 +540,26 @@ export function initializeActionUI() {
     .getElementById('rollDefense')
     ?.addEventListener('click', rollDefenseDice);
 
+  // Movement planning buttons
+  document
+    .getElementById('resetMovement')
+    ?.addEventListener('click', resetMovementPlan);
+  document
+    .getElementById('executeMovement')
+    ?.addEventListener('click', executeMovementPlan);
+  document
+    .getElementById('cancelMovement')
+    ?.addEventListener('click', endMovementPlanning);
+
   // Execute action button
   document
     .getElementById('executeAction')
     ?.addEventListener('click', executeCurrentAction);
+
+  // Pass turn button
+  document
+    .getElementById('passTurn')
+    ?.addEventListener('click', passTurn);
 
   // Debug button for GM turn passing
   document
@@ -541,8 +574,6 @@ export function initializeActionUI() {
  * Debug function to pass GM turn - skips all monster actions and returns to hero turn
  */
 function passGMTurn() {
-  console.log('DEBUG: Passing GM turn...');
-
   // Send debug command to server
   const intent = {
     type: 'PassGMTurn',
@@ -557,4 +588,97 @@ function passGMTurn() {
   };
 
   gameState.sendMessage(envelope);
+}
+
+/**
+ * Pass the current player's turn
+ */
+function passTurn() {
+  const socket = gameState.getSocket();
+  if (!socket) {
+    console.error('WebSocket not connected');
+    return;
+  }
+
+  const instantActionRequest = {
+    playerID: 'player-1', // TODO: Get actual player ID
+    entityID: 'hero-1',   // TODO: Get actual entity ID
+    action: 'pass_turn',
+    parameters: {}
+  };
+
+  // Send the instant action request
+  socket.send(JSON.stringify({
+    type: 'InstantActionRequest',
+    payload: instantActionRequest
+  }));
+
+  // Clear any current movement planning
+  if (window.endMovementPlanning) {
+    endMovementPlanning();
+  }
+}
+
+/**
+ * Show movement planning controls and start updating UI
+ */
+function showMovementPlanningControls() {
+  const controlsDiv = document.getElementById('movementPlanningControls');
+  if (controlsDiv) {
+    controlsDiv.style.display = 'block';
+    startMovementPlanningUI();
+  }
+}
+
+/**
+ * Hide movement planning controls
+ */
+function hideMovementPlanningControls() {
+  const controlsDiv = document.getElementById('movementPlanningControls');
+  if (controlsDiv) {
+    controlsDiv.style.display = 'none';
+  }
+}
+
+/**
+ * Start updating movement planning UI
+ */
+function startMovementPlanningUI() {
+  // Update UI every 100ms while planning is active
+  const updateUI = () => {
+    const movementState = getMovementState();
+    if (!movementState.isPlanning) {
+      hideMovementPlanningControls();
+      return;
+    }
+
+    updateMovementStatusUI(movementState);
+    setTimeout(updateUI, 100);
+  };
+  updateUI();
+}
+
+/**
+ * Update movement status display
+ */
+export function updateMovementStatusUI(movementState) {
+  const statusDiv = document.getElementById('movementStatus');
+  const executeButton = document.getElementById('executeMovement');
+
+  if (statusDiv) {
+    // Use turn state for accurate movement tracking when available
+    const usedMovement = movementState.isPlanning ? movementState.usedMovement : (turnMovementState.diceRolled ? turnMovementState.movementUsedThisTurn : 0);
+    const maxMovement = movementState.isPlanning ? movementState.maxMovement : (turnMovementState.diceRolled ? turnMovementState.maxMovementForTurn : 0);
+    const remainingMovement = movementState.isPlanning ? movementState.availableMovement : (turnMovementState.diceRolled ? getRemainingMovement() : 0);
+
+    statusDiv.innerHTML = `
+      <div>Movement: ${usedMovement}/${maxMovement}</div>
+      <div>Remaining: ${remainingMovement}</div>
+      <div>Path Steps: ${movementState.pathLength}</div>
+    `;
+  }
+
+  if (executeButton) {
+    executeButton.disabled = !movementState.canExecute;
+  }
 }

@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"sync/atomic"
 
 	"github.com/coder/websocket"
 
@@ -216,14 +218,20 @@ func mainWithGameManager() {
 			DoorStates:        []byte{},
 			Entities:          entities,
 			Variables: map[string]any{
-				"ui.debug":      debugConfig.Enabled,
-				"turn.number":   turnState.TurnNumber,
-				"turn.current":  turnState.CurrentTurn,
-				"turn.phase":    turnState.CurrentPhase,
-				"turn.playerId": turnState.ActivePlayerID,
-				"turn.actions":  turnState.ActionsLeft,
-				"turn.movement": turnState.MovementLeft,
-				"turn.canEnd":   turnState.CanEndTurn,
+				"ui.debug":             debugConfig.Enabled,
+				"turn.number":          turnState.TurnNumber,
+				"turn.current":         turnState.CurrentTurn,
+				"turn.phase":           turnState.CurrentPhase,
+				"turn.playerId":        turnState.ActivePlayerID,
+				"turn.actions":         turnState.ActionsLeft,
+				"turn.movement":        turnState.MovementLeft,
+				"turn.canEnd":          turnState.CanEndTurn,
+				"turn.movementRolled":  turnState.MovementDiceRolled,
+				"turn.movementRolls":   turnState.MovementRolls,
+				"turn.hasMoved":        turnState.HasMoved,
+				"turn.movementStarted": turnState.MovementStarted,
+				"turn.movementAction":  turnState.MovementAction,
+				"turn.actionTaken":     turnState.ActionTaken,
 			},
 			ProtocolVersion:  "v0",
 			Thresholds:       thresholds,
@@ -271,6 +279,46 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		// Use GameManager's state to ensure consistency with door toggles
 		gameManagerState := gameManager.GetGameState()
 		handleRequestMove(req, gameManagerState, hub, seqPtr, quest, furnitureSystem, monsterSystem)
+
+	case "MovementRequest":
+		// New turn-based movement system
+		var req MovementRequest
+		if err := json.Unmarshal(env.Payload, &req); err != nil {
+			log.Printf("Failed to parse movement request: %v", err)
+			return
+		}
+		log.Printf("DEBUG: Parsed MovementRequest: %+v", req)
+
+		result, err := gameManager.ProcessMovementRequest(req)
+		if err != nil {
+			log.Printf("Movement request failed: %v", err)
+			// Send error response to UI
+			errorResult := map[string]interface{}{
+				"success": false,
+				"action":  "movement",
+				"message": err.Error(),
+			}
+			patch := protocol.PatchEnvelope{
+				Sequence: sequenceGen.Next(),
+				EventID:  int64(sequenceGen.Next()),
+				Type:     "HeroActionResult",
+				Payload:  errorResult,
+			}
+			data, _ := json.Marshal(patch)
+			hub.Broadcast(data)
+			return
+		}
+		log.Printf("DEBUG: ProcessMovement returned result: %+v", result)
+
+		// Broadcast the movement result
+		patch := protocol.PatchEnvelope{
+			Sequence: sequenceGen.Next(),
+			EventID:  int64(sequenceGen.Next()),
+			Type:     "HeroActionResult",
+			Payload:  result,
+		}
+		data, _ := json.Marshal(patch)
+		hub.Broadcast(data)
 
 	case "RequestToggleDoor":
 		var req protocol.RequestToggleDoor
@@ -394,6 +442,49 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		data, _ := json.Marshal(patch)
 		hub.Broadcast(data)
 
+	case "InstantActionRequest":
+		// Instant action system
+		var req InstantActionRequest
+		if err := json.Unmarshal(env.Payload, &req); err != nil {
+			log.Printf("Failed to parse instant action: %v", err)
+			return
+		}
+		log.Printf("DEBUG: Parsed InstantActionRequest: %+v", req)
+
+		result, err := gameManager.ProcessInstantAction(req)
+		if err != nil {
+			log.Printf("Instant action failed: %v", err)
+			// Send error response to UI
+			errorResult := map[string]interface{}{
+				"success": false,
+				"action":  req.Action,
+				"message": err.Error(),
+			}
+			patch := protocol.PatchEnvelope{
+				Sequence: sequenceGen.Next(),
+				EventID:  int64(sequenceGen.Next()),
+				Type:     "HeroActionResult",
+				Payload:  errorResult,
+			}
+			data, _ := json.Marshal(patch)
+			log.Printf("DEBUG: Broadcasting InstantActionError: %s", string(data))
+			hub.Broadcast(data)
+			return
+		}
+		log.Printf("DEBUG: ProcessInstantAction returned result: %+v", result)
+
+		// Broadcast the action result
+		patch := protocol.PatchEnvelope{
+			Sequence: sequenceGen.Next(),
+			EventID:  int64(sequenceGen.Next()),
+			Type:     "HeroActionResult",
+			Payload:  result,
+		}
+
+		data, _ := json.Marshal(patch)
+		log.Printf("DEBUG: Broadcasting InstantActionResult: %s", string(data))
+		hub.Broadcast(data)
+
 	default:
 		// Unknown message type - fall back to legacy handler
 		seqPtr := &sequenceGen.counter
@@ -401,5 +492,320 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		// Use GameManager's state to ensure consistency
 		gameManagerState := gameManager.GetGameState()
 		handleWebSocketMessage(data, gameManagerState, hub, seqPtr, quest, furnitureSystem, monsterSystem)
+	}
+}
+
+func edgeForStep(x, y, dx, dy int) geometry.EdgeAddress {
+	if dx == 1 && dy == 0 {
+		// Moving right: cross the right edge of current tile = left edge of tile (x+1,y)
+		return geometry.EdgeAddress{X: x + 1, Y: y, Orientation: geometry.Vertical}
+	}
+	if dx == -1 && dy == 0 {
+		// Moving left: cross the left edge of current tile = left edge of tile (x,y)
+		return geometry.EdgeAddress{X: x, Y: y, Orientation: geometry.Vertical}
+	}
+	if dx == 0 && dy == 1 {
+		// Moving down: cross the bottom edge of current tile = top edge of tile (x,y+1)
+		return geometry.EdgeAddress{X: x, Y: y + 1, Orientation: geometry.Horizontal}
+	}
+	// Moving up: cross the top edge of current tile = top edge of tile (x,y)
+	return geometry.EdgeAddress{X: x, Y: y, Orientation: geometry.Horizontal}
+}
+
+func buildBlockedWalls(seg geometry.Segment) map[geometry.EdgeAddress]bool {
+	m := make(map[geometry.EdgeAddress]bool, len(seg.WallsVertical)+len(seg.WallsHorizontal))
+
+	// Create a set of door socket edges to exclude from walls
+	doorEdges := make(map[geometry.EdgeAddress]bool)
+	for _, e := range seg.DoorSockets {
+		doorEdges[e] = true
+	}
+
+	// Add walls, but exclude any that have door sockets
+	for _, e := range seg.WallsVertical {
+		if !doorEdges[e] {
+			m[e] = true
+		}
+	}
+	for _, e := range seg.WallsHorizontal {
+		if !doorEdges[e] {
+			m[e] = true
+		}
+	}
+	return m
+}
+
+func buildBlockedTiles(quest *geometry.QuestDefinition) map[protocol.TileAddress]bool {
+	blockedTiles := make(map[protocol.TileAddress]bool)
+
+	log.Printf("=== Building blocked tiles ===")
+	for _, wall := range quest.BlockingWalls {
+		// Handle multi-tile walls
+		size := wall.Size
+		if size <= 0 {
+			size = 1 // Default to single tile
+		}
+
+		for i := 0; i < size; i++ {
+			tileX := wall.X
+			tileY := wall.Y
+
+			// Offset for multi-tile walls
+			if wall.Orientation == "horizontal" {
+				tileX += i
+			} else {
+				tileY += i
+			}
+
+			tile := protocol.TileAddress{X: tileX, Y: tileY}
+			blockedTiles[tile] = true
+			log.Printf("Blocked tile at (%d,%d) from wall %s", tileX, tileY, wall.ID)
+		}
+	}
+
+	return blockedTiles
+}
+
+func broadcastEvent(hub *ws.Hub, sequence *uint64, eventType string, payload any) {
+	seq := atomic.AddUint64(sequence, 1)
+	envelope := protocol.PatchEnvelope{
+		Sequence: seq,
+		EventID:  0,
+		Type:     eventType,
+		Payload:  payload,
+	}
+	data, err := json.Marshal(envelope)
+	if err != nil {
+		log.Printf("failed to marshal %s: %v", eventType, err)
+		return
+	}
+	log.Printf("broadcasting %s", eventType)
+	hub.Broadcast(data)
+}
+
+func getVisibleBlockingWalls(state *GameState, hero protocol.TileAddress, quest *geometry.QuestDefinition) ([]protocol.BlockingWallLite, []protocol.BlockingWallLite) {
+	log.Printf("=== Checking blocking wall visibility from hero at (%d,%d) ===", hero.X, hero.Y)
+
+	// Handle nil quest gracefully
+	if quest == nil {
+		log.Printf("Quest is nil, no blocking walls to check")
+		return []protocol.BlockingWallLite{}, []protocol.BlockingWallLite{}
+	}
+
+	log.Printf("Total blocking walls to check: %d", len(quest.BlockingWalls))
+
+	// Track newly discovered walls
+	var newlyDiscovered []protocol.BlockingWallLite
+
+	// First, check for newly visible blocking walls and add them to known walls
+	for _, wall := range quest.BlockingWalls {
+		if state.KnownBlockingWalls[wall.ID] {
+			continue // Already known
+		}
+
+		// Check if any tile of this blocking wall is visible from hero position
+		hasLOS := false
+		size := wall.Size
+		if size <= 0 {
+			size = 1
+		}
+
+		for i := 0; i < size; i++ {
+			tileX := wall.X
+			tileY := wall.Y
+
+			// Offset for multi-tile walls
+			if wall.Orientation == "horizontal" {
+				tileX += i
+			} else {
+				tileY += i
+			}
+
+			// Check line-of-sight to the center of this blocking wall tile
+			if isTileCenterVisible(state, hero.X, hero.Y, tileX, tileY) {
+				log.Printf("Blocking wall %s tile (%d,%d) has line-of-sight from hero", wall.ID, tileX, tileY)
+				hasLOS = true
+				break
+			} else {
+				log.Printf("Blocking wall %s tile (%d,%d) blocked from hero", wall.ID, tileX, tileY)
+			}
+		}
+
+		// Check if blocking wall is on the same room as hero (like doors)
+		heroIdx := hero.Y*state.Segment.Width + hero.X
+		heroRegion := state.RegionMap.TileRegionIDs[heroIdx]
+
+		// For wall-on-room check, check the first tile of the wall
+		wallIdx := wall.Y*state.Segment.Width + wall.X
+		wallRegion := state.RegionMap.TileRegionIDs[wallIdx]
+		wallOnCurrentRoom := wallRegion == heroRegion
+
+		// Check corridor segment visibility (dynamic calculation)
+		onSameCorridorAxis := false
+		if heroRegion == state.CorridorRegion && wallRegion == state.CorridorRegion {
+			onSameCorridorAxis = isInCorridorSegmentWithWall(state, hero.X, hero.Y, wall.X, wall.Y)
+		}
+
+		// Blocking wall visibility rules:
+		// 1. If in a room: show walls on room tiles OR walls with line-of-sight
+		// 2. If in corridor: show walls with line-of-sight OR walls on same corridor axis
+		shouldShow := false
+		if heroRegion != state.CorridorRegion {
+			// In a room: show room walls or LOS walls
+			shouldShow = hasLOS || wallOnCurrentRoom
+		} else {
+			// In corridor: show walls with line-of-sight OR same corridor axis
+			shouldShow = hasLOS || onSameCorridorAxis
+		}
+
+		isVisible := shouldShow
+		if isVisible {
+			state.KnownBlockingWalls[wall.ID] = true
+			wallLite := protocol.BlockingWallLite{
+				ID:          wall.ID,
+				X:           wall.X,
+				Y:           wall.Y,
+				Orientation: wall.Orientation,
+				Size:        wall.Size,
+			}
+			newlyDiscovered = append(newlyDiscovered, wallLite)
+			log.Printf("Newly discovered blocking wall %s at (%d,%d) orientation=%s size=%d - LOS: %v, OnCurrentRoom: %v, OnSameCorridorAxis: %v (hero region: %d, wall region: %d, corridor region: %d)",
+				wall.ID, wall.X, wall.Y, wall.Orientation, wall.Size, hasLOS, wallOnCurrentRoom, onSameCorridorAxis, heroRegion, wallRegion, state.CorridorRegion)
+		}
+	}
+
+	// Return all known blocking walls
+	var allVisible []protocol.BlockingWallLite
+	for _, wall := range quest.BlockingWalls {
+		if state.KnownBlockingWalls[wall.ID] {
+			allVisible = append(allVisible, protocol.BlockingWallLite{
+				ID:          wall.ID,
+				X:           wall.X,
+				Y:           wall.Y,
+				Orientation: wall.Orientation,
+				Size:        wall.Size,
+			})
+		}
+	}
+
+	return allVisible, newlyDiscovered
+}
+
+func makeDoorID(segmentID string, e geometry.EdgeAddress) string {
+	return fmt.Sprintf("%s:%d:%d:%s", segmentID, e.X, e.Y, e.Orientation)
+}
+
+func isInCorridorSegmentWithWall(state *GameState, heroX, heroY, wallX, wallY int) bool {
+	// Check if hero and wall are aligned on same axis and in same corridor segment
+
+	if heroX == wallX {
+		// Vertical alignment - check if there's a clear corridor path between hero and wall
+		minY, maxY := heroY, wallY
+		if minY > maxY {
+			minY, maxY = maxY, minY
+		}
+
+		// Check for uninterrupted corridor path
+		for y := minY; y <= maxY; y++ {
+			if y >= 0 && y < state.Segment.Height {
+				idx := y*state.Segment.Width + heroX
+				if state.RegionMap.TileRegionIDs[idx] != state.CorridorRegion {
+					return false
+				}
+			}
+		}
+		return true
+
+	} else if heroY == wallY {
+		// Horizontal alignment - check if there's a clear corridor path between hero and wall
+		minX, maxX := heroX, wallX
+		if minX > maxX {
+			minX, maxX = maxX, minX
+		}
+
+		// Check for uninterrupted corridor path
+		for x := minX; x <= maxX; x++ {
+			if x >= 0 && x < state.Segment.Width {
+				idx := heroY*state.Segment.Width + x
+				if state.RegionMap.TileRegionIDs[idx] != state.CorridorRegion {
+					return false
+				}
+			}
+		}
+		return true
+
+	} else {
+		// Not aligned - check if hero is in a corridor that can see the wall
+
+		// Check all four directions from the wall to find corridor connections
+		directions := []struct{ dx, dy int }{
+			{0, 1},  // down
+			{0, -1}, // up
+			{1, 0},  // right
+			{-1, 0}, // left
+		}
+
+		for _, dir := range directions {
+			// Find the corridor tile adjacent to the wall in this direction
+			adjX, adjY := wallX+dir.dx, wallY+dir.dy
+
+			if adjX >= 0 && adjX < state.Segment.Width && adjY >= 0 && adjY < state.Segment.Height {
+				adjIdx := adjY*state.Segment.Width + adjX
+				if adjIdx < len(state.RegionMap.TileRegionIDs) &&
+					state.RegionMap.TileRegionIDs[adjIdx] == state.CorridorRegion {
+
+					// Check if hero can reach this corridor tile from their position
+					if dir.dy == 0 {
+						// Horizontal direction from wall (left/right) creates vertical corridor - check if hero is in same column
+						if heroX == adjX {
+							// Check if there's a clear corridor path between hero and the wall's adjacent tile
+							minY, maxY := heroY, adjY
+							if minY > maxY {
+								minY, maxY = maxY, minY
+							}
+							pathClear := true
+							for y := minY; y <= maxY; y++ {
+								if y >= 0 && y < state.Segment.Height {
+									idx := y*state.Segment.Width + heroX
+									region := state.RegionMap.TileRegionIDs[idx]
+									if region != state.CorridorRegion {
+										pathClear = false
+										break
+									}
+								}
+							}
+							if pathClear {
+								return true
+							}
+						}
+					} else {
+						// Vertical direction from wall (up/down) creates horizontal corridor - check if hero is in same row
+						if heroY == adjY {
+							// Check if there's a clear corridor path between hero and the wall's adjacent tile
+							minX, maxX := heroX, adjX
+							if minX > maxX {
+								minX, maxX = maxX, minX
+							}
+							pathClear := true
+							for x := minX; x <= maxX; x++ {
+								if x >= 0 && x < state.Segment.Width {
+									idx := heroY*state.Segment.Width + x
+									region := state.RegionMap.TileRegionIDs[idx]
+									if region != state.CorridorRegion {
+										pathClear = false
+										break
+									}
+								}
+							}
+							if pathClear {
+								return true
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return false
 	}
 }

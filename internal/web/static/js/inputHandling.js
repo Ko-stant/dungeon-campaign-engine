@@ -12,8 +12,11 @@ import {
   selectActionByNumber,
   executeCurrentAction,
   updateActionButtons,
+  rollMovementDice,
+  rollAttackDice,
 } from './actionSystem.js';
 import { ACTION_MODES } from './types.js';
+import { isMovementAllowed } from './movementPlanning.js';
 
 /**
  * Select appropriate target based on current action mode
@@ -39,11 +42,27 @@ export function selectTargetInDirection(dx, dy) {
  * @returns {boolean} True if movement was sent
  */
 export function requestMovement(dx, dy) {
+  // Check if movement is allowed before sending
+  if (!isMovementAllowed()) {
+    // console.log('INPUT: Arrow key movement blocked - no movement available');
+    return false;
+  }
+
   if (gameState.isSocketReady()) {
     const msg = {
-      type: 'RequestMove',
-      payload: { entityId: 'hero-1', dx, dy },
+      type: 'MovementRequest',
+      payload: {
+        playerID: 'player-1',
+        entityID: 'hero-1',
+        action: 'move_before', // or 'move_after' depending on when in turn
+        parameters: {
+          dx: dx,
+          dy: dy
+        }
+      }
     };
+
+    // Note: Movement tracking is handled server-side with turn manager
     return gameState.sendMessage(msg);
   }
   return false;
@@ -55,6 +74,11 @@ export function requestMovement(dx, dy) {
  * @returns {boolean} True if event was handled
  */
 export function handleKeyboardInput(event) {
+  // Ignore keys when modifier keys are pressed (Ctrl, Alt, Meta/Cmd, Shift)
+  if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) {
+    return false;
+  }
+
   const step = keyToStep(event);
 
   if (step) {
@@ -83,12 +107,30 @@ export function handleKeyboardInput(event) {
       event.preventDefault();
       return true;
 
-    case 'enter':
-      if (executeCurrentAction()) {
+    case 'enter': {
+      // Use specific action function for attack mode
+      const mode = getCurrentActionMode();
+      let executed = false;
+
+      if (mode === ACTION_MODES.ATTACK) {
+        executed = rollAttackDice();
+      } else {
+        executed = executeCurrentAction();
+      }
+
+      if (executed) {
         event.preventDefault();
         return true;
       }
       break;
+    }
+
+    case 'r':
+      // Roll movement dice
+      rollMovementDice();
+
+      event.preventDefault();
+      return true;
 
     case '1':
     case '2':

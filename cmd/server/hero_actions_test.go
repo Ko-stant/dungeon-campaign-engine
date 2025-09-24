@@ -31,8 +31,8 @@ func createTestHeroActionSystem() *HeroActionSystem {
 		LogDebugActions:    true,
 	}
 	debugSystem := NewDebugSystem(debugConfig, gameState, broadcaster, logger)
-
-	turnManager := NewTurnManager(broadcaster, logger)
+	diceSystem := NewDiceSystem(debugSystem)
+	turnManager := NewTurnManager(broadcaster, logger, diceSystem)
 
 	// Add test player
 	player := NewPlayer("player-1", "Test Hero", "hero-1", Barbarian)
