@@ -65,20 +65,52 @@ type QuestSpecialRules struct {
 	Notes          string `json:"notes"`
 }
 
+// QuestTreasureNote represents a quest-specific treasure note
+type QuestTreasureNote struct {
+	NoteID           string                 `json:"note_id"`
+	Location         TreasureLocation       `json:"location"`
+	Description      string                 `json:"description"`
+	TreasureType     string                 `json:"treasure_type"` // "fixed", "empty", "monster_modifier"
+	Items            []ItemReference        `json:"items,omitempty"`
+	Gold             int                    `json:"gold,omitempty"`
+	MonsterModifier  *MonsterModifier       `json:"monster_modifier,omitempty"`
+	ConsumedForParty bool                   `json:"consumed_for_party"`
+}
+
+type TreasureLocation struct {
+	Room        int    `json:"room"`
+	FurnitureID string `json:"furniture_id,omitempty"`
+	MonsterID   string `json:"monster_id,omitempty"`
+	X           int    `json:"x"`
+	Y           int    `json:"y"`
+}
+
+type ItemReference struct {
+	ID   string `json:"id"`
+	Path string `json:"path"`
+}
+
+type MonsterModifier struct {
+	MonsterID        string `json:"monster_id"`
+	AttackDiceBonus  int    `json:"attack_dice_bonus,omitempty"`
+	DefenseDiceBonus int    `json:"defense_dice_bonus,omitempty"`
+}
+
 // QuestDefinition represents the complete quest configuration
 type QuestDefinition struct {
-	ID               string              `json:"id"`
-	Name             string              `json:"name"`
-	Description      string              `json:"description"`
-	Difficulty       string              `json:"difficulty"`
-	StartingRoom     int                 `json:"starting_room"`
-	WanderingMonster string              `json:"wandering_monster"`
-	SpecialRules     QuestSpecialRules   `json:"special_rules"`
-	Doors            []QuestDoor         `json:"doors"`
-	BlockingWalls    []QuestBlockingWall `json:"blocking_walls"`
-	Monsters         []QuestMonster      `json:"monsters"`
-	Furniture        []QuestFurniture    `json:"furniture"`
-	Objectives       []QuestObjective    `json:"objectives"`
+	ID               string                        `json:"id"`
+	Name             string                        `json:"name"`
+	Description      string                        `json:"description"`
+	Difficulty       string                        `json:"difficulty"`
+	StartingRoom     int                           `json:"starting_room"`
+	WanderingMonster string                        `json:"wandering_monster"`
+	SpecialRules     QuestSpecialRules             `json:"special_rules"`
+	Doors            []QuestDoor                   `json:"doors"`
+	BlockingWalls    []QuestBlockingWall           `json:"blocking_walls"`
+	Monsters         []QuestMonster                `json:"monsters"`
+	Furniture        []QuestFurniture              `json:"furniture"`
+	Objectives       []QuestObjective              `json:"objectives"`
+	QuestNotes       map[string]*QuestTreasureNote `json:"quest_notes,omitempty"`
 }
 
 // LoadQuestFromFile loads a quest definition from a JSON file

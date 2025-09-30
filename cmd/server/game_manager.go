@@ -15,6 +15,10 @@ type GameManager struct {
 	gameState        *GameState
 	turnManager      *TurnManager
 	turnStateManager *TurnStateManager
+	contentManager   *ContentManager
+	inventoryManager *InventoryManager
+	treasureDeck     *TreasureDeckManager
+	treasureResolver *TreasureResolver
 	heroActions      *HeroActionSystem
 	monsterSystem    *MonsterSystem
 	furnitureSystem  *FurnitureSystem
@@ -69,6 +73,22 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 	// Wire up turn state manager to turn manager
 	turnManager.SetTurnStateManager(turnStateManager)
 
+	// Create content manager and load campaign content
+	contentManager := NewContentManager(logger)
+	if err := contentManager.LoadCampaign("base"); err != nil {
+		return nil, fmt.Errorf("failed to load campaign content: %w", err)
+	}
+
+	// Create inventory manager
+	inventoryManager := NewInventoryManager(contentManager, logger)
+
+	// Create treasure deck and resolver
+	treasureDeck := NewTreasureDeckManager(contentManager, logger)
+	if err := treasureDeck.InitializeDeck(); err != nil {
+		return nil, fmt.Errorf("failed to initialize treasure deck: %w", err)
+	}
+	treasureResolver := NewTreasureResolver(contentManager, treasureDeck, quest, logger)
+
 	// Create hero action system
 	heroActions := NewHeroActionSystem(gameState, turnManager, broadcaster, logger, debugSystem)
 
@@ -89,10 +109,19 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 		return nil, fmt.Errorf("failed to add default player: %w", err)
 	}
 
+	// Initialize inventory for hero
+	if err := inventoryManager.InitializeHeroInventory("hero-1"); err != nil {
+		return nil, fmt.Errorf("failed to initialize hero inventory: %w", err)
+	}
+
 	return &GameManager{
 		gameState:        gameState,
 		turnManager:      turnManager,
 		turnStateManager: turnStateManager,
+		contentManager:   contentManager,
+		inventoryManager: inventoryManager,
+		treasureDeck:     treasureDeck,
+		treasureResolver: treasureResolver,
 		heroActions:      heroActions,
 		monsterSystem:    monsterSystem,
 		furnitureSystem:  furnitureSystem,
