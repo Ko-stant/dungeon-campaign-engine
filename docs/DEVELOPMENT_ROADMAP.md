@@ -14,7 +14,7 @@
 - Furniture system with rendering and collision
 - Door opening mechanics with visibility updates
 
-### 🚧 Partially Implemented
+### Partially Implemented
 -  ~~Basic attack action (needs proper HeroQuest dice mechanics)~~ - **COMPLETED**
 - Simple treasure search (needs quest-specific loot tables)
 -  ~~Monster positioning and rendering (needs death mechanics)~~ - **COMPLETED**

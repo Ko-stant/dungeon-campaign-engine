@@ -622,7 +622,7 @@ function passTurn() {
 /**
  * Show movement planning controls and start updating UI
  */
-function showMovementPlanningControls() {
+export function showMovementPlanningControls() {
   const controlsDiv = document.getElementById('movementPlanningControls');
   if (controlsDiv) {
     controlsDiv.style.display = 'block';

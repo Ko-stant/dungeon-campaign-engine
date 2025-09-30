@@ -82,12 +82,13 @@ type TurnState struct {
 
 // TurnManager handles turn progression and validation
 type TurnManager struct {
-	state       *TurnState
-	players     map[string]*Player // Player ID -> Player
-	broadcaster Broadcaster
-	logger      Logger
-	diceSystem  *DiceSystem // For rolling movement dice
-	lock        sync.RWMutex
+	state            *TurnState
+	players          map[string]*Player // Player ID -> Player
+	broadcaster      Broadcaster
+	logger           Logger
+	diceSystem       *DiceSystem       // For rolling movement dice
+	turnStateManager *TurnStateManager // Manages per-hero turn state
+	lock             sync.RWMutex
 }
 
 // Player represents a game player
@@ -263,6 +264,13 @@ func NewTurnManager(broadcaster Broadcaster, logger Logger, diceSystem *DiceSyst
 		logger:      logger,
 		diceSystem:  diceSystem,
 	}
+}
+
+// SetTurnStateManager sets the turn state manager reference
+func (tm *TurnManager) SetTurnStateManager(tsm *TurnStateManager) {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
+	tm.turnStateManager = tsm
 }
 
 // AddPlayer adds a player to the game
@@ -547,6 +555,11 @@ func (tm *TurnManager) advanceToNextHero() {
 	tm.state.ActivePlayerID = tm.getFirstActivePlayer().ID
 	tm.resetHeroTurn()
 	tm.logger.Printf("Turn %d: Advanced to Hero turn (Player: %s)", tm.state.TurnNumber, tm.state.ActivePlayerID)
+
+	// Advance TurnStateManager to clear old hero states
+	if tm.turnStateManager != nil {
+		tm.turnStateManager.AdvanceTurn()
+	}
 }
 
 func (tm *TurnManager) resetHeroTurn() {

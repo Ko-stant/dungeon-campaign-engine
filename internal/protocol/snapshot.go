@@ -70,25 +70,60 @@ type MonsterLite struct {
 	IsAlive     bool        `json:"isAlive"`
 }
 
+type HeroTurnStateLite struct {
+	HeroID              string                           `json:"heroId"`
+	PlayerID            string                           `json:"playerId"`
+	TurnNumber          int                              `json:"turnNumber"`
+	MovementDiceRolled  bool                             `json:"movementDiceRolled"`
+	MovementDiceResults []int                            `json:"movementDiceResults"`
+	MovementTotal       int                              `json:"movementTotal"`
+	MovementUsed        int                              `json:"movementUsed"`
+	MovementRemaining   int                              `json:"movementRemaining"`
+	HasMoved            bool                             `json:"hasMoved"`
+	ActionTaken         bool                             `json:"actionTaken"`
+	ActionType          string                           `json:"actionType,omitempty"`
+	TurnFlags           map[string]bool                  `json:"turnFlags"`
+	ActivitiesCount     int                              `json:"activitiesCount"`
+	ActiveEffectsCount  int                              `json:"activeEffectsCount"`
+	ActiveEffects       []ActiveEffectLite               `json:"activeEffects"`
+	LocationSearches    map[string]LocationSearchSummary `json:"locationSearches"`
+	TurnStartPosition   TileAddress                      `json:"turnStartPosition"`
+	CurrentPosition     TileAddress                      `json:"currentPosition"`
+}
+
+type ActiveEffectLite struct {
+	Source     string `json:"source"`
+	EffectType string `json:"effectType"`
+	Value      int    `json:"value"`
+	Trigger    string `json:"trigger"`
+	Applied    bool   `json:"applied"`
+}
+
+type LocationSearchSummary struct {
+	LocationKey        string `json:"locationKey"`
+	TreasureSearchDone bool   `json:"treasureSearchDone"`
+}
+
 type Snapshot struct {
-	MapID             string             `json:"mapId"`
-	PackID            string             `json:"packId"`
-	Turn              int                `json:"turn"`
-	LastEventID       int64              `json:"lastEventId"`
-	MapWidth          int                `json:"mapWidth"`
-	MapHeight         int                `json:"mapHeight"`
-	RegionsCount      int                `json:"regionsCount"`
-	TileRegionIDs     []int              `json:"tileRegionIds"`
-	RevealedRegionIDs []int              `json:"revealedRegionIds"`
-	DoorStates        []byte             `json:"doorStates"`
-	Entities          []EntityLite       `json:"entities"`
-	Thresholds        []ThresholdLite    `json:"thresholds"`
-	BlockingWalls     []BlockingWallLite `json:"blockingWalls"`
-	Furniture         []FurnitureLite    `json:"furniture"`
-	Monsters          []MonsterLite      `json:"monsters"`
-	Variables         map[string]any     `json:"variables"`
-	ProtocolVersion   string             `json:"protocolVersion"`
-	VisibleRegionIDs  []int              `json:"visibleRegionIds"`
-	CorridorRegionID  int                `json:"corridorRegionId"`
-	KnownRegionIDs    []int              `json:"knownRegionIds"`
+	MapID             string                       `json:"mapId"`
+	PackID            string                       `json:"packId"`
+	Turn              int                          `json:"turn"`
+	LastEventID       int64                        `json:"lastEventId"`
+	MapWidth          int                          `json:"mapWidth"`
+	MapHeight         int                          `json:"mapHeight"`
+	RegionsCount      int                          `json:"regionsCount"`
+	TileRegionIDs     []int                        `json:"tileRegionIds"`
+	RevealedRegionIDs []int                        `json:"revealedRegionIds"`
+	DoorStates        []byte                       `json:"doorStates"`
+	Entities          []EntityLite                 `json:"entities"`
+	Thresholds        []ThresholdLite              `json:"thresholds"`
+	BlockingWalls     []BlockingWallLite           `json:"blockingWalls"`
+	Furniture         []FurnitureLite              `json:"furniture"`
+	Monsters          []MonsterLite                `json:"monsters"`
+	Variables         map[string]any               `json:"variables"`
+	HeroTurnStates    map[string]HeroTurnStateLite `json:"heroTurnStates"`
+	ProtocolVersion   string                       `json:"protocolVersion"`
+	VisibleRegionIDs  []int                        `json:"visibleRegionIds"`
+	CorridorRegionID  int                          `json:"corridorRegionId"`
+	KnownRegionIDs    []int                        `json:"knownRegionIds"`
 }

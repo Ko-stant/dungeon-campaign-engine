@@ -12,16 +12,17 @@ import (
 
 // GameManager coordinates all game systems
 type GameManager struct {
-	gameState       *GameState
-	turnManager     *TurnManager
-	heroActions     *HeroActionSystem
-	monsterSystem   *MonsterSystem
-	furnitureSystem *FurnitureSystem
-	debugSystem     *DebugSystem
-	broadcaster     Broadcaster
-	logger          Logger
-	sequenceGen     SequenceGenerator
-	mutex           sync.RWMutex
+	gameState        *GameState
+	turnManager      *TurnManager
+	turnStateManager *TurnStateManager
+	heroActions      *HeroActionSystem
+	monsterSystem    *MonsterSystem
+	furnitureSystem  *FurnitureSystem
+	debugSystem      *DebugSystem
+	broadcaster      Broadcaster
+	logger           Logger
+	sequenceGen      SequenceGenerator
+	mutex            sync.RWMutex
 }
 
 // NewGameManager creates a new game manager with all systems
@@ -62,6 +63,12 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 	// Create turn manager with dice system
 	turnManager := NewTurnManager(broadcaster, logger, diceSystem)
 
+	// Create turn state manager for per-hero turn tracking
+	turnStateManager := NewTurnStateManager(logger)
+
+	// Wire up turn state manager to turn manager
+	turnManager.SetTurnStateManager(turnStateManager)
+
 	// Create hero action system
 	heroActions := NewHeroActionSystem(gameState, turnManager, broadcaster, logger, debugSystem)
 
@@ -73,6 +80,7 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 	heroActions.SetMovementValidator(movementValidator)
 	heroActions.SetMonsterSystem(monsterSystem)
 	heroActions.SetQuest(quest)
+	heroActions.SetTurnStateManager(turnStateManager)
 
 	// Add default player (will be replaced with dynamic player loading later)
 	defaultPlayer := NewPlayer("player-1", "Hero", "hero-1", Barbarian)
@@ -82,15 +90,16 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 	}
 
 	return &GameManager{
-		gameState:       gameState,
-		turnManager:     turnManager,
-		heroActions:     heroActions,
-		monsterSystem:   monsterSystem,
-		furnitureSystem: furnitureSystem,
-		debugSystem:     debugSystem,
-		broadcaster:     broadcaster,
-		logger:          logger,
-		sequenceGen:     sequenceGen,
+		gameState:        gameState,
+		turnManager:      turnManager,
+		turnStateManager: turnStateManager,
+		heroActions:      heroActions,
+		monsterSystem:    monsterSystem,
+		furnitureSystem:  furnitureSystem,
+		debugSystem:      debugSystem,
+		broadcaster:      broadcaster,
+		logger:           logger,
+		sequenceGen:      sequenceGen,
 	}, nil
 }
 
@@ -233,6 +242,11 @@ func (gm *GameManager) SpawnMonster(monsterType MonsterType, position protocol.T
 // GetDebugSystem returns the debug system for HTTP handler registration
 func (gm *GameManager) GetDebugSystem() *DebugSystem {
 	return gm.debugSystem
+}
+
+// GetTurnStateManager returns the turn state manager
+func (gm *GameManager) GetTurnStateManager() *TurnStateManager {
+	return gm.turnStateManager
 }
 
 // Shutdown gracefully shuts down the game manager
@@ -444,4 +458,77 @@ func (gm *GameManager) GetMonstersForSnapshot() []protocol.MonsterLite {
 
 	gm.logger.Printf("DEBUG: Returning %d monster items for snapshot", len(monsters))
 	return monsters
+}
+
+// GetHeroTurnStatesForSnapshot returns all hero turn states for client snapshot
+func (gm *GameManager) GetHeroTurnStatesForSnapshot() map[string]protocol.HeroTurnStateLite {
+	gm.mutex.RLock()
+	defer gm.mutex.RUnlock()
+
+	result := make(map[string]protocol.HeroTurnStateLite)
+
+	if gm.turnStateManager == nil {
+		return result
+	}
+
+	allStates := gm.turnStateManager.GetAllHeroStates()
+
+	for heroID, state := range allStates {
+		// Convert ActiveEffects
+		effects := make([]protocol.ActiveEffectLite, 0, len(state.ActiveEffects))
+		for _, effect := range state.ActiveEffects {
+			effects = append(effects, protocol.ActiveEffectLite{
+				Source:     effect.Source,
+				EffectType: effect.EffectType,
+				Value:      effect.Value,
+				Trigger:    effect.Trigger,
+				Applied:    effect.Applied,
+			})
+		}
+
+		// Convert LocationSearches to summaries
+		locationSearches := make(map[string]protocol.LocationSearchSummary)
+		for locKey, locHistory := range state.LocationActions {
+			if searchHistory, exists := locHistory.SearchesByHero[heroID]; exists {
+				locationSearches[locKey] = protocol.LocationSearchSummary{
+					LocationKey:        locKey,
+					TreasureSearchDone: len(searchHistory.TreasureSearches) > 0,
+				}
+			}
+		}
+
+		// Get action type if action was taken
+		actionType := ""
+		if state.Action != nil {
+			actionType = state.Action.ActionType
+		}
+
+		lite := protocol.HeroTurnStateLite{
+			HeroID:              state.HeroID,
+			PlayerID:            state.PlayerID,
+			TurnNumber:          state.TurnNumber,
+			MovementDiceRolled:  state.MovementDice.Rolled,
+			MovementDiceResults: state.MovementDice.DiceResults,
+			MovementTotal:       state.MovementDice.TotalMovement,
+			MovementUsed:        state.MovementDice.MovementUsed,
+			MovementRemaining:   state.MovementDice.MovementRemaining,
+			HasMoved:            state.HasMoved,
+			ActionTaken:         state.ActionTaken,
+			ActionType:          actionType,
+			TurnFlags:           state.TurnFlags,
+			ActivitiesCount:     len(state.Activities),
+			ActiveEffectsCount:  len(state.ActiveEffects),
+			ActiveEffects:       effects,
+			LocationSearches:    locationSearches,
+			TurnStartPosition:   state.TurnStartPosition,
+			CurrentPosition:     state.CurrentPosition,
+		}
+
+		result[heroID] = lite
+		gm.logger.Printf("DEBUG: Added hero turn state to snapshot: %s (moved: %v, action: %v, movement: %d/%d)",
+			heroID, state.HasMoved, state.ActionTaken, state.MovementDice.MovementUsed, state.MovementDice.TotalMovement)
+	}
+
+	gm.logger.Printf("DEBUG: Returning %d hero turn states for snapshot", len(result))
+	return result
 }

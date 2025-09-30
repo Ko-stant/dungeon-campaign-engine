@@ -4,6 +4,7 @@
 
 import { ACTION_MODES } from './types.js';
 import { restoreMovementStateFromSnapshot } from './movementPlanning.js';
+import { initializeFromSnapshot as initializeHeroTurnState } from './heroTurnState.js';
 
 class GameState {
   constructor() {
@@ -71,8 +72,11 @@ class GameState {
     this.knownRegions = new Set(Array.isArray(snapshot?.knownRegionIds) ? snapshot.knownRegionIds : []);
     this.corridorRegionId = typeof snapshot?.corridorRegionId === 'number' ? snapshot.corridorRegionId : 0;
 
-    // Restore movement state from snapshot
+    // Restore movement state from snapshot (legacy)
     restoreMovementStateFromSnapshot(snapshot);
+
+    // Initialize hero turn state from snapshot (new system)
+    initializeHeroTurnState(snapshot);
   }
 
   /**

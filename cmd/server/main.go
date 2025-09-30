@@ -224,6 +224,10 @@ func mainWithGameManager() {
 		monsters := gameManager.GetMonstersForSnapshot()
 		log.Printf("DEBUG: Snapshot generation - got %d monster items", len(monsters))
 
+		// Get hero turn states for snapshot
+		heroTurnStates := gameManager.GetHeroTurnStatesForSnapshot()
+		log.Printf("DEBUG: Snapshot generation - got %d hero turn states", len(heroTurnStates))
+
 		s := protocol.Snapshot{
 			MapID:             "dev-map",
 			PackID:            "dev-pack@v1",
@@ -257,6 +261,7 @@ func mainWithGameManager() {
 			BlockingWalls:    blockingWalls,
 			Furniture:        furniture,
 			Monsters:         monsters,
+			HeroTurnStates:   heroTurnStates,
 			VisibleRegionIDs: visibleNow,
 			CorridorRegionID: state.CorridorRegion,
 			KnownRegionIDs:   known,

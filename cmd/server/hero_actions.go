@@ -25,11 +25,11 @@ const (
 type InstantAction string
 
 const (
-	OpenDoorInstant    InstantAction = "open_door"
-	UsePotionInstant   InstantAction = "use_potion"
-	UseItemInstant     InstantAction = "use_item"
-	TradeItemInstant   InstantAction = "trade_item"
-	PassTurnInstant    InstantAction = "pass_turn"
+	OpenDoorInstant     InstantAction = "open_door"
+	UsePotionInstant    InstantAction = "use_potion"
+	UseItemInstant      InstantAction = "use_item"
+	TradeItemInstant    InstantAction = "trade_item"
+	PassTurnInstant     InstantAction = "pass_turn"
 	RollMovementInstant InstantAction = "roll_movement"
 )
 
@@ -86,22 +86,22 @@ type ActionResult struct {
 
 // DiceRoll represents a single dice roll
 type DiceRoll struct {
-	Die          Die             `json:"die"`
-	Result       int             `json:"result"`
-	Type         string          `json:"type"`         // "attack", "defense", "movement", "search"
+	Die          Die              `json:"die"`
+	Result       int              `json:"result"`
+	Type         string           `json:"type"`         // "attack", "defense", "movement", "search"
 	CombatResult CombatDiceResult `json:"combatResult"` // For combat dice results
-	IsDefended   bool            `json:"isDefended"`   // For attack dice that were blocked
-	IsCritical   bool            `json:"isCritical"`   // For special results
+	IsDefended   bool             `json:"isDefended"`   // For attack dice that were blocked
+	IsCritical   bool             `json:"isCritical"`   // For special results
 }
 
 // CombatDiceResult represents the result of a combat die
 type CombatDiceResult string
 
 const (
-	Skull        CombatDiceResult = "skull"         // Attack success (appears on 3 faces)
-	WhiteShield  CombatDiceResult = "white_shield"  // Defense success (appears on 2 faces)
-	BlackShield  CombatDiceResult = "black_shield"  // Defense success (appears on 1 face)
-	CombatMiss   CombatDiceResult = "miss"          // No effect (never appears in HeroQuest)
+	Skull       CombatDiceResult = "skull"        // Attack success (appears on 3 faces)
+	WhiteShield CombatDiceResult = "white_shield" // Defense success (appears on 2 faces)
+	BlackShield CombatDiceResult = "black_shield" // Defense success (appears on 1 face)
+	CombatMiss  CombatDiceResult = "miss"         // No effect (never appears in HeroQuest)
 )
 
 // GetCombatResult converts a dice roll result to combat result
@@ -182,6 +182,7 @@ type Effect struct {
 type HeroActionSystem struct {
 	gameState         *GameState
 	turnManager       *TurnManager
+	turnStateManager  *TurnStateManager
 	diceSystem        *DiceSystem
 	broadcaster       Broadcaster
 	logger            Logger
@@ -217,6 +218,11 @@ func (has *HeroActionSystem) SetMonsterSystem(monsterSystem *MonsterSystem) {
 // SetQuest sets the quest definition for visibility calculations
 func (has *HeroActionSystem) SetQuest(quest *geometry.QuestDefinition) {
 	has.quest = quest
+}
+
+// SetTurnStateManager sets the turn state manager for per-hero turn tracking
+func (has *HeroActionSystem) SetTurnStateManager(turnStateManager *TurnStateManager) {
+	has.turnStateManager = turnStateManager
 }
 
 // ProcessAction processes a hero action request
@@ -709,6 +715,17 @@ func (has *HeroActionSystem) processMovement(request MovementRequest, result *Ac
 
 	result.Success = true
 	result.Message = fmt.Sprintf("Moved to (%d,%d)", newTile.X, newTile.Y)
+
+	// Track movement in TurnStateManager
+	if has.turnStateManager != nil {
+		err := has.turnStateManager.RecordMovement(request.EntityID, *newTile)
+		if err != nil {
+			has.logger.Printf("Warning: Failed to record movement in TurnStateManager: %v", err)
+		} else {
+			has.logger.Printf("DEBUG: Recorded movement to (%d,%d) in TurnStateManager for %s", newTile.X, newTile.Y, request.EntityID)
+		}
+	}
+
 	return result, nil
 }
 
@@ -796,9 +813,11 @@ func (has *HeroActionSystem) processRollMovement(request InstantActionRequest, r
 
 	// Convert dice rolls to expected format
 	movementRolls := make([]DiceRoll, len(diceRolls))
+	diceResults := make([]int, len(diceRolls))
 	totalMovement := 0
 	for i, roll := range diceRolls {
 		movementRolls[i] = roll
+		diceResults[i] = roll.Result
 		totalMovement += roll.Result
 	}
 
@@ -806,6 +825,30 @@ func (has *HeroActionSystem) processRollMovement(request InstantActionRequest, r
 	result.Message = fmt.Sprintf("Rolled movement dice: %d points", totalMovement)
 	result.MovementRolls = movementRolls
 	has.logger.Printf("Player %s rolled movement dice: total %d points", request.PlayerID, totalMovement)
+
+	// Also update the turn state manager
+	if has.turnStateManager != nil {
+		heroID := request.EntityID
+		playerID := request.PlayerID
+
+		// Get hero position
+		heroPos := has.gameState.Entities[heroID]
+
+		// Start hero turn if not already started
+		err := has.turnStateManager.StartHeroTurn(heroID, playerID, heroPos)
+		if err != nil {
+			// Turn might already be active, that's okay
+			has.logger.Printf("Note: StartHeroTurn returned: %v", err)
+		}
+
+		// Record movement dice roll
+		err = has.turnStateManager.RollMovementDice(heroID, diceResults)
+		if err != nil {
+			has.logger.Printf("Warning: Failed to record movement dice in TurnStateManager: %v", err)
+		} else {
+			has.logger.Printf("DEBUG: Recorded movement dice roll in TurnStateManager for %s", heroID)
+		}
+	}
 
 	return result, nil
 }
