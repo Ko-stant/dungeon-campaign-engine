@@ -10,7 +10,7 @@ import (
 
 func loadGameContent() (*geometry.BoardDefinition, *geometry.QuestDefinition, error) {
 	// Load the static HeroQuest board
-	board, err := geometry.LoadBoardFromFile("content/base/board.json")
+	board, err := geometry.LoadBoardFromFile("content/board.json")
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to load board: %v", err)
 	}

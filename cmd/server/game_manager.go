@@ -39,7 +39,7 @@ func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen Sequence
 // NewGameManagerWithFurniture creates a new game manager with pre-loaded furniture system
 func NewGameManagerWithFurniture(broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig, furnitureSystem *FurnitureSystem, quest *geometry.QuestDefinition) (*GameManager, error) {
 	// Initialize game state using the provided furniture system
-	board, err := geometry.LoadBoardFromFile("content/base/board.json")
+	board, err := geometry.LoadBoardFromFile("content/board.json")
 	if err != nil {
 		return nil, fmt.Errorf("failed to load board: %w", err)
 	}

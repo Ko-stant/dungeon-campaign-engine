@@ -53,8 +53,8 @@ func mainWithGameManager() {
 	furnitureSystem := NewFurnitureSystem(log.New(os.Stdout, "", log.LstdFlags))
 
 	// Load furniture definitions
-	log.Printf("DEBUG: Loading furniture definitions from content/base...")
-	if err := furnitureSystem.LoadFurnitureDefinitions("content/base"); err != nil {
+	log.Printf("DEBUG: Loading furniture definitions from content...")
+	if err := furnitureSystem.LoadFurnitureDefinitions("content"); err != nil {
 		log.Printf("Warning: Failed to load furniture definitions: %v", err)
 	}
 
