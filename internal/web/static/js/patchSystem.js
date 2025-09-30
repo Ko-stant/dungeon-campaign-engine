@@ -281,6 +281,35 @@ function handleTurnStateChanged(patch) {
       turnCounter.textContent = patch.payload.turnNumber;
     }
 
+    // Handle movement clearing after actions
+    if (patch.payload.movementLeft !== undefined && patch.payload.movementLeft === 0) {
+      // Movement was cleared (likely due to taking an action), update movement planning state
+      import('./movementPlanning.js').then(movementModule => {
+        // Clear flood effect and end movement planning if active
+        movementModule.turnMovementState.movementUsedThisTurn = movementModule.turnMovementState.maxMovementForTurn;
+
+        // End movement planning if it's active
+        const movementState = movementModule.getMovementState();
+        if (movementState.isPlanning) {
+          movementModule.endMovementPlanning();
+        }
+
+        // Update UI to reflect no movement remaining
+        import('./actionSystem.js').then(actionModule => {
+          actionModule.updateMovementStatusUI({
+            isPlanning: false,
+            usedMovement: movementModule.turnMovementState.maxMovementForTurn,
+            maxMovement: movementModule.turnMovementState.maxMovementForTurn,
+            availableMovement: 0,
+            pathLength: 0,
+            canExecute: false
+          });
+        });
+
+        scheduleRedraw();
+      });
+    }
+
     gameState.incrementPatchCount();
   }
 }

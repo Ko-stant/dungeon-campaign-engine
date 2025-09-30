@@ -630,11 +630,7 @@ function calculateValidMovementTiles(startPos, maxMovement) {
 
   // Flood fill for movement range, respecting walls and doors
   const visited = new Set();
-  const reachable = new Set(); // Only tiles that can actually be reached
   const queue = [{ pos: startPos, distance: 0 }];
-
-  // Starting position is always reachable
-  reachable.add(`${startPos.x},${startPos.y}`);
 
   while (queue.length > 0) {
     const { pos, distance } = queue.shift();
@@ -643,48 +639,47 @@ function calculateValidMovementTiles(startPos, maxMovement) {
     if (visited.has(key) || distance > maxMovement) continue;
     visited.add(key);
 
-    // Only add tiles that are actually reachable to the valid movement set
-    if (reachable.has(key)) {
-      // Check if tile is valid for movement (not blocked by monsters/furniture)
-      const validMovement = isValidMovementTile(pos);
+    // Check if current tile is valid for movement (not blocked by monsters/furniture)
+    const validMovement = isValidMovementTile(pos);
 
-      if (validMovement) {
-        movementState.validTiles.add(key);
-        // console.log(`FLOOD-FILL: Added valid tile (${pos.x},${pos.y}) to movement range`);
-      }
+    // Add to valid movement tiles if this tile is valid
+    if (validMovement) {
+      movementState.validTiles.add(key);
+      // console.log(`FLOOD-FILL: Added valid tile (${pos.x},${pos.y}) to movement range`);
+    }
 
-      // Only explore from tiles that are valid (not blocked by monsters/furniture)
-      if (validMovement) {
-        // Add adjacent tiles for continued exploration
-        const adjacent = [
-          { x: pos.x + 1, y: pos.y },
-          { x: pos.x - 1, y: pos.y },
-          { x: pos.x, y: pos.y + 1 },
-          { x: pos.x, y: pos.y - 1 },
-        ];
+    // Only explore from tiles that are valid (not blocked by monsters/furniture)
+    // This prevents flood fill from "passing through" furniture
+    if (validMovement) {
+      // Add adjacent tiles for continued exploration
+      const adjacent = [
+        { x: pos.x + 1, y: pos.y },
+        { x: pos.x - 1, y: pos.y },
+        { x: pos.x, y: pos.y + 1 },
+        { x: pos.x, y: pos.y - 1 },
+      ];
 
-        for (const nextPos of adjacent) {
-          const nextKey = `${nextPos.x},${nextPos.y}`;
+      for (const nextPos of adjacent) {
+        const nextKey = `${nextPos.x},${nextPos.y}`;
 
-          // Skip if already processed
-          if (visited.has(nextKey)) {
-            continue;
-          }
+        // Skip if already processed
+        if (visited.has(nextKey)) {
+          continue;
+        }
 
-          // Check if movement from current position to next position is blocked by walls/doors
-          if (isMovementBlocked(pos, nextPos)) {
-            // console.log(`FLOOD-FILL: Blocked movement from (${pos.x},${pos.y}) to (${nextPos.x},${nextPos.y})`);
-            continue;
-          }
+        // Check if movement from current position to next position is blocked by walls/doors
+        if (isMovementBlocked(pos, nextPos)) {
+          // console.log(`FLOOD-FILL: Blocked movement from (${pos.x},${pos.y}) to (${nextPos.x},${nextPos.y})`);
+          continue;
+        }
 
-          // Check basic bounds and queue the tile for exploration
-          if (isValidMovementTile(nextPos)) {
-            reachable.add(nextKey); // Mark as reachable since we can get there
-            // console.log(`FLOOD-FILL: Adding (${nextPos.x},${nextPos.y}) to queue, distance ${distance + 1}`);
-            queue.push({ pos: nextPos, distance: distance + 1 });
-          } else {
-            // console.log(`FLOOD-FILL: Invalid tile (${nextPos.x},${nextPos.y}) - not adding to queue`);
-          }
+        // Check if next tile is within bounds and not blocked by furniture/monsters
+        // before adding to queue - this prevents exploring from blocked tiles
+        if (isValidMovementTile(nextPos)) {
+          // console.log(`FLOOD-FILL: Adding (${nextPos.x},${nextPos.y}) to queue, distance ${distance + 1}`);
+          queue.push({ pos: nextPos, distance: distance + 1 });
+        } else {
+          // console.log(`FLOOD-FILL: Invalid tile (${nextPos.x},${nextPos.y}) - not adding to queue`);
         }
       }
     }
@@ -1194,6 +1189,7 @@ function isFurnitureBlocking(pos) {
   // Check all furniture to see if any blocks this tile
   for (const furniture of snapshot.furniture) {
     if (furniture.blocksMovement && doesFurnitureBlockTile(furniture, pos)) {
+      // console.log(`FURNITURE-BLOCK: Tile (${pos.x},${pos.y}) blocked by ${furniture.type} at (${furniture.tile.x},${furniture.tile.y})`);
       return true;
     }
   }
@@ -1204,8 +1200,29 @@ function isFurnitureBlocking(pos) {
  * Helper function to check if furniture blocks a specific tile
  */
 function doesFurnitureBlockTile(furniture, pos) {
-  // Check if furniture occupies this tile
-  return furniture.tile && furniture.tile.x === pos.x && furniture.tile.y === pos.y;
+  if (!furniture.tile || !furniture.gridSize) {
+    return false;
+  }
+
+  // Get effective grid size considering rotation
+  let effectiveWidth = furniture.gridSize.width;
+  let effectiveHeight = furniture.gridSize.height;
+
+  // For 90/270 degree rotations, swap width and height if swapAspectOnRotate is true
+  if (furniture.swapAspectOnRotate && (furniture.rotation === 90 || furniture.rotation === 270)) {
+    effectiveWidth = furniture.gridSize.height;
+    effectiveHeight = furniture.gridSize.width;
+  }
+
+  // Check if position is within the furniture's effective grid area
+  const startX = furniture.tile.x;
+  const startY = furniture.tile.y;
+  const endX = startX + effectiveWidth - 1;
+  const endY = startY + effectiveHeight - 1;
+
+  const isBlocked = pos.x >= startX && pos.x <= endX && pos.y >= startY && pos.y <= endY;
+
+  return isBlocked;
 }
 
 /**

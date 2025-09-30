@@ -355,7 +355,7 @@ export function handleHeroActionResult(result) {
     result.attackRolls.forEach((roll, index) => {
       let rollDisplay = `Die ${index + 1}: ${roll.result}`;
       if (roll.combatResult) {
-        const symbol = roll.combatResult === 'skull' ? 'SKULL' : 'HIT';
+        const symbol = roll.combatResult === 'skull' ? 'SKULL' : 'MISS';
         rollDisplay += ` (${symbol})`;
       }
       resultHTML += `<div class="text-xs opacity-80 ml-2">${rollDisplay}</div>`;

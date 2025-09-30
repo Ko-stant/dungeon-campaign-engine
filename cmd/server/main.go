@@ -109,8 +109,10 @@ func mainWithGameManager() {
 		}
 		hub.Add(conn)
 
-		// Send initial initMessage with turn state
+		// Send initial messages with turn state and blocking walls
 		turnState := gameManager.GetTurnState()
+
+		// Send turn state
 		initMessage, _ := json.Marshal(protocol.PatchEnvelope{
 			Sequence: 0,
 			EventID:  0,
@@ -127,6 +129,23 @@ func mainWithGameManager() {
 			},
 		})
 		_ = conn.Write(context.Background(), websocket.MessageText, initMessage)
+
+		// Send blocking walls for refreshed connections
+		currentGameState := gameManager.GetGameState()
+		currentGameState.Lock.Lock()
+		hero := currentGameState.Entities["hero-1"]
+		currentGameState.Lock.Unlock()
+
+		blockingWalls, _ := getVisibleBlockingWalls(currentGameState, hero, quest)
+		if len(blockingWalls) > 0 {
+			blockingWallsMessage, _ := json.Marshal(protocol.PatchEnvelope{
+				Sequence: 1,
+				EventID:  1,
+				Type:     "BlockingWallsVisible",
+				Payload:  protocol.BlockingWallsVisible{BlockingWalls: blockingWalls},
+			})
+			_ = conn.Write(context.Background(), websocket.MessageText, blockingWallsMessage)
+		}
 
 		go func(c *websocket.Conn) {
 			defer hub.Remove(c)

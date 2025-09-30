@@ -443,7 +443,10 @@ func (tm *TurnManager) ConsumeAction() error {
 
 	tm.state.ActionsLeft--
 	tm.state.ActionTaken = true
-	tm.logger.Printf("Consumed 1 action, %d remaining", tm.state.ActionsLeft)
+
+	// Clear all remaining movement when an action is taken
+	tm.state.MovementLeft = 0
+	tm.logger.Printf("Consumed 1 action, %d remaining, movement cleared", tm.state.ActionsLeft)
 
 	// Auto-advance to end phase if no actions left
 	if tm.state.ActionsLeft == 0 {
