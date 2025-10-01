@@ -45,11 +45,11 @@ func TestCombatDiceDebugOverride(t *testing.T) {
 		{
 			name:           "Perfect defense blocks all",
 			attackDice:     []int{4, 5, 6}, // 3 skulls
-			defenseDice:    []int{6, 5, 4}, // 3 shields (1 black, 2 white)
+			defenseDice:    []int{6, 6, 6}, // 3 black shields (monsters only defend with black)
 			expectedSkull:  3,
 			expectedShield: 3,
 			expectedDmg:    0,
-			description:    "Testing 3 skulls vs 3 shields = 0 damage",
+			description:    "Testing 3 skulls vs 3 black shields = 0 damage",
 		},
 		{
 			name:           "Single point damage",
@@ -90,11 +90,11 @@ func TestCombatDiceDebugOverride(t *testing.T) {
 		{
 			name:           "Wizard vs defended monster",
 			attackDice:     []int{6}, // 1 skull (Wizard has 1 attack die)
-			defenseDice:    []int{4}, // 1 white shield
+			defenseDice:    []int{6}, // 1 black shield (monsters only defend with black)
 			expectedSkull:  1,
 			expectedShield: 1,
 			expectedDmg:    0,
-			description:    "Testing Wizard attack blocked",
+			description:    "Testing Wizard attack blocked by black shield",
 		},
 		{
 			name:           "Maximum theoretical damage",

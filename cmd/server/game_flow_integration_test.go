@@ -39,9 +39,16 @@ func (sg *MockSequenceGenerator) Next() uint64 {
 	return sg.counter
 }
 
+// Helper function to roll movement dice for tests
+func rollMovementDiceForTest(t *testing.T, gm *GameManager) {
+	t.Helper()
+	_, err := gm.turnManager.RollMovementDice()
+	if err != nil {
+		t.Fatalf("Failed to roll movement dice: %v", err)
+	}
+}
+
 func TestGameFlow_CompleteHeroTurn(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -51,6 +58,15 @@ func TestGameFlow_CompleteHeroTurn(t *testing.T) {
 		t.Fatalf("Expected hero turn, got: %s", initialTurnState.CurrentTurn)
 	}
 
+	// Spawn a monster for combat testing
+	monster, err := gm.SpawnMonster(Goblin, protocol.TileAddress{X: 5, Y: 14})
+	if err != nil {
+		t.Fatalf("Failed to spawn monster: %v", err)
+	}
+
+	// Roll movement dice before moving
+	rollMovementDiceForTest(t, gm)
+
 	// 1. Move before action
 	moveReq := protocol.RequestMove{
 		EntityID: "hero-1",
@@ -58,7 +74,7 @@ func TestGameFlow_CompleteHeroTurn(t *testing.T) {
 		DY:       0,
 	}
 
-	err := gm.ProcessMovement(moveReq)
+	err = gm.ProcessMovement(moveReq)
 	if err != nil {
 		t.Fatalf("Movement failed: %v", err)
 	}
@@ -75,7 +91,7 @@ func TestGameFlow_CompleteHeroTurn(t *testing.T) {
 		EntityID: "hero-1",
 		Action:   AttackAction,
 		Parameters: map[string]any{
-			"targetId": "monster-1",
+			"targetId": monster.ID,
 		},
 	}
 
@@ -127,10 +143,11 @@ func TestGameFlow_CompleteHeroTurn(t *testing.T) {
 }
 
 func TestGameFlow_MovementAndActionOrder(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
+
+	// Roll movement dice first
+	rollMovementDiceForTest(t, gm)
 
 	// Test: Action before movement
 	actionReq := ActionRequest{
@@ -164,41 +181,18 @@ func TestGameFlow_MovementAndActionOrder(t *testing.T) {
 }
 
 func TestGameFlow_MovementOncePerTurnEnforcement(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
-
-	gm := createTestGameManager()
-
-	// First movement
-	moveReq1 := protocol.RequestMove{
-		EntityID: "hero-1",
-		DX:       1,
-		DY:       0,
-	}
-
-	err := gm.ProcessMovement(moveReq1)
-	if err != nil {
-		t.Fatalf("First movement failed: %v", err)
-	}
-
-	// Second movement should fail
-	moveReq2 := protocol.RequestMove{
-		EntityID: "hero-1",
-		DX:       0,
-		DY:       1,
-	}
-
-	err = gm.ProcessMovement(moveReq2)
-	if err == nil {
-		t.Fatal("Expected second movement to fail")
-	}
+	t.Skip("Test obsolete - we now use dice-based movement system where players can move multiple times until points run out. See TestMovement_FivePointConsumption for dice-based movement testing.")
 }
 
 func TestGameFlow_ActionOncePerTurnEnforcement(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
+
+	// Spawn a monster for attack testing
+	monster, err := gm.SpawnMonster(Goblin, protocol.TileAddress{X: 4, Y: 14})
+	if err != nil {
+		t.Fatalf("Failed to spawn monster: %v", err)
+	}
 
 	// First action
 	actionReq1 := ActionRequest{
@@ -206,11 +200,11 @@ func TestGameFlow_ActionOncePerTurnEnforcement(t *testing.T) {
 		EntityID: "hero-1",
 		Action:   AttackAction,
 		Parameters: map[string]any{
-			"targetId": "monster-1",
+			"targetId": monster.ID,
 		},
 	}
 
-	_, err := gm.ProcessHeroAction(actionReq1)
+	_, err = gm.ProcessHeroAction(actionReq1)
 	if err != nil {
 		t.Fatalf("First action failed: %v", err)
 	}
@@ -230,8 +224,6 @@ func TestGameFlow_ActionOncePerTurnEnforcement(t *testing.T) {
 }
 
 func TestGameFlow_InstantActionsUnlimited(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -251,14 +243,6 @@ func TestGameFlow_InstantActionsUnlimited(t *testing.T) {
 			Action:   UseItemInstant,
 			Parameters: map[string]any{
 				"itemId": "torch",
-			},
-		},
-		{
-			PlayerID: "player-1",
-			EntityID: "hero-1",
-			Action:   OpenDoorInstant,
-			Parameters: map[string]any{
-				"doorId": "door-1",
 			},
 		},
 	}
@@ -282,8 +266,6 @@ func TestGameFlow_InstantActionsUnlimited(t *testing.T) {
 }
 
 func TestGameFlow_TurnTransition(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -322,15 +304,24 @@ func TestGameFlow_TurnTransition(t *testing.T) {
 		t.Error("Expected clean turn state after turn transition")
 	}
 
-	if turnState.ActionsLeft != 1 || turnState.MovementLeft != 2 {
-		t.Errorf("Expected reset action/movement points, got actions=%d movement=%d",
-			turnState.ActionsLeft, turnState.MovementLeft)
+	if turnState.ActionsLeft != 1 {
+		t.Errorf("Expected 1 action point, got actions=%d", turnState.ActionsLeft)
+	}
+
+	// Movement starts at 0 and must be rolled with dice
+	if turnState.MovementLeft != 0 {
+		t.Errorf("Expected 0 movement points before rolling dice, got movement=%d", turnState.MovementLeft)
+	}
+
+	// Verify we can roll movement dice in new turn
+	rollMovementDiceForTest(t, gm)
+	turnState = gm.GetTurnState()
+	if turnState.MovementLeft <= 0 {
+		t.Error("Expected movement points after rolling dice")
 	}
 }
 
 func TestGameFlow_ErrorHandling(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -381,8 +372,6 @@ func TestGameFlow_ErrorHandling(t *testing.T) {
 }
 
 func TestGameFlow_DebugIntegration(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -422,8 +411,6 @@ func TestGameFlow_DebugIntegration(t *testing.T) {
 }
 
 func TestGameFlow_CombatIntegration(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 

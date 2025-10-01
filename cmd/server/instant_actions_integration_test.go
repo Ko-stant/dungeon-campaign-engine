@@ -8,9 +8,6 @@ import (
 )
 
 func TestInstantActions_DontConsumeMainAction(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
-
 	gm := createTestGameManager()
 
 	// Use instant action first
@@ -63,8 +60,6 @@ func TestInstantActions_DontConsumeMainAction(t *testing.T) {
 }
 
 func TestInstantActions_OpenDoor(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -118,8 +113,6 @@ func TestInstantActions_OpenDoor(t *testing.T) {
 }
 
 func TestInstantActions_Trading_RequiresAdjacency(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -144,7 +137,7 @@ func TestInstantActions_Trading_RequiresAdjacency(t *testing.T) {
 		EntityID: "hero-1",
 		Action:   TradeItemInstant,
 		Parameters: map[string]any{
-			"targetPlayerId": "player-2",
+			"targetEntityId": "hero-2",
 			"itemId":         "test-item",
 		},
 	}
@@ -154,9 +147,9 @@ func TestInstantActions_Trading_RequiresAdjacency(t *testing.T) {
 		t.Fatal("Expected trading to fail when players are not adjacent")
 	}
 
-	// Move second hero adjacent to first hero
+	// Move second hero adjacent to first hero (hero-1 at 3,14)
 	gm.gameState.Lock.Lock()
-	gm.gameState.Entities["hero-2"] = protocol.TileAddress{X: 6, Y: 5} // Adjacent to hero-1
+	gm.gameState.Entities["hero-2"] = protocol.TileAddress{X: 4, Y: 14} // Adjacent to hero-1
 	gm.gameState.Lock.Unlock()
 
 	// Now trading should work
@@ -171,8 +164,6 @@ func TestInstantActions_Trading_RequiresAdjacency(t *testing.T) {
 }
 
 func TestInstantActions_PassTurn_EndsTurn(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -207,10 +198,14 @@ func TestInstantActions_PassTurn_EndsTurn(t *testing.T) {
 }
 
 func TestInstantActions_MultipleInstantActions(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
+
+	// Spawn a monster for the attack test at the end
+	monster, err := gm.SpawnMonster(Goblin, protocol.TileAddress{X: 4, Y: 14})
+	if err != nil {
+		t.Fatalf("Failed to spawn monster: %v", err)
+	}
 
 	instantActions := []InstantActionRequest{
 		{
@@ -263,7 +258,7 @@ func TestInstantActions_MultipleInstantActions(t *testing.T) {
 		EntityID: "hero-1",
 		Action:   AttackAction,
 		Parameters: map[string]any{
-			"targetId": "monster-1",
+			"targetId": monster.ID,
 		},
 	}
 

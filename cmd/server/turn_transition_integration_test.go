@@ -7,8 +7,6 @@ import (
 )
 
 func TestTurnTransition_HeroToGameMaster(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -38,8 +36,6 @@ func TestTurnTransition_HeroToGameMaster(t *testing.T) {
 }
 
 func TestTurnTransition_GameMasterToHero(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -72,10 +68,11 @@ func TestTurnTransition_GameMasterToHero(t *testing.T) {
 }
 
 func TestTurnTransition_StateReset(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
+
+	// Roll movement dice before moving
+	rollMovementDiceForTest(t, gm)
 
 	// Use movement and action in first turn
 	moveReq := protocol.RequestMove{
@@ -132,14 +129,20 @@ func TestTurnTransition_StateReset(t *testing.T) {
 	if newTurnState.ActionsLeft != 1 {
 		t.Errorf("Expected 1 action left, got %d", newTurnState.ActionsLeft)
 	}
-	if newTurnState.MovementLeft != 2 {
-		t.Errorf("Expected 2 movement left, got %d", newTurnState.MovementLeft)
+	// Movement starts at 0 and requires rolling dice
+	if newTurnState.MovementLeft != 0 {
+		t.Errorf("Expected 0 movement before rolling dice, got %d", newTurnState.MovementLeft)
+	}
+
+	// Roll dice and verify movement is available
+	rollMovementDiceForTest(t, gm)
+	rolledState := gm.GetTurnState()
+	if rolledState.MovementLeft <= 0 {
+		t.Error("Expected movement points after rolling dice")
 	}
 }
 
 func TestTurnTransition_MultiPlayer(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -164,37 +167,60 @@ func TestTurnTransition_MultiPlayer(t *testing.T) {
 		t.Errorf("Expected player-1 active, got: %s", initialState.ActivePlayerID)
 	}
 
+	// Take an action to allow turn ending
+	actionReq := ActionRequest{
+		PlayerID:   "player-1",
+		EntityID:   "hero-1",
+		Action:     SearchTreasureAction,
+		Parameters: map[string]any{},
+	}
+	_, err := gm.ProcessHeroAction(actionReq)
+	if err != nil {
+		t.Fatalf("Action failed: %v", err)
+	}
+
 	// Complete first player's turn
-	err := gm.EndTurn()
+	err = gm.EndTurn()
 	if err != nil {
 		t.Fatalf("End first player turn failed: %v", err)
 	}
 
-	// Should be GM turn
-	gmState := gm.GetTurnState()
-	if gmState.CurrentTurn != "gamemaster" {
-		t.Errorf("Expected gamemaster turn, got: %s", gmState.CurrentTurn)
-	}
-
-	// End GM turn
-	err = gm.EndTurn()
-	if err != nil {
-		t.Fatalf("End GM turn failed: %v", err)
-	}
-
-	// Should be second player's turn
+	// Should go to second player's turn (all heroes play before GM)
 	player2State := gm.GetTurnState()
 	if player2State.CurrentTurn != "hero" {
-		t.Errorf("Expected hero turn, got: %s", player2State.CurrentTurn)
+		t.Errorf("Expected hero turn after player-1, got: %s", player2State.CurrentTurn)
 	}
 	if player2State.ActivePlayerID != "player-2" {
 		t.Errorf("Expected player-2 active, got: %s", player2State.ActivePlayerID)
 	}
+
+	// Player 2 takes an action
+	actionReq2 := ActionRequest{
+		PlayerID:   "player-2",
+		EntityID:   "hero-2",
+		Action:     SearchTreasureAction,
+		Parameters: map[string]any{},
+	}
+	_, err = gm.ProcessHeroAction(actionReq2)
+	if err != nil {
+		t.Fatalf("Player 2 action failed: %v", err)
+	}
+
+	// End player 2's turn
+	err = gm.EndTurn()
+	if err != nil {
+		t.Fatalf("End player 2 turn failed: %v", err)
+	}
+
+	// Now should be GM turn (all heroes have played)
+	gmState := gm.GetTurnState()
+	if gmState.CurrentTurn != "gamemaster" {
+		t.Errorf("Expected gamemaster turn after all heroes, got: %s", gmState.CurrentTurn)
+	}
 }
 
 func TestTurnTransition_CannotEndTurnWithoutAction(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
+	t.Skip("Test obsolete - design changed to allow ending turn without action (via PassTurnInstant). CanEndTurn is now always true to allow passing.")
 
 	gm := createTestGameManager()
 
@@ -231,8 +257,6 @@ func TestTurnTransition_CannotEndTurnWithoutAction(t *testing.T) {
 }
 
 func TestTurnTransition_PassTurnInstantEndsImmediately(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -261,10 +285,14 @@ func TestTurnTransition_PassTurnInstantEndsImmediately(t *testing.T) {
 }
 
 func TestTurnTransition_ActionLimitsEnforced(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
+
+	// Spawn a monster for the attack
+	monster, err := gm.SpawnMonster(Goblin, protocol.TileAddress{X: 4, Y: 14})
+	if err != nil {
+		t.Fatalf("Failed to spawn monster: %v", err)
+	}
 
 	// Take the main action
 	actionReq := ActionRequest{
@@ -272,11 +300,11 @@ func TestTurnTransition_ActionLimitsEnforced(t *testing.T) {
 		EntityID: "hero-1",
 		Action:   AttackAction,
 		Parameters: map[string]any{
-			"targetId": "monster-1",
+			"targetId": monster.ID,
 		},
 	}
 
-	_, err := gm.ProcessHeroAction(actionReq)
+	_, err = gm.ProcessHeroAction(actionReq)
 	if err != nil {
 		t.Fatalf("First action failed: %v", err)
 	}
@@ -315,10 +343,12 @@ func TestTurnTransition_ActionLimitsEnforced(t *testing.T) {
 }
 
 func TestTurnTransition_MovementLimitsEnforced(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
+	t.Skip("Test obsolete - we now use dice-based movement system where players can move multiple times until points run out. Movement is no longer limited to once per turn.")
 
 	gm := createTestGameManager()
+
+	// Roll movement dice before moving
+	rollMovementDiceForTest(t, gm)
 
 	// Take movement
 	moveReq := protocol.RequestMove{
@@ -347,23 +377,29 @@ func TestTurnTransition_MovementLimitsEnforced(t *testing.T) {
 	// Verify hero is still at first moved position
 	gameState := gm.GetGameState()
 	heroPos := gameState.Entities["hero-1"]
-	if heroPos.X != 6 || heroPos.Y != 5 { // Original (5,5) + (1,0)
-		t.Errorf("Expected hero at (6,5), got (%d,%d)", heroPos.X, heroPos.Y)
+	if heroPos.X != 4 || heroPos.Y != 14 { // Original (3,14) + (1,0)
+		t.Errorf("Expected hero at (4,14), got (%d,%d)", heroPos.X, heroPos.Y)
 	}
 }
 
 func TestTurnTransition_CompleteGameCycle(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
-	// Track multiple complete turn cycles
-	for cycle := 1; cycle <= 3; cycle++ {
+	// Track multiple complete turn cycles (only 2 to avoid hitting walls)
+	for cycle := 1; cycle <= 2; cycle++ {
+		// Roll movement dice before moving
+		rollMovementDiceForTest(t, gm)
+
 		// Hero turn: movement + action
+		// Alternate movement direction to avoid hitting walls
+		dx := 1
+		if cycle == 2 {
+			dx = -1 // Move back left in cycle 2
+		}
 		moveReq := protocol.RequestMove{
 			EntityID: "hero-1",
-			DX:       1,
+			DX:       dx,
 			DY:       0,
 		}
 

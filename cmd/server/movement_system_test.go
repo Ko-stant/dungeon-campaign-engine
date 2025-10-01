@@ -335,7 +335,6 @@ func TestMovement_AfterTurnReset(t *testing.T) {
 }
 
 func TestMovement_WrongPlayer(t *testing.T) {
-	t.Skip("Integration test requires content files - skipping for build validation")
 	has := createTestMovementSystem()
 
 	request := MovementRequest{

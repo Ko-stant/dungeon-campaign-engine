@@ -7,8 +7,6 @@ import (
 )
 
 func TestMonsterSystem_SpawnAndManagement(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -46,8 +44,6 @@ func TestMonsterSystem_SpawnAndManagement(t *testing.T) {
 }
 
 func TestMonsterSystem_MultipleMonsters(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -99,8 +95,6 @@ func TestMonsterSystem_MultipleMonsters(t *testing.T) {
 }
 
 func TestMonsterSystem_CombatIntegration(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -142,8 +136,6 @@ func TestMonsterSystem_CombatIntegration(t *testing.T) {
 }
 
 func TestMonsterSystem_GameMasterTurn(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -170,13 +162,13 @@ func TestMonsterSystem_GameMasterTurn(t *testing.T) {
 		t.Fatalf("Expected gamemaster turn, got: %s", turnState.CurrentTurn)
 	}
 
-	// Move first monster
+	// Move first monster from (7,7) to (8,7)
 	moveReq := MonsterActionRequest{
 		MonsterID: monster1.ID,
 		Action:    MonsterMoveAction,
 		Parameters: map[string]any{
-			"dx": 1,
-			"dy": 0,
+			"x": float64(8),
+			"y": float64(7),
 		},
 	}
 
@@ -232,8 +224,6 @@ func TestMonsterSystem_GameMasterTurn(t *testing.T) {
 }
 
 func TestMonsterSystem_RemoveMonster(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -267,8 +257,6 @@ func TestMonsterSystem_RemoveMonster(t *testing.T) {
 }
 
 func TestMonsterSystem_MonsterTypes(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -323,8 +311,6 @@ func TestMonsterSystem_MonsterTypes(t *testing.T) {
 }
 
 func TestMonsterSystem_VisibilityIntegration(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
@@ -332,6 +318,12 @@ func TestMonsterSystem_VisibilityIntegration(t *testing.T) {
 	visibleMonster, err := gm.SpawnMonster(Goblin, protocol.TileAddress{X: 6, Y: 5})
 	if err != nil {
 		t.Fatalf("Failed to spawn visible monster: %v", err)
+	}
+
+	// Reveal the visible monster (monsters start hidden until revealed)
+	err = gm.RevealMonster(visibleMonster.ID)
+	if err != nil {
+		t.Fatalf("Failed to reveal visible monster: %v", err)
 	}
 
 	// Spawn monster in non-visible area (far away)
@@ -366,8 +358,6 @@ func TestMonsterSystem_VisibilityIntegration(t *testing.T) {
 }
 
 func TestMonsterSystem_ConcurrentActions(t *testing.T) {
-	// Skip integration test that requires content files for now
-	t.Skip("Integration test requires content files - skipping for build validation")
 
 	gm := createTestGameManager()
 
