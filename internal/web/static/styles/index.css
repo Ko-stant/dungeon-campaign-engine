@@ -13,6 +13,14 @@
   --color-positive: 74 222 128;
   --color-warning: 250 204 21;
   --color-danger: 248 113 113;
+
+  /* Treasure notification colors */
+  --color-treasure-gold: 202 138 4;
+  --color-treasure-gold-dark: 113 63 18;
+  --color-treasure-empty: 107 114 128;
+  --color-treasure-empty-dark: 55 65 81;
+  --color-treasure-hazard: 220 38 38;
+  --color-treasure-hazard-dark: 127 29 29;
 }
 
 html[data-theme="classic"] {
@@ -31,4 +39,54 @@ html[data-theme="classic"] {
 }
 .border-border {
   border-color: rgb(var(--color-border));
+}
+
+/* Treasure notification styles */
+.treasure-notification-wrapper {
+  margin-bottom: 0.75rem;
+  animation: slideIn 0.3s ease-out;
+  transition: opacity 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.treasure-notification {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border-width: 2px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.gold-notification {
+  background-color: rgb(var(--color-treasure-gold-dark) / 0.3);
+  border-color: rgb(var(--color-treasure-gold) / 0.6);
+}
+
+.items-notification {
+  background-color: rgb(var(--color-treasure-gold-dark) / 0.3);
+  border-color: rgb(var(--color-treasure-gold) / 0.6);
+}
+
+.empty-notification {
+  background-color: rgb(var(--color-treasure-empty-dark) / 0.3);
+  border-color: rgb(var(--color-treasure-empty) / 0.6);
+}
+
+.hazard-notification {
+  background-color: rgb(var(--color-treasure-hazard-dark) / 0.3);
+  border-color: rgb(var(--color-treasure-hazard) / 0.6);
+}
+
+.monster-notification {
+  background-color: rgb(var(--color-treasure-hazard-dark) / 0.3);
+  border-color: rgb(var(--color-treasure-hazard) / 0.6);
 }

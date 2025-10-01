@@ -803,6 +803,12 @@ function drawValidMovementRange(ctx, metrics) {
 
   for (const tileKey of movementState.validTiles) {
     const [x, y] = tileKey.split(',').map(Number);
+
+    // Skip drawing overlay on furniture tiles
+    if (isFurnitureBlocking({ x, y })) {
+      continue;
+    }
+
     const rect = getTileRect(x, y, metrics);
     ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
   }

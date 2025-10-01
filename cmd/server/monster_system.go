@@ -480,14 +480,32 @@ func (ms *MonsterSystem) processMonsterAttackAction(request MonsterActionRequest
 		return result, fmt.Errorf("missing targetId parameter")
 	}
 
-	if err := ms.executeMonsterAttackAction(request.MonsterID, targetID); err != nil {
+	// Get the monster
+	monster, exists := ms.monsters[request.MonsterID]
+	if !exists {
 		result.Success = false
-		result.Message = err.Error()
-		return result, err
+		result.Message = "Monster not found"
+		return result, fmt.Errorf("monster %s not found", request.MonsterID)
 	}
 
+	// Roll attack dice
+	attackRolls := ms.diceSystem.RollAttackDice(monster.AttackDice)
+	skulls := 0
+	for _, roll := range attackRolls {
+		if roll.CombatResult == Skull {
+			skulls++
+		}
+		result.DiceRolls = append(result.DiceRolls, roll)
+	}
+
+	result.Damage = skulls
 	result.Success = true
-	result.Message = fmt.Sprintf("Monster attacked %s", targetID)
+	result.Message = fmt.Sprintf("Monster attacked %s for %d damage", targetID, skulls)
+
+	ms.logger.Printf("Monster %s attacks %s - rolled %d skulls", request.MonsterID, targetID, skulls)
+
+	// TODO: Actually apply damage to target when hero damage system is ready
+
 	return result, nil
 }
 

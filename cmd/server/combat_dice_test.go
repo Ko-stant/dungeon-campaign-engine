@@ -25,85 +25,85 @@ func TestCombatDiceDebugOverride(t *testing.T) {
 
 	// Test scenarios covering damage values 0-12
 	testScenarios := []struct {
-		name         string
-		attackDice   []int
-		defenseDice  []int
-		expectedSkul int
-		expectedShie int
-		expectedDmg  int
-		description  string
+		name           string
+		attackDice     []int
+		defenseDice    []int
+		expectedSkull  int
+		expectedShield int
+		expectedDmg    int
+		description    string
 	}{
 		{
-			name:         "No damage - all misses",
-			attackDice:   []int{1, 2, 3},  // 0 skulls
-			defenseDice:  []int{1},        // 0 shields
-			expectedSkul: 0,
-			expectedShie: 0,
-			expectedDmg:  0,
-			description:  "Testing minimum damage (0)",
+			name:           "No damage - all misses",
+			attackDice:     []int{1, 2, 3}, // 0 skulls
+			defenseDice:    []int{1},       // 0 shields
+			expectedSkull:  0,
+			expectedShield: 0,
+			expectedDmg:    0,
+			description:    "Testing minimum damage (0)",
 		},
 		{
-			name:         "Perfect defense blocks all",
-			attackDice:   []int{4, 5, 6},  // 3 skulls
-			defenseDice:  []int{6, 5, 4},  // 3 shields (1 black, 2 white)
-			expectedSkul: 3,
-			expectedShie: 3,
-			expectedDmg:  0,
-			description:  "Testing 3 skulls vs 3 shields = 0 damage",
+			name:           "Perfect defense blocks all",
+			attackDice:     []int{4, 5, 6}, // 3 skulls
+			defenseDice:    []int{6, 5, 4}, // 3 shields (1 black, 2 white)
+			expectedSkull:  3,
+			expectedShield: 3,
+			expectedDmg:    0,
+			description:    "Testing 3 skulls vs 3 shields = 0 damage",
 		},
 		{
-			name:         "Single point damage",
-			attackDice:   []int{6},        // 1 skull
-			defenseDice:  []int{1},        // 0 shields
-			expectedSkul: 1,
-			expectedShie: 0,
-			expectedDmg:  1,
-			description:  "Testing 1 damage",
+			name:           "Single point damage",
+			attackDice:     []int{6}, // 1 skull
+			defenseDice:    []int{1}, // 0 shields
+			expectedSkull:  1,
+			expectedShield: 0,
+			expectedDmg:    1,
+			description:    "Testing 1 damage",
 		},
 		{
-			name:         "Two point damage",
-			attackDice:   []int{4, 5},     // 2 skulls
-			defenseDice:  []int{2},        // 0 shields
-			expectedSkul: 2,
-			expectedShie: 0,
-			expectedDmg:  2,
-			description:  "Testing 2 damage",
+			name:           "Two point damage",
+			attackDice:     []int{4, 5}, // 2 skulls
+			defenseDice:    []int{2},    // 0 shields
+			expectedSkull:  2,
+			expectedShield: 0,
+			expectedDmg:    2,
+			description:    "Testing 2 damage",
 		},
 		{
-			name:         "High damage scenario",
-			attackDice:   []int{4, 5, 6, 4, 5}, // 5 skulls
-			defenseDice:  []int{1, 2},           // 0 shields
-			expectedSkul: 5,
-			expectedShie: 0,
-			expectedDmg:  5,
-			description:  "Testing 5 damage (high roll)",
+			name:           "High damage scenario",
+			attackDice:     []int{4, 5, 6, 4, 5}, // 5 skulls
+			defenseDice:    []int{1, 2},          // 0 shields
+			expectedSkull:  5,
+			expectedShield: 0,
+			expectedDmg:    5,
+			description:    "Testing 5 damage (high roll)",
 		},
 		{
-			name:         "Barbarian vs tough monster",
-			attackDice:   []int{4, 5, 6},  // 3 skulls (Barbarian has 3 attack dice)
-			defenseDice:  []int{3},        // 0 shields (monster rolls poorly)
-			expectedSkul: 3,
-			expectedShie: 0,
-			expectedDmg:  3,
-			description:  "Testing typical Barbarian attack",
+			name:           "Barbarian vs tough monster",
+			attackDice:     []int{4, 5, 6}, // 3 skulls (Barbarian has 3 attack dice)
+			defenseDice:    []int{3},       // 0 shields (monster rolls poorly)
+			expectedSkull:  3,
+			expectedShield: 0,
+			expectedDmg:    3,
+			description:    "Testing typical Barbarian attack",
 		},
 		{
-			name:         "Wizard vs defended monster",
-			attackDice:   []int{6},        // 1 skull (Wizard has 1 attack die)
-			defenseDice:  []int{4},        // 1 white shield
-			expectedSkul: 1,
-			expectedShie: 1,
-			expectedDmg:  0,
-			description:  "Testing Wizard attack blocked",
+			name:           "Wizard vs defended monster",
+			attackDice:     []int{6}, // 1 skull (Wizard has 1 attack die)
+			defenseDice:    []int{4}, // 1 white shield
+			expectedSkull:  1,
+			expectedShield: 1,
+			expectedDmg:    0,
+			description:    "Testing Wizard attack blocked",
 		},
 		{
-			name:         "Maximum theoretical damage",
-			attackDice:   []int{6, 6, 6, 6, 6, 6}, // 6 skulls (theoretical max with equipment)
-			defenseDice:  []int{1},                 // 0 shields
-			expectedSkul: 6,
-			expectedShie: 0,
-			expectedDmg:  6,
-			description:  "Testing maximum damage scenario",
+			name:           "Maximum theoretical damage",
+			attackDice:     []int{6, 6, 6, 6, 6, 6}, // 6 skulls (theoretical max with equipment)
+			defenseDice:    []int{1},                // 0 shields
+			expectedSkull:  6,
+			expectedShield: 0,
+			expectedDmg:    6,
+			description:    "Testing maximum damage scenario",
 		},
 	}
 
@@ -155,12 +155,12 @@ func TestCombatDiceDebugOverride(t *testing.T) {
 			skulls := countSkulls(attackRolls)
 			shields := countShields(defenseRolls)
 
-			if skulls != scenario.expectedSkul {
-				t.Errorf("Expected %d skulls, got %d", scenario.expectedSkul, skulls)
+			if skulls != scenario.expectedSkull {
+				t.Errorf("Expected %d skulls, got %d", scenario.expectedSkull, skulls)
 			}
 
-			if shields != scenario.expectedShie {
-				t.Errorf("Expected %d shields, got %d", scenario.expectedShie, shields)
+			if shields != scenario.expectedShield {
+				t.Errorf("Expected %d shields, got %d", scenario.expectedShield, shields)
 			}
 
 			t.Logf("PASS %s: %d skulls vs %d shields = %d damage",

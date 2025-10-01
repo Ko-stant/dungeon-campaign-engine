@@ -183,6 +183,8 @@ type HeroActionSystem struct {
 	gameState         *GameState
 	turnManager       *TurnManager
 	turnStateManager  *TurnStateManager
+	inventoryManager  *InventoryManager
+	treasureResolver  *TreasureResolver
 	diceSystem        *DiceSystem
 	broadcaster       Broadcaster
 	logger            Logger
@@ -223,6 +225,16 @@ func (has *HeroActionSystem) SetQuest(quest *geometry.QuestDefinition) {
 // SetTurnStateManager sets the turn state manager for per-hero turn tracking
 func (has *HeroActionSystem) SetTurnStateManager(turnStateManager *TurnStateManager) {
 	has.turnStateManager = turnStateManager
+}
+
+// SetInventoryManager sets the inventory manager
+func (has *HeroActionSystem) SetInventoryManager(inventoryManager *InventoryManager) {
+	has.inventoryManager = inventoryManager
+}
+
+// SetTreasureResolver sets the treasure resolver
+func (has *HeroActionSystem) SetTreasureResolver(treasureResolver *TreasureResolver) {
+	has.treasureResolver = treasureResolver
 }
 
 // ProcessAction processes a hero action request
@@ -266,6 +278,51 @@ func (has *HeroActionSystem) ProcessAction(request ActionRequest) (*ActionResult
 
 // Search for treasure action
 func (has *HeroActionSystem) processSearchTreasure(request ActionRequest, result *ActionResult) (*ActionResult, error) {
+	// Get hero position and room
+	has.gameState.Lock.Lock()
+	heroPos, exists := has.gameState.Entities[request.EntityID]
+	if !exists {
+		has.gameState.Lock.Unlock()
+		result.Success = false
+		result.Message = "Hero not found"
+		return result, fmt.Errorf("hero %s not found", request.EntityID)
+	}
+
+	heroIdx := heroPos.Y*has.gameState.Segment.Width + heroPos.X
+	heroRoom := has.gameState.RegionMap.TileRegionIDs[heroIdx]
+	has.gameState.Lock.Unlock()
+
+	// Check if treasure resolver and inventory manager are available
+	if has.treasureResolver == nil || has.inventoryManager == nil {
+		result.Success = false
+		result.Message = "Treasure system not available"
+		return result, fmt.Errorf("treasure system not initialized")
+	}
+
+	// Ensure hero turn state exists in TurnStateManager (for first action of the game)
+	if has.turnStateManager != nil {
+		heroID := request.EntityID
+		playerID := request.PlayerID
+
+		// Start hero turn if not already started
+		err := has.turnStateManager.StartHeroTurn(heroID, playerID, heroPos)
+		if err != nil {
+			// Turn might already be active, that's okay
+			has.logger.Printf("Note: StartHeroTurn returned: %v", err)
+		}
+	}
+
+	// Check if hero can search this room (via TurnStateManager)
+	if has.turnStateManager != nil {
+		locationKey := fmt.Sprintf("room-%d", heroRoom)
+		canSearch, reason := has.turnStateManager.CanSearchTreasure(request.EntityID, locationKey)
+		if !canSearch {
+			result.Success = false
+			result.Message = reason
+			return result, fmt.Errorf("cannot search: %s", reason)
+		}
+	}
+
 	// Consume action
 	if err := has.turnManager.ConsumeAction(); err != nil {
 		result.Success = false
@@ -273,41 +330,92 @@ func (has *HeroActionSystem) processSearchTreasure(request ActionRequest, result
 		return result, err
 	}
 
-	// TODO: Check if room is uninhabited by monsters
-	// TODO: Check if room has already been searched for treasure
-
-	// Roll search dice for treasure
-	searchRolls := has.diceSystem.RollDice(SearchDie, 1, "search_treasure")
-	searchResult := searchRolls[0].Result
-
-	result.SearchRolls = searchRolls
-	result.Success = true
-
-	switch searchResult {
-	case 1, 2:
-		result.Message = "Found nothing"
-	case 3, 4:
-		// Found gold
-		treasure := Item{
-			ID:    fmt.Sprintf("gold_%d", time.Now().Unix()),
-			Name:  "Gold Coins",
-			Type:  Gold,
-			Value: searchResult * 50, // 150 or 200 gold
-		}
-		result.ItemsFound = []Item{treasure}
-		result.Message = fmt.Sprintf("Found %d gold coins!", treasure.Value)
-	case 5, 6:
-		// Found equipment or artifact
-		equipment := Item{
-			ID:   fmt.Sprintf("equipment_%d", time.Now().Unix()),
-			Name: "Equipment",
-			Type: Weapon, // Could be weapon, armor, etc.
-		}
-		result.ItemsFound = []Item{equipment}
-		result.Message = "Found equipment!"
+	// Get furniture ID if searching furniture
+	furnitureID := ""
+	if fid, ok := request.Parameters["furnitureId"].(string); ok {
+		furnitureID = fid
 	}
 
-	has.logger.Printf("Player %s searched for treasure and rolled %d: %s", request.PlayerID, searchResult, result.Message)
+	// Resolve treasure search
+	treasureResult, err := has.treasureResolver.ResolveTreasureSearch(
+		request.EntityID,
+		heroRoom,
+		heroPos,
+		furnitureID,
+	)
+	if err != nil {
+		result.Success = false
+		result.Message = fmt.Sprintf("Treasure search failed: %s", err.Error())
+		return result, err
+	}
+
+	// Add gold to inventory
+	if treasureResult.FoundGold > 0 {
+		if err := has.inventoryManager.AddGold(request.EntityID, treasureResult.FoundGold); err != nil {
+			has.logger.Printf("Warning: Failed to add gold to inventory: %v", err)
+		}
+	}
+
+	// Add items to inventory
+	for _, item := range treasureResult.FoundItems {
+		if err := has.inventoryManager.AddItem(request.EntityID, item.ID); err != nil {
+			has.logger.Printf("Warning: Failed to add item %s to inventory: %v", item.ID, err)
+		}
+	}
+
+	// Record search in TurnStateManager
+	if has.turnStateManager != nil {
+		locationKey := fmt.Sprintf("room-%d", heroRoom)
+		foundItemIDs := make([]string, len(treasureResult.FoundItems))
+		for i, item := range treasureResult.FoundItems {
+			foundItemIDs[i] = item.ID
+		}
+
+		has.turnStateManager.RecordSearch(
+			request.EntityID,
+			"treasure",
+			locationKey,
+			"room",
+			heroPos,
+			treasureResult.Success,
+			foundItemIDs,
+		)
+	}
+
+	// Handle special cases
+	if treasureResult.IsHazard {
+		// TODO: Apply hazard damage to hero
+		has.logger.Printf("Hero %s triggered hazard: %d damage", request.EntityID, treasureResult.HazardDamage)
+		if treasureResult.EndTurn {
+			// TODO: End hero's turn
+			has.logger.Printf("Hero %s turn ended by hazard", request.EntityID)
+		}
+	}
+
+	if treasureResult.IsMonster {
+		// TODO: Spawn wandering monster adjacent to hero
+		has.logger.Printf("Hero %s encountered wandering monster: %s", request.EntityID, treasureResult.MonsterType)
+	}
+
+	// Set result
+	result.Success = true
+	result.Message = treasureResult.Message
+
+	// Convert ItemCard to Item for result (temporary until we refactor Item type)
+	if len(treasureResult.FoundItems) > 0 {
+		items := make([]Item, len(treasureResult.FoundItems))
+		for i, itemCard := range treasureResult.FoundItems {
+			items[i] = Item{
+				ID:    itemCard.ID,
+				Name:  itemCard.Name,
+				Type:  ItemType(itemCard.Type), // This may need type mapping
+				Value: itemCard.Cost,
+			}
+		}
+		result.ItemsFound = items
+	}
+
+	has.logger.Printf("Player %s searched for treasure in room %d: %s", request.PlayerID, heroRoom, result.Message)
 	return result, nil
 }
 
@@ -405,12 +513,6 @@ func (has *HeroActionSystem) processAttack(request ActionRequest, result *Action
 			ID:   request.EntityID,
 			Tile: heroTile,
 		})
-	}
-
-	// Auto-restore actions for testing when debug mode is enabled
-	if has.debugSystem != nil && has.debugSystem.config.Enabled {
-		has.turnManager.RestoreActions()
-		has.logger.Printf("DEBUG: Auto-restored actions after attack for testing")
 	}
 
 	return result, nil
@@ -578,8 +680,8 @@ func (has *HeroActionSystem) processDisarmTrap(request ActionRequest, result *Ac
 
 // ProcessInstantAction processes instant actions that don't consume the main action
 func (has *HeroActionSystem) ProcessInstantAction(request InstantActionRequest) (*ActionResult, error) {
-	// Validate player can act (but don't consume action)
-	if !has.turnManager.CanPlayerAct(request.PlayerID) {
+	// Validate it's the player's turn (instant actions don't require actions/movement to be available)
+	if !has.turnManager.IsPlayersTurn(request.PlayerID) {
 		return nil, fmt.Errorf("player %s cannot act right now", request.PlayerID)
 	}
 
@@ -737,10 +839,38 @@ func (has *HeroActionSystem) processOpenDoor(request InstantActionRequest, resul
 		return result, fmt.Errorf("missing doorId parameter")
 	}
 
-	// TODO: Implement door opening logic
+	// Get door from game state
+	has.gameState.Lock.Lock()
+	door, exists := has.gameState.Doors[doorID]
+	if !exists {
+		has.gameState.Lock.Unlock()
+		result.Success = false
+		result.Message = fmt.Sprintf("Door %s not found", doorID)
+		return result, fmt.Errorf("door not found: %s", doorID)
+	}
+
+	// Check if door is already open
+	if door.State == "open" {
+		has.gameState.Lock.Unlock()
+		result.Success = true
+		result.Message = "Door is already open"
+		return result, nil
+	}
+
+	// Open the door
+	door.State = "open"
+	has.gameState.Lock.Unlock()
+
 	result.Success = true
 	result.Message = fmt.Sprintf("Opened door %s", doorID)
 	has.logger.Printf("Player %s opened door %s", request.PlayerID, doorID)
+
+	// Broadcast door state change
+	has.broadcaster.BroadcastEvent("DoorStateChanged", protocol.DoorStateChanged{
+		ThresholdID: doorID,
+		State:       "open",
+	})
+
 	return result, nil
 }
 
@@ -775,20 +905,48 @@ func (has *HeroActionSystem) processUseItem(request InstantActionRequest, result
 }
 
 func (has *HeroActionSystem) processTradeItem(request InstantActionRequest, result *ActionResult) (*ActionResult, error) {
-	targetPlayerID, ok1 := request.Parameters["targetPlayerId"].(string)
+	targetEntityID, ok1 := request.Parameters["targetEntityId"].(string)
 	itemID, ok2 := request.Parameters["itemId"].(string)
 
 	if !ok1 || !ok2 {
 		result.Success = false
 		result.Message = "Missing trade parameters"
-		return result, fmt.Errorf("missing targetPlayerId or itemId parameter")
+		return result, fmt.Errorf("missing targetEntityId or itemId parameter")
 	}
 
-	// TODO: Check if players are adjacent
-	// TODO: Implement item trading logic
+	// Check if players are adjacent
+	has.gameState.Lock.Lock()
+	sourcePos, sourceExists := has.gameState.Entities[request.EntityID]
+	targetPos, targetExists := has.gameState.Entities[targetEntityID]
+	has.gameState.Lock.Unlock()
+
+	if !sourceExists || !targetExists {
+		result.Success = false
+		result.Message = "Player entity not found"
+		return result, fmt.Errorf("player entity not found")
+	}
+
+	// Check adjacency (within 1 tile, including diagonals)
+	dx := sourcePos.X - targetPos.X
+	dy := sourcePos.Y - targetPos.Y
+	if dx < 0 {
+		dx = -dx
+	}
+	if dy < 0 {
+		dy = -dy
+	}
+	isAdjacent := dx <= 1 && dy <= 1 && (dx > 0 || dy > 0) // Not same tile
+
+	if !isAdjacent {
+		result.Success = false
+		result.Message = "Players must be adjacent to trade"
+		return result, fmt.Errorf("players not adjacent")
+	}
+
+	// TODO: Implement actual item trading logic
 	result.Success = true
-	result.Message = fmt.Sprintf("Traded item %s to %s", itemID, targetPlayerID)
-	has.logger.Printf("Player %s traded item %s to %s", request.PlayerID, itemID, targetPlayerID)
+	result.Message = fmt.Sprintf("Traded item %s to %s", itemID, targetEntityID)
+	has.logger.Printf("Player %s traded item %s to %s", request.PlayerID, itemID, targetEntityID)
 	return result, nil
 }
 

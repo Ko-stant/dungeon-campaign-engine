@@ -139,6 +139,7 @@ function createActionMessage(mode) {
         return {
           type: 'HeroAction',
           payload: {
+            playerId: 'player-1',
             entityId: 'hero-1',
             action: 'attack',
             parameters: { targetId: selectedMonsterId },
@@ -152,6 +153,7 @@ function createActionMessage(mode) {
         return {
           type: 'HeroAction',
           payload: {
+            playerId: 'player-1',
             entityId: 'hero-1',
             action: 'cast_spell',
             parameters: {
@@ -167,6 +169,7 @@ function createActionMessage(mode) {
       return {
         type: 'HeroAction',
         payload: {
+          playerId: 'player-1',
           entityId: 'hero-1',
           action: 'search_treasure',
           parameters: {},
@@ -177,6 +180,7 @@ function createActionMessage(mode) {
       return {
         type: 'HeroAction',
         payload: {
+          playerId: 'player-1',
           entityId: 'hero-1',
           action: 'search_traps',
           parameters: {},
@@ -187,6 +191,7 @@ function createActionMessage(mode) {
       return {
         type: 'HeroAction',
         payload: {
+          playerId: 'player-1',
           entityId: 'hero-1',
           action: 'search_hidden_doors',
           parameters: {},
@@ -430,6 +435,20 @@ export function handleHeroActionResult(result) {
   if (result.damage !== undefined) {
     const damageColor = result.damage > 0 ? 'text-red-300' : 'text-green-300';
     resultHTML += `<div class="mt-2 text-sm font-semibold ${damageColor}">💥 Final Damage: ${result.damage}</div>`;
+  }
+
+  // Show treasure found
+  if (result.action === 'search_treasure' && result.success) {
+    if (result.itemsFound && result.itemsFound.length > 0) {
+      resultHTML += '<div class="mt-3 p-2 bg-yellow-900/30 border border-yellow-700 rounded">';
+      resultHTML += '<div class="text-sm font-semibold text-yellow-300 mb-2">📦 Items Found:</div>';
+      result.itemsFound.forEach(item => {
+        resultHTML += `<div class="text-xs text-yellow-200 ml-2">• ${item.name}</div>`;
+      });
+      resultHTML += '</div>';
+    }
+
+    // Note: Gold is shown in the message already from the server
   }
 
   // Handle monster death

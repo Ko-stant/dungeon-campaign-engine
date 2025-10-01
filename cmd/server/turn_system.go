@@ -316,6 +316,15 @@ func (tm *TurnManager) CanPlayerAct(playerID string) bool {
 		(tm.state.ActionsLeft > 0 || tm.state.MovementLeft > 0)
 }
 
+// IsPlayersTurn checks if it's the specified player's turn (for instant actions)
+func (tm *TurnManager) IsPlayersTurn(playerID string) bool {
+	tm.lock.RLock()
+	defer tm.lock.RUnlock()
+
+	return tm.state.CurrentTurn == HeroTurn &&
+		tm.state.ActivePlayerID == playerID
+}
+
 // ConsumeMovement reduces remaining movement points and marks movement as used
 func (tm *TurnManager) ConsumeMovement(squares int, movementAction string) error {
 	tm.lock.Lock()
@@ -452,9 +461,7 @@ func (tm *TurnManager) ConsumeAction() error {
 	tm.state.ActionsLeft--
 	tm.state.ActionTaken = true
 
-	// Clear all remaining movement when an action is taken
-	tm.state.MovementLeft = 0
-	tm.logger.Printf("Consumed 1 action, %d remaining, movement cleared", tm.state.ActionsLeft)
+	tm.logger.Printf("Consumed 1 action, %d remaining", tm.state.ActionsLeft)
 
 	// Auto-advance to end phase if no actions left
 	if tm.state.ActionsLeft == 0 {
@@ -533,12 +540,15 @@ func (tm *TurnManager) advanceToNextHeroOrGameMaster() {
 	if tm.state.CurrentTurn == HeroTurn {
 		// Check if there are more heroes to play
 		nextPlayer := tm.getNextActivePlayer()
-		if nextPlayer != nil && nextPlayer.ID != tm.state.ActivePlayerID {
+		firstPlayer := tm.getFirstActivePlayer()
+
+		// If next player is different from current AND not wrapping back to first, continue hero turns
+		if nextPlayer != nil && nextPlayer.ID != tm.state.ActivePlayerID && nextPlayer.ID != firstPlayer.ID {
 			// Next hero's turn
 			tm.state.ActivePlayerID = nextPlayer.ID
 			tm.resetHeroTurn()
 		} else {
-			// All heroes have played, switch to GameMaster
+			// All heroes have played (wrapped back to first) or no more players, switch to GameMaster
 			tm.state.CurrentTurn = GameMasterTurn
 			tm.state.CurrentPhase = MonsterMovementPhase
 			tm.state.ActivePlayerID = "gamemaster"

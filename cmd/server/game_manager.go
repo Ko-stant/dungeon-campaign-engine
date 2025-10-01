@@ -42,8 +42,15 @@ func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen Sequence
 
 // NewGameManagerWithFurniture creates a new game manager with pre-loaded furniture system
 func NewGameManagerWithFurniture(broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig, furnitureSystem *FurnitureSystem, quest *geometry.QuestDefinition) (*GameManager, error) {
+	// Detect correct path based on working directory
+	contentPath := "content"
+	if _, err := os.Stat("content/board.json"); err != nil {
+		contentPath = "../../content"
+	}
+
 	// Initialize game state using the provided furniture system
-	board, err := geometry.LoadBoardFromFile("content/board.json")
+	boardPath := contentPath + "/board.json"
+	board, err := geometry.LoadBoardFromFile(boardPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load board: %w", err)
 	}
@@ -101,6 +108,8 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 	heroActions.SetMonsterSystem(monsterSystem)
 	heroActions.SetQuest(quest)
 	heroActions.SetTurnStateManager(turnStateManager)
+	heroActions.SetInventoryManager(inventoryManager)
+	heroActions.SetTreasureResolver(treasureResolver)
 
 	// Add default player (will be replaced with dynamic player loading later)
 	defaultPlayer := NewPlayer("player-1", "Hero", "hero-1", Barbarian)
@@ -266,6 +275,14 @@ func (gm *GameManager) SpawnMonster(monsterType MonsterType, position protocol.T
 	defer gm.mutex.Unlock()
 
 	return gm.monsterSystem.SpawnMonster(monsterType, position)
+}
+
+// RevealMonster makes a monster visible to players
+func (gm *GameManager) RevealMonster(monsterID string) error {
+	gm.mutex.Lock()
+	defer gm.mutex.Unlock()
+
+	return gm.monsterSystem.RevealMonster(monsterID)
 }
 
 // GetDebugSystem returns the debug system for HTTP handler registration

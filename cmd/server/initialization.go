@@ -3,20 +3,32 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
 )
 
 func loadGameContent() (*geometry.BoardDefinition, *geometry.QuestDefinition, error) {
+	// Detect correct path based on working directory
+	// If running from root: content/board.json
+	// If running from cmd/server (tests): ../../content/board.json
+	contentPath := "content"
+	if _, err := os.Stat("content/board.json"); err != nil {
+		// Not in root, try test path
+		contentPath = "../../content"
+	}
+
 	// Load the static HeroQuest board
-	board, err := geometry.LoadBoardFromFile("content/board.json")
+	boardPath := contentPath + "/board.json"
+	board, err := geometry.LoadBoardFromFile(boardPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to load board: %v", err)
 	}
 
 	// Load the quest
-	quest, err := geometry.LoadQuestFromFile("content/base/quests/quest-01.json")
+	questPath := contentPath + "/base/quests/quest-01.json"
+	quest, err := geometry.LoadQuestFromFile(questPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to load quest: %v", err)
 	}
