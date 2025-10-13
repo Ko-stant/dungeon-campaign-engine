@@ -111,9 +111,9 @@ export function initializeApp() {
   gameState.detailPaneController = detailPaneController;
 
   // Initialize UI from snapshot
-  turnCounterController.updateFromSnapshot(snapshot);
+  turnCounterController.updateFromSnapshot(gameState.snapshot);
   turnCounterController.updatePatchCount(0);
-  playerStatsPanelController.updateFromSnapshot(snapshot);
+  playerStatsPanelController.updateFromSnapshot(gameState.snapshot);
   detailPaneController.clear(); // Show placeholder content
 
   // Initialize canvas click handling for entity inspection

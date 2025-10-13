@@ -34,23 +34,43 @@ export class TurnCounterController {
   updateCurrentPlayer(snapshot) {
     if (!this.currentPlayerElement) return;
 
+    console.log('TURN-COUNTER: updateCurrentPlayer called');
+    console.log('TURN-COUNTER: heroTurnStates:', snapshot.heroTurnStates);
+    console.log('TURN-COUNTER: entities:', snapshot.entities);
+
     // Check if there are any hero turn states
     if (snapshot.heroTurnStates && Object.keys(snapshot.heroTurnStates).length > 0) {
+      console.log('TURN-COUNTER: Found hero turn states:', Object.keys(snapshot.heroTurnStates));
+
       // Find the first hero entity to get their info
       const firstHero = snapshot.entities?.find(e => e.kind === 'hero');
+      console.log('TURN-COUNTER: First hero found:', firstHero);
+
       if (firstHero) {
         const turnState = snapshot.heroTurnStates[firstHero.id];
+        console.log('TURN-COUNTER: Turn state for', firstHero.id, ':', turnState);
+        console.log('TURN-COUNTER: actionTaken:', turnState?.actionTaken);
+
         // Hero's turn if they haven't taken their action yet (or if turnState exists and actionTaken is false)
         if (turnState && turnState.actionTaken === false) {
-          this.currentPlayerElement.textContent = this.getHeroName(firstHero.id, snapshot);
+          const heroName = this.getHeroName(firstHero.id, snapshot);
+          console.log('TURN-COUNTER: Setting active player to:', heroName);
+          this.currentPlayerElement.textContent = heroName;
           this.currentPlayerElement.classList.add('text-blue-400');
           this.currentPlayerElement.classList.remove('text-orange-400');
           return;
+        } else {
+          console.log('TURN-COUNTER: Condition failed - turnState exists:', !!turnState, ', actionTaken:', turnState?.actionTaken);
         }
+      } else {
+        console.log('TURN-COUNTER: No hero entity found');
       }
+    } else {
+      console.log('TURN-COUNTER: No hero turn states found');
     }
 
     // Default to Game Master
+    console.log('TURN-COUNTER: Defaulting to Game Master');
     this.currentPlayerElement.textContent = 'Game Master';
     this.currentPlayerElement.classList.add('text-orange-400');
     this.currentPlayerElement.classList.remove('text-blue-400');

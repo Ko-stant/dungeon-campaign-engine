@@ -15,16 +15,24 @@ export class PlayerStatsPanelController {
    * @param {Object} snapshot
    */
   updateFromSnapshot(snapshot) {
+    console.log('PLAYER-STATS: updateFromSnapshot called');
+    console.log('PLAYER-STATS: snapshot:', snapshot);
+    console.log('PLAYER-STATS: contentElement exists:', !!this.contentElement);
+
     if (!snapshot || !this.contentElement) return;
 
     // Find the first hero entity (for now, we'll support single player)
     const hero = this.findPlayerHero(snapshot);
+    console.log('PLAYER-STATS: findPlayerHero returned:', hero);
+
     if (!hero) {
+      console.log('PLAYER-STATS: No hero found, showing message');
       this.showNoHeroMessage();
       return;
     }
 
     this.currentHeroId = hero.id;
+    console.log('PLAYER-STATS: Rendering hero stats for:', hero.id);
     this.renderHeroStats(hero, snapshot);
   }
 

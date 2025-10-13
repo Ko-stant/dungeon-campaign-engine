@@ -345,6 +345,16 @@ func (tm *TurnManager) AddPlayer(player *Player) error {
 		tm.state.ActivePlayerID = player.ID
 	}
 
+	// Initialize hero turn state in the turn state manager
+	if tm.turnStateManager != nil {
+		// We don't have the hero position yet, so use a default (0,0)
+		// The position will be updated when the game state is initialized
+		defaultPos := protocol.TileAddress{X: 0, Y: 0}
+		if err := tm.turnStateManager.StartHeroTurn(player.EntityID, player.ID, defaultPos); err != nil {
+			tm.logger.Printf("Warning: Failed to initialize hero turn state for %s: %v", player.ID, err)
+		}
+	}
+
 	tm.broadcastTurnState()
 	return nil
 }

@@ -18,11 +18,15 @@ import (
 )
 
 func main() {
-	// log.Printf("=====================================")
-	// log.Printf("STARTING ENHANCED GAME MANAGER VERSION")
-	// log.Printf("HeroAction support: ENABLED")
-	// log.Printf("=====================================")
-	mainWithGameManager()
+	// Check if we want lobby mode (default) or direct game mode
+	useLobby := os.Getenv("USE_LOBBY")
+	if useLobby == "" || useLobby == "true" {
+		log.Printf("=== Starting in LOBBY mode ===")
+		mainWithLobby()
+	} else {
+		log.Printf("=== Starting in DIRECT GAME mode (legacy) ===")
+		mainWithGameManager()
+	}
 }
 
 // Enhanced main function using GameManager
@@ -525,6 +529,22 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		data, _ := json.Marshal(patch)
 		log.Printf("DEBUG: Broadcasting InstantActionResult: %s", string(data))
 		hub.Broadcast(data)
+
+	case "RequestJoinLobby":
+		// Lobby: Player joins
+		log.Printf("RequestJoinLobby not yet implemented")
+
+	case "RequestSelectRole":
+		// Lobby: Player selects role
+		log.Printf("RequestSelectRole not yet implemented")
+
+	case "RequestToggleReady":
+		// Lobby: Player toggles ready status
+		log.Printf("RequestToggleReady not yet implemented")
+
+	case "RequestStartGame":
+		// Lobby: Start the game
+		log.Printf("RequestStartGame not yet implemented")
 
 	default:
 		// Unknown message type - fall back to legacy handler

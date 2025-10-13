@@ -20,3 +20,19 @@ type RequestMove struct {
 type RequestToggleAdjacentDoor struct {
 	EntityID string `json:"entityId"`
 }
+
+type RequestJoinLobby struct {
+	PlayerName string `json:"playerName"`
+}
+
+type RequestSelectRole struct {
+	Role        string `json:"role"`
+	HeroClassID string `json:"heroClassId"`
+}
+
+type RequestToggleReady struct {
+	IsReady bool `json:"isReady"`
+}
+
+type RequestStartGame struct {
+}

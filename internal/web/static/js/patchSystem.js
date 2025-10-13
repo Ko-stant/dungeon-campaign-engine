@@ -73,6 +73,21 @@ export function applyPatch(patch) {
       handleMovementHistorySync(patch);
       break;
 
+    case 'LobbyStateChanged':
+      // Ignore lobby messages on game page (shouldn't normally receive these)
+      console.log('Ignoring LobbyStateChanged message (game page)');
+      break;
+
+    case 'PlayerIDAssigned':
+      // Ignore player ID assignment on game page (already assigned)
+      console.log('Ignoring PlayerIDAssigned message (game page)');
+      break;
+
+    case 'GameStarting':
+      // Game is starting, might want to show loading screen
+      console.log('Game starting:', patch.payload);
+      break;
+
     default:
       console.error('Unknown patch type:', patch.type);
   }

@@ -29,7 +29,7 @@ type GameManager struct {
 	mutex            sync.RWMutex
 }
 
-// NewGameManager creates a new game manager with all systems
+// NewGameManager creates a new game manager with all systems (standalone mode with default player)
 func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig) (*GameManager, error) {
 	// Initialize game state
 	gameState, furnitureSystem, quest, err := initializeGameStateForManager(logger)
@@ -37,10 +37,10 @@ func NewGameManager(broadcaster Broadcaster, logger Logger, sequenceGen Sequence
 		return nil, fmt.Errorf("failed to initialize game state: %w", err)
 	}
 
-	return createGameManager(gameState, furnitureSystem, quest, broadcaster, logger, sequenceGen, debugConfig)
+	return createGameManager(gameState, furnitureSystem, quest, broadcaster, logger, sequenceGen, debugConfig, true)
 }
 
-// NewGameManagerWithFurniture creates a new game manager with pre-loaded furniture system
+// NewGameManagerWithFurniture creates a new game manager with pre-loaded furniture system (lobby mode - no default player)
 func NewGameManagerWithFurniture(broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig, furnitureSystem *FurnitureSystem, quest *geometry.QuestDefinition) (*GameManager, error) {
 	// Detect correct path based on working directory
 	contentPath := "content"
@@ -60,11 +60,12 @@ func NewGameManagerWithFurniture(broadcaster Broadcaster, logger Logger, sequenc
 		return nil, fmt.Errorf("failed to initialize game state: %w", err)
 	}
 
-	return createGameManager(gameState, furnitureSystem, quest, broadcaster, logger, sequenceGen, debugConfig)
+	return createGameManager(gameState, furnitureSystem, quest, broadcaster, logger, sequenceGen, debugConfig, false)
 }
 
 // createGameManager is a helper function to create the GameManager with all systems
-func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, quest *geometry.QuestDefinition, broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig) (*GameManager, error) {
+// If createDefaultPlayer is false, no default player will be created (use for lobby mode)
+func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, quest *geometry.QuestDefinition, broadcaster Broadcaster, logger Logger, sequenceGen SequenceGenerator, debugConfig DebugConfig, createDefaultPlayer bool) (*GameManager, error) {
 	// Create debug system first
 	debugSystem := NewDebugSystem(debugConfig, gameState, broadcaster, logger)
 
@@ -111,25 +112,30 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 	heroActions.SetInventoryManager(inventoryManager)
 	heroActions.SetTreasureResolver(treasureResolver)
 
-	// Initialize inventory for hero first
-	if err := inventoryManager.InitializeHeroInventory("hero-1"); err != nil {
-		return nil, fmt.Errorf("failed to initialize hero inventory: %w", err)
-	}
+	// Create default player only if requested (not in lobby mode)
+	if createDefaultPlayer {
+		// Initialize inventory for hero first
+		if err := inventoryManager.InitializeHeroInventory("hero-1"); err != nil {
+			return nil, fmt.Errorf("failed to initialize hero inventory: %w", err)
+		}
 
-	// Load barbarian hero from content
-	heroCard, ok := contentManager.GetHeroCard("barbarian")
-	if !ok {
-		return nil, fmt.Errorf("failed to load barbarian hero card")
-	}
+		// Load barbarian hero from content
+		heroCard, ok := contentManager.GetHeroCard("barbarian")
+		if !ok {
+			return nil, fmt.Errorf("failed to load barbarian hero card")
+		}
 
-	// Create player from hero content with starting equipment
-	defaultPlayer, err := NewPlayerFromContent("player-1", "hero-1", heroCard, contentManager, inventoryManager)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create player from content: %w", err)
-	}
+		// Create player from hero content with starting equipment
+		defaultPlayer, err := NewPlayerFromContent("player-1", "hero-1", heroCard, contentManager, inventoryManager)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create player from content: %w", err)
+		}
 
-	if err := turnManager.AddPlayer(defaultPlayer); err != nil {
-		return nil, fmt.Errorf("failed to add default player: %w", err)
+		if err := turnManager.AddPlayer(defaultPlayer); err != nil {
+			return nil, fmt.Errorf("failed to add default player: %w", err)
+		}
+
+		logger.Printf("Created default player: Barbarian (hero-1)")
 	}
 
 	return &GameManager{

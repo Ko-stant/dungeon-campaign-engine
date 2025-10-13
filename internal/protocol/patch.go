@@ -83,3 +83,26 @@ type MovementSegment struct {
 	Executed      bool          `json:"executed"`
 	ExecutedTime  *string       `json:"executedTime,omitempty"`
 }
+
+type LobbyStateChanged struct {
+	Players         map[string]*PlayerLobbyInfo `json:"players"`
+	CanStartGame    bool                        `json:"canStartGame"`
+	GameStarted     bool                        `json:"gameStarted"`
+	AvailableHeroes []string                    `json:"availableHeroes"`
+}
+
+type PlayerLobbyInfo struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Role        string `json:"role"`
+	HeroClassID string `json:"heroClassId"`
+	IsReady     bool   `json:"isReady"`
+}
+
+type GameStarting struct {
+	Message string `json:"message"`
+}
+
+type PlayerIDAssigned struct {
+	PlayerID string `json:"playerId"`
+}

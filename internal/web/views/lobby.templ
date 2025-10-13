@@ -1,0 +1,380 @@
+package views
+
+import (
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
+)
+
+// LobbyPage renders the pre-game lobby where players join and select roles
+templ LobbyPage(availableHeroes []string) {
+	@components.AppShell() {
+		<div class="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-8">
+			<div class="w-full max-w-4xl">
+				<!-- Lobby Header -->
+				<div class="text-center mb-8">
+					<h1 class="text-5xl font-bold text-amber-400 mb-2">HeroQuest</h1>
+					<p class="text-xl text-slate-300">Multiplayer Lobby</p>
+				</div>
+
+				<!-- Main Lobby Container -->
+				<div class="bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-2xl border border-slate-700 p-8">
+					<!-- Join Form (shown when not yet joined) -->
+					<div id="join-form" class="space-y-6">
+						<div>
+							<label for="player-name" class="block text-sm font-medium text-slate-300 mb-2">
+								Enter Your Name
+							</label>
+							<input
+								type="text"
+								id="player-name"
+								placeholder="Your name"
+								class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+							/>
+						</div>
+						<button
+							id="join-button"
+							class="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl"
+						>
+							Join Lobby
+						</button>
+					</div>
+
+					<!-- Role Selection (shown after joining) -->
+					<div id="role-selection" class="hidden space-y-6">
+						<div>
+							<h2 class="text-2xl font-bold text-amber-400 mb-4">Select Your Role</h2>
+
+							<!-- Game Master Option -->
+							<div class="space-y-3 mb-6">
+								<button
+									id="select-gm"
+									class="w-full px-6 py-4 bg-purple-900/50 hover:bg-purple-800/60 border-2 border-purple-700 rounded-lg text-left transition-all"
+								>
+									<div class="flex items-center justify-between">
+										<div>
+											<div class="text-xl font-semibold text-purple-300">Game Master</div>
+											<div class="text-sm text-slate-400">Control the dungeon and monsters</div>
+										</div>
+										<div class="text-3xl">🎲</div>
+									</div>
+								</button>
+							</div>
+
+							<!-- Hero Options -->
+							<div class="space-y-3">
+								<h3 class="text-lg font-semibold text-slate-300 mb-2">Heroes</h3>
+								<div class="grid grid-cols-2 gap-3">
+									for _, heroID := range availableHeroes {
+										<button
+											class="hero-select-btn px-4 py-3 bg-blue-900/50 hover:bg-blue-800/60 border-2 border-blue-700 rounded-lg transition-all"
+											data-hero-id={ heroID }
+										>
+											<div class="text-lg font-semibold text-blue-300 capitalize">{ heroID }</div>
+										</button>
+									}
+								</div>
+							</div>
+						</div>
+
+						<!-- Ready Toggle -->
+						<div class="flex items-center justify-between pt-6 border-t border-slate-700">
+							<div>
+								<div class="text-lg font-semibold text-slate-300">Ready to start?</div>
+								<div class="text-sm text-slate-400">Wait for all players to ready up</div>
+							</div>
+							<button
+								id="toggle-ready"
+								class="px-6 py-3 bg-green-900/50 hover:bg-green-800/60 border-2 border-green-700 rounded-lg font-semibold text-green-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled
+							>
+								Ready
+							</button>
+						</div>
+
+						<!-- Start Game Button (GM only) -->
+						<div id="start-game-container" class="hidden pt-4">
+							<button
+								id="start-game"
+								class="w-full px-6 py-4 bg-amber-600 hover:bg-amber-700 text-white font-bold text-lg rounded-lg transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled
+							>
+								Start Game
+							</button>
+						</div>
+					</div>
+
+					<!-- Player List -->
+					<div id="player-list-container" class="hidden mt-8 pt-8 border-t border-slate-700">
+						<h3 class="text-xl font-bold text-slate-300 mb-4">Players in Lobby</h3>
+						<div id="player-list" class="space-y-2">
+							<!-- Players will be populated here by JavaScript -->
+						</div>
+					</div>
+
+					<!-- Connection Status -->
+					<div id="connection-status" class="mt-6 text-center text-sm text-slate-400">
+						Connecting to server...
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Lobby JavaScript -->
+		<script>
+			(function() {
+				let ws = null;
+				let myPlayerID = null;
+				let currentLobbyState = null;
+
+				// DOM elements
+				const joinForm = document.getElementById('join-form');
+				const roleSelection = document.getElementById('role-selection');
+				const playerListContainer = document.getElementById('player-list-container');
+				const playerList = document.getElementById('player-list');
+				const connectionStatus = document.getElementById('connection-status');
+				const joinButton = document.getElementById('join-button');
+				const playerNameInput = document.getElementById('player-name');
+				const selectGMButton = document.getElementById('select-gm');
+				const toggleReadyButton = document.getElementById('toggle-ready');
+				const startGameContainer = document.getElementById('start-game-container');
+				const startGameButton = document.getElementById('start-game');
+
+				// Connect to WebSocket
+				function connect() {
+					const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+					const wsURL = `${protocol}//${window.location.host}/stream`;
+
+					connectionStatus.textContent = 'Connecting to server...';
+					connectionStatus.className = 'mt-6 text-center text-sm text-slate-400';
+
+					ws = new WebSocket(wsURL);
+
+					ws.onopen = () => {
+						console.log('WebSocket connected');
+						connectionStatus.textContent = 'Connected';
+						connectionStatus.className = 'mt-6 text-center text-sm text-green-400';
+					};
+
+					ws.onmessage = (event) => {
+						try {
+							const envelope = JSON.parse(event.data);
+							handleServerMessage(envelope);
+						} catch (err) {
+							console.error('Failed to parse message:', err);
+						}
+					};
+
+					ws.onerror = (error) => {
+						console.error('WebSocket error:', error);
+						connectionStatus.textContent = 'Connection error';
+						connectionStatus.className = 'mt-6 text-center text-sm text-red-400';
+					};
+
+					ws.onclose = () => {
+						console.log('WebSocket disconnected');
+						connectionStatus.textContent = 'Disconnected - Reconnecting...';
+						connectionStatus.className = 'mt-6 text-center text-sm text-yellow-400';
+						setTimeout(connect, 2000);
+					};
+				}
+
+				// Handle messages from server
+				function handleServerMessage(envelope) {
+					console.log('Server message:', envelope);
+
+					switch (envelope.type) {
+						case 'PlayerIDAssigned':
+							myPlayerID = envelope.payload.playerId;
+							console.log('Received player ID:', myPlayerID);
+							break;
+						case 'LobbyStateChanged':
+							handleLobbyState(envelope.payload);
+							break;
+						case 'GameStarting':
+							handleGameStarting(envelope.payload);
+							break;
+						default:
+							console.log('Unknown message type:', envelope.type);
+					}
+				}
+
+				// Handle lobby state updates
+				function handleLobbyState(state) {
+					currentLobbyState = state;
+					updatePlayerList(state.players);
+					updateReadyButton(state);
+					updateStartGameButton(state);
+				}
+
+				// Update player list display
+				function updatePlayerList(players) {
+					if (!players || Object.keys(players).length === 0) {
+						playerListContainer.classList.add('hidden');
+						return;
+					}
+
+					playerListContainer.classList.remove('hidden');
+					playerList.innerHTML = '';
+
+					Object.values(players).forEach(player => {
+						const playerDiv = document.createElement('div');
+						playerDiv.className = 'flex items-center justify-between p-3 bg-slate-700/50 rounded-lg';
+
+						let roleDisplay = '';
+						let roleColor = 'text-slate-400';
+						if (player.role === 'gamemaster') {
+							roleDisplay = 'Game Master';
+							roleColor = 'text-purple-300';
+						} else if (player.role === 'hero') {
+							roleDisplay = player.heroClassId || 'Hero';
+							roleColor = 'text-blue-300';
+						}
+
+						const readyIndicator = player.isReady ?
+							'<span class="text-green-400">✓ Ready</span>' :
+							'<span class="text-slate-500">Not ready</span>';
+
+						playerDiv.innerHTML = `
+							<div>
+								<div class="font-semibold text-slate-200">${player.name}</div>
+								<div class="text-sm ${roleColor}">${roleDisplay || 'No role selected'}</div>
+							</div>
+							<div class="text-sm">${readyIndicator}</div>
+						`;
+
+						playerList.appendChild(playerDiv);
+					});
+				}
+
+				// Update ready button state
+				function updateReadyButton(state) {
+					if (!state.players || !myPlayerID) {
+						console.log('Cannot update ready button - missing state or playerID', {players: state.players, myPlayerID});
+						return;
+					}
+
+					const myPlayer = Object.values(state.players).find(p => p.id === myPlayerID);
+					if (!myPlayer) {
+						console.log('Cannot find my player in state', {myPlayerID, players: state.players});
+						return;
+					}
+
+					console.log('My player state:', myPlayer);
+					toggleReadyButton.disabled = !myPlayer.role;
+
+					if (myPlayer.isReady) {
+						toggleReadyButton.textContent = 'Not Ready';
+						toggleReadyButton.className = 'px-6 py-3 bg-red-900/50 hover:bg-red-800/60 border-2 border-red-700 rounded-lg font-semibold text-red-300 transition-all';
+					} else {
+						toggleReadyButton.textContent = 'Ready';
+						toggleReadyButton.className = 'px-6 py-3 bg-green-900/50 hover:bg-green-800/60 border-2 border-green-700 rounded-lg font-semibold text-green-300 transition-all';
+					}
+
+					if (!myPlayer.role) {
+						toggleReadyButton.className += ' opacity-50 cursor-not-allowed';
+					}
+				}
+
+				// Update start game button (GM only)
+				function updateStartGameButton(state) {
+					if (!state.players || !myPlayerID) return;
+
+					const myPlayer = Object.values(state.players).find(p => p.id === myPlayerID);
+					if (!myPlayer || myPlayer.role !== 'gamemaster') {
+						startGameContainer.classList.add('hidden');
+						return;
+					}
+
+					startGameContainer.classList.remove('hidden');
+					startGameButton.disabled = !state.canStartGame;
+
+					if (state.canStartGame) {
+						startGameButton.className = 'w-full px-6 py-4 bg-amber-600 hover:bg-amber-700 text-white font-bold text-lg rounded-lg transition-colors shadow-lg hover:shadow-xl';
+					} else {
+						startGameButton.className = 'w-full px-6 py-4 bg-amber-600 text-white font-bold text-lg rounded-lg opacity-50 cursor-not-allowed';
+					}
+				}
+
+				// Handle game starting
+				function handleGameStarting(payload) {
+					connectionStatus.textContent = payload.message;
+					connectionStatus.className = 'mt-6 text-center text-lg text-amber-400 font-semibold';
+
+					// Redirect to game after short delay
+					setTimeout(() => {
+						window.location.href = '/';
+					}, 2000);
+				}
+
+				// Send message to server
+				function sendMessage(type, payload) {
+					if (!ws || ws.readyState !== WebSocket.OPEN) {
+						console.error('WebSocket not connected');
+						return;
+					}
+
+					const envelope = {
+						type: type,
+						payload: payload
+					};
+
+					ws.send(JSON.stringify(envelope));
+				}
+
+				// Join lobby
+				joinButton.addEventListener('click', () => {
+					const playerName = playerNameInput.value.trim();
+					if (!playerName) {
+						alert('Please enter your name');
+						return;
+					}
+
+					sendMessage('RequestJoinLobby', { playerName: playerName });
+
+					// Show role selection
+					joinForm.classList.add('hidden');
+					roleSelection.classList.remove('hidden');
+				});
+
+				// Select Game Master role
+				selectGMButton.addEventListener('click', () => {
+					sendMessage('RequestSelectRole', { role: 'gamemaster', heroClassId: '' });
+				});
+
+				// Select Hero role
+				document.querySelectorAll('.hero-select-btn').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const heroID = btn.dataset.heroId;
+						sendMessage('RequestSelectRole', { role: 'hero', heroClassId: heroID });
+					});
+				});
+
+				// Toggle ready status
+				toggleReadyButton.addEventListener('click', () => {
+					if (!currentLobbyState || !myPlayerID) return;
+
+					const myPlayer = Object.values(currentLobbyState.players).find(p => p.id === myPlayerID);
+					if (!myPlayer) return;
+
+					sendMessage('RequestToggleReady', { isReady: !myPlayer.isReady });
+				});
+
+				// Start game (GM only)
+				startGameButton.addEventListener('click', () => {
+					if (confirm('Start the game? All players must be ready.')) {
+						sendMessage('RequestStartGame', {});
+					}
+				});
+
+				// Allow Enter key to join
+				playerNameInput.addEventListener('keypress', (e) => {
+					if (e.key === 'Enter') {
+						joinButton.click();
+					}
+				});
+
+				// Initialize
+				connect();
+			})();
+		</script>
+	}
+}
