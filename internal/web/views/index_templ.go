@@ -9,10 +9,11 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"fmt"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
 )
 
+// IndexPage renders the main game page with the new component-based layout
 func IndexPage(snapshot protocol.Snapshot) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -34,89 +35,85 @@ func IndexPage(snapshot protocol.Snapshot) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" data-theme=\"classic\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Dungeon Campaign Engine</title><link rel=\"stylesheet\" href=\"/static/styles/app.css\"></head><body class=\"min-h-screen bg-surface text-content antialiased\"><header class=\"border-b border-border/60 bg-surface/80 backdrop-blur\"><div class=\"mx-auto max-w-6xl px-4 py-3 flex items-center justify-between\"><div class=\"text-lg font-semibold\">Dungeon Campaign Engine</div><div class=\"flex items-center gap-4 text-sm\"><div class=\"opacity-80\">map: ")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var2 string
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(snapshot.MapID)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 22, Col: 51}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><div class=\"opacity-80\">pack: ")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(snapshot.PackID)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 23, Col: 53}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div class=\"opacity-80\">turn: <span id=\"turnCounter\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(snapshot.Turn)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 24, Col: 74}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></div><div class=\"opacity-60\">proto: ")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var5 string
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(snapshot.ProtocolVersion)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 25, Col: 63}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div></div></header><main class=\"mx-auto max-w-6xl px-4 py-6\"><section class=\"grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6\"><div class=\"rounded-lg border border-border/60 bg-surface/60 p-3\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var6 = []any{fmt.Sprintf("w-full rounded-md border border-border/60 bg-surface aspect-[%d/%d]", snapshot.MapWidth, snapshot.MapHeight)}
-		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var6...)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<canvas id=\"board\" class=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var7 string
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var6).String())
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 1, Col: 0}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\"></canvas></div><aside class=\"rounded-lg border border-border/60 bg-surface/60 p-4\"><div class=\"flex items-center justify-between mb-3\"><h2 class=\"text-base font-semibold\">Hero Actions</h2></div><!-- Status Section --><div class=\"mb-4\"><ul class=\"space-y-1 text-sm\"><li><span class=\"opacity-70\">Status:</span> Ready</li><li><span class=\"opacity-70\">Patches:</span> <span id=\"patchCount\">0</span></li><li><span class=\"opacity-70\">Mode:</span> <span id=\"actionMode\">Move</span></li></ul></div><!-- Debug Section --><div class=\"mb-4 p-3 bg-orange-900/20 border border-orange-600/40 rounded-md\"><h3 class=\"text-sm font-semibold mb-2 text-orange-300\">🐛 Debug Tools</h3><button id=\"passGMTurn\" class=\"w-full px-3 py-2 text-sm bg-orange-600/20 border border-orange-600/40 rounded hover:bg-orange-600/30 text-orange-300\">⏭️ Pass GM Turn</button></div><!-- Monster Details (when selected) --><div id=\"monsterDetails\" class=\"mb-4 p-3 bg-surface-2 rounded-md border border-border/60\" style=\"display: none;\"><h3 class=\"text-sm font-semibold mb-2\">Selected Monster</h3><div id=\"monsterDetailsContent\" class=\"text-sm space-y-1\"></div></div><!-- Actions Menu (initially hidden) --><div id=\"actionsMenu\" class=\"mb-4 p-3 bg-surface-2 rounded-md border border-border/60\" style=\"display: none;\"><h3 class=\"text-sm font-semibold mb-2\">Choose Action (F to toggle)</h3><div class=\"grid grid-cols-1 gap-2\"><button id=\"actionMove\" class=\"px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left\">1. Move</button> <button id=\"actionAttack\" class=\"px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left\">2. Attack</button> <button id=\"actionSpell\" class=\"px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left\">3. Cast Spell</button> <button id=\"actionSearchTreasure\" class=\"px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left\">4. Search Treasure</button> <button id=\"actionSearchTraps\" class=\"px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left\">5. Search Traps</button> <button id=\"actionSearchSecret\" class=\"px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left\">6. Search Secret</button></div></div><!-- Dice Rolling Section --><div class=\"mb-4\"><h3 class=\"text-sm font-semibold mb-2\">Dice Rolling</h3><div class=\"space-y-2\"><button id=\"rollMovement\" class=\"w-full px-3 py-2 text-sm bg-blue-600/20 border border-blue-600/40 rounded hover:bg-blue-600/30 text-blue-300\">🎲🎲 Roll Movement (2 dice)</button> <button id=\"rollAttack\" class=\"w-full px-3 py-2 text-sm bg-red-600/20 border border-red-600/40 rounded hover:bg-red-600/30 text-red-300\" disabled>⚔️ Execute Attack</button> <button id=\"rollDefense\" class=\"w-full px-3 py-2 text-sm bg-yellow-600/20 border border-yellow-600/40 rounded hover:bg-yellow-600/30 text-yellow-300\" disabled>ℹ️ Info: Auto Defense</button></div></div><!-- Dice Results Display --><div id=\"diceResults\" class=\"mb-4 p-3 bg-surface-2 rounded-md border border-border/60\" style=\"display: none;\"><h3 class=\"text-sm font-semibold mb-2\">Dice Results</h3><div id=\"diceResultsContent\" class=\"text-sm\"></div></div><!-- Movement Planning Controls --><div id=\"movementPlanningControls\" class=\"mb-4 p-3 bg-blue-900/20 rounded-md border border-blue-600/40\" style=\"display: none;\"><h3 class=\"text-sm font-semibold mb-2 text-blue-300\">🚶 Movement Planning</h3><div id=\"movementStatus\" class=\"text-xs mb-2 text-blue-200\"></div><div class=\"space-y-2\"><button id=\"resetMovement\" class=\"w-full px-2 py-1 text-xs bg-yellow-600/20 border border-yellow-600/40 rounded hover:bg-yellow-600/30 text-yellow-300\">↶ Reset Path</button> <button id=\"executeMovement\" class=\"w-full px-2 py-1 text-xs bg-green-600/20 border border-green-600/40 rounded hover:bg-green-600/30 text-green-300\" disabled>✓ Execute Movement</button> <button id=\"cancelMovement\" class=\"w-full px-2 py-1 text-xs bg-red-600/20 border border-red-600/40 rounded hover:bg-red-600/30 text-red-300\">✗ Cancel Planning</button></div></div><!-- Action Execution --><div class=\"space-y-2\"><button id=\"executeAction\" class=\"w-full px-3 py-2 text-sm bg-green-600/20 border border-green-600/40 rounded hover:bg-green-600/30 text-green-300\" disabled>Execute Action</button> <button id=\"passTurn\" class=\"w-full px-3 py-2 text-sm bg-orange-600/20 border border-orange-600/40 rounded hover:bg-orange-600/30 text-orange-300\">⏭️ Pass Turn</button></div><!-- Instructions --><div class=\"mt-4 text-xs opacity-70 space-y-1\"><div>• Arrow keys: Move/Select</div><div>• E: Interact (doors)</div><div>• F: Toggle actions menu</div><div>• Enter: Execute selected action</div></div></aside></section></main>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templ.JSONScript("snapshot", snapshot).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<script type=\"module\" src=\"/static/js/app.js\" defer></script></body></html>")
+		templ_7745c5c3_Var2 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+			if !templ_7745c5c3_IsBuffer {
+				defer func() {
+					templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+					if templ_7745c5c3_Err == nil {
+						templ_7745c5c3_Err = templ_7745c5c3_BufErr
+					}
+				}()
+			}
+			ctx = templ.InitializeContext(ctx)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col h-screen\"><!-- Header -->")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.HeaderWithSnapshot(snapshot).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<!-- Main Content Area --><main class=\"flex-1 flex overflow-hidden\"><!-- Left: Game Board + Detail Pane --><div class=\"flex-1 flex flex-col p-3 gap-3 overflow-hidden\"><!-- Game Board (flexible, takes remaining space) --><div class=\"flex-1 min-h-0\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.GameBoardWithSnapshot(snapshot).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><!-- Detail Pane (fixed height, always visible) --><div class=\"flex-shrink-0\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.DetailPane().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div><!-- Right: Sidebar (3 sections) --><aside class=\"w-96 flex flex-col border-l border-border/60 bg-surface/60\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.TurnCounter().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.PlayerStatsPanel().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.ActionsPanel().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</aside></main><!-- Debug Controls (bottom) -->")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.DebugControls().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><!-- Entity Inspection Modal (overlay) --> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = components.EntityInspectionModal().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, " <!-- Pass snapshot data to JavaScript --> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templ.JSONScript("snapshot", snapshot).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			return nil
+		})
+		templ_7745c5c3_Err = components.AppShell().Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

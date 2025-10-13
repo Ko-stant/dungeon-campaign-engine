@@ -1,45 +1,55 @@
 package main
 
+import "encoding/json"
+
 // ItemCard represents any equippable item (weapons, armor, potions, etc.)
 type ItemCard struct {
-	ID             string   `json:"id"`
-	Name           string   `json:"name"`
-	Type           string   `json:"type"`    // "weapon", "armor", "potion", "jewelry", "equipment"
-	Subtype        string   `json:"subtype"` // "melee", "ranged", "body", "helmet", "shield", etc.
-	Slot           string   `json:"slot,omitempty"`
-	AttackDice     int      `json:"attack_dice"`
-	DefenseDice    int      `json:"defense_dice"`
-	AttackBonus    int      `json:"attack_bonus"`
-	DefenseBonus   int      `json:"defense_bonus"`
-	AttackDiagonal bool     `json:"attack_diagonal"`
-	AttackAdjacent bool     `json:"attack_adjacent"`
-	Ranged         bool     `json:"ranged"`
-	Range          int      `json:"range"`
-	Cost           int      `json:"cost"`
-	UsableBy       []string `json:"usable_by"`
-	Effect         string   `json:"effect,omitempty"`       // For potions/artifacts
-	EffectValue    any      `json:"effect_value,omitempty"` // Can be int or string (e.g., "1d6")
-	UsageRules     []string `json:"usage_rules,omitempty"`
-	Description    string   `json:"description"`
-	CardImage      string   `json:"card_image"`
+	ID                 string            `json:"id"`
+	Name               string            `json:"name"`
+	Category           string            `json:"category,omitempty"`
+	Type               string            `json:"type"`    // "weapon", "armor", "potion", "jewelry", "equipment"
+	Subtype            string            `json:"subtype"` // "melee", "ranged", "body", "helmet", "shield", etc.
+	Slot               string            `json:"slot,omitempty"`
+	AttackDice         int               `json:"attack_dice"`
+	DefenseDice        int               `json:"defense_dice"`
+	AttackBonus        int               `json:"attack_bonus"`
+	DefenseBonus       int               `json:"defense_bonus"`
+	BodyBonus          int               `json:"body_bonus"`
+	MindBonus          int               `json:"mind_bonus"`
+	MovementBonus      int               `json:"movement_bonus"`
+	AttackDiagonal     bool              `json:"attack_diagonal"`
+	AttackAdjacent     bool              `json:"attack_adjacent"`
+	Ranged             bool              `json:"ranged"`
+	Throwable          bool              `json:"throwable"`
+	Range              int               `json:"range"`
+	Uses               int               `json:"uses,omitempty"`
+	UsesPerQuest       int               `json:"uses_per_quest,omitempty"`
+	Cost               int               `json:"cost"`
+	UsableBy           []string          `json:"usable_by"`
+	Restrictions       []string          `json:"restrictions,omitempty"`
+	Effect             *EffectDefinition `json:"effect,omitempty"`       // Structured effect object
+	UsageRestrictions  *UsageRestriction `json:"usage_restrictions,omitempty"`
+	Description        string            `json:"description"`
+	CardImage          string            `json:"card_image"`
 }
 
 // TreasureCard represents a treasure card from the deck
 type TreasureCard struct {
-	ID              string   `json:"id"`
-	Name            string   `json:"name"`
-	Type            string   `json:"type"` // "gold", "potion", "monster", "hazard"
-	Subtype         string   `json:"subtype,omitempty"`
-	Value           int      `json:"value,omitempty"`         // Gold value
-	Effect          string   `json:"effect,omitempty"`        // Potion/artifact effect
-	EffectValue     any      `json:"effect_value,omitempty"`  // Can be int or string
-	Damage          int      `json:"damage,omitempty"`        // Hazard damage
-	EndTurn         bool     `json:"end_turn,omitempty"`      // Does hazard end turn?
-	SpecialMechanic string   `json:"special_mechanic,omitempty"`
-	UsageRules      []string `json:"usage_rules,omitempty"`
-	ReturnToDeck    bool     `json:"return_to_deck"`
-	Description     string   `json:"description"`
-	CardImage       string   `json:"card_image"`
+	ID                string            `json:"id"`
+	Name              string            `json:"name"`
+	Category          string            `json:"category,omitempty"`
+	Type              string            `json:"type"` // "gold", "potion", "monster", "hazard"
+	Subtype           string            `json:"subtype,omitempty"`
+	Value             int               `json:"value,omitempty"`         // Gold value
+	Uses              int               `json:"uses,omitempty"`
+	Effect            *EffectDefinition `json:"effect,omitempty"`        // Structured effect object
+	UsageRestrictions *UsageRestriction `json:"usage_restrictions,omitempty"`
+	Damage            int               `json:"damage,omitempty"`        // Hazard damage
+	EndTurn           bool              `json:"end_turn,omitempty"`      // Does hazard end turn?
+	SpecialMechanic   string            `json:"special_mechanic,omitempty"`
+	ReturnToDeck      bool              `json:"return_to_deck"`
+	Description       string            `json:"description"`
+	CardImage         string            `json:"card_image"`
 }
 
 // SpellCard represents a spell card
@@ -149,4 +159,61 @@ type DreadSpellDeck struct {
 type DeckItemReference struct {
 	ID   string `json:"id"`
 	Path string `json:"path"`
+}
+
+// EffectDefinition represents a structured effect object for items and treasures
+// This is a flexible structure that can handle all effect types via map[string]any
+type EffectDefinition struct {
+	Type string         `json:"type"` // e.g., "dual_mode_attack", "restore_points", "bonus_dice"
+	Data map[string]any `json:"-"`    // All other fields captured here
+}
+
+// UnmarshalJSON custom unmarshaler to capture all fields
+func (e *EffectDefinition) UnmarshalJSON(data []byte) error {
+	// First unmarshal into a map to get all fields
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	// Extract the type field
+	if typeVal, ok := raw["type"].(string); ok {
+		e.Type = typeVal
+	}
+
+	// Store all fields (including type) in Data
+	e.Data = raw
+
+	return nil
+}
+
+// MarshalJSON custom marshaler
+func (e *EffectDefinition) MarshalJSON() ([]byte, error) {
+	return json.Marshal(e.Data)
+}
+
+// UsageRestriction defines limits on when/how items can be used
+type UsageRestriction struct {
+	MaxPerTurn     int    `json:"max_per_turn,omitempty"`
+	Timing         string `json:"timing,omitempty"`         // "before_movement", "during_combat", "any_time"
+	RequiresAction bool   `json:"requires_action,omitempty"`
+}
+
+// HeroCard represents a hero character definition
+// Note: Uses HeroStats from turn_system.go
+type HeroCard struct {
+	ID                string                `json:"id"`
+	Name              string                `json:"name"`
+	Class             string                `json:"class"`
+	Description       string                `json:"description"`
+	Stats             HeroStats             `json:"stats"`
+	StartingEquipment HeroStartingEquipment `json:"startingEquipment"`
+	SpecialAbilities  []string              `json:"specialAbilities"`
+}
+
+// HeroStartingEquipment defines what items a hero starts with
+type HeroStartingEquipment struct {
+	Weapons []string `json:"weapons"`
+	Armor   []string `json:"armor"`
+	Items   []string `json:"items"`
 }

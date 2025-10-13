@@ -1,0 +1,48 @@
+package components
+
+// AppShell provides the main HTML structure and loads scripts/styles
+templ AppShell() {
+	<!DOCTYPE html>
+	<html lang="en" data-theme="classic">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>Dungeon Campaign Engine</title>
+			<link rel="stylesheet" href="/static/styles/app.css"/>
+		</head>
+		<body class="min-h-screen bg-surface text-content antialiased">
+			{ children... }
+			<script type="module" src="/static/js/app.js" defer></script>
+		</body>
+	</html>
+}
+
+// MainLayout provides the overall page grid structure
+templ MainLayout() {
+	<div class="flex flex-col h-screen">
+		<!-- Header -->
+		@Header()
+
+		<!-- Main Content Area -->
+		<main class="flex-1 flex overflow-hidden">
+			<!-- Left: Game Board + Detail Pane -->
+			<div class="flex-1 flex flex-col p-4 gap-4">
+				<!-- Game Board -->
+				@GameBoard()
+
+				<!-- Detail Pane (below canvas) -->
+				@DetailPane()
+			</div>
+
+			<!-- Right: Sidebar (3 sections) -->
+			<aside class="w-80 flex flex-col border-l border-border/60 bg-surface/60">
+				@TurnCounter()
+				@PlayerStatsPanel()
+				@ActionsPanel()
+			</aside>
+		</main>
+
+		<!-- Debug Controls (bottom) -->
+		@DebugControls()
+	</div>
+}

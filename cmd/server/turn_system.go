@@ -121,6 +121,61 @@ func NewPlayer(id, name, entityID string, class HeroClass) *Player {
 	}
 }
 
+// NewPlayerFromContent creates a new player from hero content definition
+// and equips starting items
+func NewPlayerFromContent(id, entityID string, heroCard *HeroCard, contentMgr *ContentManager, inventoryMgr *InventoryManager) (*Player, error) {
+	character := &HeroCharacter{
+		BaseStats:     heroCard.Stats,
+		CurrentBody:   heroCard.Stats.BodyPoints,
+		CurrentMind:   heroCard.Stats.MindPoints,
+		EquipmentMods: StatMods{},
+	}
+
+	player := &Player{
+		ID:        id,
+		Name:      heroCard.Name,
+		EntityID:  entityID,
+		Class:     HeroClass(heroCard.Class),
+		Character: character,
+		IsActive:  true,
+	}
+
+	// Equip starting equipment
+	if inventoryMgr != nil {
+		// Add starting weapons
+		for _, weaponID := range heroCard.StartingEquipment.Weapons {
+			if _, ok := contentMgr.GetEquipmentCard(weaponID); ok {
+				if err := inventoryMgr.AddItem(entityID, weaponID); err == nil {
+					// Auto-equip starting weapons
+					if err := inventoryMgr.EquipItem(entityID, weaponID); err != nil {
+						// Log but don't fail if auto-equip doesn't work
+						continue
+					}
+				}
+			}
+		}
+
+		// Add starting armor
+		for _, armorID := range heroCard.StartingEquipment.Armor {
+			if _, ok := contentMgr.GetEquipmentCard(armorID); ok {
+				if err := inventoryMgr.AddItem(entityID, armorID); err == nil {
+					// Auto-equip starting armor
+					inventoryMgr.EquipItem(entityID, armorID)
+				}
+			}
+		}
+
+		// Add starting items
+		for _, itemID := range heroCard.StartingEquipment.Items {
+			if _, ok := contentMgr.GetEquipmentCard(itemID); ok {
+				inventoryMgr.AddItem(entityID, itemID)
+			}
+		}
+	}
+
+	return player, nil
+}
+
 // HeroClass defines the hero class types
 type HeroClass string
 
@@ -304,6 +359,14 @@ func (tm *TurnManager) GetCurrentPlayer() *Player {
 	}
 
 	return tm.players[tm.state.ActivePlayerID]
+}
+
+// GetPlayer returns a specific player by ID
+func (tm *TurnManager) GetPlayer(playerID string) *Player {
+	tm.lock.RLock()
+	defer tm.lock.RUnlock()
+
+	return tm.players[playerID]
 }
 
 // CanPlayerAct checks if a specific player can take actions
@@ -611,6 +674,15 @@ func (tm *TurnManager) getNextActivePlayer() *Player {
 		return nil
 	}
 
+	// Sort player IDs for consistent ordering
+	for i := 0; i < len(playerIDs); i++ {
+		for j := i + 1; j < len(playerIDs); j++ {
+			if playerIDs[j] < playerIDs[i] {
+				playerIDs[i], playerIDs[j] = playerIDs[j], playerIDs[i]
+			}
+		}
+	}
+
 	// Find current player index
 	currentIndex := -1
 	for i, id := range playerIDs {
@@ -626,12 +698,28 @@ func (tm *TurnManager) getNextActivePlayer() *Player {
 }
 
 func (tm *TurnManager) getFirstActivePlayer() *Player {
-	for _, player := range tm.players {
+	// Get all active player IDs and sort them for consistent ordering
+	playerIDs := make([]string, 0, len(tm.players))
+	for id, player := range tm.players {
 		if player.IsActive {
-			return player
+			playerIDs = append(playerIDs, id)
 		}
 	}
-	return nil
+
+	if len(playerIDs) == 0 {
+		return nil
+	}
+
+	// Sort to get consistent first player
+	// In practice, player-1 will be first, then player-2, etc.
+	minID := playerIDs[0]
+	for _, id := range playerIDs[1:] {
+		if id < minID {
+			minID = id
+		}
+	}
+
+	return tm.players[minID]
 }
 
 func (tm *TurnManager) broadcastTurnState() {

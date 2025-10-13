@@ -137,6 +137,11 @@ function handleEntityUpdated(patch) {
     gameState.updateEntityPosition(id, tile);
     gameState.incrementPatchCount();
 
+    // Update player stats panel if hero entity updated
+    if (gameState.playerStatsPanelController && id.startsWith('hero')) {
+      gameState.playerStatsPanelController.updateFromSnapshot(gameState.snapshot);
+    }
+
     // Update movement planning if hero moved
     if (id === 'hero-1') {
       import('./movementPlanning.js').then(module => {
@@ -275,10 +280,25 @@ function handleInstantActionResultPatch(patch) {
  */
 function handleTurnStateChanged(patch) {
   if (patch.payload) {
-    // Update turn counter in UI
-    const turnCounter = document.getElementById('turnCounter');
-    if (turnCounter && patch.payload.turnNumber !== undefined) {
-      turnCounter.textContent = patch.payload.turnNumber;
+    // Update turn counter in UI using controller if available
+    if (gameState.turnCounterController && gameState.snapshot) {
+      // Update turn number in snapshot
+      if (patch.payload.turnNumber !== undefined) {
+        gameState.snapshot.turn = patch.payload.turnNumber;
+      }
+      // Refresh turn counter display
+      gameState.turnCounterController.updateFromSnapshot(gameState.snapshot);
+    } else {
+      // Fallback to direct DOM update
+      const turnCounter = document.getElementById('turnCounter');
+      if (turnCounter && patch.payload.turnNumber !== undefined) {
+        turnCounter.textContent = patch.payload.turnNumber;
+      }
+    }
+
+    // Update player stats panel with new turn state
+    if (gameState.playerStatsPanelController && gameState.snapshot) {
+      gameState.playerStatsPanelController.updateFromSnapshot(gameState.snapshot);
     }
 
     // Handle movement clearing after actions

@@ -1,141 +1,48 @@
 package views
 
 import (
-	"fmt"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
 )
 
+// IndexPage renders the main game page with the new component-based layout
 templ IndexPage(snapshot protocol.Snapshot) {
-	<!DOCTYPE html>
-	<html lang="en" data-theme="classic">
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<title>Dungeon Campaign Engine</title>
-			<link rel="stylesheet" href="/static/styles/app.css"/>
-		</head>
-		<body class="min-h-screen bg-surface text-content antialiased">
-			<header class="border-b border-border/60 bg-surface/80 backdrop-blur">
-				<div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-					<div class="text-lg font-semibold">Dungeon Campaign Engine</div>
-					<div class="flex items-center gap-4 text-sm">
-						<div class="opacity-80">map: { snapshot.MapID }</div>
-						<div class="opacity-80">pack: { snapshot.PackID }</div>
-						<div class="opacity-80">turn: <span id="turnCounter">{ snapshot.Turn }</span></div>
-						<div class="opacity-60">proto: { snapshot.ProtocolVersion }</div>
+	@components.AppShell() {
+		<div class="flex flex-col h-screen">
+			<!-- Header -->
+			@components.HeaderWithSnapshot(snapshot)
+
+			<!-- Main Content Area -->
+			<main class="flex-1 flex overflow-hidden">
+				<!-- Left: Game Board + Detail Pane -->
+				<div class="flex-1 flex flex-col p-3 gap-3 overflow-hidden">
+					<!-- Game Board (flexible, takes remaining space) -->
+					<div class="flex-1 min-h-0">
+						@components.GameBoardWithSnapshot(snapshot)
+					</div>
+
+					<!-- Detail Pane (fixed height, always visible) -->
+					<div class="flex-shrink-0">
+						@components.DetailPane()
 					</div>
 				</div>
-			</header>
-			<main class="mx-auto max-w-6xl px-4 py-6">
-				<section class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-					<div class="rounded-lg border border-border/60 bg-surface/60 p-3">
-						<canvas
-							id="board"
-							class={ fmt.Sprintf("w-full rounded-md border border-border/60 bg-surface aspect-[%d/%d]", snapshot.MapWidth, snapshot.MapHeight) }
-						></canvas>
-					</div>
-					<aside class="rounded-lg border border-border/60 bg-surface/60 p-4">
-						<div class="flex items-center justify-between mb-3">
-							<h2 class="text-base font-semibold">Hero Actions</h2>
-						</div>
 
-						<!-- Status Section -->
-						<div class="mb-4">
-							<ul class="space-y-1 text-sm">
-								<li><span class="opacity-70">Status:</span> Ready</li>
-								<li><span class="opacity-70">Patches:</span> <span id="patchCount">0</span></li>
-								<li><span class="opacity-70">Mode:</span> <span id="actionMode">Move</span></li>
-							</ul>
-						</div>
-
-						<!-- Debug Section -->
-						<div class="mb-4 p-3 bg-orange-900/20 border border-orange-600/40 rounded-md">
-							<h3 class="text-sm font-semibold mb-2 text-orange-300">🐛 Debug Tools</h3>
-							<button id="passGMTurn" class="w-full px-3 py-2 text-sm bg-orange-600/20 border border-orange-600/40 rounded hover:bg-orange-600/30 text-orange-300">
-								⏭️ Pass GM Turn
-							</button>
-						</div>
-
-						<!-- Monster Details (when selected) -->
-						<div id="monsterDetails" class="mb-4 p-3 bg-surface-2 rounded-md border border-border/60" style="display: none;">
-							<h3 class="text-sm font-semibold mb-2">Selected Monster</h3>
-							<div id="monsterDetailsContent" class="text-sm space-y-1"></div>
-						</div>
-
-						<!-- Actions Menu (initially hidden) -->
-						<div id="actionsMenu" class="mb-4 p-3 bg-surface-2 rounded-md border border-border/60" style="display: none;">
-							<h3 class="text-sm font-semibold mb-2">Choose Action (F to toggle)</h3>
-							<div class="grid grid-cols-1 gap-2">
-								<button id="actionMove" class="px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left">1. Move</button>
-								<button id="actionAttack" class="px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left">2. Attack</button>
-								<button id="actionSpell" class="px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left">3. Cast Spell</button>
-								<button id="actionSearchTreasure" class="px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left">4. Search Treasure</button>
-								<button id="actionSearchTraps" class="px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left">5. Search Traps</button>
-								<button id="actionSearchSecret" class="px-3 py-2 text-sm bg-surface border border-border/60 rounded hover:bg-surface-2 text-left">6. Search Secret</button>
-							</div>
-						</div>
-
-						<!-- Dice Rolling Section -->
-						<div class="mb-4">
-							<h3 class="text-sm font-semibold mb-2">Dice Rolling</h3>
-							<div class="space-y-2">
-								<button id="rollMovement" class="w-full px-3 py-2 text-sm bg-blue-600/20 border border-blue-600/40 rounded hover:bg-blue-600/30 text-blue-300">
-									🎲🎲 Roll Movement (2 dice)
-								</button>
-								<button id="rollAttack" class="w-full px-3 py-2 text-sm bg-red-600/20 border border-red-600/40 rounded hover:bg-red-600/30 text-red-300" disabled>
-									⚔️ Execute Attack
-								</button>
-								<button id="rollDefense" class="w-full px-3 py-2 text-sm bg-yellow-600/20 border border-yellow-600/40 rounded hover:bg-yellow-600/30 text-yellow-300" disabled>
-									ℹ️ Info: Auto Defense
-								</button>
-							</div>
-						</div>
-
-						<!-- Dice Results Display -->
-						<div id="diceResults" class="mb-4 p-3 bg-surface-2 rounded-md border border-border/60" style="display: none;">
-							<h3 class="text-sm font-semibold mb-2">Dice Results</h3>
-							<div id="diceResultsContent" class="text-sm"></div>
-						</div>
-
-						<!-- Movement Planning Controls -->
-						<div id="movementPlanningControls" class="mb-4 p-3 bg-blue-900/20 rounded-md border border-blue-600/40" style="display: none;">
-							<h3 class="text-sm font-semibold mb-2 text-blue-300">🚶 Movement Planning</h3>
-							<div id="movementStatus" class="text-xs mb-2 text-blue-200"></div>
-							<div class="space-y-2">
-								<button id="resetMovement" class="w-full px-2 py-1 text-xs bg-yellow-600/20 border border-yellow-600/40 rounded hover:bg-yellow-600/30 text-yellow-300">
-									↶ Reset Path
-								</button>
-								<button id="executeMovement" class="w-full px-2 py-1 text-xs bg-green-600/20 border border-green-600/40 rounded hover:bg-green-600/30 text-green-300" disabled>
-									✓ Execute Movement
-								</button>
-								<button id="cancelMovement" class="w-full px-2 py-1 text-xs bg-red-600/20 border border-red-600/40 rounded hover:bg-red-600/30 text-red-300">
-									✗ Cancel Planning
-								</button>
-							</div>
-						</div>
-
-						<!-- Action Execution -->
-						<div class="space-y-2">
-							<button id="executeAction" class="w-full px-3 py-2 text-sm bg-green-600/20 border border-green-600/40 rounded hover:bg-green-600/30 text-green-300" disabled>
-								Execute Action
-							</button>
-							<button id="passTurn" class="w-full px-3 py-2 text-sm bg-orange-600/20 border border-orange-600/40 rounded hover:bg-orange-600/30 text-orange-300">
-								⏭️ Pass Turn
-							</button>
-						</div>
-
-						<!-- Instructions -->
-						<div class="mt-4 text-xs opacity-70 space-y-1">
-							<div>• Arrow keys: Move/Select</div>
-							<div>• E: Interact (doors)</div>
-							<div>• F: Toggle actions menu</div>
-							<div>• Enter: Execute selected action</div>
-						</div>
-					</aside>
-				</section>
+				<!-- Right: Sidebar (3 sections) -->
+				<aside class="w-96 flex flex-col border-l border-border/60 bg-surface/60">
+					@components.TurnCounter()
+					@components.PlayerStatsPanel()
+					@components.ActionsPanel()
+				</aside>
 			</main>
-			@templ.JSONScript("snapshot", snapshot)
-			<script type="module" src="/static/js/app.js" defer></script>
-		</body>
-	</html>
+
+			<!-- Debug Controls (bottom) -->
+			@components.DebugControls()
+		</div>
+
+		<!-- Entity Inspection Modal (overlay) -->
+		@components.EntityInspectionModal()
+
+		<!-- Pass snapshot data to JavaScript -->
+		@templ.JSONScript("snapshot", snapshot)
+	}
 }

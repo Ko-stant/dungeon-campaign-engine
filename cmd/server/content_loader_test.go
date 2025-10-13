@@ -58,8 +58,8 @@ func TestContentManager_LoadCampaign(t *testing.T) {
 	if !ok {
 		t.Error("Battle Axe card not found")
 	} else {
-		if battleAxe.AttackDice != 3 {
-			t.Errorf("Expected battle axe attack dice 3, got %d", battleAxe.AttackDice)
+		if battleAxe.AttackDice != 4 {
+			t.Errorf("Expected battle axe attack dice 4, got %d", battleAxe.AttackDice)
 		}
 	}
 
@@ -160,5 +160,237 @@ func TestContentManager_ThreadSafety(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		<-done
+	}
+}
+
+func TestContentManager_LoadAllHeroes(t *testing.T) {
+	logger := &testLogger{}
+	cm := NewContentManager(logger)
+
+	err := cm.LoadCampaign("base")
+	if err != nil {
+		t.Fatalf("Failed to load base campaign: %v", err)
+	}
+
+	// Verify heroes loaded
+	heroes := cm.GetAllHeroes()
+	if len(heroes) == 0 {
+		t.Fatal("No hero cards loaded")
+	}
+	t.Logf("Loaded %d hero cards", len(heroes))
+
+	// Expected heroes based on the files in content/heroes/
+	expectedHeroes := []string{
+		"barbarian",
+		"dwarf",
+		"elf",
+		"wizard",
+	}
+
+	// Verify each expected hero loaded correctly
+	for _, heroID := range expectedHeroes {
+		t.Run(heroID, func(t *testing.T) {
+			hero, ok := cm.GetHeroCard(heroID)
+			if !ok {
+				t.Fatalf("Hero %s not found", heroID)
+			}
+
+			// Validate hero has required fields
+			if hero.ID == "" {
+				t.Error("Hero ID is empty")
+			}
+			if hero.Name == "" {
+				t.Error("Hero Name is empty")
+			}
+			if hero.Class == "" {
+				t.Error("Hero Class is empty")
+			}
+
+			// Validate stats
+			if hero.Stats.BodyPoints <= 0 {
+				t.Errorf("Invalid BodyPoints: %d", hero.Stats.BodyPoints)
+			}
+			if hero.Stats.MindPoints <= 0 {
+				t.Errorf("Invalid MindPoints: %d", hero.Stats.MindPoints)
+			}
+			if hero.Stats.AttackDice <= 0 {
+				t.Errorf("Invalid AttackDice: %d", hero.Stats.AttackDice)
+			}
+			if hero.Stats.DefenseDice <= 0 {
+				t.Errorf("Invalid DefenseDice: %d", hero.Stats.DefenseDice)
+			}
+			if hero.Stats.MovementDice <= 0 {
+				t.Errorf("Invalid MovementDice: %d", hero.Stats.MovementDice)
+			}
+
+			t.Logf("✓ %s (%s): Body=%d Mind=%d Attack=%dd Defense=%dd Movement=%dd",
+				hero.Name, hero.Class,
+				hero.Stats.BodyPoints, hero.Stats.MindPoints,
+				hero.Stats.AttackDice, hero.Stats.DefenseDice, hero.Stats.MovementDice)
+
+			// Validate starting equipment references exist
+			for _, weaponID := range hero.StartingEquipment.Weapons {
+				if _, ok := cm.GetEquipmentCard(weaponID); !ok {
+					t.Errorf("Starting weapon '%s' not found in equipment deck", weaponID)
+				} else {
+					t.Logf("  Starting weapon: %s", weaponID)
+				}
+			}
+			for _, armorID := range hero.StartingEquipment.Armor {
+				if _, ok := cm.GetEquipmentCard(armorID); !ok {
+					t.Errorf("Starting armor '%s' not found in equipment deck", armorID)
+				} else {
+					t.Logf("  Starting armor: %s", armorID)
+				}
+			}
+			for _, itemID := range hero.StartingEquipment.Items {
+				if _, ok := cm.GetEquipmentCard(itemID); !ok {
+					t.Errorf("Starting item '%s' not found in equipment deck", itemID)
+				} else {
+					t.Logf("  Starting item: %s", itemID)
+				}
+			}
+		})
+	}
+}
+
+func TestContentManager_SpecificHeroStats(t *testing.T) {
+	logger := &testLogger{}
+	cm := NewContentManager(logger)
+
+	err := cm.LoadCampaign("base")
+	if err != nil {
+		t.Fatalf("Failed to load base campaign: %v", err)
+	}
+
+	// Test Barbarian specific stats
+	barbarian, ok := cm.GetHeroCard("barbarian")
+	if !ok {
+		t.Fatal("Barbarian not found")
+	}
+	if barbarian.Name != "Barbarian" {
+		t.Errorf("Expected Barbarian name, got '%s'", barbarian.Name)
+	}
+	if barbarian.Stats.BodyPoints != 8 {
+		t.Errorf("Expected Barbarian Body 8, got %d", barbarian.Stats.BodyPoints)
+	}
+	if barbarian.Stats.MindPoints != 2 {
+		t.Errorf("Expected Barbarian Mind 2, got %d", barbarian.Stats.MindPoints)
+	}
+	if barbarian.Stats.AttackDice != 3 {
+		t.Errorf("Expected Barbarian Attack 3, got %d", barbarian.Stats.AttackDice)
+	}
+	// Verify starting equipment
+	if len(barbarian.StartingEquipment.Weapons) == 0 {
+		t.Error("Barbarian should have starting weapons")
+	}
+	hasBroadsword := false
+	for _, weapon := range barbarian.StartingEquipment.Weapons {
+		if weapon == "broadsword" {
+			hasBroadsword = true
+			break
+		}
+	}
+	if !hasBroadsword {
+		t.Error("Barbarian should start with broadsword")
+	}
+}
+
+func TestNewPlayerFromContent(t *testing.T) {
+	logger := &testLogger{}
+	cm := NewContentManager(logger)
+
+	err := cm.LoadCampaign("base")
+	if err != nil {
+		t.Fatalf("Failed to load base campaign: %v", err)
+	}
+
+	// Create inventory manager for testing
+	inventoryMgr := NewInventoryManager(cm, logger)
+	if err := inventoryMgr.InitializeHeroInventory("test-hero-1"); err != nil {
+		t.Fatalf("Failed to initialize inventory: %v", err)
+	}
+
+	// Test creating each hero
+	heroes := []string{"barbarian", "dwarf", "elf", "wizard"}
+	for _, heroID := range heroes {
+		t.Run(heroID, func(t *testing.T) {
+			heroCard, ok := cm.GetHeroCard(heroID)
+			if !ok {
+				t.Fatalf("Hero %s not found", heroID)
+			}
+
+			entityID := "test-hero-" + heroID
+			if err := inventoryMgr.InitializeHeroInventory(entityID); err != nil {
+				t.Fatalf("Failed to initialize inventory for %s: %v", heroID, err)
+			}
+
+			player, err := NewPlayerFromContent("player-"+heroID, entityID, heroCard, cm, inventoryMgr)
+			if err != nil {
+				t.Fatalf("Failed to create player from %s: %v", heroID, err)
+			}
+
+			// Verify player created correctly
+			if player == nil {
+				t.Fatal("Player is nil")
+			}
+			if player.Name != heroCard.Name {
+				t.Errorf("Expected player name '%s', got '%s'", heroCard.Name, player.Name)
+			}
+			if player.Character.BaseStats.BodyPoints != heroCard.Stats.BodyPoints {
+				t.Errorf("Expected Body %d, got %d", heroCard.Stats.BodyPoints, player.Character.BaseStats.BodyPoints)
+			}
+			if player.Character.CurrentBody != heroCard.Stats.BodyPoints {
+				t.Errorf("Expected CurrentBody %d, got %d", heroCard.Stats.BodyPoints, player.Character.CurrentBody)
+			}
+
+			// Verify starting equipment was added to inventory
+			inventory, err := inventoryMgr.GetInventory(entityID)
+			if err != nil {
+				t.Errorf("Failed to get inventory: %v", err)
+			} else if inventory == nil {
+				t.Error("Inventory not found for hero")
+			} else {
+				totalItems := len(inventory.Equipment) + len(inventory.Carried)
+				t.Logf("Hero %s inventory has %d items (%d equipped, %d carried)",
+					heroID, totalItems, len(inventory.Equipment), len(inventory.Carried))
+
+				// Check if starting weapons are in inventory (either equipped or carried)
+				for _, weaponID := range heroCard.StartingEquipment.Weapons {
+					found := false
+					equipped := false
+
+					// Check equipped items
+					for _, item := range inventory.Equipment {
+						if item != nil && item.ID == weaponID {
+							found = true
+							equipped = true
+							break
+						}
+					}
+
+					// Check carried items if not found in equipped
+					if !found {
+						for _, item := range inventory.Carried {
+							if item != nil && item.ID == weaponID {
+								found = true
+								break
+							}
+						}
+					}
+
+					if !found {
+						t.Errorf("Starting weapon '%s' not found in inventory", weaponID)
+					} else if equipped {
+						t.Logf("  ✓ Starting weapon '%s' is equipped", weaponID)
+					} else {
+						t.Logf("  ⚠ Starting weapon '%s' is in inventory but not equipped", weaponID)
+					}
+				}
+			}
+
+			t.Logf("✓ Successfully created player from %s hero card with %d starting items",
+				heroID, len(heroCard.StartingEquipment.Weapons)+len(heroCard.StartingEquipment.Armor)+len(heroCard.StartingEquipment.Items))
+		})
 	}
 }

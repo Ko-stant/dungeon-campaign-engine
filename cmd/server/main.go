@@ -180,8 +180,25 @@ func mainWithGameManager() {
 
 		// Include only heroes in entities (monsters are handled separately)
 		// Use current entity position from game manager, not stale initial state
+		// Get HP from turn manager's player character
+		heroHP := &protocol.HP{Current: 0, Max: 0}
+		heroMindPoints := &protocol.HP{Current: 0, Max: 0}
+		if player := gameManager.turnManager.GetPlayer("player-1"); player != nil && player.Character != nil {
+			heroHP.Current = player.Character.CurrentBody
+			heroHP.Max = player.Character.BaseStats.BodyPoints
+			heroMindPoints.Current = player.Character.CurrentMind
+			heroMindPoints.Max = player.Character.BaseStats.MindPoints
+		}
+
 		entities := []protocol.EntityLite{
-			{ID: "hero-1", Kind: "hero", Tile: hero},
+			{
+				ID:         "hero-1",
+				Kind:       "hero",
+				Tile:       hero,
+				HP:         heroHP,
+				MindPoints: heroMindPoints,
+				Tags:       []string{"barbarian"}, // TODO: Get actual class from player
+			},
 		}
 
 		// Include all known doors in initial snapshot

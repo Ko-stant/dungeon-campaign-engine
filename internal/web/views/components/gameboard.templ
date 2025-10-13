@@ -1,0 +1,25 @@
+package components
+
+import (
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
+)
+
+// GameBoard renders the main game canvas
+templ GameBoard() {
+	<div class="flex-1 rounded-lg border border-border/60 bg-surface/60 p-3 overflow-hidden">
+		<canvas
+			id="board"
+			class="w-full h-full rounded-md border border-border/60 bg-surface"
+		></canvas>
+	</div>
+}
+
+// GameBoardWithSnapshot renders canvas with specific aspect ratio
+templ GameBoardWithSnapshot(snapshot protocol.Snapshot) {
+	<div class="h-full w-full rounded-lg border border-border/60 bg-surface/60 p-2 overflow-hidden">
+		<canvas
+			id="board"
+			class="w-full h-full rounded-md border border-border/60 bg-surface"
+		></canvas>
+	</div>
+}

@@ -16,6 +16,7 @@ type ContentManager struct {
 	treasureCards    map[string]*TreasureCard
 	spellCards       map[string]*SpellCard
 	dreadSpellCards  map[string]*SpellCard
+	heroCards        map[string]*HeroCard
 	logger           Logger
 	mutex            sync.RWMutex
 }
@@ -28,6 +29,7 @@ func NewContentManager(logger Logger) *ContentManager {
 		treasureCards:   make(map[string]*TreasureCard),
 		spellCards:      make(map[string]*SpellCard),
 		dreadSpellCards: make(map[string]*SpellCard),
+		heroCards:       make(map[string]*HeroCard),
 		logger:          logger,
 	}
 }
@@ -85,12 +87,21 @@ func (cm *ContentManager) LoadCampaign(campaignID string) error {
 		return fmt.Errorf("failed to load dread spell deck: %w", err)
 	}
 
+	// Load heroes
+	if campaign.ContentPaths.Heroes != "" {
+		heroesPath := filepath.Join(campaignPath, campaign.ContentPaths.Heroes)
+		if err := cm.loadHeroes(heroesPath); err != nil {
+			return fmt.Errorf("failed to load heroes: %w", err)
+		}
+	}
+
 	cm.logger.Printf("Campaign '%s' loaded successfully", campaign.Name)
 	cm.logger.Printf("  Equipment: %d items", len(cm.equipmentCards))
 	cm.logger.Printf("  Artifacts: %d items", len(cm.artifactCards))
 	cm.logger.Printf("  Treasures: %d cards", len(cm.treasureCards))
 	cm.logger.Printf("  Spells: %d cards", len(cm.spellCards))
 	cm.logger.Printf("  Dread Spells: %d cards", len(cm.dreadSpellCards))
+	cm.logger.Printf("  Heroes: %d characters", len(cm.heroCards))
 
 	return nil
 }
@@ -364,4 +375,63 @@ func (cm *ContentManager) GetCampaign() *CampaignMetadata {
 	cm.mutex.RLock()
 	defer cm.mutex.RUnlock()
 	return cm.campaign
+}
+
+// loadHeroes loads all hero character definitions from the heroes directory
+func (cm *ContentManager) loadHeroes(heroesPath string) error {
+	// Read all .json files in the heroes directory
+	entries, err := os.ReadDir(heroesPath)
+	if err != nil {
+		return fmt.Errorf("failed to read heroes directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+
+		heroPath := filepath.Join(heroesPath, entry.Name())
+		hero, err := cm.loadHeroCard(heroPath)
+		if err != nil {
+			cm.logger.Printf("Warning: Failed to load hero %s: %v", entry.Name(), err)
+			continue
+		}
+		cm.heroCards[hero.ID] = hero
+	}
+
+	return nil
+}
+
+// loadHeroCard loads a single hero card
+func (cm *ContentManager) loadHeroCard(path string) (*HeroCard, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read hero card: %w", err)
+	}
+
+	var card HeroCard
+	if err := json.Unmarshal(data, &card); err != nil {
+		return nil, fmt.Errorf("failed to parse hero card: %w", err)
+	}
+
+	return &card, nil
+}
+
+// GetHeroCard retrieves a hero card by ID
+func (cm *ContentManager) GetHeroCard(id string) (*HeroCard, bool) {
+	cm.mutex.RLock()
+	defer cm.mutex.RUnlock()
+	card, ok := cm.heroCards[id]
+	return card, ok
+}
+
+// GetAllHeroes returns all hero cards
+func (cm *ContentManager) GetAllHeroes() map[string]*HeroCard {
+	cm.mutex.RLock()
+	defer cm.mutex.RUnlock()
+	result := make(map[string]*HeroCard, len(cm.heroCards))
+	for k, v := range cm.heroCards {
+		result[k] = v
+	}
+	return result
 }

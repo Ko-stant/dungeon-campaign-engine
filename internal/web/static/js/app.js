@@ -21,6 +21,12 @@ import { initializeActionUI } from './actionSystem.js';
 import { initializeInputHandling } from './inputHandling.js';
 import { openWebSocket, setRedrawFunction } from './patchSystem.js';
 import { initMovementPlanning, drawMovementPlanning } from './movementPlanning.js';
+import { initializeCanvasClickHandling } from './canvasClickHandler.js';
+import { ActionsPanelController } from './ui/actionsPanel.js';
+import { EntityModalController } from './ui/entityModal.js';
+import { TurnCounterController } from './ui/turnCounter.js';
+import { PlayerStatsPanelController } from './ui/playerStatsPanel.js';
+import { DetailPaneController } from './ui/detailPane.js';
 
 /**
  * Main drawing function that renders the entire game board
@@ -90,6 +96,29 @@ export function initializeApp() {
   initializeInputHandling();
   initMovementPlanning();
 
+  // Initialize new UI controllers
+  const actionsPanelController = new ActionsPanelController();
+  const entityModalController = new EntityModalController(gameState);
+  const turnCounterController = new TurnCounterController(gameState);
+  const playerStatsPanelController = new PlayerStatsPanelController(gameState);
+  const detailPaneController = new DetailPaneController();
+
+  // Make UI controllers available globally
+  gameState.actionsPanelController = actionsPanelController;
+  gameState.entityModalController = entityModalController;
+  gameState.turnCounterController = turnCounterController;
+  gameState.playerStatsPanelController = playerStatsPanelController;
+  gameState.detailPaneController = detailPaneController;
+
+  // Initialize UI from snapshot
+  turnCounterController.updateFromSnapshot(snapshot);
+  turnCounterController.updatePatchCount(0);
+  playerStatsPanelController.updateFromSnapshot(snapshot);
+  detailPaneController.clear(); // Show placeholder content
+
+  // Initialize canvas click handling for entity inspection
+  initializeCanvasClickHandling();
+
   // Set up window resize handler
   window.addEventListener('resize', () => {
     resizeCanvas(canvas, canvasContext);
@@ -124,6 +153,9 @@ export async function cleanupApp() {
   // Remove event listeners
   const { cleanupInputHandling } = await import('./inputHandling.js');
   cleanupInputHandling();
+
+  const { cleanupCanvasClickHandling } = await import('./canvasClickHandler.js');
+  cleanupCanvasClickHandling();
 
   // Clear global references
   delete window.drawBoard;

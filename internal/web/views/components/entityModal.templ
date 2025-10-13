@@ -1,0 +1,117 @@
+package components
+
+// EntityInspectionModal shows hero/monster stats when clicked
+templ EntityInspectionModal() {
+	<div id="entityModal" class="fixed inset-0 z-50 flex items-center justify-center" style="display: none;">
+		<!-- Backdrop -->
+		<div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeEntityModal()"></div>
+
+		<!-- Modal Content -->
+		<div class="relative bg-surface border border-border/60 rounded-lg shadow-2xl max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+			<!-- Header -->
+			<div class="flex items-center justify-between p-4 border-b border-border/60">
+				<h2 id="entityModalTitle" class="text-lg font-semibold">Entity Details</h2>
+				<button onclick="closeEntityModal()" class="text-2xl leading-none opacity-70 hover:opacity-100 cursor-pointer">
+					×
+				</button>
+			</div>
+
+			<!-- Content -->
+			<div id="entityModalContent" class="p-4">
+				<!-- Will be populated by JS -->
+			</div>
+		</div>
+	</div>
+}
+
+// HeroInspectionContent renders hero stats for modal
+templ HeroInspectionContent() {
+	<div class="space-y-4">
+		<!-- Hero Identity -->
+		<div class="flex items-center gap-3 p-3 bg-surface-2 rounded-md">
+			<div class="w-16 h-16 rounded-md bg-blue-600/20 border border-blue-600/40 flex items-center justify-center text-3xl">
+				🧙
+			</div>
+			<div>
+				<div class="text-xl font-semibold" id="heroName">Wizard</div>
+				<div class="text-sm opacity-70" id="heroClass">Wizard</div>
+			</div>
+		</div>
+
+		<!-- Stats Grid -->
+		<div class="grid grid-cols-2 gap-3">
+			<div class="p-3 bg-surface-2 rounded-md">
+				<div class="text-xs opacity-70 mb-1">Body Points</div>
+				<div class="text-lg font-bold text-red-400" id="heroBody">6 / 6</div>
+			</div>
+			<div class="p-3 bg-surface-2 rounded-md">
+				<div class="text-xs opacity-70 mb-1">Mind Points</div>
+				<div class="text-lg font-bold text-blue-400" id="heroMind">6 / 6</div>
+			</div>
+		</div>
+
+		<!-- Equipment -->
+		<div class="space-y-2">
+			<h3 class="text-sm font-semibold opacity-80">Equipment</h3>
+			<div class="space-y-1 text-sm" id="heroEquipment">
+				<!-- Populated by JS -->
+			</div>
+		</div>
+
+		<!-- Spells/Abilities -->
+		<div id="heroSpellsSection" class="space-y-2">
+			<h3 class="text-sm font-semibold opacity-80">Spells</h3>
+			<div id="heroSpells" class="space-y-1 text-sm">
+				<!-- Populated by JS -->
+			</div>
+		</div>
+	</div>
+}
+
+// MonsterInspectionContent renders monster stats for modal
+templ MonsterInspectionContent() {
+	<div class="space-y-4">
+		<!-- Monster Identity -->
+		<div class="flex items-center gap-3 p-3 bg-red-900/20 rounded-md border border-red-600/40">
+			<div class="w-16 h-16 rounded-md bg-red-600/20 border border-red-600/40 flex items-center justify-center text-3xl">
+				👹
+			</div>
+			<div>
+				<div class="text-xl font-semibold" id="monsterName">Orc</div>
+				<div class="text-sm opacity-70" id="monsterType">Monster</div>
+			</div>
+		</div>
+
+		<!-- Stats Grid -->
+		<div class="grid grid-cols-2 gap-3">
+			<div class="p-3 bg-surface-2 rounded-md">
+				<div class="text-xs opacity-70 mb-1">Body Points</div>
+				<div class="text-lg font-bold text-red-400" id="monsterBody">4 / 4</div>
+			</div>
+			<div class="p-3 bg-surface-2 rounded-md">
+				<div class="text-xs opacity-70 mb-1">Mind Points</div>
+				<div class="text-lg font-bold text-blue-400" id="monsterMind">2 / 2</div>
+			</div>
+			<div class="p-3 bg-surface-2 rounded-md">
+				<div class="text-xs opacity-70 mb-1">Move Dice</div>
+				<div class="text-lg font-bold" id="monsterMove">2d6</div>
+			</div>
+			<div class="p-3 bg-surface-2 rounded-md">
+				<div class="text-xs opacity-70 mb-1">Attack Dice</div>
+				<div class="text-lg font-bold text-orange-400" id="monsterAttack">2d6</div>
+			</div>
+			<div class="p-3 bg-surface-2 rounded-md col-span-2">
+				<div class="text-xs opacity-70 mb-1">Defense Dice</div>
+				<div class="text-lg font-bold text-yellow-400" id="monsterDefense">1d6</div>
+			</div>
+		</div>
+
+		<!-- Special Abilities -->
+		<div id="monsterAbilitiesSection" class="space-y-2" style="display: none;">
+			<h3 class="text-sm font-semibold opacity-80">Special Abilities</h3>
+			<div id="monsterAbilities" class="text-sm opacity-70">
+				<!-- Populated by JS -->
+			</div>
+		</div>
+	</div>
+}

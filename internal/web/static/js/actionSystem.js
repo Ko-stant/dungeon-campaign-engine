@@ -265,72 +265,21 @@ export function rollDefenseDice() {
 }
 
 /**
- * Display processing message
+ * Display processing message (now just logs to console)
  * @param {string} message
  */
 export function displayProcessingMessage(message) {
-  const resultDiv = document.getElementById('diceResults');
-  const contentDiv = document.getElementById('diceResultsContent');
-
-  if (!resultDiv || !contentDiv) {
-    return;
-  }
-
-  contentDiv.innerHTML = `
-    <div class="mb-2">
-      <strong>${message}</strong>
-    </div>
-    <div class="text-xs opacity-60">Waiting for server response...</div>
-  `;
-  resultDiv.style.display = 'block';
+  console.log('Action:', message);
 }
 
 /**
- * Display dice roll results
+ * Display dice roll results (deprecated - results now shown in detail pane)
  * @param {string} rollType
  * @param {Array} dice
  * @param {string} summary
  */
 export function displayDiceResult(rollType, dice, summary = null) {
-  const resultDiv = document.getElementById('diceResults');
-  const contentDiv = document.getElementById('diceResultsContent');
-
-  if (!resultDiv || !contentDiv) {
-    return;
-  }
-
-  let resultHTML = `<div class="mb-2"><strong>${rollType} Roll:</strong></div>`;
-
-  dice.forEach((die, index) => {
-    let dieDisplay = `Die ${index + 1}: ${die.result}`;
-    if (die.combatResult) {
-      dieDisplay += ` (${die.combatResult})`;
-    }
-    resultHTML += `<div class="text-xs opacity-80">${dieDisplay}</div>`;
-  });
-
-  // Add summary if provided
-  if (summary) {
-    resultHTML += `<div class="mt-2 text-sm font-semibold">${summary}</div>`;
-  }
-
-  // Calculate combat summary
-  if (rollType === 'Attack') {
-    const skulls = dice.filter((d) => d.combatResult === 'skull').length;
-    resultHTML += `<div class="mt-2 text-sm font-semibold">Skulls: ${skulls}</div>`;
-  } else if (rollType === 'Defense') {
-    const blackShields = dice.filter(
-      (d) => d.combatResult === 'black_shield',
-    ).length;
-    const whiteShields = dice.filter(
-      (d) => d.combatResult === 'white_shield',
-    ).length;
-    const totalShields = blackShields + whiteShields;
-    resultHTML += `<div class="mt-2 text-sm font-semibold">Shields: ${totalShields} (${blackShields} black, ${whiteShields} white)</div>`;
-  }
-
-  contentDiv.innerHTML = resultHTML;
-  resultDiv.style.display = 'block';
+  console.log(`${rollType} Roll:`, dice, summary);
 }
 
 /**
@@ -338,76 +287,27 @@ export function displayDiceResult(rollType, dice, summary = null) {
  * @param {HeroActionResult} result
  */
 export function handleHeroActionResult(result) {
+  // Log result to console for debugging
+  console.log('Action Result:', result.action, result.success ? 'SUCCESS' : 'FAILED', result.message);
 
-  const resultDiv = document.getElementById('diceResults');
-  const contentDiv = document.getElementById('diceResultsContent');
-
-  if (!resultDiv || !contentDiv) {
-    return;
-  }
-
-  let resultHTML = `<div class="mb-2"><strong>${result.action} Result:</strong></div>`;
-
-  // Show success/failure
-  const statusColor = result.success ? 'text-green-300' : 'text-red-300';
-  const message = result.message || result.error || 'Unknown error';
-  resultHTML += `<div class="text-sm ${statusColor} mb-2">${result.success ? 'SUCCESS' : 'FAILED'
-    } ${message}</div>`;
-
-  // Show separated dice rolls if present (new format)
-  if (result.attackRolls && result.attackRolls.length > 0) {
-    resultHTML += '<div class="mb-2 text-sm font-semibold text-red-300">Hero Attack Dice:</div>';
-    result.attackRolls.forEach((roll, index) => {
-      let rollDisplay = `Die ${index + 1}: ${roll.result}`;
-      if (roll.combatResult) {
-        const symbol = roll.combatResult === 'skull' ? 'SKULL' : 'MISS';
-        rollDisplay += ` (${symbol})`;
-      }
-      resultHTML += `<div class="text-xs opacity-80 ml-2">${rollDisplay}</div>`;
-    });
-  }
-
-  if (result.defenseRolls && result.defenseRolls.length > 0) {
-    resultHTML += '<div class="mb-2 text-sm font-semibold text-blue-300">Monster Defense Dice:</div>';
-    result.defenseRolls.forEach((roll, index) => {
-      let rollDisplay = `Die ${index + 1}: ${roll.result}`;
-      if (roll.combatResult) {
-        const symbol = roll.combatResult === 'black_shield' ? 'BLACK_SHIELD' :
-                      roll.combatResult === 'white_shield' ? 'WHITE_SHIELD' : 'MISS';
-        rollDisplay += ` (${symbol})`;
-      }
-      resultHTML += `<div class="text-xs opacity-80 ml-2">${rollDisplay}</div>`;
-    });
-  }
-
-  // Show search dice rolls if present
-  if (result.searchRolls && result.searchRolls.length > 0) {
-    resultHTML += '<div class="mb-2 text-sm font-semibold text-yellow-300">🔍 Search Dice:</div>';
-    result.searchRolls.forEach((roll, index) => {
-      let rollDisplay = `Die ${index + 1}: ${roll.result}`;
-      if (roll.combatResult) {
-        rollDisplay += ` (${roll.combatResult})`;
-      }
-      resultHTML += `<div class="text-xs opacity-80 ml-2">${rollDisplay}</div>`;
-    });
-  }
-
-  // Show movement dice rolls if present
+  // Handle movement dice rolls
   if (result.movementRolls && result.movementRolls.length > 0) {
-    resultHTML += '<div class="mb-2 text-sm font-semibold text-blue-300">🎲 Movement Dice:</div>';
     let totalMovement = 0;
-    result.movementRolls.forEach((roll, index) => {
-      resultHTML += `<div class="text-xs opacity-80 ml-2">Die ${index + 1}: ${roll.result}</div>`;
+    const diceValues = result.movementRolls.map(roll => {
       totalMovement += roll.result;
+      return roll.result;
     });
 
-    resultHTML += `<div class="mt-1 p-1 bg-blue-900/30 rounded text-center text-sm font-semibold text-blue-300">Total Movement: ${totalMovement} squares</div>`;
+    // Display dice in the compact dice results area
+    const diceDisplay = document.getElementById('diceResultsDisplay');
+    if (diceDisplay) {
+      diceDisplay.textContent = `[${diceValues.join(', ')}] = ${totalMovement}`;
+    }
 
     // Set movement dice roll for turn tracking
     setMovementDiceRoll(totalMovement);
 
     // Start movement planning with the rolled movement points
-    // Small delay to ensure dice result UI is updated first
     setTimeout(() => {
       try {
         startMovementPlanning();
@@ -418,65 +318,20 @@ export function handleHeroActionResult(result) {
     }, 100);
   }
 
-  // Show combat summary for attack actions
-  if (result.action === 'attack' && result.attackRolls && result.defenseRolls) {
-    const skulls = result.attackRolls.filter(roll => roll.combatResult === 'skull').length;
-    // For monster defense, only black shields count (HeroQuest rule)
-    const blackShields = result.defenseRolls.filter(roll => roll.combatResult === 'black_shield').length;
-    // const whiteShields = result.defenseRolls.filter(roll => roll.combatResult === 'white_shield').length;
-
-    resultHTML += `<div class="mt-3 p-2 bg-gray-700 rounded text-center">`;
-    resultHTML += `<div class="text-sm font-semibold">Combat Summary</div>`;
-    resultHTML += `<div class="text-xs mt-1">${skulls} Skulls - ${blackShields} Black Shields = ${Math.max(0, skulls - blackShields)} Damage</div>`;
-    resultHTML += `</div>`;
-  }
-
-  // Show damage if present
-  if (result.damage !== undefined) {
-    const damageColor = result.damage > 0 ? 'text-red-300' : 'text-green-300';
-    resultHTML += `<div class="mt-2 text-sm font-semibold ${damageColor}">💥 Final Damage: ${result.damage}</div>`;
-  }
-
-  // Show treasure found
-  if (result.action === 'search_treasure' && result.success) {
-    if (result.itemsFound && result.itemsFound.length > 0) {
-      resultHTML += '<div class="mt-3 p-2 bg-yellow-900/30 border border-yellow-700 rounded">';
-      resultHTML += '<div class="text-sm font-semibold text-yellow-300 mb-2">📦 Items Found:</div>';
-      result.itemsFound.forEach(item => {
-        resultHTML += `<div class="text-xs text-yellow-200 ml-2">• ${item.name}</div>`;
-      });
-      resultHTML += '</div>';
-    }
-
-    // Note: Gold is shown in the message already from the server
-  }
-
-  // Handle monster death
+  // Handle monster updates after attack
   if (result.action === 'attack' && gameState.getSelectedMonsterId()) {
     setTimeout(() => {
       updateMonsterDetailsUI();
     }, 100);
 
-    if (result.damage > 0) {
-      if (result.message.includes('killed')) {
-        resultHTML +=
-          '<div class="mt-2 text-sm text-red-300">Monster defeated!</div>';
-        clearMonsterSelection();
-      }
+    if (result.damage > 0 && result.message && result.message.includes('killed')) {
+      clearMonsterSelection();
     }
   }
 
-  contentDiv.innerHTML = resultHTML;
-  resultDiv.style.display = 'block';
-
-  // Auto-clear error messages after 3 seconds
-  if (!result.success) {
-    setTimeout(() => {
-      if (resultDiv.style.display === 'block') {
-        resultDiv.style.display = 'none';
-        contentDiv.innerHTML = '';
-      }
-    }, 3000);
+  // Display action result in detail pane
+  if (gameState.detailPaneController && result.action !== 'roll_movement') {
+    gameState.detailPaneController.showActionResult(result);
   }
 
   // Reset button states
@@ -585,6 +440,11 @@ export function initializeActionUI() {
     .getElementById('passGMTurn')
     ?.addEventListener('click', passGMTurn);
 
+  // Debug button for testing detail pane with card
+  document
+    .getElementById('testDetailPane')
+    ?.addEventListener('click', testDetailPane);
+
   // Initialize default state
   setActionMode(ACTION_MODES.MOVE);
 }
@@ -607,6 +467,30 @@ function passGMTurn() {
   };
 
   gameState.sendMessage(envelope);
+}
+
+/**
+ * Debug function to test detail pane with a sample card
+ */
+function testDetailPane() {
+  if (!gameState.detailPaneController) {
+    console.error('DetailPaneController not available');
+    return;
+  }
+
+  const testCard = {
+    name: 'Longsword',
+    description: 'This long blade gives you the attack strength of 3 combat dice. Because of its length, the longsword enables you to attack diagonally. May not be used by the wizard.',
+    type: 'weapon',
+    cardImage: '/assets/cards/equipment/longsword.jpg',
+    stats: {
+      attackDice: 3,
+      attackDiagonal: true,
+      cost: '350 gold coins'
+    }
+  };
+
+  gameState.detailPaneController.showItem(testCard);
 }
 
 /**

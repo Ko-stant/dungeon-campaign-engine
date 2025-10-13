@@ -1,0 +1,39 @@
+package components
+
+import "github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
+
+// Header displays the top navigation bar with map/pack/turn info
+templ Header() {
+	<header class="border-b border-border/60 bg-surface/80 backdrop-blur">
+		<div class="px-4 py-3 flex items-center justify-between">
+			<div class="text-lg font-semibold">Dungeon Campaign Engine</div>
+			<div id="headerInfo" class="flex items-center gap-4 text-sm">
+				<!-- Will be populated by JS -->
+			</div>
+		</div>
+	</header>
+}
+
+// HeaderWithSnapshot provides initial snapshot data
+templ HeaderWithSnapshot(snapshot protocol.Snapshot) {
+	<header class="border-b border-border/60 bg-surface/80 backdrop-blur">
+		<div class="px-4 py-2 flex items-center justify-between">
+			<div class="flex items-center gap-6">
+				<div class="text-lg font-semibold">Dungeon Campaign Engine</div>
+				<!-- Keyboard Shortcuts (always visible) -->
+				<div class="flex items-center gap-3 text-xs opacity-60">
+					<span title="Movement tab">M:Move</span>
+					<span title="Items tab">I:Items</span>
+					<span title="Actions tab">A:Actions</span>
+					<span title="Interact with doors">E:Interact</span>
+					<span title="Navigate">Arrows:Nav</span>
+				</div>
+			</div>
+			<div class="flex items-center gap-4 text-sm">
+				<div class="opacity-80">map: { snapshot.MapID }</div>
+				<div class="opacity-80">pack: { snapshot.PackID }</div>
+				<div class="opacity-60">proto: { snapshot.ProtocolVersion }</div>
+			</div>
+		</div>
+	</header>
+}

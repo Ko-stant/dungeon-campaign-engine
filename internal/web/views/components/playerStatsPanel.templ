@@ -1,0 +1,88 @@
+package components
+
+// PlayerStatsPanel displays persistent hero stats (body/mind, equipment, spells)
+templ PlayerStatsPanel() {
+	<div class="flex-1 border-b border-border/60 p-4 overflow-y-auto">
+		<h2 class="text-base font-semibold mb-3">Hero Status</h2>
+
+		<div id="playerStatsContent" class="space-y-4">
+			<!-- Will be populated by JS based on selected hero -->
+			<div class="text-sm opacity-70 text-center py-8">
+				No hero selected
+			</div>
+		</div>
+	</div>
+}
+
+// PlayerStatsContent renders the actual stats (called by JS)
+templ PlayerStatsContent() {
+	<div class="space-y-4">
+		<!-- Hero Identity -->
+		<div class="flex items-center gap-3 p-3 bg-surface-2 rounded-md border border-border/60">
+			<div class="w-12 h-12 rounded-md bg-blue-600/20 border border-blue-600/40 flex items-center justify-center text-2xl">
+				🧙
+			</div>
+			<div>
+				<div class="font-semibold">Wizard</div>
+				<div class="text-xs opacity-70">Level 1</div>
+			</div>
+		</div>
+
+		<!-- Body Points -->
+		<div class="space-y-1">
+			<div class="flex items-center justify-between text-sm">
+				<span class="opacity-70">Body Points</span>
+				<span id="bodyPoints" class="font-mono font-semibold text-red-400">6 / 6</span>
+			</div>
+			<div class="h-2 bg-surface-2 rounded-full overflow-hidden">
+				<div id="bodyBar" class="h-full bg-red-500" style="width: 100%"></div>
+			</div>
+		</div>
+
+		<!-- Mind Points -->
+		<div class="space-y-1">
+			<div class="flex items-center justify-between text-sm">
+				<span class="opacity-70">Mind Points</span>
+				<span id="mindPoints" class="font-mono font-semibold text-blue-400">6 / 6</span>
+			</div>
+			<div class="h-2 bg-surface-2 rounded-full overflow-hidden">
+				<div id="mindBar" class="h-full bg-blue-500" style="width: 100%"></div>
+			</div>
+		</div>
+
+		<!-- Equipment Section -->
+		<div class="space-y-2">
+			<h3 class="text-sm font-semibold opacity-80">Equipment</h3>
+			<div class="space-y-1 text-sm">
+				<div class="flex items-center justify-between p-2 bg-surface-2 rounded">
+					<span class="opacity-70">Weapon:</span>
+					<span id="weaponName" class="font-medium">Dagger (1d)</span>
+				</div>
+				<div class="flex items-center justify-between p-2 bg-surface-2 rounded">
+					<span class="opacity-70">Armor:</span>
+					<span id="armorName" class="font-medium">None</span>
+				</div>
+				<div class="flex items-center justify-between p-2 bg-surface-2 rounded">
+					<span class="opacity-70">Shield:</span>
+					<span id="shieldName" class="font-medium">None</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Spells Section (for Wizard/Elf) -->
+		<div id="spellsSection" class="space-y-2">
+			<h3 class="text-sm font-semibold opacity-80">Spells</h3>
+			<div id="spellsList" class="space-y-1 text-sm">
+				<!-- Populated by JS -->
+			</div>
+		</div>
+
+		<!-- Abilities Section (for special classes) -->
+		<div id="abilitiesSection" class="space-y-2" style="display: none;">
+			<h3 class="text-sm font-semibold opacity-80">Abilities</h3>
+			<div id="abilitiesList" class="space-y-1 text-sm">
+				<!-- Populated by JS -->
+			</div>
+		</div>
+	</div>
+}

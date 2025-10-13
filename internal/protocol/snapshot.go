@@ -12,11 +12,12 @@ type HP struct {
 }
 
 type EntityLite struct {
-	ID   string      `json:"id"`
-	Kind string      `json:"kind"`
-	Tile TileAddress `json:"tile"`
-	HP   *HP         `json:"hp,omitempty"`
-	Tags []string    `json:"tags,omitempty"`
+	ID         string      `json:"id"`
+	Kind       string      `json:"kind"`
+	Tile       TileAddress `json:"tile"`
+	HP         *HP         `json:"hp,omitempty"`
+	MindPoints *HP         `json:"mindPoints,omitempty"`
+	Tags       []string    `json:"tags,omitempty"`
 }
 type ThresholdLite struct {
 	ID          string `json:"id"`

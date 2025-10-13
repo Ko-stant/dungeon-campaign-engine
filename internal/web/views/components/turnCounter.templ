@@ -1,0 +1,26 @@
+package components
+
+// TurnCounter displays current turn number and whose turn it is
+templ TurnCounter() {
+	<div class="border-b border-border/60 p-4">
+		<div class="space-y-2">
+			<!-- Turn Number (large, prominent) -->
+			<div class="flex items-baseline justify-between">
+				<span class="text-sm opacity-70">Turn</span>
+				<span id="turnCounter" class="text-3xl font-bold text-blue-400">1</span>
+			</div>
+
+			<!-- Current Player/Phase -->
+			<div class="flex items-center justify-between text-sm">
+				<span class="opacity-70">Active:</span>
+				<span id="currentPlayer" class="font-semibold">Game Master</span>
+			</div>
+
+			<!-- Connection Status -->
+			<div class="flex items-center justify-between text-xs">
+				<span class="opacity-70">Patches:</span>
+				<span id="patchCount" class="font-mono text-green-400">0</span>
+			</div>
+		</div>
+	</div>
+}

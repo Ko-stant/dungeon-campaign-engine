@@ -98,6 +98,10 @@ class GameState {
     if (this.patchCountElement) {
       this.patchCountElement.textContent = String(this.patchCount);
     }
+    // Also update via turn counter controller if available
+    if (this.turnCounterController) {
+      this.turnCounterController.updatePatchCount(this.patchCount);
+    }
   }
 
   /**
