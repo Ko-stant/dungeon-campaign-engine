@@ -182,6 +182,7 @@ type Effect struct {
 type HeroActionSystem struct {
 	gameState         *GameState
 	turnManager       *TurnManager
+	dynamicTurnOrder  *DynamicTurnOrderManager
 	turnStateManager  *TurnStateManager
 	inventoryManager  *InventoryManager
 	treasureResolver  *TreasureResolver
@@ -227,6 +228,11 @@ func (has *HeroActionSystem) SetTurnStateManager(turnStateManager *TurnStateMana
 	has.turnStateManager = turnStateManager
 }
 
+// SetDynamicTurnOrderManager sets the dynamic turn order manager for permission checks
+func (has *HeroActionSystem) SetDynamicTurnOrderManager(dynamicTurnOrder *DynamicTurnOrderManager) {
+	has.dynamicTurnOrder = dynamicTurnOrder
+}
+
 // SetInventoryManager sets the inventory manager
 func (has *HeroActionSystem) SetInventoryManager(inventoryManager *InventoryManager) {
 	has.inventoryManager = inventoryManager
@@ -239,8 +245,15 @@ func (has *HeroActionSystem) SetTreasureResolver(treasureResolver *TreasureResol
 
 // ProcessAction processes a hero action request
 func (has *HeroActionSystem) ProcessAction(request ActionRequest) (*ActionResult, error) {
-	// Validate player can act
-	if !has.turnManager.CanPlayerAct(request.PlayerID) {
+	// Validate player can act - use dynamic turn order if available
+	canAct := false
+	if has.dynamicTurnOrder != nil {
+		canAct = has.dynamicTurnOrder.CanPlayerAct(request.PlayerID)
+	} else {
+		canAct = has.turnManager.CanPlayerAct(request.PlayerID)
+	}
+
+	if !canAct {
 		return nil, fmt.Errorf("player %s cannot act right now", request.PlayerID)
 	}
 
@@ -681,7 +694,15 @@ func (has *HeroActionSystem) processDisarmTrap(request ActionRequest, result *Ac
 // ProcessInstantAction processes instant actions that don't consume the main action
 func (has *HeroActionSystem) ProcessInstantAction(request InstantActionRequest) (*ActionResult, error) {
 	// Validate it's the player's turn (instant actions don't require actions/movement to be available)
-	if !has.turnManager.IsPlayersTurn(request.PlayerID) {
+	// Use dynamic turn order if available
+	canAct := false
+	if has.dynamicTurnOrder != nil {
+		canAct = has.dynamicTurnOrder.CanPlayerAct(request.PlayerID)
+	} else {
+		canAct = has.turnManager.IsPlayersTurn(request.PlayerID)
+	}
+
+	if !canAct {
 		return nil, fmt.Errorf("player %s cannot act right now", request.PlayerID)
 	}
 

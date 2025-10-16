@@ -7,11 +7,11 @@ import (
 
 // HeroInventory represents a hero's inventory
 type HeroInventory struct {
-	HeroID    string                `json:"hero_id"`
-	Gold      int                   `json:"gold"`
-	Equipment map[string]*ItemCard  `json:"equipment"` // slot -> equipped item
-	Carried   []*ItemCard           `json:"carried"`   // Items not equipped
-	Spells    []*SpellCard          `json:"spells"`    // Spell cards (for Wizard/Elf)
+	HeroID    string               `json:"hero_id"`
+	Gold      int                  `json:"gold"`
+	Equipment map[string]*ItemCard `json:"equipment"` // slot -> equipped item
+	Carried   []*ItemCard          `json:"carried"`   // Items not equipped
+	Spells    []*SpellCard         `json:"spells"`    // Spell cards (for Wizard/Elf)
 }
 
 // InventoryManager manages hero inventories

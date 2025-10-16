@@ -322,3 +322,65 @@ export function getCachedImage(url, cache, onLoad = null, onError = null) {
 export function scheduleRedraw(drawFunction) {
   requestAnimationFrame(drawFunction);
 }
+
+/**
+ * Draw starting position highlights for quest setup phase
+ */
+export function drawStartingPositionHighlights() {
+  const snapshot = gameState.snapshot;
+  if (!snapshot || snapshot.turnPhase !== 'quest_setup') {
+    return;
+  }
+
+  const questSetupController = gameState.questSetupController;
+  if (!questSetupController || !questSetupController.isModalOpen) {
+    return;
+  }
+
+  const availablePositions = questSetupController.availablePositions || [];
+  if (availablePositions.length === 0) {
+    return;
+  }
+
+  const m = getGridMetrics();
+  const ctx = gameState.canvasContext;
+
+  ctx.save();
+
+  // Draw available positions with green pulsing highlight
+  const time = Date.now() / 1000;
+  const pulse = 0.5 + Math.sin(time * 2) * 0.2;
+
+  for (const pos of availablePositions) {
+    const r = getTileRect(pos.x, pos.y, m);
+
+    // Draw green highlight background
+    ctx.fillStyle = `rgba(34, 197, 94, ${0.3 * pulse})`;
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+
+    // Draw green border
+    ctx.strokeStyle = `rgba(34, 197, 94, ${0.6 + 0.2 * pulse})`;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
+  }
+
+  // Draw selected position with amber highlight
+  const selectedPosition = questSetupController.selectedPosition;
+  if (selectedPosition) {
+    const r = getTileRect(selectedPosition.x, selectedPosition.y, m);
+
+    // Draw amber highlight background
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.4)';
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+
+    // Draw amber border with glow
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.9)';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(251, 191, 36, 0.6)';
+    ctx.shadowBlur = 12;
+    ctx.strokeRect(r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3);
+    ctx.shadowBlur = 0;
+  }
+
+  ctx.restore();
+}

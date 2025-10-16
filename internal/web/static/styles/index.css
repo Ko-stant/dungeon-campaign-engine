@@ -90,3 +90,128 @@ html[data-theme="classic"] {
   background-color: rgb(var(--color-treasure-hazard-dark) / 0.3);
   border-color: rgb(var(--color-treasure-hazard) / 0.6);
 }
+
+/* Quest Setup - Starting Position Styles */
+.starting-position-available {
+  position: relative;
+  cursor: pointer;
+}
+
+.starting-position-available::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(34, 197, 94, 0.3);
+  border: 2px solid rgba(34, 197, 94, 0.6);
+  border-radius: 4px;
+  animation: pulseGreen 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.starting-position-selected {
+  position: relative;
+}
+
+.starting-position-selected::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(251, 191, 36, 0.4);
+  border: 3px solid rgba(251, 191, 36, 0.8);
+  border-radius: 4px;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes pulseGreen {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+/* Monster Movement Styles */
+.monster-movement-available {
+  position: relative;
+  cursor: pointer;
+}
+
+.monster-movement-available::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(59, 130, 246, 0.3);
+  border: 2px solid rgba(59, 130, 246, 0.6);
+  border-radius: 4px;
+  animation: pulseBlue 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.monster-selected-tile {
+  position: relative;
+}
+
+.monster-selected-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(239, 68, 68, 0.4);
+  border: 3px solid rgba(239, 68, 68, 0.8);
+  border-radius: 4px;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes pulseBlue {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+/* Monster Attack Targeting Styles */
+.monster-attack-target {
+  position: relative;
+  cursor: crosshair;
+}
+
+.monster-attack-target::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(239, 68, 68, 0.3);
+  border: 2px solid rgba(239, 68, 68, 0.7);
+  border-radius: 4px;
+  animation: pulseRed 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulseRed {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* Tooltip fix for keyboard shortcuts */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1 !important;
+}
+
+.group:hover .group-hover\:visible {
+  visibility: visible !important;
+}

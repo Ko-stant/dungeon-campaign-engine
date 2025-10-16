@@ -429,6 +429,28 @@ class GameState {
       this.redrawRef();
     }
   }
+
+  /**
+   * Get current snapshot
+   * @returns {Snapshot|null}
+   */
+  getSnapshot() {
+    return this.snapshot;
+  }
+
+  /**
+   * Send game intent through WebSocket
+   * @param {string} intentType - Type of intent (e.g., 'RequestMove', 'RequestSelectStartingPosition')
+   * @param {Object} payload - Intent payload data
+   * @returns {boolean} True if sent successfully
+   */
+  sendIntent(intentType, payload) {
+    const message = {
+      type: intentType,
+      payload: payload
+    };
+    return this.sendMessage(message);
+  }
 }
 
 // Create and export singleton instance

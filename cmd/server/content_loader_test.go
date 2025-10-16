@@ -8,7 +8,7 @@ import (
 type testLogger struct{}
 
 func (tl *testLogger) Printf(format string, args ...interface{}) {}
-func (tl *testLogger) Println(args ...interface{})              {}
+func (tl *testLogger) Println(args ...interface{})               {}
 
 func TestContentManager_LoadCampaign(t *testing.T) {
 	logger := &testLogger{}

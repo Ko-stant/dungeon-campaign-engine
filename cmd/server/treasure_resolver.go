@@ -9,27 +9,27 @@ import (
 
 // TreasureResult represents the result of a treasure search
 type TreasureResult struct {
-	Success      bool         `json:"success"`
-	FoundItems   []*ItemCard  `json:"foundItems"`
-	FoundGold    int          `json:"foundGold"`
-	IsEmpty      bool         `json:"isEmpty"`
-	IsHazard     bool         `json:"isHazard"`
-	HazardDamage int          `json:"hazardDamage"`
-	EndTurn      bool         `json:"endTurn"`
-	IsMonster    bool         `json:"isMonster"`
-	MonsterType  string       `json:"monsterType,omitempty"`
-	Message      string       `json:"message"`
-	NoteID       string       `json:"noteId,omitempty"`
+	Success      bool          `json:"success"`
+	FoundItems   []*ItemCard   `json:"foundItems"`
+	FoundGold    int           `json:"foundGold"`
+	IsEmpty      bool          `json:"isEmpty"`
+	IsHazard     bool          `json:"isHazard"`
+	HazardDamage int           `json:"hazardDamage"`
+	EndTurn      bool          `json:"endTurn"`
+	IsMonster    bool          `json:"isMonster"`
+	MonsterType  string        `json:"monsterType,omitempty"`
+	Message      string        `json:"message"`
+	NoteID       string        `json:"noteId,omitempty"`
 	CardDrawn    *TreasureCard `json:"cardDrawn,omitempty"`
 }
 
 // TreasureResolver resolves treasure searches
 type TreasureResolver struct {
-	contentManager  *ContentManager
-	treasureDeck    *TreasureDeckManager
-	quest           *geometry.QuestDefinition
-	consumedNotes   map[string]bool // Track which quest notes have been consumed
-	logger          Logger
+	contentManager *ContentManager
+	treasureDeck   *TreasureDeckManager
+	quest          *geometry.QuestDefinition
+	consumedNotes  map[string]bool // Track which quest notes have been consumed
+	logger         Logger
 }
 
 // NewTreasureResolver creates a new treasure resolver
@@ -52,8 +52,8 @@ func (tr *TreasureResolver) ResolveTreasureSearch(heroID string, room int, posit
 		for noteID, note := range tr.quest.QuestNotes {
 			// Check if note matches this location
 			if note.Location.Room == room &&
-			   note.Location.X == position.X &&
-			   note.Location.Y == position.Y {
+				note.Location.X == position.X &&
+				note.Location.Y == position.Y {
 
 				// Check if furniture ID matches (if specified)
 				if note.Location.FurnitureID != "" && note.Location.FurnitureID != furnitureID {

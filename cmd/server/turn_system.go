@@ -59,25 +59,25 @@ type MovementSegment struct {
 
 // TurnState represents the current state of the turn system
 type TurnState struct {
-	TurnNumber         int           `json:"turnNumber"`
-	CurrentTurn        TurnType      `json:"currentTurn"`
-	CurrentPhase       TurnPhase     `json:"currentPhase"`
-	ActivePlayerID     string        `json:"activePlayerId"`
-	ActionsLeft        int           `json:"actionsLeft"`
-	MovementLeft       int           `json:"movementLeft"`
-	MovementDiceRolled bool          `json:"movementDiceRolled"` // Whether movement dice have been rolled
-	MovementRolls      []int         `json:"movementRolls"`      // The actual dice rolls for movement
-	HasMoved           bool          `json:"hasMoved"`           // Whether player has used their movement this turn
-	MovementStarted    bool          `json:"movementStarted"`    // Whether movement action has been started
-	MovementAction     string        `json:"movementAction"`     // Which movement action was used (move_before/move_after)
-	ActionTaken        bool          `json:"actionTaken"`        // Whether player has used their main action
-	TurnStartTime      time.Time     `json:"turnStartTime"`
-	TurnTimeLimit        time.Duration      `json:"turnTimeLimit"`
-	CanEndTurn           bool               `json:"canEndTurn"`
-	NextTurnType         TurnType           `json:"nextTurnType"`
-	MovementHistory      []MovementSegment  `json:"movementHistory"`      // Complete movement history for this turn
-	CurrentSegment       *MovementSegment   `json:"currentSegment"`       // Currently active movement segment
-	InitialHeroPosition  *MovementStep      `json:"initialHeroPosition"`  // Hero position at start of turn
+	TurnNumber          int               `json:"turnNumber"`
+	CurrentTurn         TurnType          `json:"currentTurn"`
+	CurrentPhase        TurnPhase         `json:"currentPhase"`
+	ActivePlayerID      string            `json:"activePlayerId"`
+	ActionsLeft         int               `json:"actionsLeft"`
+	MovementLeft        int               `json:"movementLeft"`
+	MovementDiceRolled  bool              `json:"movementDiceRolled"` // Whether movement dice have been rolled
+	MovementRolls       []int             `json:"movementRolls"`      // The actual dice rolls for movement
+	HasMoved            bool              `json:"hasMoved"`           // Whether player has used their movement this turn
+	MovementStarted     bool              `json:"movementStarted"`    // Whether movement action has been started
+	MovementAction      string            `json:"movementAction"`     // Which movement action was used (move_before/move_after)
+	ActionTaken         bool              `json:"actionTaken"`        // Whether player has used their main action
+	TurnStartTime       time.Time         `json:"turnStartTime"`
+	TurnTimeLimit       time.Duration     `json:"turnTimeLimit"`
+	CanEndTurn          bool              `json:"canEndTurn"`
+	NextTurnType        TurnType          `json:"nextTurnType"`
+	MovementHistory     []MovementSegment `json:"movementHistory"`     // Complete movement history for this turn
+	CurrentSegment      *MovementSegment  `json:"currentSegment"`      // Currently active movement segment
+	InitialHeroPosition *MovementStep     `json:"initialHeroPosition"` // Hero position at start of turn
 }
 
 // TurnManager handles turn progression and validation
@@ -188,11 +188,11 @@ const (
 
 // HeroStats represents the base stats for a hero class
 type HeroStats struct {
-	BodyPoints    int `json:"bodyPoints"`
-	MindPoints    int `json:"mindPoints"`
-	AttackDice    int `json:"attackDice"`
-	DefenseDice   int `json:"defenseDice"`
-	MovementDice  int `json:"movementDice"`
+	BodyPoints   int `json:"bodyPoints"`
+	MindPoints   int `json:"mindPoints"`
+	AttackDice   int `json:"attackDice"`
+	DefenseDice  int `json:"defenseDice"`
+	MovementDice int `json:"movementDice"`
 }
 
 // GetBaseStatsForClass returns the base stats for each hero class
@@ -345,17 +345,10 @@ func (tm *TurnManager) AddPlayer(player *Player) error {
 		tm.state.ActivePlayerID = player.ID
 	}
 
-	// Initialize hero turn state in the turn state manager
-	if tm.turnStateManager != nil {
-		// We don't have the hero position yet, so use a default (0,0)
-		// The position will be updated when the game state is initialized
-		defaultPos := protocol.TileAddress{X: 0, Y: 0}
-		if err := tm.turnStateManager.StartHeroTurn(player.EntityID, player.ID, defaultPos); err != nil {
-			tm.logger.Printf("Warning: Failed to initialize hero turn state for %s: %v", player.ID, err)
-		}
-	}
+	// NOTE: Do NOT broadcast turn state here during AddPlayer
+	// The DynamicTurnOrderManager will broadcast the correct phase state
+	// when quest setup completes and the hero's turn actually starts
 
-	tm.broadcastTurnState()
 	return nil
 }
 
@@ -377,6 +370,20 @@ func (tm *TurnManager) GetPlayer(playerID string) *Player {
 	defer tm.lock.RUnlock()
 
 	return tm.players[playerID]
+}
+
+// GetHeroPlayers returns all active hero players (excludes GM)
+func (tm *TurnManager) GetHeroPlayers() []*Player {
+	tm.lock.RLock()
+	defer tm.lock.RUnlock()
+
+	heroes := make([]*Player, 0, len(tm.players))
+	for _, player := range tm.players {
+		if player.IsActive {
+			heroes = append(heroes, player)
+		}
+	}
+	return heroes
 }
 
 // CanPlayerAct checks if a specific player can take actions
@@ -873,10 +880,10 @@ func (tm *TurnManager) GetMovementVisualizationData() map[string]interface{} {
 	defer tm.lock.RUnlock()
 
 	return map[string]interface{}{
-		"history":           tm.state.MovementHistory,
-		"currentSegment":    tm.state.CurrentSegment,
-		"initialPosition":   tm.state.InitialHeroPosition,
-		"movementLeft":      tm.state.MovementLeft,
+		"history":            tm.state.MovementHistory,
+		"currentSegment":     tm.state.CurrentSegment,
+		"initialPosition":    tm.state.InitialHeroPosition,
+		"movementLeft":       tm.state.MovementLeft,
 		"movementDiceRolled": tm.state.MovementDiceRolled,
 	}
 }

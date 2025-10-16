@@ -132,6 +132,9 @@ export function executeCurrentAction() {
  */
 function createActionMessage(mode) {
   const selectedMonsterId = gameState.getSelectedMonsterId();
+  const snapshot = gameState.snapshot;
+  const playerId = snapshot?.viewerPlayerId || 'player-1';
+  const entityId = snapshot?.viewerEntityId || 'hero-1';
 
   switch (mode) {
     case ACTION_MODES.ATTACK:
@@ -139,8 +142,8 @@ function createActionMessage(mode) {
         return {
           type: 'HeroAction',
           payload: {
-            playerId: 'player-1',
-            entityId: 'hero-1',
+            playerId: playerId,
+            entityId: entityId,
             action: 'attack',
             parameters: { targetId: selectedMonsterId },
           },
@@ -153,8 +156,8 @@ function createActionMessage(mode) {
         return {
           type: 'HeroAction',
           payload: {
-            playerId: 'player-1',
-            entityId: 'hero-1',
+            playerId: playerId,
+            entityId: entityId,
             action: 'cast_spell',
             parameters: {
               spellId: 'fireball', // TODO: Add spell selection
@@ -169,8 +172,8 @@ function createActionMessage(mode) {
       return {
         type: 'HeroAction',
         payload: {
-          playerId: 'player-1',
-          entityId: 'hero-1',
+          playerId: playerId,
+          entityId: entityId,
           action: 'search_treasure',
           parameters: {},
         },
@@ -180,8 +183,8 @@ function createActionMessage(mode) {
       return {
         type: 'HeroAction',
         payload: {
-          playerId: 'player-1',
-          entityId: 'hero-1',
+          playerId: playerId,
+          entityId: entityId,
           action: 'search_traps',
           parameters: {},
         },
@@ -191,8 +194,8 @@ function createActionMessage(mode) {
       return {
         type: 'HeroAction',
         payload: {
-          playerId: 'player-1',
-          entityId: 'hero-1',
+          playerId: playerId,
+          entityId: entityId,
           action: 'search_hidden_doors',
           parameters: {},
         },
@@ -212,9 +215,18 @@ export function rollMovementDice() {
     return;
   }
 
+  const snapshot = gameState.snapshot;
+  const playerID = snapshot?.viewerPlayerId;
+  const entityID = snapshot?.viewerEntityId;
+
+  if (!playerID || !entityID) {
+    console.error('Player ID or Entity ID not available in snapshot');
+    return;
+  }
+
   const instantActionRequest = {
-    playerID: 'player-1', // TODO: Get actual player ID
-    entityID: 'hero-1',   // TODO: Get actual entity ID
+    playerID: playerID,
+    entityID: entityID,
     action: 'roll_movement',
     parameters: {}
   };
@@ -234,11 +246,15 @@ export function rollAttackDice() {
     return false;
   }
 
+  const snapshot = gameState.snapshot;
+  const playerId = snapshot?.viewerPlayerId || 'player-1';
+  const entityId = snapshot?.viewerEntityId || 'hero-1';
+
   const msg = {
     type: 'HeroAction',
     payload: {
-      playerId: 'player-1', // TODO: Get actual player ID
-      entityId: 'hero-1', // TODO: Get actual hero entity ID
+      playerId: playerId,
+      entityId: entityId,
       action: 'attack',
       parameters: {
         targetId: gameState.getSelectedMonsterId(),
@@ -503,9 +519,18 @@ function passTurn() {
     return;
   }
 
+  const snapshot = gameState.snapshot;
+  const playerID = snapshot?.viewerPlayerId;
+  const entityID = snapshot?.viewerEntityId;
+
+  if (!playerID || !entityID) {
+    console.error('Player ID or Entity ID not available in snapshot');
+    return;
+  }
+
   const instantActionRequest = {
-    playerID: 'player-1', // TODO: Get actual player ID
-    entityID: 'hero-1',   // TODO: Get actual entity ID
+    playerID: playerID,
+    entityID: entityID,
     action: 'pass_turn',
     parameters: {}
   };

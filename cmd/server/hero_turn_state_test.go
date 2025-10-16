@@ -131,10 +131,10 @@ func TestHeroTurnState_MovementFirst_Strategy(t *testing.T) {
 
 	// Take action
 	action := ActionRecord{
-		ActionType:  "attack",
-		TargetID:    "monster-1",
-		Success:     true,
-		Details:     make(map[string]interface{}),
+		ActionType: "attack",
+		TargetID:   "monster-1",
+		Success:    true,
+		Details:    make(map[string]interface{}),
 	}
 	err = state.RecordAction(action)
 	if err != nil {

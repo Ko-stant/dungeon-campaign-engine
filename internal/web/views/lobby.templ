@@ -185,6 +185,8 @@ templ LobbyPage(availableHeroes []string) {
 						case 'PlayerIDAssigned':
 							myPlayerID = envelope.payload.playerId;
 							console.log('Received player ID:', myPlayerID);
+							// Set cookie for page routing
+							document.cookie = `playerID=${myPlayerID}; path=/; max-age=86400; samesite=strict`;
 							break;
 						case 'LobbyStateChanged':
 							handleLobbyState(envelope.payload);

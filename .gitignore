@@ -8,3 +8,4 @@ tmp/
 internal/web/static/styles/app.css
 node_modules/
 build/
+docs/base_campaign_reference

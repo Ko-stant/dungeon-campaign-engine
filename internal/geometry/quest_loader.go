@@ -39,16 +39,16 @@ type QuestMonster struct {
 
 // QuestFurniture represents furniture placement
 type QuestFurniture struct {
-	ID                string   `json:"id"`
-	Type              string   `json:"type"`
-	X                 int      `json:"x"`
-	Y                 int      `json:"y"`
-	Room              int      `json:"room"`
-	Rotation          int      `json:"rotation,omitempty"`          // 0, 90, 180, 270 degrees
+	ID                 string   `json:"id"`
+	Type               string   `json:"type"`
+	X                  int      `json:"x"`
+	Y                  int      `json:"y"`
+	Room               int      `json:"room"`
+	Rotation           int      `json:"rotation,omitempty"`              // 0, 90, 180, 270 degrees
 	SwapAspectOnRotate bool     `json:"swap_aspect_on_rotate,omitempty"` // Whether to swap width/height for 90/270 rotations
-	BlocksMovement    bool     `json:"blocks_movement"`
-	Contains          []string `json:"contains"`
-	Notes             string   `json:"notes"`
+	BlocksMovement     bool     `json:"blocks_movement"`
+	Contains           []string `json:"contains"`
+	Notes              string   `json:"notes"`
 }
 
 // QuestObjective represents a quest objective
@@ -67,14 +67,14 @@ type QuestSpecialRules struct {
 
 // QuestTreasureNote represents a quest-specific treasure note
 type QuestTreasureNote struct {
-	NoteID           string                 `json:"note_id"`
-	Location         TreasureLocation       `json:"location"`
-	Description      string                 `json:"description"`
-	TreasureType     string                 `json:"treasure_type"` // "fixed", "empty", "monster_modifier"
-	Items            []ItemReference        `json:"items,omitempty"`
-	Gold             int                    `json:"gold,omitempty"`
-	MonsterModifier  *MonsterModifier       `json:"monster_modifier,omitempty"`
-	ConsumedForParty bool                   `json:"consumed_for_party"`
+	NoteID           string           `json:"note_id"`
+	Location         TreasureLocation `json:"location"`
+	Description      string           `json:"description"`
+	TreasureType     string           `json:"treasure_type"` // "fixed", "empty", "monster_modifier"
+	Items            []ItemReference  `json:"items,omitempty"`
+	Gold             int              `json:"gold,omitempty"`
+	MonsterModifier  *MonsterModifier `json:"monster_modifier,omitempty"`
+	ConsumedForParty bool             `json:"consumed_for_party"`
 }
 
 type TreasureLocation struct {

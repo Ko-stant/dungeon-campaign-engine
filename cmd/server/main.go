@@ -159,9 +159,203 @@ func mainWithGameManager() {
 				if err != nil {
 					return
 				}
-				handleEnhancedWebSocketMessage(data, gameManager, state, hub, sequenceGen, quest, furnitureSystem)
+				// Use hardcoded player ID for direct game mode (legacy)
+				playerID := "player-1"
+				handleEnhancedWebSocketMessage(data, gameManager, state, hub, sequenceGen, quest, furnitureSystem, playerID)
 			}
 		}(conn)
+	})
+
+	// GM page handler
+	mux.HandleFunc("/gm", func(w http.ResponseWriter, r *http.Request) {
+		// Get current game state
+		currentGameState := gameManager.GetGameState()
+		dynamicTurnOrder := gameManager.GetDynamicTurnOrder()
+
+		// Get all entities including monsters for GM view
+		currentGameState.Lock.Lock()
+		hero := currentGameState.Entities["hero-1"]
+		var revealed []int
+		for id := range currentGameState.RevealedRegions {
+			revealed = append(revealed, id)
+		}
+		currentGameState.Lock.Unlock()
+
+		// GM sees all regions as revealed
+		visibleNow := computeVisibleRoomRegionsNow(state, hero, state.CorridorRegion)
+
+		// Get hero data for snapshot
+		heroHP := &protocol.HP{Current: 0, Max: 0}
+		heroMindPoints := &protocol.HP{Current: 0, Max: 0}
+		if player := gameManager.turnManager.GetPlayer("player-1"); player != nil && player.Character != nil {
+			heroHP.Current = player.Character.CurrentBody
+			heroHP.Max = player.Character.BaseStats.BodyPoints
+			heroMindPoints.Current = player.Character.CurrentMind
+			heroMindPoints.Max = player.Character.BaseStats.MindPoints
+		}
+
+		entities := []protocol.EntityLite{
+			{
+				ID:         "hero-1",
+				Kind:       "hero",
+				Tile:       hero,
+				HP:         heroHP,
+				MindPoints: heroMindPoints,
+				Tags:       []string{"barbarian"},
+			},
+		}
+
+		// Include all doors for GM
+		currentGameState.Lock.Lock()
+		thresholds := make([]protocol.ThresholdLite, 0, len(currentGameState.Doors))
+		for id, info := range currentGameState.Doors {
+			if info != nil {
+				thresholds = append(thresholds, protocol.ThresholdLite{
+					ID:          id,
+					X:           info.Edge.X,
+					Y:           info.Edge.Y,
+					Orientation: string(info.Edge.Orientation),
+					Kind:        "DoorSocket",
+					State:       info.State,
+				})
+			}
+		}
+		currentGameState.Lock.Unlock()
+
+		// Get all blocking walls for GM
+		blockingWalls := make([]protocol.BlockingWallLite, 0, len(quest.BlockingWalls))
+		for _, wall := range quest.BlockingWalls {
+			blockingWalls = append(blockingWalls, protocol.BlockingWallLite{
+				ID:          wall.ID,
+				X:           wall.X,
+				Y:           wall.Y,
+				Orientation: wall.Orientation,
+				Size:        wall.Size,
+			})
+		}
+
+		known := make([]int, 0, state.RegionMap.RegionsCount)
+		for i := 0; i < state.RegionMap.RegionsCount; i++ {
+			known = append(known, i)
+		}
+
+		// Get current turn state
+		turnState := gameManager.GetTurnState()
+
+		// Get all furniture for GM
+		furniture := make([]protocol.FurnitureLite, 0)
+		instances := furnitureSystem.GetAllInstances()
+		for _, instance := range instances {
+			if instance.Definition != nil {
+				furnitureItem := protocol.FurnitureLite{
+					ID:   instance.ID,
+					Type: instance.Type,
+					Tile: instance.Position,
+					GridSize: struct {
+						Width  int `json:"width"`
+						Height int `json:"height"`
+					}{
+						Width:  instance.Definition.GridSize.Width,
+						Height: instance.Definition.GridSize.Height,
+					},
+					Rotation:           instance.Rotation,
+					SwapAspectOnRotate: instance.SwapAspectOnRotate,
+					TileImage:          instance.Definition.Rendering.TileImage,
+					TileImageCleaned:   instance.Definition.Rendering.TileImageCleaned,
+					PixelDimensions: struct {
+						Width  int `json:"width"`
+						Height int `json:"height"`
+					}{
+						Width:  instance.Definition.Rendering.PixelDimensions.Width,
+						Height: instance.Definition.Rendering.PixelDimensions.Height,
+					},
+					BlocksLineOfSight: instance.Definition.BlocksLineOfSight,
+					BlocksMovement:    instance.Definition.BlocksMovement,
+					Contains:          instance.Contains,
+				}
+				furniture = append(furniture, furnitureItem)
+			}
+		}
+
+		// Get ALL monsters for GM (not just visible ones)
+		monsters := make([]protocol.MonsterLite, 0)
+		allMonsters := gameManager.GetMonsters()
+		for _, monster := range allMonsters {
+			monsterItem := protocol.MonsterLite{
+				ID:          monster.ID,
+				Type:        string(monster.Type),
+				Tile:        monster.Position,
+				Body:        monster.Body,
+				MaxBody:     monster.MaxBody,
+				Mind:        monster.Mind,
+				MaxMind:     monster.MaxMind,
+				AttackDice:  monster.AttackDice,
+				DefenseDice: monster.DefenseDice,
+				IsVisible:   monster.IsVisible,
+				IsAlive:     monster.IsAlive,
+			}
+			monsters = append(monsters, monsterItem)
+		}
+
+		// Get hero turn states
+		heroTurnStates := gameManager.GetHeroTurnStatesForSnapshot()
+
+		// Get dynamic turn order state
+		heroesActed := dynamicTurnOrder.GetHeroesActedThisCycle()
+		heroesActedIDs := make([]string, 0, len(heroesActed))
+		for playerID := range heroesActed {
+			heroesActedIDs = append(heroesActedIDs, playerID)
+		}
+
+		s := protocol.Snapshot{
+			MapID:             "dev-map",
+			PackID:            "dev-pack@v1",
+			Turn:              turnState.TurnNumber,
+			LastEventID:       0,
+			MapWidth:          state.Segment.Width,
+			MapHeight:         state.Segment.Height,
+			RegionsCount:      state.RegionMap.RegionsCount,
+			TileRegionIDs:     state.RegionMap.TileRegionIDs,
+			RevealedRegionIDs: revealed,
+			DoorStates:        []byte{},
+			Entities:          entities,
+			Variables: map[string]any{
+				"ui.debug":             debugConfig.Enabled,
+				"turn.number":          turnState.TurnNumber,
+				"turn.current":         turnState.CurrentTurn,
+				"turn.phase":           turnState.CurrentPhase,
+				"turn.playerId":        turnState.ActivePlayerID,
+				"turn.actions":         turnState.ActionsLeft,
+				"turn.movement":        turnState.MovementLeft,
+				"turn.canEnd":          turnState.CanEndTurn,
+				"turn.movementRolled":  turnState.MovementDiceRolled,
+				"turn.movementRolls":   turnState.MovementRolls,
+				"turn.hasMoved":        turnState.HasMoved,
+				"turn.movementStarted": turnState.MovementStarted,
+				"turn.movementAction":  turnState.MovementAction,
+				"turn.actionTaken":     turnState.ActionTaken,
+			},
+			ProtocolVersion:  "v0",
+			Thresholds:       thresholds,
+			BlockingWalls:    blockingWalls,
+			Furniture:        furniture,
+			Monsters:         monsters,
+			HeroTurnStates:   heroTurnStates,
+			VisibleRegionIDs: visibleNow,
+			CorridorRegionID: state.CorridorRegion,
+			KnownRegionIDs:   known,
+
+			// Dynamic turn order state
+			TurnPhase:          string(dynamicTurnOrder.GetCurrentPhase()),
+			CycleNumber:        dynamicTurnOrder.GetCycleNumber(),
+			ActiveHeroPlayerID: dynamicTurnOrder.GetActiveHeroPlayerID(),
+			ElectedPlayerID:    dynamicTurnOrder.GetElectedPlayer(),
+			HeroesActedIDs:     heroesActedIDs,
+		}
+
+		if err := views.GMPage(s).Render(r.Context(), w); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	})
 
 	// Main page handler
@@ -302,14 +496,14 @@ func mainWithGameManager() {
 }
 
 // Enhanced WebSocket message handler supporting both legacy and new actions
-func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state *GameState, hub *ws.Hub, sequenceGen *SequenceGeneratorImpl, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem) {
-	log.Printf("DEBUG: Received WebSocket message: %s", string(data))
+func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state *GameState, hub *ws.Hub, sequenceGen *SequenceGeneratorImpl, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem, playerID string) {
+	log.Printf("DEBUG: Received WebSocket message from player %s: %s", playerID, string(data))
 	var env protocol.IntentEnvelope
 	if err := json.Unmarshal(data, &env); err != nil {
 		log.Printf("DEBUG: Failed to unmarshal IntentEnvelope: %v", err)
 		return
 	}
-	log.Printf("DEBUG: Message type: %s", env.Type)
+	log.Printf("DEBUG: Message type: %s from player %s", env.Type, playerID)
 
 	switch env.Type {
 	case "RequestMove":
@@ -552,7 +746,8 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		monsterSystem := gameManager.GetMonsterSystem()
 		// Use GameManager's state to ensure consistency
 		gameManagerState := gameManager.GetGameState()
-		handleWebSocketMessage(data, gameManagerState, hub, seqPtr, quest, furnitureSystem, monsterSystem)
+		// Use the playerID parameter passed to this function
+		handleWebSocketMessage(data, gameManagerState, hub, seqPtr, quest, furnitureSystem, monsterSystem, gameManager, playerID)
 	}
 }
 

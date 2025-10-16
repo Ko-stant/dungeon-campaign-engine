@@ -9,6 +9,7 @@ import {
   drawGrid,
   drawRegionBorders,
   drawEntities,
+  drawStartingPositionHighlights,
 } from './rendering.js';
 import {
   drawDoors,
@@ -27,6 +28,9 @@ import { EntityModalController } from './ui/entityModal.js';
 import { TurnCounterController } from './ui/turnCounter.js';
 import { PlayerStatsPanelController } from './ui/playerStatsPanel.js';
 import { DetailPaneController } from './ui/detailPane.js';
+import { initializeGMControls } from './ui/gmControls.js';
+import { initializeHeroTurnControls } from './ui/heroTurnControls.js';
+import { QuestSetupController } from './ui/questSetupControls.js';
 
 /**
  * Main drawing function that renders the entire game board
@@ -41,6 +45,7 @@ export function drawBoard() {
   drawDoors();                // Door overlays on top of regions
   drawBlockingWalls();        // Blocking walls on top of regions
   drawMovementPlanning(gameState.canvasContext); // Movement planning overlays
+  drawStartingPositionHighlights(); // Quest setup position highlights
   drawEntities();             // Heroes and other entities on top
 }
 
@@ -103,18 +108,29 @@ export function initializeApp() {
   const playerStatsPanelController = new PlayerStatsPanelController(gameState);
   const detailPaneController = new DetailPaneController();
 
+  // Initialize GM and Hero turn controls (will detect which page we're on)
+  const gmControlsController = initializeGMControls(gameState);
+  const heroTurnControlsController = initializeHeroTurnControls(gameState);
+
+  // Initialize Quest Setup Controller
+  const questSetupController = new QuestSetupController(gameState);
+
   // Make UI controllers available globally
   gameState.actionsPanelController = actionsPanelController;
   gameState.entityModalController = entityModalController;
   gameState.turnCounterController = turnCounterController;
   gameState.playerStatsPanelController = playerStatsPanelController;
   gameState.detailPaneController = detailPaneController;
+  gameState.gmControlsController = gmControlsController;
+  gameState.heroTurnControlsController = heroTurnControlsController;
+  gameState.questSetupController = questSetupController;
 
   // Initialize UI from snapshot
   turnCounterController.updateFromSnapshot(gameState.snapshot);
   turnCounterController.updatePatchCount(0);
   playerStatsPanelController.updateFromSnapshot(gameState.snapshot);
   detailPaneController.clear(); // Show placeholder content
+  questSetupController.updateFromSnapshot(gameState.snapshot);
 
   // Initialize canvas click handling for entity inspection
   initializeCanvasClickHandling();

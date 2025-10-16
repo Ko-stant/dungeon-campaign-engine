@@ -127,4 +127,65 @@ type Snapshot struct {
 	VisibleRegionIDs  []int                        `json:"visibleRegionIds"`
 	CorridorRegionID  int                          `json:"corridorRegionId"`
 	KnownRegionIDs    []int                        `json:"knownRegionIds"`
+
+	// Viewer identity - who is viewing this snapshot
+	ViewerPlayerID string `json:"viewerPlayerId"` // e.g., "player-abc123"
+	ViewerRole     string `json:"viewerRole"`     // "gm" or "hero"
+	ViewerEntityID string `json:"viewerEntityId"` // e.g., "hero-1" (empty for GM)
+
+	// Dynamic turn order state
+	TurnPhase          string   `json:"turnPhase"`
+	CycleNumber        int      `json:"cycleNumber"`
+	ActiveHeroPlayerID string   `json:"activeHeroPlayerId,omitempty"`
+	ElectedPlayerID    string   `json:"electedPlayerId,omitempty"`
+	HeroesActedIDs     []string `json:"heroesActedIds"`
+
+	// Quest data for GM
+	QuestName         string        `json:"questName,omitempty"`
+	QuestDescription  string        `json:"questDescription,omitempty"`
+	QuestNotes        string        `json:"questNotes,omitempty"`        // Player-visible notes
+	QuestGMNotes      string        `json:"questGMNotes,omitempty"`      // GM-only notes
+	QuestObjectives   []string      `json:"questObjectives,omitempty"`   // List of objectives
+	StartingPositions []TileAddress `json:"startingPositions,omitempty"` // Valid starting tiles
+
+	// Quest setup state
+	PlayersReady         map[string]bool              `json:"playersReady,omitempty"`
+	PlayerStartPositions map[string]StartPositionInfo `json:"playerStartPositions,omitempty"`
+
+	// Monster turn states
+	MonsterTurnStates map[string]MonsterTurnStateLite `json:"monsterTurnStates,omitempty"`
+	SelectedMonsterID string                          `json:"selectedMonsterId,omitempty"`
+}
+
+type MonsterTurnStateLite struct {
+	MonsterID            string                       `json:"monsterId"`
+	EntityID             string                       `json:"entityId"`
+	TurnNumber           int                          `json:"turnNumber"`
+	CurrentPosition      TileAddress                  `json:"currentPosition"`
+	FixedMovement        int                          `json:"fixedMovement"`
+	MovementRemaining    int                          `json:"movementRemaining"`
+	MovementUsed         int                          `json:"movementUsed"`
+	HasMoved             bool                         `json:"hasMoved"`
+	ActionTaken          bool                         `json:"actionTaken"`
+	ActionType           string                       `json:"actionType,omitempty"`
+	AttackDice           int                          `json:"attackDice"`
+	DefenseDice          int                          `json:"defenseDice"`
+	BodyPoints           int                          `json:"bodyPoints"`
+	CurrentBody          int                          `json:"currentBody"`
+	SpecialAbilities     []MonsterAbilitySnapshotLite `json:"specialAbilities,omitempty"`
+	AbilityUsageThisTurn map[string]int               `json:"abilityUsageThisTurn,omitempty"`
+	ActiveEffectsCount   int                          `json:"activeEffectsCount"`
+}
+
+type MonsterAbilitySnapshotLite struct {
+	ID             string                 `json:"id"`
+	Name           string                 `json:"name"`
+	Type           string                 `json:"type"`
+	UsesPerTurn    int                    `json:"usesPerTurn"`
+	UsesPerQuest   int                    `json:"usesPerQuest"`
+	UsesLeftQuest  int                    `json:"usesLeftQuest"`
+	RequiresAction bool                   `json:"requiresAction"`
+	Range          int                    `json:"range"`
+	Description    string                 `json:"description,omitempty"`
+	EffectDetails  map[string]interface{} `json:"effectDetails,omitempty"`
 }

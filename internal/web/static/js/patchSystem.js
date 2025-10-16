@@ -88,6 +88,46 @@ export function applyPatch(patch) {
       console.log('Game starting:', patch.payload);
       break;
 
+    case 'TurnPhaseChanged':
+      handleTurnPhaseChanged(patch);
+      break;
+
+    case 'PlayerElected':
+      handlePlayerElected(patch);
+      break;
+
+    case 'ElectionCancelled':
+      handleElectionCancelled(patch);
+      break;
+
+    case 'HeroTurnStarted':
+      handleHeroTurnStarted(patch);
+      break;
+
+    case 'HeroTurnCompleted':
+      handleHeroTurnCompleted(patch);
+      break;
+
+    case 'GMTurnCompleted':
+      handleGMTurnCompleted(patch);
+      break;
+
+    case 'MonsterTurnStateChanged':
+      handleMonsterTurnStateChanged(patch);
+      break;
+
+    case 'StartingPositionSelected':
+      handleStartingPositionSelected(patch);
+      break;
+
+    case 'AvailableStartingPositions':
+      handleAvailableStartingPositions(patch);
+      break;
+
+    case 'QuestSetupStateChanged':
+      handleQuestSetupStateChanged(patch);
+      break;
+
     default:
       console.error('Unknown patch type:', patch.type);
   }
@@ -301,6 +341,37 @@ function handleTurnStateChanged(patch) {
       if (patch.payload.turnNumber !== undefined) {
         gameState.snapshot.turn = patch.payload.turnNumber;
       }
+
+      // Update hero turn states if heroID is present (new format)
+      if (patch.payload.heroId && patch.payload.playerId) {
+        // Ensure heroTurnStates map exists
+        if (!gameState.snapshot.heroTurnStates) {
+          gameState.snapshot.heroTurnStates = {};
+        }
+
+        // Update or create hero turn state
+        gameState.snapshot.heroTurnStates[patch.payload.heroId] = {
+          heroId: patch.payload.heroId,
+          playerId: patch.payload.playerId,
+          turnNumber: patch.payload.turnNumber,
+          movementDiceRolled: patch.payload.movementDiceRolled || false,
+          movementDiceResults: patch.payload.movementDiceResults || [],
+          movementTotal: patch.payload.movementTotal || 0,
+          movementUsed: patch.payload.movementUsed || 0,
+          movementRemaining: patch.payload.movementLeft || 0,
+          hasMoved: patch.payload.hasMoved || false,
+          actionTaken: patch.payload.actionTaken || false,
+          actionType: '',
+          turnFlags: {},
+          activitiesCount: 0,
+          activeEffectsCount: 0,
+          activeEffects: [],
+          locationSearches: {},
+          turnStartPosition: null,
+          currentPosition: null
+        };
+      }
+
       // Refresh turn counter display
       gameState.turnCounterController.updateFromSnapshot(gameState.snapshot);
     } else {
@@ -465,4 +536,279 @@ export function setRedrawFunction(fn) {
  */
 export function processPatchForTesting(patch) {
   applyPatch(patch);
+}
+
+/**
+ * Handle TurnPhaseChanged patch
+ * @param {Object} patch
+ */
+function handleTurnPhaseChanged(patch) {
+  if (patch.payload) {
+    // Update snapshot with new turn phase data
+    if (gameState.snapshot) {
+      gameState.snapshot.turnPhase = patch.payload.turnPhase;
+      gameState.snapshot.cycleNumber = patch.payload.cycleNumber;
+      gameState.snapshot.activeHeroPlayerID = patch.payload.activeHeroPlayerID || '';
+      gameState.snapshot.electedPlayerID = patch.payload.electedPlayerID || '';
+      gameState.snapshot.heroesActedIDs = patch.payload.heroesActedIDs || [];
+    }
+
+    // Update GM controls if present
+    if (gameState.gmControlsController) {
+      gameState.gmControlsController.updateFromSnapshot(gameState.snapshot);
+    }
+
+    // Update hero turn controls if present
+    if (gameState.heroTurnControlsController) {
+      gameState.heroTurnControlsController.updateFromSnapshot(gameState.snapshot);
+    }
+
+    gameState.incrementPatchCount();
+    scheduleRedraw();
+  }
+}
+
+/**
+ * Handle PlayerElected patch
+ * @param {Object} patch
+ */
+function handlePlayerElected(patch) {
+  if (patch.payload) {
+    // Update elected player ID in snapshot
+    if (gameState.snapshot) {
+      gameState.snapshot.electedPlayerID = patch.payload.playerID;
+    }
+
+    // Update hero turn controls
+    if (gameState.heroTurnControlsController) {
+      gameState.heroTurnControlsController.updateFromSnapshot(gameState.snapshot);
+    }
+
+    // Log event if GM
+    if (gameState.gmControlsController) {
+      gameState.gmControlsController.logEvent(`Hero elected: ${patch.payload.playerName || patch.payload.playerID}`);
+    }
+
+    gameState.incrementPatchCount();
+  }
+}
+
+/**
+ * Handle ElectionCancelled patch
+ * @param {Object} patch
+ */
+function handleElectionCancelled(patch) {
+  if (patch.payload) {
+    // Clear elected player in snapshot
+    if (gameState.snapshot) {
+      gameState.snapshot.electedPlayerID = '';
+    }
+
+    // Update hero turn controls
+    if (gameState.heroTurnControlsController) {
+      gameState.heroTurnControlsController.updateFromSnapshot(gameState.snapshot);
+    }
+
+    // Log event if GM
+    if (gameState.gmControlsController) {
+      gameState.gmControlsController.logEvent('Election cancelled');
+    }
+
+    gameState.incrementPatchCount();
+  }
+}
+
+/**
+ * Handle HeroTurnStarted patch
+ * @param {Object} patch
+ */
+function handleHeroTurnStarted(patch) {
+  if (patch.payload) {
+    // Update active hero player ID in snapshot
+    if (gameState.snapshot) {
+      gameState.snapshot.activeHeroPlayerID = patch.payload.playerID;
+      gameState.snapshot.turnPhase = 'hero_active';
+    }
+
+    // Update hero turn controls
+    if (gameState.heroTurnControlsController) {
+      gameState.heroTurnControlsController.updateFromSnapshot(gameState.snapshot);
+    }
+
+    // Log event if GM
+    if (gameState.gmControlsController) {
+      gameState.gmControlsController.logEvent(`Hero turn started: ${patch.payload.playerName || patch.payload.playerID}`);
+    }
+
+    gameState.incrementPatchCount();
+  }
+}
+
+/**
+ * Handle HeroTurnCompleted patch
+ * @param {Object} patch
+ */
+function handleHeroTurnCompleted(patch) {
+  if (patch.payload) {
+    // Add player to heroes acted list
+    if (gameState.snapshot) {
+      if (!gameState.snapshot.heroesActedIDs) {
+        gameState.snapshot.heroesActedIDs = [];
+      }
+      if (!gameState.snapshot.heroesActedIDs.includes(patch.payload.playerID)) {
+        gameState.snapshot.heroesActedIDs.push(patch.payload.playerID);
+      }
+      gameState.snapshot.activeHeroPlayerID = '';
+      gameState.snapshot.turnPhase = 'hero_election';
+    }
+
+    // Update hero turn controls
+    if (gameState.heroTurnControlsController) {
+      gameState.heroTurnControlsController.updateFromSnapshot(gameState.snapshot);
+    }
+
+    // Log event if GM
+    if (gameState.gmControlsController) {
+      gameState.gmControlsController.logEvent(`Hero turn completed: ${patch.payload.playerName || patch.payload.playerID}`);
+    }
+
+    gameState.incrementPatchCount();
+  }
+}
+
+/**
+ * Handle GMTurnCompleted patch
+ * @param {Object} patch
+ */
+function handleGMTurnCompleted(patch) {
+  if (patch.payload) {
+    // Update turn phase and cycle
+    if (gameState.snapshot) {
+      gameState.snapshot.turnPhase = 'hero_election';
+      gameState.snapshot.cycleNumber = patch.payload.cycleNumber;
+      gameState.snapshot.heroesActedIDs = [];
+    }
+
+    // Update GM controls
+    if (gameState.gmControlsController) {
+      gameState.gmControlsController.updateFromSnapshot(gameState.snapshot);
+      gameState.gmControlsController.logEvent(`GM turn completed. Starting cycle ${patch.payload.cycleNumber}`);
+    }
+
+    // Update hero turn controls
+    if (gameState.heroTurnControlsController) {
+      gameState.heroTurnControlsController.updateFromSnapshot(gameState.snapshot);
+    }
+
+    gameState.incrementPatchCount();
+  }
+}
+
+/**
+ * Handle MonsterTurnStateChanged patch
+ * @param {Object} patch
+ */
+function handleMonsterTurnStateChanged(patch) {
+  if (patch.payload && patch.payload.monsterID) {
+    // Update monster in game state
+    const monster = gameState.monsters.get(patch.payload.monsterID);
+    if (monster) {
+      monster.hasMoved = patch.payload.hasMoved;
+      monster.actionTaken = patch.payload.actionTaken;
+      monster.movement = patch.payload.movement;
+    }
+
+    // Update GM monster list if present
+    if (gameState.gmControlsController) {
+      gameState.gmControlsController.updateMonsterList();
+      if (gameState.gmControlsController.selectedMonsterID === patch.payload.monsterID) {
+        gameState.gmControlsController.updateSelectedMonsterPanel();
+      }
+    }
+
+    gameState.incrementPatchCount();
+    scheduleRedraw();
+  }
+}
+
+/**
+ * Handle StartingPositionSelected patch
+ * @param {Object} patch
+ */
+function handleStartingPositionSelected(patch) {
+  if (patch.payload) {
+    // Update player's starting position in snapshot
+    if (gameState.snapshot && gameState.snapshot.players) {
+      const player = gameState.snapshot.players.find(p => p.id === patch.payload.playerID);
+      if (player) {
+        player.startingPosition = patch.payload.position;
+        player.hasSelectedPosition = true;
+      }
+    }
+
+    // Update hero turn controls
+    if (gameState.heroTurnControlsController) {
+      gameState.heroTurnControlsController.updateFromSnapshot(gameState.snapshot);
+    }
+
+    // Log event if GM
+    if (gameState.gmControlsController) {
+      gameState.gmControlsController.logEvent(
+        `Starting position selected: ${patch.payload.playerName || patch.payload.playerID} at (${patch.payload.position.x}, ${patch.payload.position.y})`
+      );
+    }
+
+    gameState.incrementPatchCount();
+  }
+}
+
+/**
+ * Handle AvailableStartingPositions patch
+ * @param {Object} patch
+ */
+function handleAvailableStartingPositions(patch) {
+  if (patch.payload && Array.isArray(patch.payload.positions)) {
+    // Update available positions in hero turn controls
+    if (gameState.heroTurnControlsController) {
+      // This would be handled by the controller
+      // For now, just store in game state
+      gameState.availableStartingPositions = patch.payload.positions;
+    }
+
+    gameState.incrementPatchCount();
+  }
+}
+
+/**
+ * Handle QuestSetupStateChanged patch
+ * @param {Object} patch
+ */
+function handleQuestSetupStateChanged(patch) {
+  if (patch.payload) {
+    console.log('QUEST-SETUP-PATCH: Received QuestSetupStateChanged', patch.payload);
+    console.log('QUEST-SETUP-PATCH: My player ID:', gameState.snapshot?.viewerPlayerId);
+    console.log('QUEST-SETUP-PATCH: Player start positions:', patch.payload.playerStartPositions);
+
+    // Update quest setup state in snapshot
+    if (gameState.snapshot) {
+      gameState.snapshot.playersReady = patch.payload.playersReady || {};
+      gameState.snapshot.playerStartPositions = patch.payload.playerStartPositions || {};
+      console.log('QUEST-SETUP-PATCH: Updated snapshot positions:', gameState.snapshot.playerStartPositions);
+    }
+
+    // Update quest setup controller
+    if (gameState.questSetupController) {
+      gameState.questSetupController.updateFromSnapshot(gameState.snapshot);
+    }
+
+    // Log event if GM
+    if (gameState.gmControlsController) {
+      const readyCount = Object.values(patch.payload.playersReady || {}).filter(r => r).length;
+      const totalPlayers = Object.keys(patch.payload.playersReady || {}).length;
+      gameState.gmControlsController.logEvent(`Quest setup updated: ${readyCount}/${totalPlayers} players ready`);
+    }
+
+    gameState.incrementPatchCount();
+    scheduleRedraw();
+  }
 }

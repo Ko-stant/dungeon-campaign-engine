@@ -15,6 +15,7 @@ type GameManager struct {
 	gameState        *GameState
 	turnManager      *TurnManager
 	turnStateManager *TurnStateManager
+	dynamicTurnOrder *DynamicTurnOrderManager
 	contentManager   *ContentManager
 	inventoryManager *InventoryManager
 	treasureDeck     *TreasureDeckManager
@@ -81,6 +82,9 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 	// Wire up turn state manager to turn manager
 	turnManager.SetTurnStateManager(turnStateManager)
 
+	// Create dynamic turn order manager
+	dynamicTurnOrder := NewDynamicTurnOrderManager(logger)
+
 	// Create content manager and load campaign content
 	contentManager := NewContentManager(logger)
 	if err := contentManager.LoadCampaign("base"); err != nil {
@@ -109,6 +113,7 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 	heroActions.SetMonsterSystem(monsterSystem)
 	heroActions.SetQuest(quest)
 	heroActions.SetTurnStateManager(turnStateManager)
+	heroActions.SetDynamicTurnOrderManager(dynamicTurnOrder)
 	heroActions.SetInventoryManager(inventoryManager)
 	heroActions.SetTreasureResolver(treasureResolver)
 
@@ -142,6 +147,7 @@ func createGameManager(gameState *GameState, furnitureSystem *FurnitureSystem, q
 		gameState:        gameState,
 		turnManager:      turnManager,
 		turnStateManager: turnStateManager,
+		dynamicTurnOrder: dynamicTurnOrder,
 		contentManager:   contentManager,
 		inventoryManager: inventoryManager,
 		treasureDeck:     treasureDeck,
@@ -308,6 +314,11 @@ func (gm *GameManager) GetDebugSystem() *DebugSystem {
 // GetTurnStateManager returns the turn state manager
 func (gm *GameManager) GetTurnStateManager() *TurnStateManager {
 	return gm.turnStateManager
+}
+
+// GetDynamicTurnOrder returns the dynamic turn order manager
+func (gm *GameManager) GetDynamicTurnOrder() *DynamicTurnOrderManager {
+	return gm.dynamicTurnOrder
 }
 
 // Shutdown gracefully shuts down the game manager

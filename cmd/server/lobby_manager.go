@@ -25,18 +25,18 @@ type PlayerLobbyInfo struct {
 
 // LobbyState represents the current state of the game lobby
 type LobbyState struct {
-	Players       map[string]*PlayerLobbyInfo `json:"players"`
-	CanStartGame  bool                        `json:"canStartGame"`
-	GameStarted   bool                        `json:"gameStarted"`
-	AvailableHeroes []string                  `json:"availableHeroes"`
+	Players         map[string]*PlayerLobbyInfo `json:"players"`
+	CanStartGame    bool                        `json:"canStartGame"`
+	GameStarted     bool                        `json:"gameStarted"`
+	AvailableHeroes []string                    `json:"availableHeroes"`
 }
 
 // LobbyManager manages the pre-game lobby where players join and select roles
 type LobbyManager struct {
-	players         map[string]*PlayerLobbyInfo
-	contentManager  *ContentManager
-	mutex           sync.RWMutex
-	gameStarted     bool
+	players        map[string]*PlayerLobbyInfo
+	contentManager *ContentManager
+	mutex          sync.RWMutex
+	gameStarted    bool
 }
 
 // NewLobbyManager creates a new lobby manager

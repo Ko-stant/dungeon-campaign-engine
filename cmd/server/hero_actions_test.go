@@ -49,7 +49,7 @@ func createTestHeroActionSystem() *HeroActionSystem {
 
 func createTestMonsterSystem(logger Logger) *MonsterSystem {
 	gameState := &GameState{
-		Entities: make(map[string]protocol.TileAddress),
+		Entities:      make(map[string]protocol.TileAddress),
 		KnownMonsters: make(map[string]bool),
 	}
 	broadcaster := &MockBroadcaster{}

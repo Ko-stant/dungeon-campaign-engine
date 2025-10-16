@@ -43,6 +43,15 @@ func (ls *LobbyServer) HandleNewConnection(conn *websocket.Conn) string {
 	return playerID
 }
 
+// HandleNewConnectionWithID handles a new WebSocket connection with a specific player ID
+func (ls *LobbyServer) HandleNewConnectionWithID(conn *websocket.Conn, playerID string) {
+	ls.connManager.AddConnectionWithID(conn, playerID)
+	log.Printf("New connection: %s", playerID)
+
+	// Send initial lobby state
+	ls.broadcastLobbyState()
+}
+
 // HandleDisconnection handles a player disconnection
 func (ls *LobbyServer) HandleDisconnection(conn *websocket.Conn) {
 	playerID := ls.connManager.RemoveConnection(conn)

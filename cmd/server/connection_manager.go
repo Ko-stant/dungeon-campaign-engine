@@ -50,6 +50,26 @@ func (cm *ConnectionManager) AddConnection(conn *websocket.Conn) string {
 	return playerID
 }
 
+// AddConnectionWithID registers a new WebSocket connection with a specific player ID
+func (cm *ConnectionManager) AddConnectionWithID(conn *websocket.Conn, playerID string) {
+	cm.mutex.Lock()
+	defer cm.mutex.Unlock()
+
+	// Remove old connection for this player ID if it exists
+	if oldConn, exists := cm.playerConns[playerID]; exists {
+		delete(cm.connections, oldConn)
+	}
+
+	info := &ConnectionInfo{
+		Conn:     conn,
+		PlayerID: playerID,
+		InLobby:  true,
+	}
+
+	cm.connections[conn] = info
+	cm.playerConns[playerID] = conn
+}
+
 // RemoveConnection removes a connection and returns the player ID
 func (cm *ConnectionManager) RemoveConnection(conn *websocket.Conn) string {
 	cm.mutex.Lock()

@@ -10,15 +10,15 @@ import (
 
 // ContentManager manages all game content (equipment, treasures, spells, etc.)
 type ContentManager struct {
-	campaign         *CampaignMetadata
-	equipmentCards   map[string]*ItemCard
-	artifactCards    map[string]*ItemCard
-	treasureCards    map[string]*TreasureCard
-	spellCards       map[string]*SpellCard
-	dreadSpellCards  map[string]*SpellCard
-	heroCards        map[string]*HeroCard
-	logger           Logger
-	mutex            sync.RWMutex
+	campaign        *CampaignMetadata
+	equipmentCards  map[string]*ItemCard
+	artifactCards   map[string]*ItemCard
+	treasureCards   map[string]*TreasureCard
+	spellCards      map[string]*SpellCard
+	dreadSpellCards map[string]*SpellCard
+	heroCards       map[string]*HeroCard
+	logger          Logger
+	mutex           sync.RWMutex
 }
 
 // NewContentManager creates a new content manager

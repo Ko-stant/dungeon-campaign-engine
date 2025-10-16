@@ -23,12 +23,12 @@ type DebugConfig struct {
 
 // DebugSystem provides development and testing utilities
 type DebugSystem struct {
-	config           DebugConfig
-	gameState        *GameState
-	broadcaster      Broadcaster
-	logger           Logger
-	diceOverride     map[string]int   // Override next dice rolls (single die)
-	diceOverrideSeq  map[string][]int // Override sequences for multiple dice
+	config          DebugConfig
+	gameState       *GameState
+	broadcaster     Broadcaster
+	logger          Logger
+	diceOverride    map[string]int   // Override next dice rolls (single die)
+	diceOverrideSeq map[string][]int // Override sequences for multiple dice
 }
 
 // NewDebugSystem creates a new debug system
@@ -652,8 +652,8 @@ func (ds *DebugSystem) handleCombatDiceTest(w http.ResponseWriter, r *http.Reque
 	}
 
 	var req struct {
-		AttackDice   []int `json:"attackDice"`   // Array of dice results for attack (1-6 each)
-		DefenseDice  []int `json:"defenseDice"`  // Array of dice results for defense (1-6 each)
+		AttackDice   []int  `json:"attackDice"`   // Array of dice results for attack (1-6 each)
+		DefenseDice  []int  `json:"defenseDice"`  // Array of dice results for defense (1-6 each)
 		TestScenario string `json:"testScenario"` // Optional description of test scenario
 	}
 

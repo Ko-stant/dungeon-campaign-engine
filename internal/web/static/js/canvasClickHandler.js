@@ -79,10 +79,40 @@ function handleCanvasClick(event) {
   const tile = canvasToTile(canvasX, canvasY);
   if (!tile) return;
 
+  // Check if we're in quest setup phase - allow selecting starting positions
+  if (gameState.questSetupController) {
+    const handled = gameState.questSetupController.handleTileClick(tile.x, tile.y);
+    if (handled) {
+      return; // Quest setup handled the click
+    }
+  }
+
+  // Check if GM is in movement mode
+  if (gameState.gmControlsController && gameState.gmControlsController.movementMode) {
+    const handled = gameState.gmControlsController.handleMovementTileClick(tile.x, tile.y);
+    if (handled) {
+      return; // Movement handled the click
+    }
+  }
+
+  // Check if GM is in attack mode
+  if (gameState.gmControlsController && gameState.gmControlsController.attackMode) {
+    const handled = gameState.gmControlsController.handleAttackTargetClick(tile.x, tile.y);
+    if (handled) {
+      return; // Attack handled the click
+    }
+  }
+
   // Check for entities at this tile (monsters first for better targeting)
   const monster = findMonsterAtTile(tile.x, tile.y);
   if (monster) {
-    // Show monster details in modal
+    // If GM, select monster for control instead of showing modal
+    if (gameState.gmControlsController && gameState.snapshot?.viewerRole === 'gm') {
+      gameState.gmControlsController.selectMonster(monster.id);
+      return;
+    }
+
+    // Otherwise, show monster details in modal (for heroes)
     if (gameState.entityModalController) {
       gameState.entityModalController.showMonster(monster);
     }
@@ -142,7 +172,27 @@ function handleCanvasHover(event) {
   const monster = findMonsterAtTile(tile.x, tile.y);
   const hero = findHeroAtTile(tile.x, tile.y);
 
-  if (monster || hero) {
+  // Check if we're in quest setup and hovering over available position
+  const isQuestSetup = gameState.snapshot?.turnPhase === 'quest_setup';
+  const isAvailablePosition = isQuestSetup && gameState.questSetupController?.availablePositions?.some(
+    pos => pos.x === tile.x && pos.y === tile.y
+  );
+
+  // Check if we're in GM movement mode and hovering over available movement tile
+  const isMovementMode = gameState.gmControlsController?.movementMode;
+  const isMovementTile = isMovementMode && gameState.gmControlsController?.availableMovementTiles?.some(
+    t => t.x === tile.x && t.y === tile.y
+  );
+
+  // Check if we're in GM attack mode and hovering over available attack target
+  const isAttackMode = gameState.gmControlsController?.attackMode;
+  const isAttackTarget = isAttackMode && gameState.gmControlsController?.availableAttackTargets?.some(
+    t => t.x === tile.x && t.y === tile.y
+  );
+
+  if (isAttackTarget) {
+    canvas.style.cursor = 'crosshair';
+  } else if (monster || hero || isAvailablePosition || isMovementTile) {
     canvas.style.cursor = 'pointer';
   } else {
     canvas.style.cursor = 'default';

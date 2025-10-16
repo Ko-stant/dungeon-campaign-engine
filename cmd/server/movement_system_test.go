@@ -498,7 +498,7 @@ func TestMovement_FivePointConsumption(t *testing.T) {
 	debugSystem := has.debugSystem
 	debugSystem.SetDiceOverride("movement", 3) // 2 dice × 3 = 6 points total
 
-	// Roll movement dice to get 6 points  
+	// Roll movement dice to get 6 points
 	rolls, err := has.turnManager.RollMovementDice()
 	if err != nil {
 		t.Fatalf("Failed to roll movement dice: %v", err)
@@ -523,10 +523,14 @@ func TestMovement_FivePointConsumption(t *testing.T) {
 		// Start at (5,5), move in different directions
 		var dx, dy float64
 		switch step % 4 {
-		case 1: dx, dy = 1.0, 0.0 // East
-		case 2: dx, dy = 0.0, 1.0 // South
-		case 3: dx, dy = -1.0, 0.0 // West
-		case 0: dx, dy = 0.0, -1.0 // North
+		case 1:
+			dx, dy = 1.0, 0.0 // East
+		case 2:
+			dx, dy = 0.0, 1.0 // South
+		case 3:
+			dx, dy = -1.0, 0.0 // West
+		case 0:
+			dx, dy = 0.0, -1.0 // North
 		}
 
 		request := MovementRequest{

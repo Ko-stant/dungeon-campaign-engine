@@ -42,6 +42,18 @@ templ IndexPage(snapshot protocol.Snapshot) {
 		<!-- Entity Inspection Modal (overlay) -->
 		@components.EntityInspectionModal()
 
+		<!-- Hero Turn Election Panel (overlay) -->
+		@components.HeroTurnElectionPanel()
+
+		<!-- Hero Turn Active Panel (overlay) -->
+		@components.HeroTurnActivePanel()
+
+		<!-- Quest Setup Status Panel (overlay) -->
+		@components.QuestSetupStatusPanel()
+
+		<!-- Starting Position Selection Modal (overlay) -->
+		@components.StartingPositionModal()
+
 		<!-- Pass snapshot data to JavaScript -->
 		@templ.JSONScript("snapshot", snapshot)
 	}

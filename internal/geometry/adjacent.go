@@ -15,12 +15,12 @@ func RegionsAcrossDoor(regionMap RegionMap, segment Segment, edge EdgeAddress) (
 
 	if edge.Orientation == Vertical {
 		// Vertical door at (x,y) = left edge of tile (x,y)
-		leftRegion := getTileRegion(edge.X-1, edge.Y)  // tile to the left
-		rightRegion := getTileRegion(edge.X, edge.Y)   // tile at (x,y)
+		leftRegion := getTileRegion(edge.X-1, edge.Y) // tile to the left
+		rightRegion := getTileRegion(edge.X, edge.Y)  // tile at (x,y)
 		return leftRegion, rightRegion
 	}
 	// Horizontal door at (x,y) = top edge of tile (x,y)
-	upRegion := getTileRegion(edge.X, edge.Y-1)   // tile above
-	downRegion := getTileRegion(edge.X, edge.Y)   // tile at (x,y)
+	upRegion := getTileRegion(edge.X, edge.Y-1) // tile above
+	downRegion := getTileRegion(edge.X, edge.Y) // tile at (x,y)
 	return upRegion, downRegion
 }

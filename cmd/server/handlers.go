@@ -281,7 +281,7 @@ func checkForNewlyVisibleMonsters(state *GameState, monsterSystem *MonsterSystem
 	return newlyVisible
 }
 
-func handleWebSocketMessage(data []byte, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem, monsterSystem *MonsterSystem) {
+func handleWebSocketMessage(data []byte, state *GameState, hub *ws.Hub, sequence *uint64, quest *geometry.QuestDefinition, furnitureSystem *FurnitureSystem, monsterSystem *MonsterSystem, gameManager *GameManager, playerID string) {
 	var env protocol.IntentEnvelope
 	if err := json.Unmarshal(data, &env); err != nil {
 		return
@@ -301,6 +301,66 @@ func handleWebSocketMessage(data []byte, state *GameState, hub *ws.Hub, sequence
 			return
 		}
 		handleRequestToggleDoor(req, state, hub, sequence, quest, furnitureSystem, monsterSystem)
+
+	// Quest Setup Phase
+	case "RequestSelectStartingPosition":
+		var req protocol.RequestSelectStartingPosition
+		if err := json.Unmarshal(env.Payload, &req); err != nil {
+			return
+		}
+		handleRequestSelectStartingPosition(req, playerID, gameManager, hub, sequence)
+
+	case "RequestQuestSetupToggleReady":
+		var req protocol.RequestToggleReady
+		if err := json.Unmarshal(env.Payload, &req); err != nil {
+			return
+		}
+		handleRequestQuestSetupToggleReady(playerID, req.IsReady, gameManager, hub, sequence)
+
+	// Dynamic Turn Order
+	case "RequestElectSelfAsNextPlayer":
+		handleRequestElectSelfAsNextPlayer(playerID, gameManager, hub, sequence)
+
+	case "RequestCancelPlayerElection":
+		handleRequestCancelPlayerElection(playerID, gameManager, hub, sequence)
+
+	case "RequestConfirmElectionAndStartTurn":
+		handleRequestConfirmElectionAndStartTurn(gameManager, hub, sequence)
+
+	case "RequestCompleteHeroTurn":
+		handleRequestCompleteHeroTurn(playerID, gameManager, hub, sequence)
+
+	case "RequestCompleteGMTurn":
+		handleRequestCompleteGMTurn(gameManager, hub, sequence)
+
+	// Monster Management
+	case "RequestSelectMonster":
+		var req protocol.RequestSelectMonster
+		if err := json.Unmarshal(env.Payload, &req); err != nil {
+			return
+		}
+		handleRequestSelectMonster(req, gameManager, hub, sequence)
+
+	case "RequestMoveMonster":
+		var req protocol.RequestMoveMonster
+		if err := json.Unmarshal(env.Payload, &req); err != nil {
+			return
+		}
+		handleRequestMoveMonster(req, gameManager, hub, sequence, state, furnitureSystem, monsterSystem)
+
+	case "RequestMonsterAttack":
+		var req protocol.RequestMonsterAttack
+		if err := json.Unmarshal(env.Payload, &req); err != nil {
+			return
+		}
+		handleRequestMonsterAttack(req, gameManager, hub, sequence)
+
+	case "RequestUseMonsterAbility":
+		var req protocol.RequestUseMonsterAbility
+		if err := json.Unmarshal(env.Payload, &req); err != nil {
+			return
+		}
+		handleRequestUseMonsterAbility(req, gameManager, hub, sequence)
 
 	default:
 		// Unknown message type

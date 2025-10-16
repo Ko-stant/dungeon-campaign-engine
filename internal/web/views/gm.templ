@@ -1,0 +1,51 @@
+package views
+
+import (
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
+)
+
+// GMPage renders the Game Master view with monster control and quest management
+templ GMPage(snapshot protocol.Snapshot) {
+	@components.AppShell() {
+		<div class="flex flex-col h-screen">
+			<!-- Header with GM-specific info -->
+			@components.GMHeader(snapshot)
+
+			<!-- Main Content Area -->
+			<main class="flex-1 flex overflow-hidden">
+				<!-- Left: Game Board + GM Detail Pane -->
+				<div class="flex-1 flex flex-col p-3 gap-3 overflow-hidden">
+					<!-- Game Board (flexible, takes remaining space) -->
+					<div class="flex-1 min-h-0">
+						@components.GameBoardWithSnapshot(snapshot)
+					</div>
+
+					<!-- GM Detail Pane (quest notes, monster stats) -->
+					<div class="flex-shrink-0">
+						@components.GMDetailPane()
+					</div>
+				</div>
+
+				<!-- Right: GM Sidebar (monster control + event log) -->
+				<aside class="w-96 flex flex-col border-l border-border/60 bg-surface/60">
+					@components.GMTurnPhasePanel()
+					@components.GMMonsterControl()
+					@components.GMEventLog()
+				</aside>
+			</main>
+
+			<!-- Debug Controls (bottom) -->
+			@components.DebugControls()
+		</div>
+
+		<!-- Entity Inspection Modal (overlay) -->
+		@components.EntityInspectionModal()
+
+		<!-- Monster Spawn Modal (GM only) -->
+		@components.MonsterSpawnModal()
+
+		<!-- Pass snapshot data to JavaScript -->
+		@templ.JSONScript("snapshot", snapshot)
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/coder/websocket"
 
@@ -15,6 +16,76 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/ws"
 )
+
+// connectionPlayerMap tracks which player ID owns each WebSocket connection
+var connectionPlayerMap = struct {
+	sync.RWMutex
+	conns map[*websocket.Conn]string
+}{conns: make(map[*websocket.Conn]string)}
+
+// Helper functions for player ID tracking
+func getPlayerIDFromRequest(r *http.Request) string {
+	// Check session cookie
+	cookie, err := r.Cookie("playerID")
+	if err == nil {
+		return cookie.Value
+	}
+
+	// Check query param as fallback
+	return r.URL.Query().Get("playerID")
+}
+
+// isPlayerGameMaster checks if a player is the game master
+func isPlayerGameMaster(playerID string, lobbyServer *LobbyServer) bool {
+	if lobbyServer == nil {
+		return false
+	}
+
+	player, exists := lobbyServer.lobby.GetPlayer(playerID)
+	if !exists {
+		return false
+	}
+
+	return player.Role == RoleGameMaster
+}
+
+func setPlayerIDCookie(w http.ResponseWriter, playerID string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "playerID",
+		Value:    playerID,
+		Path:     "/",
+		MaxAge:   3600 * 24, // 24 hours
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+// getStartingPositionsFromQuest extracts valid starting positions from the quest's starting room
+func getStartingPositionsFromQuest(quest *geometry.QuestDefinition, board *geometry.BoardDefinition) []protocol.TileAddress {
+	if quest == nil || board == nil {
+		return []protocol.TileAddress{}
+	}
+
+	// Find the starting room from board definition
+	startingRoomID := quest.StartingRoom
+	for _, room := range board.Rooms {
+		if room.ID == startingRoomID {
+			// Convert all room tiles to starting positions
+			positions := make([]protocol.TileAddress, 0, len(room.Tiles))
+			for _, tile := range room.Tiles {
+				positions = append(positions, protocol.TileAddress{
+					SegmentID: "",
+					X:         tile.X,
+					Y:         tile.Y,
+				})
+			}
+			return positions
+		}
+	}
+
+	// Fallback if starting room not found
+	return []protocol.TileAddress{}
+}
 
 // mainWithLobby starts the server in lobby mode, where players join before the game starts
 func mainWithLobby() {
@@ -41,6 +112,7 @@ func mainWithLobby() {
 	var gameManager *GameManager
 	var state *GameState
 	var quest *geometry.QuestDefinition
+	var board *geometry.BoardDefinition
 	var furnitureSystem *FurnitureSystem
 
 	// Flag to track if game has started
@@ -51,10 +123,11 @@ func mainWithLobby() {
 		log.Printf("Initializing game with GM=%s and heroes=%v", gameMasterID, heroPlayers)
 
 		// Load game content
-		board, loadedQuest, err := loadGameContent()
+		loadedBoard, loadedQuest, err := loadGameContent()
 		if err != nil {
 			return fmt.Errorf("failed to load game content: %w", err)
 		}
+		board = loadedBoard
 		quest = loadedQuest
 
 		// Initialize furniture system
@@ -80,6 +153,14 @@ func mainWithLobby() {
 		if err != nil {
 			return fmt.Errorf("failed to initialize game state: %w", err)
 		}
+
+		// Get dynamic turn order manager from game manager (already initialized)
+		dynamicTurnOrder := gameManager.GetDynamicTurnOrder()
+		log.Printf("Using DynamicTurnOrderManager from GameManager (starting in QuestSetup phase)")
+
+		// Note: GM is not registered in turn order because they don't participate in quest setup
+		// or hero election phases. They only participate during GM phase which is managed separately.
+		log.Printf("GM player %s will control monsters during GM phase", gameMasterID)
 
 		// Create players from lobby selections
 		inventoryManager := NewInventoryManager(contentManager, logger)
@@ -112,12 +193,12 @@ func mainWithLobby() {
 				return fmt.Errorf("failed to add player to turn manager: %w", err)
 			}
 
-			// Add hero entity to game state at starting position
-			// TODO: Get starting positions from quest
-			startPos := protocol.TileAddress{X: 7, Y: 11} // Default starting position
-			state.Lock.Lock()
-			state.Entities[entityID] = startPos
-			state.Lock.Unlock()
+			// Register player in dynamic turn order
+			dynamicTurnOrder.RegisterPlayer(playerID)
+			log.Printf("Registered hero player in turn order: %s", playerID)
+
+			// Note: Hero entities will be spawned at positions chosen during quest setup phase
+			// Do NOT add to game state yet - position selection happens first
 
 			log.Printf("Created player %s as %s (%s)", playerID, heroCard.Name, entityID)
 		}
@@ -183,16 +264,39 @@ func mainWithLobby() {
 			return
 		}
 
-		// Serve game page (similar to original mainWithGameManager)
+		// Get player ID from cookie
+		viewerPlayerID := getPlayerIDFromRequest(r)
+		if viewerPlayerID == "" {
+			// No player ID, show error or redirect to lobby
+			http.Error(w, "No player ID found", http.StatusUnauthorized)
+			return
+		}
+
+		// Check if this player is the game master - if so, redirect to GM page
+		lobbyPlayer, exists := lobbyServer.lobby.GetPlayer(viewerPlayerID)
+		if exists && lobbyPlayer.Role == RoleGameMaster {
+			http.Redirect(w, r, "/gm", http.StatusSeeOther)
+			return
+		}
+
+		// Serve hero game page
 		currentGameState := gameManager.GetGameState()
 		currentGameState.Lock.Lock()
 
-		// Get first hero for initial view (TODO: support multiple heroes properly)
+		// Get this player's hero entity ID and position
+		viewerPlayer := gameManager.turnManager.GetPlayer(viewerPlayerID)
+		viewerEntityID := ""
 		var hero protocol.TileAddress
-		for entityID := range currentGameState.Entities {
-			if len(entityID) >= 4 && entityID[:4] == "hero" {
-				hero = currentGameState.Entities[entityID]
-				break
+		if viewerPlayer != nil {
+			viewerEntityID = viewerPlayer.EntityID
+			hero = currentGameState.Entities[viewerEntityID]
+		} else {
+			// Fallback: get first hero for initial view
+			for entityID := range currentGameState.Entities {
+				if len(entityID) >= 4 && entityID[:4] == "hero" {
+					hero = currentGameState.Entities[entityID]
+					break
+				}
 			}
 		}
 
@@ -270,6 +374,46 @@ func mainWithLobby() {
 		monsters := gameManager.GetMonstersForSnapshot()
 		heroTurnStates := gameManager.GetHeroTurnStatesForSnapshot()
 
+		// Get dynamic turn order state
+		var turnPhase string
+		var cycleNumber int
+		var activeHeroPlayerID string
+		var electedPlayerID string
+		var heroesActedIDs []string
+
+		dynamicTurnOrder := gameManager.GetDynamicTurnOrder()
+		playersReady := make(map[string]bool)
+		playerStartPositions := make(map[string]protocol.StartPositionInfo)
+
+		if dynamicTurnOrder != nil {
+			turnPhase = string(dynamicTurnOrder.GetCurrentPhase())
+			cycleNumber = dynamicTurnOrder.GetCycleNumber()
+			activeHeroPlayerID = dynamicTurnOrder.GetActiveHeroPlayerID()
+			electedPlayerID = dynamicTurnOrder.GetElectedPlayer()
+
+			// Convert heroes acted map to slice
+			heroesActedMap := dynamicTurnOrder.GetHeroesActedThisCycle()
+			heroesActedIDs = make([]string, 0, len(heroesActedMap))
+			for playerID, acted := range heroesActedMap {
+				if acted {
+					heroesActedIDs = append(heroesActedIDs, playerID)
+				}
+			}
+
+			// Get quest setup state
+			playersReady = dynamicTurnOrder.GetPlayersReady()
+			startPositions := dynamicTurnOrder.GetPlayerStartPositions()
+			for playerID, pos := range startPositions {
+				playerStartPositions[playerID] = protocol.StartPositionInfo{
+					X: pos.X,
+					Y: pos.Y,
+				}
+			}
+		}
+
+		// Extract starting positions for quest setup phase
+		startingPositions := getStartingPositionsFromQuest(quest, board)
+
 		s := protocol.Snapshot{
 			MapID:             "dev-map",
 			PackID:            "dev-pack@v1",
@@ -298,18 +442,247 @@ func mainWithLobby() {
 				"turn.movementAction":  turnState.MovementAction,
 				"turn.actionTaken":     turnState.ActionTaken,
 			},
-			ProtocolVersion:  "v0",
-			Thresholds:       thresholds,
-			BlockingWalls:    blockingWalls,
-			Furniture:        furniture,
-			Monsters:         monsters,
-			HeroTurnStates:   heroTurnStates,
-			VisibleRegionIDs: visibleNow,
-			CorridorRegionID: state.CorridorRegion,
-			KnownRegionIDs:   known,
+			ProtocolVersion:      "v0",
+			Thresholds:           thresholds,
+			BlockingWalls:        blockingWalls,
+			Furniture:            furniture,
+			Monsters:             monsters,
+			HeroTurnStates:       heroTurnStates,
+			VisibleRegionIDs:     visibleNow,
+			CorridorRegionID:     state.CorridorRegion,
+			KnownRegionIDs:       known,
+			ViewerPlayerID:       viewerPlayerID,
+			ViewerRole:           "hero",
+			ViewerEntityID:       viewerEntityID,
+			StartingPositions:    startingPositions,
+			PlayersReady:         playersReady,
+			PlayerStartPositions: playerStartPositions,
+			TurnPhase:            turnPhase,
+			CycleNumber:          cycleNumber,
+			ActiveHeroPlayerID:   activeHeroPlayerID,
+			ElectedPlayerID:      electedPlayerID,
+			HeroesActedIDs:       heroesActedIDs,
 		}
 
 		if err := views.IndexPage(s).Render(r.Context(), w); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
+	// GM page handler (only for game master, shows full visibility)
+	mux.HandleFunc("/gm", func(w http.ResponseWriter, r *http.Request) {
+		if !gameStarted {
+			// Redirect to lobby if game hasn't started
+			http.Redirect(w, r, "/lobby", http.StatusSeeOther)
+			return
+		}
+
+		// Get player ID from cookie
+		playerID := getPlayerIDFromRequest(r)
+		if playerID == "" {
+			// No player ID, redirect to root (which will redirect to lobby if needed)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		// Check if this player is the game master
+		lobbyPlayer, exists := lobbyServer.lobby.GetPlayer(playerID)
+		if !exists || lobbyPlayer.Role != RoleGameMaster {
+			// Not the GM, redirect to hero view
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		// Build GM-specific snapshot with full visibility
+		currentGameState := gameManager.GetGameState()
+		currentGameState.Lock.Lock()
+
+		// Build entities list (all heroes)
+		entities := []protocol.EntityLite{}
+		for pID := range lobbyServer.lobby.players {
+			// Skip GM players - they don't have entities
+			lp, _ := lobbyServer.lobby.GetPlayer(pID)
+			if lp != nil && lp.Role == RoleGameMaster {
+				continue
+			}
+
+			player := gameManager.turnManager.GetPlayer(pID)
+			if player == nil {
+				continue
+			}
+
+			heroHP := &protocol.HP{Current: 0, Max: 0}
+			heroMindPoints := &protocol.HP{Current: 0, Max: 0}
+			if player.Character != nil {
+				heroHP.Current = player.Character.CurrentBody
+				heroHP.Max = player.Character.BaseStats.BodyPoints
+				heroMindPoints.Current = player.Character.CurrentMind
+				heroMindPoints.Max = player.Character.BaseStats.MindPoints
+			}
+
+			entityPos := currentGameState.Entities[player.EntityID]
+
+			entities = append(entities, protocol.EntityLite{
+				ID:         player.EntityID,
+				Kind:       "hero",
+				Tile:       entityPos,
+				HP:         heroHP,
+				MindPoints: heroMindPoints,
+				Tags:       []string{string(player.Class)},
+			})
+		}
+
+		// Include ALL doors (GM sees everything)
+		thresholds := make([]protocol.ThresholdLite, 0, len(currentGameState.Doors))
+		for id, info := range currentGameState.Doors {
+			thresholds = append(thresholds, protocol.ThresholdLite{
+				ID:          id,
+				X:           info.Edge.X,
+				Y:           info.Edge.Y,
+				Orientation: string(info.Edge.Orientation),
+				Kind:        "DoorSocket",
+				State:       info.State,
+			})
+		}
+		currentGameState.Lock.Unlock()
+
+		// GM sees all blocking walls
+		blockingWalls := []protocol.BlockingWallLite{}
+		if quest != nil {
+			for _, wall := range quest.BlockingWalls {
+				blockingWalls = append(blockingWalls, protocol.BlockingWallLite{
+					ID:          wall.ID,
+					X:           wall.X,
+					Y:           wall.Y,
+					Orientation: wall.Orientation,
+					Size:        wall.Size,
+				})
+			}
+		}
+
+		// GM sees all regions as revealed and visible
+		allRegions := make([]int, 0, state.RegionMap.RegionsCount)
+		for i := 0; i < state.RegionMap.RegionsCount; i++ {
+			allRegions = append(allRegions, i)
+		}
+
+		turnState := gameManager.GetTurnState()
+		furniture := gameManager.GetFurnitureForSnapshot()
+		monsters := gameManager.GetMonstersForSnapshot()
+		heroTurnStates := gameManager.GetHeroTurnStatesForSnapshot()
+
+		// Extract quest data
+		questName := ""
+		questDescription := ""
+		questNotes := ""
+		questGMNotes := ""
+		questObjectives := []string{}
+		startingPositions := []protocol.TileAddress{}
+
+		if quest != nil {
+			questName = quest.Name
+			questDescription = quest.Description
+			// Extract objectives from quest.Objectives field
+			for _, obj := range quest.Objectives {
+				questObjectives = append(questObjectives, obj.Description)
+			}
+			// Extract starting positions from quest starting room
+			startingPositions = getStartingPositionsFromQuest(quest, board)
+		}
+
+		// Get dynamic turn order state
+		var turnPhase string
+		var cycleNumber int
+		var activeHeroPlayerID string
+		var electedPlayerID string
+		var heroesActedIDs []string
+
+		dynamicTurnOrder := gameManager.GetDynamicTurnOrder()
+		playersReady := make(map[string]bool)
+		playerStartPositions := make(map[string]protocol.StartPositionInfo)
+
+		if dynamicTurnOrder != nil {
+			turnPhase = string(dynamicTurnOrder.GetCurrentPhase())
+			cycleNumber = dynamicTurnOrder.GetCycleNumber()
+			activeHeroPlayerID = dynamicTurnOrder.GetActiveHeroPlayerID()
+			electedPlayerID = dynamicTurnOrder.GetElectedPlayer()
+
+			// Convert heroes acted map to slice
+			heroesActedMap := dynamicTurnOrder.GetHeroesActedThisCycle()
+			heroesActedIDs = make([]string, 0, len(heroesActedMap))
+			for playerID, acted := range heroesActedMap {
+				if acted {
+					heroesActedIDs = append(heroesActedIDs, playerID)
+				}
+			}
+
+			// Get quest setup state
+			playersReady = dynamicTurnOrder.GetPlayersReady()
+			startPositions := dynamicTurnOrder.GetPlayerStartPositions()
+			for playerID, pos := range startPositions {
+				playerStartPositions[playerID] = protocol.StartPositionInfo{
+					X: pos.X,
+					Y: pos.Y,
+				}
+			}
+		}
+
+		s := protocol.Snapshot{
+			MapID:             "dev-map",
+			PackID:            "dev-pack@v1",
+			Turn:              turnState.TurnNumber,
+			LastEventID:       0,
+			MapWidth:          state.Segment.Width,
+			MapHeight:         state.Segment.Height,
+			RegionsCount:      state.RegionMap.RegionsCount,
+			TileRegionIDs:     state.RegionMap.TileRegionIDs,
+			RevealedRegionIDs: allRegions, // GM sees everything
+			DoorStates:        []byte{},
+			Entities:          entities,
+			Variables: map[string]any{
+				"ui.debug":             debugConfig.Enabled,
+				"turn.number":          turnState.TurnNumber,
+				"turn.current":         turnState.CurrentTurn,
+				"turn.phase":           turnState.CurrentPhase,
+				"turn.playerId":        turnState.ActivePlayerID,
+				"turn.actions":         turnState.ActionsLeft,
+				"turn.movement":        turnState.MovementLeft,
+				"turn.canEnd":          turnState.CanEndTurn,
+				"turn.movementRolled":  turnState.MovementDiceRolled,
+				"turn.movementRolls":   turnState.MovementRolls,
+				"turn.hasMoved":        turnState.HasMoved,
+				"turn.movementStarted": turnState.MovementStarted,
+				"turn.movementAction":  turnState.MovementAction,
+				"turn.actionTaken":     turnState.ActionTaken,
+			},
+			ProtocolVersion:      "v0",
+			Thresholds:           thresholds,
+			BlockingWalls:        blockingWalls,
+			Furniture:            furniture,
+			Monsters:             monsters,
+			HeroTurnStates:       heroTurnStates,
+			VisibleRegionIDs:     allRegions, // GM sees everything
+			CorridorRegionID:     state.CorridorRegion,
+			KnownRegionIDs:       allRegions, // GM sees everything
+			ViewerPlayerID:       playerID,
+			ViewerRole:           "gm",
+			ViewerEntityID:       "",
+			QuestName:            questName,
+			QuestDescription:     questDescription,
+			QuestNotes:           questNotes,
+			QuestGMNotes:         questGMNotes,
+			QuestObjectives:      questObjectives,
+			StartingPositions:    startingPositions,
+			PlayersReady:         playersReady,
+			PlayerStartPositions: playerStartPositions,
+			TurnPhase:            turnPhase,
+			CycleNumber:          cycleNumber,
+			ActiveHeroPlayerID:   activeHeroPlayerID,
+			ElectedPlayerID:      electedPlayerID,
+			HeroesActedIDs:       heroesActedIDs,
+		}
+
+		if err := views.GMPage(s).Render(r.Context(), w); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
@@ -322,9 +695,23 @@ func mainWithLobby() {
 		}
 		hub.Add(conn)
 
-		// Register connection with lobby server
-		playerID := lobbyServer.HandleNewConnection(conn)
+		// Get player ID from cookie/query param, or generate new one
+		playerID := getPlayerIDFromRequest(r)
+		if playerID == "" {
+			playerID = generatePlayerID()
+		}
+
+		// Register connection with lobby server using existing player ID
+		lobbyServer.HandleNewConnectionWithID(conn, playerID)
 		log.Printf("WebSocket connected: %s", playerID)
+
+		// Store player ID in connection map
+		connectionPlayerMap.Lock()
+		connectionPlayerMap.conns[conn] = playerID
+		connectionPlayerMap.Unlock()
+
+		// Set player ID cookie for HTTP routing
+		setPlayerIDCookie(w, playerID)
 
 		// Send player ID to client
 		playerIDMessage, _ := json.Marshal(protocol.PatchEnvelope{
@@ -335,8 +722,10 @@ func mainWithLobby() {
 		})
 		_ = conn.Write(context.Background(), websocket.MessageText, playerIDMessage)
 
-		// If game has started, send initial game state
+		// If game has started, mark connection as not in lobby and send initial game state
 		if gameStarted && gameManager != nil {
+			// Mark this connection as not in lobby so messages route to game handler
+			lobbyServer.GetConnectionManager().SetInLobby(conn, false)
 			turnState := gameManager.GetTurnState()
 			initMessage, _ := json.Marshal(protocol.PatchEnvelope{
 				Sequence: 0,
@@ -360,6 +749,12 @@ func mainWithLobby() {
 			defer hub.Remove(c)
 			defer lobbyServer.HandleDisconnection(c)
 			defer c.Close(websocket.StatusNormalClosure, "")
+			defer func() {
+				// Clean up connection map
+				connectionPlayerMap.Lock()
+				delete(connectionPlayerMap.conns, c)
+				connectionPlayerMap.Unlock()
+			}()
 
 			for {
 				_, data, err := c.Read(context.Background())
@@ -374,8 +769,11 @@ func mainWithLobby() {
 						log.Printf("Lobby message error for %s: %v", playerID, err)
 					}
 				} else if gameStarted && gameManager != nil {
-					// Handle game messages
-					handleEnhancedWebSocketMessage(data, gameManager, state, hub, sequenceGen, quest, furnitureSystem)
+					// Handle game messages - get player ID from connection map
+					connectionPlayerMap.RLock()
+					playerID := connectionPlayerMap.conns[c]
+					connectionPlayerMap.RUnlock()
+					handleEnhancedWebSocketMessage(data, gameManager, state, hub, sequenceGen, quest, furnitureSystem, playerID)
 				}
 			}
 		}(conn)

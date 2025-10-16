@@ -31,23 +31,23 @@ type FurnitureDefinition struct {
 		} `json:"pixelDimensions"`
 	} `json:"rendering"`
 	GameplayProperties struct {
-		Searchable     bool           `json:"searchable,omitempty"`
-		Container      bool           `json:"container,omitempty"`
-		Interactable   bool           `json:"interactable,omitempty"`
+		Searchable       bool           `json:"searchable,omitempty"`
+		Container        bool           `json:"container,omitempty"`
+		Interactable     bool           `json:"interactable,omitempty"`
 		CustomProperties map[string]any `json:"customProperties,omitempty"`
 	} `json:"gameplayProperties,omitempty"`
 }
 
 // FurnitureInstance represents a placed furniture piece in the game world
 type FurnitureInstance struct {
-	ID                string                `json:"id"`
-	Type              string                `json:"type"` // References FurnitureDefinition.ID
-	Position          protocol.TileAddress  `json:"position"`
-	Room              int                   `json:"room"`
-	Rotation          int                   `json:"rotation,omitempty"` // 0, 90, 180, 270 degrees
-	SwapAspectOnRotate bool                  `json:"swap_aspect_on_rotate,omitempty"` // Whether to swap width/height for 90/270 rotations
-	Contains          []string              `json:"contains,omitempty"`
-	Definition        *FurnitureDefinition  `json:"-"` // Runtime reference, not serialized
+	ID                 string               `json:"id"`
+	Type               string               `json:"type"` // References FurnitureDefinition.ID
+	Position           protocol.TileAddress `json:"position"`
+	Room               int                  `json:"room"`
+	Rotation           int                  `json:"rotation,omitempty"`              // 0, 90, 180, 270 degrees
+	SwapAspectOnRotate bool                 `json:"swap_aspect_on_rotate,omitempty"` // Whether to swap width/height for 90/270 rotations
+	Contains           []string             `json:"contains,omitempty"`
+	Definition         *FurnitureDefinition `json:"-"` // Runtime reference, not serialized
 }
 
 // FurnitureSystem manages furniture definitions and instances
@@ -139,11 +139,11 @@ func (fs *FurnitureSystem) CreateFurnitureInstancesFromQuest(quest *geometry.Que
 				X: questFurniture.X,
 				Y: questFurniture.Y,
 			},
-			Room:              questFurniture.Room,
-			Rotation:          questFurniture.Rotation,
+			Room:               questFurniture.Room,
+			Rotation:           questFurniture.Rotation,
 			SwapAspectOnRotate: questFurniture.SwapAspectOnRotate,
-			Contains:          questFurniture.Contains,
-			Definition:        definition,
+			Contains:           questFurniture.Contains,
+			Definition:         definition,
 		}
 
 		fs.instances[instance.ID] = instance

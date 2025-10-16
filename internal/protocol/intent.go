@@ -36,3 +36,46 @@ type RequestToggleReady struct {
 
 type RequestStartGame struct {
 }
+
+type RequestSelectStartingPosition struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type RequestElectSelfAsNextPlayer struct {
+}
+
+type RequestCancelPlayerElection struct {
+}
+
+type RequestConfirmElectionAndStartTurn struct {
+}
+
+type RequestCompleteHeroTurn struct {
+}
+
+type RequestCompleteGMTurn struct {
+}
+
+type RequestSelectMonster struct {
+	MonsterID string `json:"monsterId"`
+}
+
+type RequestMoveMonster struct {
+	MonsterID string `json:"monsterId"`
+	ToX       int    `json:"toX"`
+	ToY       int    `json:"toY"`
+}
+
+type RequestMonsterAttack struct {
+	MonsterID string `json:"monsterId"`
+	TargetID  string `json:"targetId"`
+}
+
+type RequestUseMonsterAbility struct {
+	MonsterID string `json:"monsterId"`
+	AbilityID string `json:"abilityId"`
+	TargetID  string `json:"targetId,omitempty"`
+	TargetX   *int   `json:"targetX,omitempty"`
+	TargetY   *int   `json:"targetY,omitempty"`
+}
