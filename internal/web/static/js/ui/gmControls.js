@@ -655,6 +655,7 @@ export class GMControlsController {
             phaseDisplay.textContent = 'Hero Election';
             phaseDisplay.className = 'text-sm font-medium text-blue-400';
             break;
+          case 'hero_turn':
           case 'hero_active':
             phaseDisplay.textContent = 'Hero Turn';
             phaseDisplay.className = 'text-sm font-medium text-green-400';

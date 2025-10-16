@@ -414,6 +414,14 @@ func mainWithLobby() {
 		// Extract starting positions for quest setup phase
 		startingPositions := getStartingPositionsFromQuest(quest, board)
 
+		// Build player names map from lobby data
+		playerNames := make(map[string]string)
+		for playerID := range lobbyServer.lobby.players {
+			if player, exists := lobbyServer.lobby.GetPlayer(playerID); exists {
+				playerNames[playerID] = player.Name
+			}
+		}
+
 		s := protocol.Snapshot{
 			MapID:             "dev-map",
 			PackID:            "dev-pack@v1",
@@ -448,6 +456,7 @@ func mainWithLobby() {
 			Furniture:            furniture,
 			Monsters:             monsters,
 			HeroTurnStates:       heroTurnStates,
+			PlayerNames:          playerNames,
 			VisibleRegionIDs:     visibleNow,
 			CorridorRegionID:     state.CorridorRegion,
 			KnownRegionIDs:       known,
@@ -627,6 +636,14 @@ func mainWithLobby() {
 			}
 		}
 
+		// Build player names map from lobby data
+		playerNames := make(map[string]string)
+		for pID := range lobbyServer.lobby.players {
+			if player, exists := lobbyServer.lobby.GetPlayer(pID); exists {
+				playerNames[pID] = player.Name
+			}
+		}
+
 		s := protocol.Snapshot{
 			MapID:             "dev-map",
 			PackID:            "dev-pack@v1",
@@ -661,6 +678,7 @@ func mainWithLobby() {
 			Furniture:            furniture,
 			Monsters:             monsters,
 			HeroTurnStates:       heroTurnStates,
+			PlayerNames:          playerNames,
 			VisibleRegionIDs:     allRegions, // GM sees everything
 			CorridorRegionID:     state.CorridorRegion,
 			KnownRegionIDs:       allRegions, // GM sees everything

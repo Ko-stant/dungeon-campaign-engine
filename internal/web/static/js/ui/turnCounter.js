@@ -18,9 +18,9 @@ export class TurnCounterController {
   updateFromSnapshot(snapshot) {
     if (!snapshot) return;
 
-    // Update turn number
-    if (this.turnNumberElement && typeof snapshot.turn === 'number') {
-      this.turnNumberElement.textContent = String(snapshot.turn);
+    // Update turn number (use cycleNumber from DynamicTurnOrderManager)
+    if (this.turnNumberElement && typeof snapshot.cycleNumber === 'number') {
+      this.turnNumberElement.textContent = String(snapshot.cycleNumber);
     }
 
     // Update current player
@@ -35,38 +35,41 @@ export class TurnCounterController {
     if (!this.currentPlayerElement) return;
 
     console.log('TURN-COUNTER: updateCurrentPlayer called');
-    console.log('TURN-COUNTER: heroTurnStates:', snapshot.heroTurnStates);
-    console.log('TURN-COUNTER: entities:', snapshot.entities);
+    console.log('TURN-COUNTER: turnPhase:', snapshot.turnPhase);
+    console.log('TURN-COUNTER: activeHeroPlayerID:', snapshot.activeHeroPlayerID);
+    console.log('TURN-COUNTER: electedPlayerId:', snapshot.electedPlayerId);
 
-    // Check if there are any hero turn states
-    if (snapshot.heroTurnStates && Object.keys(snapshot.heroTurnStates).length > 0) {
-      console.log('TURN-COUNTER: Found hero turn states:', Object.keys(snapshot.heroTurnStates));
+    // Check turn phase and active player ID from snapshot
+    if (snapshot.turnPhase === 'hero_turn' && snapshot.activeHeroPlayerID) {
+      // Find the entity for the active hero player
+      const heroEntity = snapshot.entities?.find(e => {
+        const turnState = snapshot.heroTurnStates?.[e.id];
+        return turnState && turnState.playerId === snapshot.activeHeroPlayerID;
+      });
 
-      // Find the first hero entity to get their info
-      const firstHero = snapshot.entities?.find(e => e.kind === 'hero');
-      console.log('TURN-COUNTER: First hero found:', firstHero);
-
-      if (firstHero) {
-        const turnState = snapshot.heroTurnStates[firstHero.id];
-        console.log('TURN-COUNTER: Turn state for', firstHero.id, ':', turnState);
-        console.log('TURN-COUNTER: actionTaken:', turnState?.actionTaken);
-
-        // Hero's turn if they haven't taken their action yet (or if turnState exists and actionTaken is false)
-        if (turnState && turnState.actionTaken === false) {
-          const heroName = this.getHeroName(firstHero.id, snapshot);
-          console.log('TURN-COUNTER: Setting active player to:', heroName);
-          this.currentPlayerElement.textContent = heroName;
-          this.currentPlayerElement.classList.add('text-blue-400');
-          this.currentPlayerElement.classList.remove('text-orange-400');
-          return;
-        } else {
-          console.log('TURN-COUNTER: Condition failed - turnState exists:', !!turnState, ', actionTaken:', turnState?.actionTaken);
-        }
-      } else {
-        console.log('TURN-COUNTER: No hero entity found');
+      if (heroEntity) {
+        const heroName = this.getHeroName(heroEntity.id, snapshot);
+        console.log('TURN-COUNTER: Setting active player to:', heroName);
+        this.currentPlayerElement.textContent = heroName;
+        this.currentPlayerElement.classList.add('text-blue-400');
+        this.currentPlayerElement.classList.remove('text-orange-400');
+        return;
       }
-    } else {
-      console.log('TURN-COUNTER: No hero turn states found');
+    } else if (snapshot.turnPhase === 'hero_election' && snapshot.electedPlayerId) {
+      // During election, show the elected player
+      const heroEntity = snapshot.entities?.find(e => {
+        const turnState = snapshot.heroTurnStates?.[e.id];
+        return turnState && turnState.playerId === snapshot.electedPlayerId;
+      });
+
+      if (heroEntity) {
+        const heroName = this.getHeroName(heroEntity.id, snapshot);
+        console.log('TURN-COUNTER: Setting elected player to:', heroName);
+        this.currentPlayerElement.textContent = heroName + ' (electing)';
+        this.currentPlayerElement.classList.add('text-blue-400');
+        this.currentPlayerElement.classList.remove('text-orange-400');
+        return;
+      }
     }
 
     // Default to Game Master

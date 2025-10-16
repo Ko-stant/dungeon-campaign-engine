@@ -105,6 +105,11 @@ export class EntityModalController {
 
     this.modalTitle.textContent = 'Monster Details';
 
+    // Get monster turn state to find fixed movement
+    const snapshot = this.gameState.snapshot;
+    const monsterTurnState = snapshot?.monsterTurnStates?.[monster.id];
+    const fixedMovement = monsterTurnState?.fixedMovement;
+
     // Build monster stats HTML
     this.modalContent.innerHTML = `
       <div class="space-y-4">
@@ -123,15 +128,15 @@ export class EntityModalController {
         <div class="grid grid-cols-2 gap-3">
           <div class="p-3 bg-surface-2 rounded-md">
             <div class="text-xs opacity-70 mb-1">Body Points</div>
-            <div class="text-lg font-bold text-red-400">${monster.currentBodyPoints || 0} / ${monster.bodyPoints || 0}</div>
+            <div class="text-lg font-bold text-red-400">${monster.body || 0} / ${monster.maxBody || 0}</div>
           </div>
           <div class="p-3 bg-surface-2 rounded-md">
             <div class="text-xs opacity-70 mb-1">Mind Points</div>
-            <div class="text-lg font-bold text-blue-400">${monster.mindPoints || 0}</div>
+            <div class="text-lg font-bold text-blue-400">${monster.mind || 0}</div>
           </div>
           <div class="p-3 bg-surface-2 rounded-md">
-            <div class="text-xs opacity-70 mb-1">Move Dice</div>
-            <div class="text-lg font-bold">${monster.moveDice || 0}d6</div>
+            <div class="text-xs opacity-70 mb-1">Movement</div>
+            <div class="text-lg font-bold">${fixedMovement ? fixedMovement + ' squares' : 'Unknown'}</div>
           </div>
           <div class="p-3 bg-surface-2 rounded-md">
             <div class="text-xs opacity-70 mb-1">Attack Dice</div>

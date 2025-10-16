@@ -447,27 +447,8 @@ func broadcastQuestSetupState(dynamicTurnOrder *DynamicTurnOrderManager, hub *ws
 
 // broadcastHeroTurnState broadcasts a hero turn state update
 func broadcastHeroTurnState(state *HeroTurnState, hub *ws.Hub, sequence *uint64) {
-	// Convert to protocol format
-	effects := make([]protocol.ActiveEffectLite, 0, len(state.ActiveEffects))
-	for _, effect := range state.ActiveEffects {
-		effects = append(effects, protocol.ActiveEffectLite{
-			Source:     effect.Source,
-			EffectType: effect.EffectType,
-			Value:      effect.Value,
-			Trigger:    effect.Trigger,
-			Applied:    effect.Applied,
-		})
-	}
-
-	locationSearches := make(map[string]protocol.LocationSearchSummary)
-	for locKey, locHistory := range state.LocationActions {
-		if searchHistory, exists := locHistory.SearchesByHero[state.HeroID]; exists {
-			locationSearches[locKey] = protocol.LocationSearchSummary{
-				LocationKey:        locKey,
-				TreasureSearchDone: len(searchHistory.TreasureSearches) > 0,
-			}
-		}
-	}
+	// TODO: Add ActiveEffects and LocationSearches to TurnStateChanged protocol
+	// Currently these fields are tracked in HeroTurnState but not transmitted to clients
 
 	// Broadcast TurnStateChanged with hero turn state details
 	broadcastEvent(hub, sequence, "TurnStateChanged", protocol.TurnStateChanged{

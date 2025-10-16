@@ -87,15 +87,11 @@ export class DetailPaneController {
     // Add specific details based on action type
     if (result.action === 'attack') {
       if (result.attackRolls && result.attackRolls.length > 0) {
-        const skullCount = result.attackRolls.filter(r => r.result === 'skull').length;
         descriptionHTML += `<p class="mb-1">Attack Dice: ${this.formatDiceRolls(result.attackRolls)}</p>`;
-        descriptionHTML += `<p class="mb-1">Skulls: ${skullCount}</p>`;
       }
 
       if (result.defenseRolls && result.defenseRolls.length > 0) {
-        const shieldCount = result.defenseRolls.filter(r => r.result === 'shield').length;
         descriptionHTML += `<p class="mb-1">Defense Dice: ${this.formatDiceRolls(result.defenseRolls)}</p>`;
-        descriptionHTML += `<p class="mb-1">Shields: ${shieldCount}</p>`;
       }
 
       if (result.damage !== undefined) {

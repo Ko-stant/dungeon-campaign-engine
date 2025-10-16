@@ -112,7 +112,7 @@ export function getMonsterHealth(monsterId) {
 
   return {
     body: monster.body,
-    maxBody: monster.MaxBody,
+    maxBody: monster.maxBody,
     mind: monster.mind,
     maxMind: monster.maxMind,
   };
@@ -142,7 +142,7 @@ export function getMonsterCombatStats(monsterId) {
  */
 export function isMonsterDamaged(monsterId) {
   const monster = gameState.getMonsterById(monsterId);
-  return monster ? monster.body < monster.MaxBody : false;
+  return monster ? monster.body < monster.maxBody : false;
 }
 
 /**
@@ -200,7 +200,7 @@ export function updateMonsterDetailsUI() {
   const detailsHTML = `
     <div class="space-y-1">
       <div><span class="opacity-70">Type:</span> ${getMonsterDisplayName(selectedMonsterId)}</div>
-      <div><span class="opacity-70">Body:</span> ${monster.body}/${monster.MaxBody}</div>
+      <div><span class="opacity-70">Body:</span> ${monster.body}/${monster.maxBody}</div>
       <div><span class="opacity-70">Mind:</span> ${monster.mind}/${monster.maxMind}</div>
       <div><span class="opacity-70">Attack Dice:</span> ${monster.attackDice}</div>
       <div><span class="opacity-70">Defense Dice:</span> ${monster.defenseDice}</div>

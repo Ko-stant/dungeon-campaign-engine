@@ -445,12 +445,12 @@ function drawMonsterImage(img, monster, rect) {
   drawImageSafe(ctx, img, 0, 0, null, null, rect.x, rect.y, rect.w, rect.h);
 
   // Add health indicator if damaged
-  if (monster.body < monster.MaxBody) {
+  if (monster.body < monster.maxBody) {
     ctx.fillStyle = 'red';
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`${monster.body}/${monster.MaxBody}`,
+    ctx.fillText(`${monster.body}/${monster.maxBody}`,
       rect.x + rect.w / 2, rect.y + rect.h - 10);
   }
 }
@@ -487,10 +487,10 @@ function drawMonsterFallback(monster, rect) {
   ctx.fillText(displayText, rect.x + rect.w / 2, rect.y + rect.h / 2);
 
   // Add health indicator if damaged
-  if (monster.body < monster.MaxBody) {
+  if (monster.body < monster.maxBody) {
     ctx.fillStyle = 'red';
     ctx.font = '8px monospace';
-    ctx.fillText(`${monster.body}/${monster.MaxBody}`,
+    ctx.fillText(`${monster.body}/${monster.maxBody}`,
       rect.x + rect.w / 2, rect.y + rect.h - 8);
   }
 }

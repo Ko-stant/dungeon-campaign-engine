@@ -62,7 +62,7 @@ type MonsterLite struct {
 	Type        string      `json:"type"`
 	Tile        TileAddress `json:"tile"`
 	Body        int         `json:"body"`
-	MaxBody     int         `json:"MaxBody"`
+	MaxBody     int         `json:"maxBody"`
 	Mind        int         `json:"mind"`
 	MaxMind     int         `json:"maxMind"`
 	AttackDice  int         `json:"attackDice"`
@@ -123,6 +123,7 @@ type Snapshot struct {
 	Monsters          []MonsterLite                `json:"monsters"`
 	Variables         map[string]any               `json:"variables"`
 	HeroTurnStates    map[string]HeroTurnStateLite `json:"heroTurnStates"`
+	PlayerNames       map[string]string            `json:"playerNames,omitempty"` // Map of playerID -> player name from lobby
 	ProtocolVersion   string                       `json:"protocolVersion"`
 	VisibleRegionIDs  []int                        `json:"visibleRegionIds"`
 	CorridorRegionID  int                          `json:"corridorRegionId"`

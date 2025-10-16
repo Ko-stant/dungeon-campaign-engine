@@ -41,7 +41,7 @@ type Monster struct {
 	Type             MonsterType          `json:"type"`
 	Position         protocol.TileAddress `json:"position"`
 	Body             int                  `json:"body"`
-	MaxBody          int                  `json:"MaxBody"`
+	MaxBody          int                  `json:"maxBody"`
 	Mind             int                  `json:"mind"`
 	MaxMind          int                  `json:"maxMind"`
 	AttackDice       int                  `json:"attackDice"`
@@ -73,7 +73,7 @@ const (
 type MonsterTemplate struct {
 	Type             MonsterType `json:"type"`
 	Name             string      `json:"name"`
-	MaxBody          int         `json:"MaxBody"`
+	MaxBody          int         `json:"maxBody"`
 	MaxMind          int         `json:"maxMind"`
 	AttackDice       int         `json:"attackDice"`
 	DefenseDice      int         `json:"defenseDice"`

@@ -279,10 +279,8 @@ func (mts *MonsterTurnState) UseAbility(abilityID string, targetID string, targe
 			Timestamp: time.Now(),
 		}
 
-		if details != nil {
-			for k, v := range details {
-				action.Details[k] = v
-			}
+		for k, v := range details {
+			action.Details[k] = v
 		}
 
 		return mts.RecordAction(action)

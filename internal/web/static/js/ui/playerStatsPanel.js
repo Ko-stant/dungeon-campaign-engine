@@ -46,7 +46,15 @@ export class PlayerStatsPanelController {
       return null;
     }
 
-    // Find first entity with kind="hero"
+    // If we have a viewer entity ID, find that specific hero
+    if (snapshot.viewerEntityId) {
+      const viewerHero = snapshot.entities.find(e => e.id === snapshot.viewerEntityId);
+      if (viewerHero) {
+        return viewerHero;
+      }
+    }
+
+    // Fallback: find first entity with kind="hero" (for backwards compatibility)
     return snapshot.entities.find(e => e.kind === 'hero') || null;
   }
 

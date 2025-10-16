@@ -418,9 +418,15 @@ func (tm *TurnManager) ConsumeMovement(squares int, movementAction string) error
 		return fmt.Errorf("must roll movement dice before moving")
 	}
 
-	// Allow movement to continue within the same action type
-	if tm.state.HasMoved && (!tm.state.MovementStarted || tm.state.MovementAction != movementAction) {
-		return fmt.Errorf("movement already used this turn")
+	// HeroQuest rule: Cannot move after BOTH moving and taking action
+	// Once action is taken after movement starts, the movement phase is locked
+	if tm.state.HasMoved && tm.state.ActionTaken {
+		return fmt.Errorf("cannot move after both moving and taking an action")
+	}
+
+	// Check if trying to start a different movement action
+	if tm.state.MovementStarted && tm.state.MovementAction != movementAction {
+		return fmt.Errorf("movement already started with different action type")
 	}
 
 	if tm.state.MovementLeft < squares {
@@ -433,7 +439,7 @@ func (tm *TurnManager) ConsumeMovement(squares int, movementAction string) error
 	if !tm.state.MovementStarted {
 		tm.state.MovementStarted = true
 		tm.state.MovementAction = movementAction
-		tm.state.HasMoved = true // Set immediately when any movement action starts
+		// Note: HasMoved will be set when movement phase completes (not here)
 	}
 
 	tm.logger.Printf("Consumed %d movement, %d remaining", squares, tm.state.MovementLeft)
@@ -540,6 +546,12 @@ func (tm *TurnManager) ConsumeAction() error {
 
 	tm.state.ActionsLeft--
 	tm.state.ActionTaken = true
+
+	// If movement was started, mark it as complete/committed
+	// This enforces the HeroQuest rule: Move → Action means movement phase is done
+	if tm.state.MovementStarted {
+		tm.state.HasMoved = true
+	}
 
 	tm.logger.Printf("Consumed 1 action, %d remaining", tm.state.ActionsLeft)
 

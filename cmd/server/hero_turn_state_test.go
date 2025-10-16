@@ -390,3 +390,122 @@ func TestHeroTurnState_ResetForNewTurn(t *testing.T) {
 		t.Errorf("ItemUsageThisTurn should be empty after reset, got %d", len(state.ItemUsageThisTurn))
 	}
 }
+
+// TestHeroTurnState_NoMovementAfterBothMoveAndAction verifies that heroes cannot continue moving
+// after they have both moved and taken an action (fixes high priority bug #1)
+func TestHeroTurnState_NoMovementAfterBothMoveAndAction(t *testing.T) {
+	// Test Scenario 1: Move first, then action, then try to move again
+	t.Run("MoveFirst_ThenAction_NoMoreMovement", func(t *testing.T) {
+		state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
+		state.RollMovementDice([]int{3, 3, 3})
+
+		// Move once
+		err := state.RecordMovement(protocol.TileAddress{X: 1, Y: 0})
+		if err != nil {
+			t.Fatalf("Expected no error on first move, got: %v", err)
+		}
+
+		// Take action
+		action := ActionRecord{
+			ActionType: "attack",
+			TargetID:   "monster-1",
+			Success:    true,
+			Details:    make(map[string]interface{}),
+		}
+		err = state.RecordAction(action)
+		if err != nil {
+			t.Fatalf("Expected no error taking action, got: %v", err)
+		}
+
+		// Try to move again - should FAIL
+		canMove, reason := state.CanMove()
+		if canMove {
+			t.Error("Should NOT be able to move after both moving and taking an action")
+		}
+		if reason == "" {
+			t.Error("Expected reason why movement is blocked")
+		}
+
+		// Verify the error
+		err = state.RecordMovement(protocol.TileAddress{X: 2, Y: 0})
+		if err == nil {
+			t.Error("Expected error when trying to move after action in move-first strategy")
+		}
+	})
+
+	// Test Scenario 2: Action first, then move, then try to move again
+	t.Run("ActionFirst_ThenMove_NoMoreMovement", func(t *testing.T) {
+		state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
+		state.RollMovementDice([]int{3, 3, 3})
+
+		// Take action first
+		action := ActionRecord{
+			ActionType: "attack",
+			TargetID:   "monster-1",
+			Success:    true,
+			Details:    make(map[string]interface{}),
+		}
+		err := state.RecordAction(action)
+		if err != nil {
+			t.Fatalf("Expected no error taking action, got: %v", err)
+		}
+
+		// Move once
+		err = state.RecordMovement(protocol.TileAddress{X: 1, Y: 0})
+		if err != nil {
+			t.Fatalf("Expected no error on first move after action, got: %v", err)
+		}
+
+		// Try to move again - should FAIL
+		canMove, reason := state.CanMove()
+		if canMove {
+			t.Error("Should NOT be able to move again after both acting and moving")
+		}
+		if reason == "" {
+			t.Error("Expected reason why movement is blocked")
+		}
+
+		// Verify the error
+		err = state.RecordMovement(protocol.TileAddress{X: 2, Y: 0})
+		if err == nil {
+			t.Error("Expected error when trying to move again after action in act-first strategy")
+		}
+	})
+
+	// Test Scenario 3: With split movement flag, should still be able to move
+	t.Run("WithSplitMovementFlag_CanMoveAfterBoth", func(t *testing.T) {
+		state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
+		state.RollMovementDice([]int{3, 3, 3})
+		state.TurnFlags["can_split_movement"] = true
+
+		// Move
+		err := state.RecordMovement(protocol.TileAddress{X: 1, Y: 0})
+		if err != nil {
+			t.Fatalf("Expected no error on first move, got: %v", err)
+		}
+
+		// Take action
+		action := ActionRecord{
+			ActionType: "attack",
+			TargetID:   "monster-1",
+			Success:    true,
+			Details:    make(map[string]interface{}),
+		}
+		err = state.RecordAction(action)
+		if err != nil {
+			t.Fatalf("Expected no error taking action, got: %v", err)
+		}
+
+		// Should be able to move again with split movement flag
+		canMove, reason := state.CanMove()
+		if !canMove {
+			t.Errorf("Should be able to move with split movement flag, reason: %s", reason)
+		}
+
+		// Move again should succeed
+		err = state.RecordMovement(protocol.TileAddress{X: 2, Y: 0})
+		if err != nil {
+			t.Fatalf("Expected no error on second move with split flag, got: %v", err)
+		}
+	})
+}

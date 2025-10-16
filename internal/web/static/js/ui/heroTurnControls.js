@@ -181,7 +181,7 @@ export class HeroTurnControlsController {
         borderClass = 'border-blue-500 bg-blue-900/20';
         break;
       case 'hero_active':
-        const isMyTurn = snapshot.activeHeroPlayerID === snapshot.viewerPlayerID;
+        const isMyTurn = snapshot.activeHeroPlayerID === snapshot.viewerPlayerId;
         if (isMyTurn) {
           dotClass = 'bg-green-500 animate-pulse';
           text = 'Your Turn';
@@ -384,8 +384,8 @@ export class HeroTurnControlsController {
     }
 
     // Update button states
-    const viewerPlayerID = snapshot.viewerPlayerID || this.gameState.playerID;
-    const viewerEntityID = snapshot.viewerEntityID;
+    const viewerPlayerID = snapshot.viewerPlayerId || this.gameState.playerID;
+    const viewerEntityID = snapshot.viewerEntityId;
     const isMyElection = electedPlayerID === viewerPlayerID;
     const hasActed = heroesActed.includes(viewerPlayerID);
 
@@ -483,7 +483,7 @@ export class HeroTurnControlsController {
    * Hero Active Phase
    */
   showActivePanel(snapshot) {
-    const viewerPlayerID = snapshot.viewerPlayerID || this.gameState.playerID;
+    const viewerPlayerID = snapshot.viewerPlayerId || this.gameState.playerID;
     const isMyTurn = snapshot.activeHeroPlayerID === viewerPlayerID;
 
     if (!isMyTurn) {
@@ -496,7 +496,7 @@ export class HeroTurnControlsController {
     this.activePanel.classList.remove('hidden');
 
     // Get character info from snapshot
-    const viewerEntityID = snapshot.viewerEntityID;
+    const viewerEntityID = snapshot.viewerEntityId;
     const heroEntity = snapshot.entities?.find(e => e.id === viewerEntityID);
     const heroTurnState = snapshot.heroTurnStates?.[viewerEntityID];
 
@@ -593,7 +593,13 @@ export class HeroTurnControlsController {
       }
 
       if (this.characterName) {
-        this.characterName.textContent = classDisplay;
+        // Get player name from snapshot if available
+        const playerName = snapshot.playerNames?.[viewerPlayerID];
+        if (playerName) {
+          this.characterName.textContent = `${classDisplay} - ${playerName}`;
+        } else {
+          this.characterName.textContent = classDisplay;
+        }
         this.characterName.className = 'text-sm font-semibold text-amber-400';
       }
 

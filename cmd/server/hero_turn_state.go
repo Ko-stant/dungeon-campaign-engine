@@ -152,22 +152,23 @@ func (hts *HeroTurnState) CanMove() (bool, string) {
 		return false, "no movement remaining"
 	}
 
-	// If action taken and movement not started, can still move (act-first strategy)
-	if hts.ActionTaken && !hts.HasMoved {
-		return true, ""
-	}
-
-	// If movement started, can continue moving (but action will lock it)
-	if hts.HasMoved && !hts.ActionTaken {
-		return true, ""
-	}
-
-	// If both done, can only move with split ability
+	// If both action and movement are done, no more movement allowed
+	// Exception: can_split_movement ability (e.g., from special items)
 	if hts.HasMoved && hts.ActionTaken {
 		if hts.TurnFlags["can_split_movement"] {
 			return true, ""
 		}
-		return false, "movement already used (action taken locks move-first strategy)"
+		return false, "cannot move after both moving and taking an action"
+	}
+
+	// If action taken but no movement yet, can move once (act-first strategy)
+	if hts.ActionTaken && !hts.HasMoved {
+		return true, ""
+	}
+
+	// If movement started but no action, can continue moving
+	if hts.HasMoved && !hts.ActionTaken {
+		return true, ""
 	}
 
 	// Neither done yet, can move

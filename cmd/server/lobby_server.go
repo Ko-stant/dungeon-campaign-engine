@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/coder/websocket"
 
@@ -19,7 +18,6 @@ type LobbyServer struct {
 	contentManager   *ContentManager
 	sequenceGen      *SequenceGeneratorImpl
 	gameStartHandler func(gameMasterID string, heroPlayers map[string]string) error
-	mutex            sync.RWMutex
 }
 
 // NewLobbyServer creates a new lobby server
