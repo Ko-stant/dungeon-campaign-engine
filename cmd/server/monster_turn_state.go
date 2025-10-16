@@ -1,6 +1,7 @@
 package main
 
 import (
+	"maps"
 	"time"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
@@ -279,9 +280,7 @@ func (mts *MonsterTurnState) UseAbility(abilityID string, targetID string, targe
 			Timestamp: time.Now(),
 		}
 
-		for k, v := range details {
-			action.Details[k] = v
-		}
+		maps.Copy(action.Details, details)
 
 		return mts.RecordAction(action)
 	}

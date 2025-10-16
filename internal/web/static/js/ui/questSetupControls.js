@@ -1,5 +1,6 @@
-// questSetupControls.js - Manages quest setup phase UI and interactions
-
+/**
+ *   Manages quest setup phase UI and interactions
+ */
 class QuestSetupController {
   constructor(gameState) {
     this.gameState = gameState;
@@ -69,8 +70,9 @@ class QuestSetupController {
   updateFromSnapshot(snapshot) {
     this.myPlayerID = snapshot.viewerPlayerId;
 
-    // Check if we're in quest setup phase
-    if (snapshot.turnPhase === 'quest_setup') {
+    // Check if we're in quest setup phase AND viewer is a hero (not GM)
+    // GM should never see quest setup UI elements
+    if (snapshot.turnPhase === 'quest_setup' && snapshot.viewerRole !== 'gm') {
       this.show();
       this.updateQuestSetupState(snapshot);
     } else {

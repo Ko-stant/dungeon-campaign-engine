@@ -3,8 +3,6 @@
  * Manages per-hero turn state synchronized from server
  */
 
-import { gameState } from './gameState.js';
-
 // Hero turn state (synchronized from server)
 export const heroTurnState = {
     heroID: null,

@@ -117,10 +117,12 @@ func mainWithLobby() {
 
 	// Flag to track if game has started
 	gameStarted := false
+	var gameMasterPlayerID string // Track GM player ID for reliable role checking
 
 	// Set game start handler
 	lobbyServer.SetGameStartHandler(func(gameMasterID string, heroPlayers map[string]string) error {
 		log.Printf("Initializing game with GM=%s and heroes=%v", gameMasterID, heroPlayers)
+		gameMasterPlayerID = gameMasterID // Store GM ID for persistent role checking
 
 		// Load game content
 		loadedBoard, loadedQuest, err := loadGameContent()
@@ -266,6 +268,7 @@ func mainWithLobby() {
 
 		// Get player ID from cookie
 		viewerPlayerID := getPlayerIDFromRequest(r)
+		log.Printf("REFRESH DEBUG: Hero page requested by player %s", viewerPlayerID)
 		if viewerPlayerID == "" {
 			// No player ID, show error or redirect to lobby
 			http.Error(w, "No player ID found", http.StatusUnauthorized)
@@ -273,8 +276,8 @@ func mainWithLobby() {
 		}
 
 		// Check if this player is the game master - if so, redirect to GM page
-		lobbyPlayer, exists := lobbyServer.lobby.GetPlayer(viewerPlayerID)
-		if exists && lobbyPlayer.Role == RoleGameMaster {
+		if viewerPlayerID == gameMasterPlayerID {
+			log.Printf("REFRESH DEBUG: Redirecting GM %s to /gm page", viewerPlayerID)
 			http.Redirect(w, r, "/gm", http.StatusSeeOther)
 			return
 		}
@@ -290,7 +293,9 @@ func mainWithLobby() {
 		if viewerPlayer != nil {
 			viewerEntityID = viewerPlayer.EntityID
 			hero = currentGameState.Entities[viewerEntityID]
+			log.Printf("REFRESH DEBUG: Found viewerPlayer for %s, entityID=%s, position=(%d,%d)", viewerPlayerID, viewerEntityID, hero.X, hero.Y)
 		} else {
+			log.Printf("REFRESH DEBUG: No viewerPlayer found for %s in turnManager", viewerPlayerID)
 			// Fallback: get first hero for initial view
 			for entityID := range currentGameState.Entities {
 				if len(entityID) >= 4 && entityID[:4] == "hero" {
@@ -310,17 +315,12 @@ func mainWithLobby() {
 
 		// Build entities list (only hero players, not GM)
 		entities := []protocol.EntityLite{}
-		for playerID := range lobbyServer.lobby.players {
-			// Skip GM players - they don't have entities
-			lobbyPlayer, _ := lobbyServer.lobby.GetPlayer(playerID)
-			if lobbyPlayer != nil && lobbyPlayer.Role == RoleGameMaster {
-				continue
-			}
-
-			player := gameManager.turnManager.GetPlayer(playerID)
+		// Get player list from turnManager (source of truth for game players)
+		for _, player := range gameManager.turnManager.GetHeroPlayers() {
 			if player == nil {
 				continue
 			}
+			playerID := player.ID
 
 			heroHP := &protocol.HP{Current: 0, Max: 0}
 			heroMindPoints := &protocol.HP{Current: 0, Max: 0}
@@ -332,8 +332,14 @@ func mainWithLobby() {
 			}
 
 			currentGameState.Lock.Lock()
-			entityPos := currentGameState.Entities[player.EntityID]
+			entityPos, entityExists := currentGameState.Entities[player.EntityID]
 			currentGameState.Lock.Unlock()
+
+			if !entityExists {
+				log.Printf("WARNING: Entity %s not found in game state for player %s", player.EntityID, playerID)
+				// During quest setup, heroes may not have positions yet - use zero position
+				entityPos = protocol.TileAddress{SegmentID: "", X: 0, Y: 0}
+			}
 
 			entities = append(entities, protocol.EntityLite{
 				ID:         player.EntityID,
@@ -472,6 +478,7 @@ func mainWithLobby() {
 			ElectedPlayerID:      electedPlayerID,
 			HeroesActedIDs:       heroesActedIDs,
 		}
+		log.Printf("REFRESH DEBUG: Sending snapshot to %s with ViewerEntityID=%s, %d entities, turnPhase=%s", viewerPlayerID, viewerEntityID, len(entities), turnPhase)
 
 		if err := views.IndexPage(s).Render(r.Context(), w); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -495,8 +502,7 @@ func mainWithLobby() {
 		}
 
 		// Check if this player is the game master
-		lobbyPlayer, exists := lobbyServer.lobby.GetPlayer(playerID)
-		if !exists || lobbyPlayer.Role != RoleGameMaster {
+		if playerID != gameMasterPlayerID {
 			// Not the GM, redirect to hero view
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -508,17 +514,12 @@ func mainWithLobby() {
 
 		// Build entities list (all heroes)
 		entities := []protocol.EntityLite{}
-		for pID := range lobbyServer.lobby.players {
-			// Skip GM players - they don't have entities
-			lp, _ := lobbyServer.lobby.GetPlayer(pID)
-			if lp != nil && lp.Role == RoleGameMaster {
-				continue
-			}
-
-			player := gameManager.turnManager.GetPlayer(pID)
+		// Get player list from turnManager (source of truth for game players)
+		for _, player := range gameManager.turnManager.GetHeroPlayers() {
 			if player == nil {
 				continue
 			}
+			pID := player.ID
 
 			heroHP := &protocol.HP{Current: 0, Max: 0}
 			heroMindPoints := &protocol.HP{Current: 0, Max: 0}
@@ -529,7 +530,13 @@ func mainWithLobby() {
 				heroMindPoints.Max = player.Character.BaseStats.MindPoints
 			}
 
-			entityPos := currentGameState.Entities[player.EntityID]
+			entityPos, entityExists := currentGameState.Entities[player.EntityID]
+
+			if !entityExists {
+				log.Printf("WARNING (GM): Entity %s not found in game state for player %s", player.EntityID, pID)
+				// During quest setup, heroes may not have positions yet - use zero position
+				entityPos = protocol.TileAddress{SegmentID: "", X: 0, Y: 0}
+			}
 
 			entities = append(entities, protocol.EntityLite{
 				ID:         player.EntityID,
