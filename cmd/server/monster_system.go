@@ -559,14 +559,14 @@ func (ms *MonsterSystem) calculateDistance(pos1, pos2 protocol.TileAddress) int 
 }
 
 // executeMonsterAttackAction - Used by ProcessAction for GM-controlled monster attacks
-func (ms *MonsterSystem) executeMonsterAttackAction(monsterID, targetID string) error {
-	_, exists := ms.monsters[monsterID]
-	if !exists {
-		return fmt.Errorf("monster %s not found", monsterID)
-	}
+// func (ms *MonsterSystem) executeMonsterAttackAction(monsterID, targetID string) error {
+// 	_, exists := ms.monsters[monsterID]
+// 	if !exists {
+// 		return fmt.Errorf("monster %s not found", monsterID)
+// 	}
 
-	// For now, this is a placeholder for GM-controlled attacks
-	// TODO: Implement proper hero damage system when hero damage system is ready
-	ms.logger.Printf("Monster %s attacks %s (GM-controlled action)", monsterID, targetID)
-	return nil
-}
+// 	// For now, this is a placeholder for GM-controlled attacks
+// 	// TODO: Implement proper hero damage system when hero damage system is ready
+// 	ms.logger.Printf("Monster %s attacks %s (GM-controlled action)", monsterID, targetID)
+// 	return nil
+// }

@@ -45,8 +45,8 @@ func TestDynamicTurnOrderManager_QuestSetup(t *testing.T) {
 	}
 
 	// Set players ready
-	dtom.SetPlayerReady("player-1", true)
-	dtom.SetPlayerReady("player-2", true)
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.SetPlayerReady("player-2", true)
 
 	// Not all ready yet
 	if dtom.AreAllPlayersReady() {
@@ -54,7 +54,7 @@ func TestDynamicTurnOrderManager_QuestSetup(t *testing.T) {
 	}
 
 	// Set last player ready
-	dtom.SetPlayerReady("player-3", true)
+	_ = dtom.SetPlayerReady("player-3", true)
 
 	// All ready now
 	if !dtom.AreAllPlayersReady() {
@@ -81,7 +81,7 @@ func TestDynamicTurnOrderManager_StartQuestBeforeReady(t *testing.T) {
 	dtom := NewDynamicTurnOrderManager(logger)
 
 	dtom.RegisterPlayer("player-1")
-	dtom.SetPlayerReady("player-1", false)
+	_ = dtom.SetPlayerReady("player-1", false)
 
 	// Try to start quest before ready
 	err := dtom.StartQuestAfterSetup()
@@ -97,9 +97,9 @@ func TestDynamicTurnOrderManager_PlayerElection(t *testing.T) {
 	// Setup and start quest
 	dtom.RegisterPlayer("player-1")
 	dtom.RegisterPlayer("player-2")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.SetPlayerReady("player-2", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.SetPlayerReady("player-2", true)
+	_ = dtom.StartQuestAfterSetup()
 
 	// Player 1 elects themselves
 	err := dtom.ElectSelfAsNextPlayer("player-1")
@@ -143,12 +143,12 @@ func TestDynamicTurnOrderManager_ConfirmElectionAndStartHeroTurn(t *testing.T) {
 	// Setup
 	dtom.RegisterPlayer("player-1")
 	dtom.RegisterPlayer("player-2")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.SetPlayerReady("player-2", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.SetPlayerReady("player-2", true)
+	_ = dtom.StartQuestAfterSetup()
 
 	// Player 1 elects themselves
-	dtom.ElectSelfAsNextPlayer("player-1")
+	_ = dtom.ElectSelfAsNextPlayer("player-1")
 
 	// Confirm election
 	playerID, err := dtom.ConfirmElectionAndStartHeroTurn()
@@ -183,13 +183,13 @@ func TestDynamicTurnOrderManager_CompleteHeroTurn(t *testing.T) {
 	// Setup with 2 players
 	dtom.RegisterPlayer("player-1")
 	dtom.RegisterPlayer("player-2")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.SetPlayerReady("player-2", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.SetPlayerReady("player-2", true)
+	_ = dtom.StartQuestAfterSetup()
 
 	// Player 1 acts
-	dtom.ElectSelfAsNextPlayer("player-1")
-	dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-1")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
 
 	// Complete player 1's turn
 	err := dtom.CompleteHeroTurn()
@@ -225,18 +225,18 @@ func TestDynamicTurnOrderManager_AdvanceToGMPhase(t *testing.T) {
 	// Setup with 2 players
 	dtom.RegisterPlayer("player-1")
 	dtom.RegisterPlayer("player-2")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.SetPlayerReady("player-2", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.SetPlayerReady("player-2", true)
+	_ = dtom.StartQuestAfterSetup()
 
 	// Player 1 acts
-	dtom.ElectSelfAsNextPlayer("player-1")
-	dtom.ConfirmElectionAndStartHeroTurn()
-	dtom.CompleteHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-1")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.CompleteHeroTurn()
 
 	// Player 2 acts
-	dtom.ElectSelfAsNextPlayer("player-2")
-	dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-2")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
 	err := dtom.CompleteHeroTurn()
 	if err != nil {
 		t.Fatalf("Failed to complete hero turn: %v", err)
@@ -259,11 +259,11 @@ func TestDynamicTurnOrderManager_CompleteGMTurn(t *testing.T) {
 
 	// Setup and get to GM phase
 	dtom.RegisterPlayer("player-1")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.StartQuestAfterSetup()
-	dtom.ElectSelfAsNextPlayer("player-1")
-	dtom.ConfirmElectionAndStartHeroTurn()
-	dtom.CompleteHeroTurn() // Should advance to GM phase
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.StartQuestAfterSetup()
+	_ = dtom.ElectSelfAsNextPlayer("player-1")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.CompleteHeroTurn() // Should advance to GM phase
 
 	// Complete GM turn
 	err := dtom.CompleteGMTurn()
@@ -295,14 +295,14 @@ func TestDynamicTurnOrderManager_CannotElectAfterActing(t *testing.T) {
 	// Setup
 	dtom.RegisterPlayer("player-1")
 	dtom.RegisterPlayer("player-2")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.SetPlayerReady("player-2", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.SetPlayerReady("player-2", true)
+	_ = dtom.StartQuestAfterSetup()
 
 	// Player 1 acts
-	dtom.ElectSelfAsNextPlayer("player-1")
-	dtom.ConfirmElectionAndStartHeroTurn()
-	dtom.CompleteHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-1")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.CompleteHeroTurn()
 
 	// Player 1 tries to elect again
 	err := dtom.ElectSelfAsNextPlayer("player-1")
@@ -323,8 +323,8 @@ func TestDynamicTurnOrderManager_PhaseValidation(t *testing.T) {
 
 	// Setup and start quest
 	dtom.RegisterPlayer("player-1")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.StartQuestAfterSetup()
 
 	// Try to complete hero turn during election
 	err = dtom.CompleteHeroTurn()
@@ -356,8 +356,8 @@ func TestDynamicTurnOrderManager_IsHelpers(t *testing.T) {
 
 	// Start quest (hero election)
 	dtom.RegisterPlayer("player-1")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.StartQuestAfterSetup()
 
 	if dtom.IsQuestSetup() {
 		t.Error("Expected IsQuestSetup to be false after starting")
@@ -370,9 +370,9 @@ func TestDynamicTurnOrderManager_IsHelpers(t *testing.T) {
 	}
 
 	// Advance to GM phase
-	dtom.ElectSelfAsNextPlayer("player-1")
-	dtom.ConfirmElectionAndStartHeroTurn()
-	dtom.CompleteHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-1")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.CompleteHeroTurn()
 
 	if dtom.IsQuestSetup() {
 		t.Error("Expected IsQuestSetup to be false during GM phase")
@@ -392,9 +392,9 @@ func TestDynamicTurnOrderManager_CanPlayerAct(t *testing.T) {
 	// Setup
 	dtom.RegisterPlayer("player-1")
 	dtom.RegisterPlayer("player-2")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.SetPlayerReady("player-2", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.SetPlayerReady("player-2", true)
+	_ = dtom.StartQuestAfterSetup()
 
 	// During election, no one can act
 	if dtom.CanPlayerAct("player-1") {
@@ -402,8 +402,8 @@ func TestDynamicTurnOrderManager_CanPlayerAct(t *testing.T) {
 	}
 
 	// Player 1 confirmed as active
-	dtom.ElectSelfAsNextPlayer("player-1")
-	dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-1")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
 
 	// Player 1 can act
 	if !dtom.CanPlayerAct("player-1") {
@@ -428,23 +428,23 @@ func TestDynamicTurnOrderManager_GetStateString(t *testing.T) {
 	}
 
 	// Election phase
-	dtom.SetPlayerReady("player-1", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.StartQuestAfterSetup()
 	stateStr = dtom.GetStateString()
 	if stateStr == "" {
 		t.Error("Expected non-empty state string during election")
 	}
 
 	// Active hero phase
-	dtom.ElectSelfAsNextPlayer("player-1")
-	dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-1")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
 	stateStr = dtom.GetStateString()
 	if stateStr == "" {
 		t.Error("Expected non-empty state string during hero turn")
 	}
 
 	// GM phase
-	dtom.CompleteHeroTurn()
+	_ = dtom.CompleteHeroTurn()
 	stateStr = dtom.GetStateString()
 	if stateStr == "" {
 		t.Error("Expected non-empty state string during GM turn")
@@ -456,8 +456,8 @@ func TestDynamicTurnOrderManager_GetStateSummary(t *testing.T) {
 	dtom := NewDynamicTurnOrderManager(logger)
 
 	dtom.RegisterPlayer("player-1")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.StartQuestAfterSetup()
 
 	summary := dtom.GetStateSummary()
 	if summary == nil {
@@ -479,18 +479,18 @@ func TestDynamicTurnOrderManager_MultipleHeroCycles(t *testing.T) {
 	// Setup with 2 players
 	dtom.RegisterPlayer("player-1")
 	dtom.RegisterPlayer("player-2")
-	dtom.SetPlayerReady("player-1", true)
-	dtom.SetPlayerReady("player-2", true)
-	dtom.StartQuestAfterSetup()
+	_ = dtom.SetPlayerReady("player-1", true)
+	_ = dtom.SetPlayerReady("player-2", true)
+	_ = dtom.StartQuestAfterSetup()
 
 	// Cycle 1
-	dtom.ElectSelfAsNextPlayer("player-1")
-	dtom.ConfirmElectionAndStartHeroTurn()
-	dtom.CompleteHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-1")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.CompleteHeroTurn()
 
-	dtom.ElectSelfAsNextPlayer("player-2")
-	dtom.ConfirmElectionAndStartHeroTurn()
-	dtom.CompleteHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-2")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.CompleteHeroTurn()
 
 	if dtom.GetCycleNumber() != 1 {
 		t.Errorf("Expected cycle 1, got %d", dtom.GetCycleNumber())
@@ -500,7 +500,7 @@ func TestDynamicTurnOrderManager_MultipleHeroCycles(t *testing.T) {
 	}
 
 	// Complete GM turn - start cycle 2
-	dtom.CompleteGMTurn()
+	_ = dtom.CompleteGMTurn()
 
 	if dtom.GetCycleNumber() != 2 {
 		t.Errorf("Expected cycle 2, got %d", dtom.GetCycleNumber())
@@ -510,13 +510,13 @@ func TestDynamicTurnOrderManager_MultipleHeroCycles(t *testing.T) {
 	}
 
 	// Cycle 2
-	dtom.ElectSelfAsNextPlayer("player-2")
-	dtom.ConfirmElectionAndStartHeroTurn()
-	dtom.CompleteHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-2")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.CompleteHeroTurn()
 
-	dtom.ElectSelfAsNextPlayer("player-1")
-	dtom.ConfirmElectionAndStartHeroTurn()
-	dtom.CompleteHeroTurn()
+	_ = dtom.ElectSelfAsNextPlayer("player-1")
+	_, _ = dtom.ConfirmElectionAndStartHeroTurn()
+	_ = dtom.CompleteHeroTurn()
 
 	if dtom.GetCycleNumber() != 2 {
 		t.Errorf("Expected cycle 2, got %d", dtom.GetCycleNumber())

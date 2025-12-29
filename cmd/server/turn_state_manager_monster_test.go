@@ -34,8 +34,8 @@ func TestTurnStateManager_SelectMonster(t *testing.T) {
 	tsm := NewTurnStateManager(logger)
 
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
-	tsm.StartMonsterTurn("monster-2", "entity-goblin-1", pos, 6, 2, 1, 3, 3)
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.StartMonsterTurn("monster-2", "entity-goblin-1", pos, 6, 2, 1, 3, 3)
 
 	// Select first monster
 	err := tsm.SelectMonster("monster-1")
@@ -82,7 +82,7 @@ func TestTurnStateManager_RecordMonsterMovement(t *testing.T) {
 	tsm := NewTurnStateManager(logger)
 
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
 
 	// Record movement
 	newPos := protocol.TileAddress{X: 6, Y: 10}
@@ -111,7 +111,7 @@ func TestTurnStateManager_RecordMonsterAction(t *testing.T) {
 	tsm := NewTurnStateManager(logger)
 
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
 
 	// Record action
 	action := MonsterActionRecord{
@@ -148,7 +148,7 @@ func TestTurnStateManager_AddMonsterAbility(t *testing.T) {
 	tsm := NewTurnStateManager(logger)
 
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
 
 	// Add ability
 	ability := MonsterAbility{
@@ -181,7 +181,7 @@ func TestTurnStateManager_UseMonsterAbility(t *testing.T) {
 	tsm := NewTurnStateManager(logger)
 
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
 
 	// Add ability
 	ability := MonsterAbility{
@@ -193,7 +193,7 @@ func TestTurnStateManager_UseMonsterAbility(t *testing.T) {
 		RequiresAction: true,
 		Range:          6,
 	}
-	tsm.AddMonsterAbility("monster-1", ability)
+	_ = tsm.AddMonsterAbility("monster-1", ability)
 
 	// Use ability
 	targetPos := protocol.TileAddress{X: 10, Y: 10}
@@ -219,7 +219,7 @@ func TestTurnStateManager_RecordMonsterDamage(t *testing.T) {
 	tsm := NewTurnStateManager(logger)
 
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
 
 	// Record damage
 	err := tsm.RecordMonsterDamage("monster-1", 2)
@@ -255,7 +255,7 @@ func TestTurnStateManager_AddMonsterActiveEffect(t *testing.T) {
 	tsm := NewTurnStateManager(logger)
 
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
 
 	// Add effect
 	effect := MonsterActiveEffect{
@@ -281,8 +281,8 @@ func TestTurnStateManager_RemoveMonsterState(t *testing.T) {
 	tsm := NewTurnStateManager(logger)
 
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
-	tsm.SelectMonster("monster-1")
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.SelectMonster("monster-1")
 
 	// Remove monster state
 	tsm.RemoveMonsterState("monster-1")
@@ -305,9 +305,9 @@ func TestTurnStateManager_GetAllMonsterStates(t *testing.T) {
 	tsm := NewTurnStateManager(logger)
 
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
-	tsm.StartMonsterTurn("monster-2", "entity-goblin-1", pos, 6, 2, 1, 3, 3)
-	tsm.StartMonsterTurn("monster-3", "entity-skeleton-1", pos, 7, 2, 1, 2, 2)
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.StartMonsterTurn("monster-2", "entity-goblin-1", pos, 6, 2, 1, 3, 3)
+	_ = tsm.StartMonsterTurn("monster-3", "entity-skeleton-1", pos, 7, 2, 1, 2, 2)
 
 	// Get all states
 	states := tsm.GetAllMonsterStates()
@@ -329,15 +329,15 @@ func TestTurnStateManager_MonsterTurnReset(t *testing.T) {
 	tsm := NewTurnStateManager(logger)
 
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
 
 	// Perform actions
-	tsm.RecordMonsterMovement("monster-1", protocol.TileAddress{X: 6, Y: 10})
+	_ = tsm.RecordMonsterMovement("monster-1", protocol.TileAddress{X: 6, Y: 10})
 	action := MonsterActionRecord{ActionType: "attack", TargetID: "hero-1"}
-	tsm.RecordMonsterAction("monster-1", action)
+	_ = tsm.RecordMonsterAction("monster-1", action)
 
 	// Start new turn (should reset)
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
 
 	state := tsm.GetMonsterTurnState("monster-1")
 	if state.HasMoved {
@@ -357,8 +357,8 @@ func TestTurnStateManager_SerializationWithMonsters(t *testing.T) {
 
 	// Add some monster states
 	pos := protocol.TileAddress{X: 5, Y: 10}
-	tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
-	tsm.SelectMonster("monster-1")
+	_ = tsm.StartMonsterTurn("monster-1", "entity-orc-1", pos, 8, 3, 2, 5, 5)
+	_ = tsm.SelectMonster("monster-1")
 
 	// Serialize
 	data, err := tsm.SerializeForPersistence()

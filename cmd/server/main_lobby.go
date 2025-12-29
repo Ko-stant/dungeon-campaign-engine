@@ -35,20 +35,6 @@ func getPlayerIDFromRequest(r *http.Request) string {
 	return r.URL.Query().Get("playerID")
 }
 
-// isPlayerGameMaster checks if a player is the game master
-func isPlayerGameMaster(playerID string, lobbyServer *LobbyServer) bool {
-	if lobbyServer == nil {
-		return false
-	}
-
-	player, exists := lobbyServer.lobby.GetPlayer(playerID)
-	if !exists {
-		return false
-	}
-
-	return player.Role == RoleGameMaster
-}
-
 func setPlayerIDCookie(w http.ResponseWriter, playerID string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "playerID",

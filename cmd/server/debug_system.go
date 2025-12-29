@@ -242,7 +242,7 @@ func (ds *DebugSystem) handleHeroTeleport(w http.ResponseWriter, r *http.Request
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Teleported %s to (%d,%d)", req.EntityID, req.X, req.Y),
 	})
@@ -297,7 +297,7 @@ func (ds *DebugSystem) handleRevealMap(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Revealed entire map (%d regions, %d doors)", len(allRegions), len(doors)),
 	})
@@ -330,7 +330,7 @@ func (ds *DebugSystem) handleOpenAllDoors(w http.ResponseWriter, r *http.Request
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Opened %d doors", doorCount),
 	})
@@ -362,7 +362,7 @@ func (ds *DebugSystem) handleGetDebugInfo(w http.ResponseWriter, r *http.Request
 	ds.gameState.Lock.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(debugInfo)
+	_ = json.NewEncoder(w).Encode(debugInfo)
 }
 
 // Dice override for testing
@@ -394,7 +394,7 @@ func (ds *DebugSystem) handleDiceOverride(w http.ResponseWriter, r *http.Request
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Next %s dice will roll %d", req.DiceType, req.Value),
 	})
@@ -468,7 +468,7 @@ func (ds *DebugSystem) handleGodMode(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("God mode %s for %s", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled], req.EntityID),
 	})
@@ -499,7 +499,7 @@ func (ds *DebugSystem) handleCompleteQuest(w http.ResponseWriter, r *http.Reques
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Quest %s completed", req.QuestID),
 	})
@@ -530,7 +530,7 @@ func (ds *DebugSystem) handleResetQuest(w http.ResponseWriter, r *http.Request) 
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Quest %s reset", req.QuestID),
 	})
@@ -576,7 +576,7 @@ func (ds *DebugSystem) handleSpawnMonster(w http.ResponseWriter, r *http.Request
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Spawned %s at (%d,%d)", req.MonsterType, req.X, req.Y),
 		"data": map[string]any{
@@ -599,7 +599,7 @@ func (ds *DebugSystem) handleKillAllMonsters(w http.ResponseWriter, r *http.Requ
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Killed %d monsters", killedCount),
 	})
@@ -619,7 +619,7 @@ func (ds *DebugSystem) handleRevealAllMonsters(w http.ResponseWriter, r *http.Re
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Revealed %d monsters", revealedCount),
 	})
@@ -639,7 +639,7 @@ func (ds *DebugSystem) handleClearDiceOverride(w http.ResponseWriter, r *http.Re
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Cleared %d dice overrides", overrideCount),
 	})
@@ -712,7 +712,7 @@ func (ds *DebugSystem) handleCombatDiceTest(w http.ResponseWriter, r *http.Reque
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success":        true,
 		"message":        "Combat dice override set",
 		"attackDice":     req.AttackDice,
@@ -747,7 +747,7 @@ func (ds *DebugSystem) handleExportState(w http.ResponseWriter, r *http.Request)
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"data":    exportData,
 	})
@@ -774,7 +774,7 @@ func (ds *DebugSystem) handleImportState(w http.ResponseWriter, r *http.Request)
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "State imported successfully",
 	})
@@ -814,7 +814,7 @@ func (ds *DebugSystem) handleResetState(w http.ResponseWriter, r *http.Request) 
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Game state reset",
 	})
@@ -832,7 +832,7 @@ func (ds *DebugSystem) handleAdvanceTurn(w http.ResponseWriter, r *http.Request)
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Turn advanced",
 	})
@@ -850,7 +850,7 @@ func (ds *DebugSystem) handleSetGameMasterTurn(w http.ResponseWriter, r *http.Re
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Switched to GameMaster turn",
 	})
@@ -883,7 +883,7 @@ func (ds *DebugSystem) handleCloseAllDoors(w http.ResponseWriter, r *http.Reques
 	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Closed %d doors", doorCount),
 	})
@@ -905,7 +905,7 @@ func (ds *DebugSystem) handleGetActionHistory(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"history": history,
 	})

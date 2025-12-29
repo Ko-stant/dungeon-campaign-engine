@@ -160,7 +160,7 @@ func NewPlayerFromContent(id, entityID string, heroCard *HeroCard, contentMgr *C
 			if _, ok := contentMgr.GetEquipmentCard(armorID); ok {
 				if err := inventoryMgr.AddItem(entityID, armorID); err == nil {
 					// Auto-equip starting armor
-					inventoryMgr.EquipItem(entityID, armorID)
+					_ = inventoryMgr.EquipItem(entityID, armorID)
 				}
 			}
 		}
@@ -168,7 +168,7 @@ func NewPlayerFromContent(id, entityID string, heroCard *HeroCard, contentMgr *C
 		// Add starting items
 		for _, itemID := range heroCard.StartingEquipment.Items {
 			if _, ok := contentMgr.GetEquipmentCard(itemID); ok {
-				inventoryMgr.AddItem(entityID, itemID)
+				_ = inventoryMgr.AddItem(entityID, itemID)
 			}
 		}
 	}

@@ -49,7 +49,7 @@ func createTestMovementSystem() *HeroActionSystem {
 
 	// Add test player
 	player := NewPlayer("player-1", "Test Hero", "hero-1", Barbarian)
-	turnManager.AddPlayer(player)
+	_ = turnManager.AddPlayer(player)
 
 	return NewHeroActionSystem(gameState, turnManager, broadcaster, logger, debugSystem)
 }
@@ -252,7 +252,7 @@ func TestMovement_InsufficientmovementDice(t *testing.T) {
 	if pointsToConsume <= 0 {
 		t.Skip("Test requires at least 2 movement points from dice roll")
 	}
-	has.turnManager.ConsumeMovement(pointsToConsume, "move_before")
+	_ = has.turnManager.ConsumeMovement(pointsToConsume, "move_before")
 
 	// Check remaining points
 	midState := has.turnManager.GetTurnState()
@@ -302,8 +302,8 @@ func TestMovement_AfterTurnReset(t *testing.T) {
 	}
 
 	// End turn and start new turn (simulate turn advancement)
-	has.turnManager.EndTurn()
-	has.turnManager.EndTurn() // Complete GM turn
+	_ = has.turnManager.EndTurn()
+	_ = has.turnManager.EndTurn() // Complete GM turn
 
 	// Check that movement is reset for new turn
 	turnState := has.turnManager.GetTurnState()

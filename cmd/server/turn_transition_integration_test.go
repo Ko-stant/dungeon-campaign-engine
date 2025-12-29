@@ -154,7 +154,7 @@ func TestTurnTransition_MultiPlayer(t *testing.T) {
 		Class:    Wizard,
 		IsActive: true,
 	}
-	gm.turnManager.AddPlayer(player2)
+	_ = gm.turnManager.AddPlayer(player2)
 
 	// Add hero to game state
 	gm.gameState.Lock.Lock()

@@ -124,7 +124,7 @@ func TestInstantActions_Trading_RequiresAdjacency(t *testing.T) {
 		Class:    Wizard,
 		IsActive: true,
 	}
-	gm.turnManager.AddPlayer(player2)
+	_ = gm.turnManager.AddPlayer(player2)
 
 	// Place second hero far from first hero
 	gm.gameState.Lock.Lock()

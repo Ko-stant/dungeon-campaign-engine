@@ -95,7 +95,7 @@ func TestHeroTurnState_CanTakeAction_BeforeRoll(t *testing.T) {
 
 func TestHeroTurnState_MovementFirst_Strategy(t *testing.T) {
 	state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
-	state.RollMovementDice([]int{3, 3, 3})
+	_ = state.RollMovementDice([]int{3, 3, 3})
 
 	// Initially can choose
 	if strategy := state.GetTurnStrategy(); strategy != "choose" {
@@ -162,7 +162,7 @@ func TestHeroTurnState_MovementFirst_Strategy(t *testing.T) {
 
 func TestHeroTurnState_ActionFirst_Strategy(t *testing.T) {
 	state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
-	state.RollMovementDice([]int{3, 3, 3})
+	_ = state.RollMovementDice([]int{3, 3, 3})
 
 	// Take action first
 	action := ActionRecord{
@@ -221,17 +221,17 @@ func TestHeroTurnState_ActionFirst_Strategy(t *testing.T) {
 
 func TestHeroTurnState_SplitMovement_WithFlag(t *testing.T) {
 	state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
-	state.RollMovementDice([]int{3, 3, 3})
+	_ = state.RollMovementDice([]int{3, 3, 3})
 
 	// Enable split movement
 	state.TurnFlags["can_split_movement"] = true
 
 	// Move
-	state.RecordMovement(protocol.TileAddress{X: 1, Y: 0})
+	_ = state.RecordMovement(protocol.TileAddress{X: 1, Y: 0})
 
 	// Take action
 	action := ActionRecord{ActionType: "attack", TargetID: "monster-1", Success: true, Details: make(map[string]interface{})}
-	state.RecordAction(action)
+	_ = state.RecordAction(action)
 
 	// Should still be able to move (split movement allowed)
 	canMove, reason := state.CanMove()
@@ -248,7 +248,7 @@ func TestHeroTurnState_SplitMovement_WithFlag(t *testing.T) {
 
 func TestHeroTurnState_MovementConsumption(t *testing.T) {
 	state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
-	state.RollMovementDice([]int{1, 1, 1}) // Total 3
+	_ = state.RollMovementDice([]int{1, 1, 1}) // Total 3
 
 	// Move 3 times
 	for i := 1; i <= 3; i++ {
@@ -358,9 +358,9 @@ func TestHeroTurnState_ResetForNewTurn(t *testing.T) {
 	state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
 
 	// Do some stuff
-	state.RollMovementDice([]int{3, 3})
-	state.RecordMovement(protocol.TileAddress{X: 1, Y: 0})
-	state.RecordAction(ActionRecord{ActionType: "attack", Success: true, Details: make(map[string]interface{})})
+	_ = state.RollMovementDice([]int{3, 3})
+	_ = state.RecordMovement(protocol.TileAddress{X: 1, Y: 0})
+	_ = state.RecordAction(ActionRecord{ActionType: "attack", Success: true, Details: make(map[string]interface{})})
 	state.RecordActivity(Activity{Type: "use_item", ItemID: "potion-1", ItemName: "Healing Potion"})
 
 	// Reset for new turn
@@ -397,7 +397,7 @@ func TestHeroTurnState_NoMovementAfterBothMoveAndAction(t *testing.T) {
 	// Test Scenario 1: Move first, then action, then try to move again
 	t.Run("MoveFirst_ThenAction_NoMoreMovement", func(t *testing.T) {
 		state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
-		state.RollMovementDice([]int{3, 3, 3})
+		_ = state.RollMovementDice([]int{3, 3, 3})
 
 		// Move once
 		err := state.RecordMovement(protocol.TileAddress{X: 1, Y: 0})
@@ -436,7 +436,7 @@ func TestHeroTurnState_NoMovementAfterBothMoveAndAction(t *testing.T) {
 	// Test Scenario 2: Action first, then move, then try to move again
 	t.Run("ActionFirst_ThenMove_NoMoreMovement", func(t *testing.T) {
 		state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
-		state.RollMovementDice([]int{3, 3, 3})
+		_ = state.RollMovementDice([]int{3, 3, 3})
 
 		// Take action first
 		action := ActionRecord{
@@ -475,7 +475,7 @@ func TestHeroTurnState_NoMovementAfterBothMoveAndAction(t *testing.T) {
 	// Test Scenario 3: With split movement flag, should still be able to move
 	t.Run("WithSplitMovementFlag_CanMoveAfterBoth", func(t *testing.T) {
 		state := NewHeroTurnState("hero-1", "player-1", 1, protocol.TileAddress{X: 0, Y: 0})
-		state.RollMovementDice([]int{3, 3, 3})
+		_ = state.RollMovementDice([]int{3, 3, 3})
 		state.TurnFlags["can_split_movement"] = true
 
 		// Move

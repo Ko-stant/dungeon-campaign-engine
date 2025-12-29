@@ -384,7 +384,7 @@ func (has *HeroActionSystem) processSearchTreasure(request ActionRequest, result
 			foundItemIDs[i] = item.ID
 		}
 
-		has.turnStateManager.RecordSearch(
+		_ = has.turnStateManager.RecordSearch(
 			request.EntityID,
 			"treasure",
 			locationKey,
@@ -973,7 +973,7 @@ func (has *HeroActionSystem) processTradeItem(request InstantActionRequest, resu
 
 func (has *HeroActionSystem) processPassTurn(request InstantActionRequest, result *ActionResult) (*ActionResult, error) {
 	// Force end turn
-	has.turnManager.EndTurn()
+	_ = has.turnManager.EndTurn()
 
 	result.Success = true
 	result.Message = "Passed turn"

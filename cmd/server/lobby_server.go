@@ -55,7 +55,7 @@ func (ls *LobbyServer) HandleDisconnection(conn *websocket.Conn) {
 	playerID := ls.connManager.RemoveConnection(conn)
 	if playerID != "" {
 		log.Printf("Player disconnected: %s", playerID)
-		ls.lobby.RemovePlayer(playerID)
+		_ = ls.lobby.RemovePlayer(playerID)
 		ls.broadcastLobbyState()
 	}
 }

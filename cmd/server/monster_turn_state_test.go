@@ -296,9 +296,9 @@ func TestMonsterResetForNewTurn(t *testing.T) {
 
 	// Perform actions
 	newPos := protocol.TileAddress{X: 6, Y: 10}
-	mts.RecordMovement(newPos)
+	_ = mts.RecordMovement(newPos)
 	action := MonsterActionRecord{ActionType: "attack", TargetID: "hero-1"}
-	mts.RecordAction(action)
+	_ = mts.RecordAction(action)
 	mts.SpecialAbilitiesUsed["test_ability"] = 1
 
 	// Add effect that should expire
@@ -356,14 +356,14 @@ func TestMonsterGetTurnSummary(t *testing.T) {
 	}
 
 	// After moving
-	mts.RecordMovement(protocol.TileAddress{X: 6, Y: 10})
+	_ = mts.RecordMovement(protocol.TileAddress{X: 6, Y: 10})
 	summary = mts.GetTurnSummary()
 	if summary != "moved only" {
 		t.Errorf("Expected 'moved only', got '%s'", summary)
 	}
 
 	// After also taking action
-	mts.RecordAction(MonsterActionRecord{ActionType: "attack"})
+	_ = mts.RecordAction(MonsterActionRecord{ActionType: "attack"})
 	summary = mts.GetTurnSummary()
 	if summary != "moved and acted" {
 		t.Errorf("Expected 'moved and acted', got '%s'", summary)
@@ -371,7 +371,7 @@ func TestMonsterGetTurnSummary(t *testing.T) {
 
 	// Reset and only take action
 	mts.ResetForNewTurn(2)
-	mts.RecordAction(MonsterActionRecord{ActionType: "attack"})
+	_ = mts.RecordAction(MonsterActionRecord{ActionType: "attack"})
 	summary = mts.GetTurnSummary()
 	if summary != "acted only" {
 		t.Errorf("Expected 'acted only', got '%s'", summary)

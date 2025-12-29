@@ -45,11 +45,11 @@
 
 #### 1.3 Monster Death and Damage System
 **Goal**: Handle monster lifecycle and rewards
-- [ ] Implement monster body point tracking and reduction
-- [ ] Add monster death mechanics and removal from game state
-- [ ] Create treasure drops from defeated monsters -- EDIT: per quest configuration, this should be flexible and customizable inside each quest's json file
-- [ ] Update visibility system to handle dead monsters
-- [ ] Add monster death animations/feedback
+- [x] Implement monster body point tracking and reduction
+- [x] Add monster death mechanics and removal from game state
+- [-] Create treasure drops from defeated monsters -- EDIT: per quest configuration, this should be flexible and customizable inside each quest's json file
+- [x] Update visibility system to handle dead monsters
+- [-] Add monster death animations/feedback
 
 ### **PHASE 2: Quest System and Customization**
 

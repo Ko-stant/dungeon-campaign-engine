@@ -36,7 +36,7 @@ func createTestHeroActionSystem() *HeroActionSystem {
 
 	// Add test player
 	player := NewPlayer("player-1", "Test Hero", "hero-1", Barbarian)
-	turnManager.AddPlayer(player)
+	_ = turnManager.AddPlayer(player)
 
 	has := NewHeroActionSystem(gameState, turnManager, broadcaster, logger, debugSystem)
 
