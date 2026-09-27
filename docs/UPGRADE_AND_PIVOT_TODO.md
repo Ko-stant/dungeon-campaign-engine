@@ -54,7 +54,7 @@ Commits (oldest first):
 | dd336c6 | custom monster library |
 | 392a444 | corridor doors no longer warned; teleport squares and traps |
 | 786b0fd | campaign chapters, maps grouped by campaign |
-| (next commit) | mid-game travel between maps |
+| e79243b | mid-game travel between maps |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
