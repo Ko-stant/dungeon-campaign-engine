@@ -13,13 +13,13 @@ CGO_ENABLED ?= 0
 APP_PORT ?= 8080
 
 AIR_MODULE := github.com/air-verse/air
-AIR_VERSION ?= latest
+AIR_VERSION ?= v1.67.4
 GOTESTSUM_MODULE := gotest.tools/gotestsum
-GOTESTSUM_VERSION ?= latest
-GOLANGCI_LINT_MODULE := github.com/golangci/golangci-lint/cmd/golangci-lint
-GOLANGCI_LINT_VERSION ?= latest
+GOTESTSUM_VERSION ?= v1.13.0
+GOLANGCI_LINT_MODULE := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+GOLANGCI_LINT_VERSION ?= v2.14.0
 GOOSE_MODULE := github.com/pressly/goose/v3/cmd/goose
-GOOSE_VERSION ?= latest
+GOOSE_VERSION ?= v3.28.0
 
 export GOBIN := $(abspath $(TOOLS_DIRECTORY))
 export CGO_ENABLED

@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-27 13:01 EDT
+**Last Updated**: 2026-09-27 13:10 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -107,13 +107,35 @@ Pre-existing UI bugs observed (not fixing; doomed code):
 - [x] Rebuilt `~/go/bin` tools with Go 1.27.1: gopls, staticcheck, templ, air, goose.
 - [x] `docker pull postgres:18` (for Phase 5).
 
-## Phase 2 - Go upgrades
-- [ ] 2a `go 1.27.0` in go.mod
-- [ ] 2b `go fix ./...` modernizers (own commit)
-- [ ] 2c modules: templ v0.3.1020 (as `tool` directive), coder/websocket v1.8.15;
-      regenerate `*_templ.go` (own commit)
-- [ ] 2d dev tools pinned; golangci-lint v2 + `.golangci.yml`; rename
-      `internal/geometry/adjacent_text.go` to `adjacent_test.go`
+## Phase 2 - Go upgrades [DONE 2026-09-27]
+
+Verification for every step: build, vet, the golden baseline and the full test suite
+(normal and `-race`). Each result was compared against the Phase 0 failure list:
+same 19, no new failures.
+
+- [x] 2a `go 1.27.0` in go.mod (cf26831).
+- [x] 2b `go fix ./...` modernizers (7f6cd0c). The changes are maps.Copy,
+      range-over-int, `interface{}` -> `any`, and one ineffective `omitempty` on a
+      struct field removed. JSON output is unchanged.
+- [x] 2c modules (848fe30): templ v0.3.943 -> v0.3.1020, coder/websocket v1.8.13 ->
+      v1.8.15. The templ CLI is now a go.mod `tool` directive and the Makefile uses
+      `go tool templ`, which fixes the generator/runtime version drift.
+      Regenerated `*_templ.go` (1748aba). The only non-header change is that
+      attribute values now go through `templ.ResolveAttributeValue`.
+      Browser smoke re-run: the server-rendered GM and hero HTML is byte-identical
+      to the baseline, and the snapshot JSON is identical except for dice rolls
+      (compared order-insensitively, since Go map order is random).
+- [x] 2d dev tools pinned in the Makefile: air v1.67.4, gotestsum v1.13.0, goose
+      v3.28.0, golangci-lint v2.14.0 (the `/v2` module path). Added `.golangci.yml`
+      (`version: "2"`) that excludes `cmd/server/` until Phase 8; `internal/` and all
+      new code are linted. Result: 0 issues. The v2 defaults found 8 issues, all in
+      doomed `cmd/server` files; the 4 DEFERRED_BUGS warnings are also there.
+- [x] Renamed `internal/geometry/adjacent_text.go` to `adjacent_test.go`. The test had
+      never run, and it now surfaces a real bug: `BuildRegionMap` uses a right/bottom
+      edge convention while `RegionsAcrossDoor` and the production board loader use
+      left/top. It is skipped with an explanation and gets fixed in Phase 6.
+      `BuildRegionMap`, `DevSegment` and `CorridorsAndRooms*` are not used by
+      production code.
 
 ## Phase 3 - JS toolchain
 - [ ] 3a npm to Bun (`bun.lock`)
@@ -128,6 +150,8 @@ Pre-existing UI bugs observed (not fixing; doomed code):
 
 ## Phase 5 - Postgres persistence
 ## Phase 6 - Map creator
+- [ ] Unify the edge convention in `internal/geometry` (`BuildRegionMap`, dev layouts)
+      and unskip `TestRegionsAcrossDoor`.
 ## Phase 7 - Companion tracker
 ## Phase 8 - Remove multiplayer, docs cleanup
 

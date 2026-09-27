@@ -1,0 +1,9 @@
+version: "2"
+
+linters:
+  exclusions:
+    paths:
+      # Legacy multiplayer server. Phase 8 of docs/UPGRADE_AND_PIVOT_TODO.md deletes it;
+      # the pieces that survive move into internal/ and are linted there.
+      # Remove this exclusion as part of Phase 8.
+      - cmd/server/
