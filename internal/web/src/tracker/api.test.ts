@@ -13,11 +13,15 @@ describe('tracker api client', () => {
     await api.command('s1', { type: 'round.advance', payload: {} });
     await api.events('s1', 7);
     await api.complete('s1');
+    await api.travel('s1', 'q2');
+    await api.chapters('c1');
 
     expect(calls).toEqual([
       { url: '/api/sessions/s1/commands', method: 'POST', body: { type: 'round.advance', payload: {} } },
       { url: '/api/sessions/s1/events?after=7', method: 'GET', body: undefined },
       { url: '/api/sessions/s1/complete', method: 'POST', body: undefined },
+      { url: '/api/sessions/s1/travel', method: 'POST', body: { questId: 'q2' } },
+      { url: '/api/campaigns/c1/chapters', method: 'GET', body: undefined },
     ]);
   });
 

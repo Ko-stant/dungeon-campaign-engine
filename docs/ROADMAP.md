@@ -20,6 +20,9 @@ enforces rules; the GM decides, and the app remembers.
 - Room colors; exit squares; gates and locked doors; purple secret doors.
 - Blocked squares that hide a secret door, removable (and restorable) during play.
 - Custom monster library (`/monsters`): color, size up to 4x4, stats, notes.
+- Teleport squares and teleport traps; doors across corridors are no longer flagged.
+- Multi-map campaigns: ordered chapters (quest + its map), maps grouped by campaign,
+  and mid-game travel between maps within one session.
 
 ## Next
 ### Table polish
@@ -53,7 +56,9 @@ enforces rules; the GM decides, and the app remembers.
 - [ ] Potions and consumables with a "used" toggle.
 - [ ] Hero death and replacement across a campaign (new hero, TPK handling,
       replaying a quest). (From the old roadmap's hero death section.)
-- [ ] Campaign quest list and progress (which quests are done).
+- [x] Campaign quest list and progress (which quests are done). (Chapters.)
+- [ ] Per-hero travel: today the whole party travels together; splitting the party
+      across maps is not modelled.
 
 ### Map creator
 - [ ] Export/import board + quests as a JSON bundle (backup and sharing).

@@ -100,7 +100,10 @@ type TrapState struct {
 // copies taken at session start, so later edits in the map creator never
 // change a game in progress.
 type State struct {
-	Version   int         `json:"version"`
+	Version int `json:"version"`
+	// QuestID identifies the active map's quest (empty on sessions started
+	// before travel between maps existed; the server fills it in).
+	QuestID   string      `json:"questId,omitempty"`
 	Board     maps.Board  `json:"board"`
 	Quest     maps.Quest  `json:"quest"`
 	QuestName string      `json:"questName"`
@@ -114,6 +117,9 @@ type State struct {
 	RemovedBlocks []string `json:"removedBlocks"`
 	ConsumedNotes []string `json:"consumedNotes"`
 	Discovered    []int    `json:"discovered"`
+	// OtherMaps holds every map the session has left, exactly as it was left,
+	// so travelling back restores it. The fields above are the active map.
+	OtherMaps []MapState `json:"otherMaps,omitempty"`
 }
 
 // NewSession sets up round 1 of a quest: heroes on the start squares in
@@ -152,7 +158,17 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 		s.Heroes = append(s.Heroes, h)
 	}
 
-	for _, qm := range quest.Monsters {
+	s.setUpMap(catalog)
+	return s, nil
+}
+
+// setUpMap fills the active map's live state from its frozen quest: monsters
+// hidden with catalog stats or quest overrides, doors and traps as placed,
+// nothing removed or consumed, and the starting areas discovered.
+func (s *State) setUpMap(catalog *content.Catalog) {
+	s.Monsters, s.Doors, s.Traps = []Monster{}, []DoorState{}, []TrapState{}
+	s.RemovedBlocks, s.ConsumedNotes = []string{}, []string{}
+	for _, qm := range s.Quest.Monsters {
 		m := Monster{ID: qm.ID, Type: qm.Type, Name: qm.Type, X: qm.X, Y: qm.Y, Visibility: MonsterHidden, Alive: true, Notes: qm.Notes, Width: 1, Height: 1}
 		if def, ok := catalog.Monster(qm.Type); ok {
 			m.Name, m.Body, m.Mind, m.Color = def.Name, def.Body, def.Mind, def.Color
@@ -168,21 +184,20 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 		s.Monsters = append(s.Monsters, m)
 	}
 
-	for _, d := range quest.Doors {
+	for _, d := range s.Quest.Doors {
 		s.Doors = append(s.Doors, DoorState{ID: d.ID, State: d.State, Found: d.Kind != maps.DoorSecret, Locked: d.Locked})
 	}
-	for _, t := range quest.Traps {
+	for _, t := range s.Quest.Traps {
 		s.Traps = append(s.Traps, TrapState{ID: t.ID, State: t.State})
 	}
 
 	discovered := map[int]bool{}
-	for _, st := range quest.StartTiles {
+	for _, st := range s.Quest.StartTiles {
 		for _, i := range s.areaTiles(st.X, st.Y) {
 			discovered[i] = true
 		}
 	}
 	s.Discovered = sortedKeys(discovered)
-	return s, nil
 }
 
 // areaTiles returns the tile indexes of the room containing (x, y), or just

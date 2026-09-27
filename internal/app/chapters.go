@@ -11,6 +11,7 @@ import (
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/tracker"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views"
 )
 
@@ -243,4 +244,90 @@ func (s *Server) campaignMapGroups(ctx context.Context) ([]views.CampaignMapGrou
 		})
 	}
 	return groups, nil
+}
+
+// ChapterResponse is one chapter of a campaign, for the tracker's travel menu.
+type ChapterResponse struct {
+	Number    int    `json:"number"`
+	QuestID   string `json:"questId"`
+	QuestName string `json:"questName"`
+	BoardID   string `json:"boardId"`
+	BoardName string `json:"boardName"`
+}
+
+func (s *Server) listChapters(w http.ResponseWriter, r *http.Request) {
+	if _, err := s.store.GetCampaign(r.Context(), r.PathValue("id")); err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	chapters, err := s.store.ListChapters(r.Context(), r.PathValue("id"))
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	out := make([]ChapterResponse, 0, len(chapters))
+	for i, ch := range chapters {
+		out = append(out, ChapterResponse{Number: i + 1, QuestID: ch.QuestID, QuestName: ch.QuestName, BoardID: ch.BoardID, BoardName: ch.BoardName})
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// sessionTravel moves a running session's party to another map (a quest on
+// any board). A map visited before is restored as it was left; a new one is
+// copied from the quest now, like a session start.
+func (s *Server) sessionTravel(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		QuestID string `json:"questId"`
+	}
+	if !readJSON(w, r, &req) {
+		return
+	}
+	id := r.PathValue("id")
+	unlock := s.lockSession(id)
+	defer unlock()
+
+	ss, state, err := s.loadSessionState(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	if ss.Status != store.StatusActive {
+		writeError(w, http.StatusConflict, "this session is completed; reopen it to make changes")
+		return
+	}
+	dest := tracker.Destination{QuestID: req.QuestID}
+	if !state.Visited(req.QuestID) {
+		questRec, err := s.store.GetQuest(r.Context(), req.QuestID)
+		if err != nil {
+			writeStoreError(w, err)
+			return
+		}
+		var quest maps.Quest
+		if err := json.Unmarshal(questRec.Doc, &quest); err != nil {
+			writeStoreError(w, err)
+			return
+		}
+		_, board, err := s.loadBoard(r.Context(), questRec.BoardID)
+		if err != nil {
+			writeStoreError(w, err)
+			return
+		}
+		dest = tracker.Destination{QuestID: questRec.ID, QuestName: questRec.Name, Board: board, Quest: &quest}
+	}
+	cat, err := s.catalogFor(r.Context())
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	next, ev, err := tracker.Travel(state, dest, cat)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "%v", err)
+		return
+	}
+	resp, err := s.record(r.Context(), id, next, store.NewEvent{Round: ev.Round, Kind: ev.Kind, Summary: ev.Summary, Payload: ev.Payload})
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
 }

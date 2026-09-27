@@ -53,8 +53,27 @@ export interface LiveTrap {
   state: TrapState;
 }
 
+/** A map the session has left (the tracker only needs to name it). */
+export interface OtherMap {
+  questId: string;
+  questName: string;
+}
+
+/** One chapter of a campaign: a quest on its map. */
+export interface Chapter {
+  number: number;
+  questId: string;
+  questName: string;
+  boardId: string;
+  boardName: string;
+}
+
 export interface SessionState {
   version: number;
+  /** The active map's quest. Missing on sessions started before travel existed. */
+  questId?: string;
+  /** Maps the party has left; travelling back restores them. */
+  otherMaps?: OtherMap[];
   board: BoardDoc;
   quest: QuestDoc;
   questName: string;

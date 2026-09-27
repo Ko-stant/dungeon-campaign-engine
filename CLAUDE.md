@@ -49,7 +49,11 @@ Tailwind CSS v4, canvas rendering.
   - Custom monsters: `/monsters` (server-rendered forms; table `custom_monster`). `/api/catalog`
     merges them into `monsters` with `custom-<uuid>` ids; use `Server.catalogFor(ctx)`, not
     `s.catalog`, wherever monsters are looked up.
-  - Tracker: `/campaigns`, `/campaigns/{id}`, `/play/{id}`, `/api/campaigns...`, `/api/sessions/{id}/(commands|events|complete|reopen|stream)`
+  - Tracker: `/campaigns`, `/campaigns/{id}`, `/play/{id}`, `/api/campaigns...`, `/api/sessions/{id}/(commands|travel|events|complete|reopen|stream)`
+  - Campaign chapters (table `campaign_chapter`): ordered quests, each on its own board;
+    `/campaigns/{id}/chapters...` and `/campaigns/{id}/maps` forms, `GET /api/campaigns/{id}/chapters`.
+  - Multi-map sessions: the `State` top-level fields are the active map; `OtherMaps` keeps maps
+    the party left. `tracker.Travel` swaps them (heroes keep stats; round continues).
 - `internal/maps` - Board and quest documents (Go), validation, advisory `Check`, legacy converters.
 - `internal/tracker` - Session `State`, `NewSession`, `Apply(state, command)` -> new state + readable event, `CarryOver`.
 - `internal/store` - Postgres (pgx) persistence; `RecordEvent` atomically saves state + event. `storetest` gives tests a throwaway schema.

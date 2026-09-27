@@ -10,6 +10,7 @@ import { BoardRenderer } from '../board/renderer.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
 import { formatEvent } from '../tracker/format.ts';
+import { travelOptions } from '../tracker/travel.ts';
 import { clickCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
 import type { Command, CommandResponse, Hero, Monster, SessionEvent, SessionState } from '../tracker/types.ts';
 import { trackerView } from '../tracker/view.ts';
@@ -41,6 +42,8 @@ async function main(): Promise<void> {
   }
   const api = createTrackerApi();
   const [session, catalog, initialEvents] = await Promise.all([api.session(sessionId), api.catalog(), api.events(sessionId)]);
+  // The campaign's chapters, for travelling to another map mid-game.
+  const chapters = await api.chapters(session.campaignId).catch(() => []);
 
   let state: SessionState = session.state;
   let status = session.status;
@@ -92,6 +95,8 @@ async function main(): Promise<void> {
       status = 'completed';
     } else if (res.event.kind === 'session.reopen') {
       status = 'active';
+    } else if (res.event.kind === 'map.travel') {
+      selectedId = null; // pieces on the old map are gone from view
     }
   }
 
@@ -209,6 +214,40 @@ async function main(): Promise<void> {
   }
 
   // --- Rendering panels ---
+  function travelControl(completed: boolean): HTMLElement | null {
+    const options = travelOptions(state, chapters);
+    if (completed || options.length === 0) {
+      return null;
+    }
+    const picker = h('select', { class: field, 'aria-label': 'Map to travel to' },
+      ...options.map((o) => h('option', { value: o.questId }, o.label)));
+    return h('span', { class: 'flex items-center gap-1' },
+      picker,
+      h('button', {
+        type: 'button',
+        class: btn,
+        disabled: busy,
+        title: 'Move the whole party to another map. Heroes keep their body, mind, gold and equipment; the map you leave is kept as it is.',
+        onclick: () => {
+          const choice = options.find((o) => o.questId === picker.value);
+          if (!choice || !confirm(`Travel the party to ${choice.label}?`)) {
+            return;
+          }
+          busy = true;
+          refresh();
+          void api.travel(sessionId ?? '', choice.questId).then((r) => {
+            applyResponse(r);
+            message = '';
+          }).catch((err: unknown) => {
+            message = err instanceof ApiError ? err.message : 'Could not travel.';
+          }).finally(() => {
+            busy = false;
+            refresh();
+          });
+        },
+      }, 'Travel'));
+  }
+
   function renderHeader(): void {
     const completed = status !== 'active';
     replaceChildren(
@@ -217,6 +256,7 @@ async function main(): Promise<void> {
       h('div', { class: 'flex flex-col leading-tight' },
         h('span', { class: 'font-semibold' }, session.name),
         h('span', { class: 'text-xs opacity-60' }, state.questName)),
+      travelControl(completed),
       h('span', { class: 'mx-2 h-6 w-px bg-border/60' }),
       h('span', { class: 'text-lg font-bold text-amber-400', 'aria-live': 'polite' }, `Round ${state.round}`),
       h('button', { type: 'button', class: btn, disabled: completed || busy, onclick: () => { void send({ type: 'round.advance', payload: {} }); } }, 'Next round'),

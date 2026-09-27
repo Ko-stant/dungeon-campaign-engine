@@ -77,6 +77,8 @@ func (s *Server) registerTracker(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /api/sessions/{id}", s.getSession)
 	mux.HandleFunc("POST /api/sessions/{id}/commands", s.sessionCommand)
+	mux.HandleFunc("POST /api/sessions/{id}/travel", s.sessionTravel)
+	mux.HandleFunc("GET /api/campaigns/{id}/chapters", s.listChapters)
 	mux.HandleFunc("GET /api/sessions/{id}/events", s.sessionEvents)
 	mux.HandleFunc("POST /api/sessions/{id}/complete", s.completeSession)
 	mux.HandleFunc("POST /api/sessions/{id}/reopen", s.reopenSession)
@@ -279,6 +281,7 @@ func (s *Server) newSession(ctx context.Context, campaignID, questID, name strin
 	if err != nil {
 		return store.Session{}, fmt.Errorf("%w: %v", errBadInput, err)
 	}
+	state.QuestID = questRec.ID
 
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -390,6 +393,10 @@ func (s *Server) loadSessionState(ctx context.Context, id string) (store.Session
 	var state tracker.State
 	if err := json.Unmarshal(ss.State, &state); err != nil {
 		return store.Session{}, nil, err
+	}
+	if state.QuestID == "" && ss.QuestID != nil {
+		// Sessions started before travel between maps existed.
+		state.QuestID = *ss.QuestID
 	}
 	return ss, &state, nil
 }

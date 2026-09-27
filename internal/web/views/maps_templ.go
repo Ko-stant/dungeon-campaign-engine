@@ -87,7 +87,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(form.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 49, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 49, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 			if templ_7745c5c3_Err != nil {
@@ -100,7 +100,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.ResolveAttributeValue(form.Width)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 53, Col: 85}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 53, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 			if templ_7745c5c3_Err != nil {
@@ -113,7 +113,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.ResolveAttributeValue(form.Height)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 57, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 57, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {
@@ -131,7 +131,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(form.Error)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 63, Col: 124}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 63, Col: 124}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -154,7 +154,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(g.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 69, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 69, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -167,7 +167,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 				var templ_7745c5c3_Var8 templ.SafeURL
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/campaigns/" + g.CampaignID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 70, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 70, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -185,7 +185,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 					var templ_7745c5c3_Var9 string
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(ch.Number))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 76, Col: 80}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 76, Col: 80}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -198,7 +198,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 					var templ_7745c5c3_Var10 templ.SafeURL
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(ch.EditURL())
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 77, Col: 31}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 77, Col: 31}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
@@ -211,7 +211,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 					var templ_7745c5c3_Var11 string
 					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(ch.QuestName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 77, Col: 91}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 77, Col: 91}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 					if templ_7745c5c3_Err != nil {
@@ -224,7 +224,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 					var templ_7745c5c3_Var12 string
 					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(ch.BoardName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 78, Col: 64}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 78, Col: 64}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
@@ -237,7 +237,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 					var templ_7745c5c3_Var13 templ.SafeURL
 					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(ch.EditURL())
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 80, Col: 30}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 80, Col: 30}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 					if templ_7745c5c3_Err != nil {
@@ -275,7 +275,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 					var templ_7745c5c3_Var14 templ.SafeURL
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/maps/" + b.ID + "/edit"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 95, Col: 59}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 95, Col: 59}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -288,7 +288,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 					var templ_7745c5c3_Var15 string
 					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(b.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 95, Col: 113}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 95, Col: 113}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 					if templ_7745c5c3_Err != nil {
@@ -301,7 +301,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 					var templ_7745c5c3_Var16 string
 					templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d × %d", b.Width, b.Height))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 96, Col: 85}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 96, Col: 85}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 					if templ_7745c5c3_Err != nil {
@@ -314,7 +314,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 					var templ_7745c5c3_Var17 string
 					templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(b.UpdatedAt.Local().Format("Jan 2, 2006 15:04"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 96, Col: 148}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 96, Col: 148}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 					if templ_7745c5c3_Err != nil {
@@ -327,7 +327,7 @@ func MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFor
 					var templ_7745c5c3_Var18 templ.SafeURL
 					templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/maps/" + b.ID + "/edit"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 98, Col: 58}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 98, Col: 58}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 					if templ_7745c5c3_Err != nil {
@@ -398,7 +398,7 @@ func MapEditorPage(boardID string, boardName string) templ.Component {
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.ResolveAttributeValue(boardID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/maps.templ`, Line: 111, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `maps.templ`, Line: 111, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 			if templ_7745c5c3_Err != nil {

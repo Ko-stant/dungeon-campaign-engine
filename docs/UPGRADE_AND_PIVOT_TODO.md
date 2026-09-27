@@ -53,6 +53,8 @@ Commits (oldest first):
 | 31e81ac | hidden-door blocked squares, removable in play |
 | dd336c6 | custom monster library |
 | 392a444 | corridor doors no longer warned; teleport squares and traps |
+| 786b0fd | campaign chapters, maps grouped by campaign |
+| (next commit) | mid-game travel between maps |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
@@ -598,6 +600,33 @@ marked as hiding a secret door and any blocked square can be removed during play
   (label in the corner), shown in the tracker, checked like other pieces.
 - Teleport traps: trap kind `teleport` (trap kinds are free text), drawn as a swirl in
   the trap-state color, with the usual hidden/revealed/triggered/disarmed states.
+
+## Post-plan: multi-map campaigns [DONE 2026-09-27]
+Asked for: the custom campaign has several maps, each with its own quest. Decisions
+(asked): support both separate quests played in order and mid-game map changes, and
+organize maps by campaign.
+
+- Chapters (786b0fd): migration `00003_campaign_chapter.sql` (campaign_id, quest_id,
+  position; cascades on quest or campaign delete). Store `ListChapters`,
+  `ListAllChapters`, `SetChapters` (replace in order, in a transaction). Campaign page
+  "Chapters": status per chapter (not started / in progress / done, from the campaign's
+  sessions), Resume/View, Edit map, up/down, remove; "New map for this campaign"
+  (creates a board and a same-named quest, adds it as the next chapter, opens the editor
+  with `?quest=`); "Add an existing quest". The start form lists chapters first and
+  preselects the next unplayed one. The maps page groups each campaign's chapters.
+- Mid-game travel: `State.QuestID` (filled from the session row for older sessions) and
+  `State.OtherMaps []MapState` (board, quest, monsters, doors, traps, removed blocks,
+  consumed notes, discovered, hero positions). `tracker.Travel(state, Destination,
+  catalog)` saves the active map, restores a visited one or sets up a new one (heroes on
+  its start squares), keeps hero stats and the round, logs `map.travel` ("Travelled to
+  X" / "Returned to X"). `POST /api/sessions/{id}/travel {questId}` loads the quest and
+  board only for maps not yet visited. Session summaries report every visited quest
+  (`VisitedQuestIDs` via jsonb path), so chapter status counts travelling sessions.
+  Tracker header: a "Travel" picker (other chapters, then other visited maps, "(return)"
+  for visited ones).
+- Verified in the browser on :8090 with the test campaign: chapters and statuses,
+  travel from The Trial to Test Quest and back (positions, monsters and log restored),
+  the maps page grouping, and Edit map opening the chapter's quest.
 
 ---
 
