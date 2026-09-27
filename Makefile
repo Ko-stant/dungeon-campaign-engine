@@ -14,8 +14,6 @@ APP_PORT ?= 8080
 
 AIR_MODULE := github.com/air-verse/air
 AIR_VERSION ?= latest
-TEMPL_MODULE := github.com/a-h/templ/cmd/templ
-TEMPL_VERSION ?= latest
 GOTESTSUM_MODULE := gotest.tools/gotestsum
 GOTESTSUM_VERSION ?= latest
 GOLANGCI_LINT_MODULE := github.com/golangci/golangci-lint/cmd/golangci-lint
@@ -41,7 +39,6 @@ all: build
 tools:
 	@mkdir -p $(TOOLS_DIRECTORY)
 	@$(GO) install $(AIR_MODULE)@$(AIR_VERSION)
-	@$(GO) install $(TEMPL_MODULE)@$(TEMPL_VERSION)
 	@$(GO) install $(GOTESTSUM_MODULE)@$(GOTESTSUM_VERSION)
 	@$(GO) install $(GOLANGCI_LINT_MODULE)@$(GOLANGCI_LINT_VERSION)
 	@$(GO) install $(GOOSE_MODULE)@$(GOOSE_VERSION)
@@ -51,7 +48,7 @@ dev:
 	npm run tailwind:build && \
 	npm run tailwind:watch & \
 	PID_TW=$$!; \
-	$(TOOLS_DIRECTORY)/templ generate --watch --proxy="http://localhost:$(APP_PORT)" --open-browser=false -path=./internal/web/views & \
+	$(GO) tool templ generate --watch --proxy="http://localhost:$(APP_PORT)" --open-browser=false -path=./internal/web/views & \
 	PID_TEMPL=$$!; \
 	trap "kill $$PID_TW $$PID_TEMPL 2>/dev/null || true" EXIT; \
 	$(TOOLS_DIRECTORY)/air -c .air.toml
@@ -59,7 +56,7 @@ dev:
 
 
 run:
-	@$(TOOLS_DIRECTORY)/templ generate -path=./internal/web/views
+	@$(GO) tool templ generate -path=./internal/web/views
 	@$(GO) run ./cmd/server
 
 test:
@@ -136,5 +133,5 @@ tailwind-watch:
 	@npm run tailwind:watch
 
 build: tailwind-build
-	@$(TOOLS_DIRECTORY)/templ generate -path=./internal/web/views
+	@$(GO) tool templ generate -path=./internal/web/views
 	@$(GO) build -trimpath -ldflags="-s -w" -o $(BINARY_OUTPUT_PATH) ./cmd/server
