@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"sync"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
@@ -277,7 +278,7 @@ func (tsm *TurnStateManager) RecordSearch(heroID string, searchType string, loca
 }
 
 // RecordTurnEvent logs a turn event for a hero
-func (tsm *TurnStateManager) RecordTurnEvent(heroID string, eventType string, entityID string, details map[string]interface{}) error {
+func (tsm *TurnStateManager) RecordTurnEvent(heroID string, eventType string, entityID string, details map[string]any) error {
 	tsm.mutex.Lock()
 	defer tsm.mutex.Unlock()
 
@@ -323,9 +324,7 @@ func (tsm *TurnStateManager) GetAllHeroStates() map[string]*HeroTurnState {
 
 	// Return a copy of the map to prevent external modification
 	copy := make(map[string]*HeroTurnState)
-	for k, v := range tsm.heroStates {
-		copy[k] = v
-	}
+	maps.Copy(copy, tsm.heroStates)
 	return copy
 }
 
@@ -452,7 +451,7 @@ func (tsm *TurnStateManager) RecordMonsterAction(monsterID string, action Monste
 }
 
 // UseMonsterAbility records usage of a monster's special ability
-func (tsm *TurnStateManager) UseMonsterAbility(monsterID string, abilityID string, targetID string, targetPosition *protocol.TileAddress, success bool, details map[string]interface{}) error {
+func (tsm *TurnStateManager) UseMonsterAbility(monsterID string, abilityID string, targetID string, targetPosition *protocol.TileAddress, success bool, details map[string]any) error {
 	tsm.mutex.Lock()
 	defer tsm.mutex.Unlock()
 
@@ -522,9 +521,7 @@ func (tsm *TurnStateManager) GetAllMonsterStates() map[string]*MonsterTurnState 
 
 	// Return a copy of the map to prevent external modification
 	copy := make(map[string]*MonsterTurnState)
-	for k, v := range tsm.monsterStates {
-		copy[k] = v
-	}
+	maps.Copy(copy, tsm.monsterStates)
 	return copy
 }
 
@@ -591,7 +588,7 @@ func (tsm *TurnStateManager) SerializeForPersistence() ([]byte, error) {
 	tsm.mutex.RLock()
 	defer tsm.mutex.RUnlock()
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"currentTurn":     tsm.currentTurn,
 		"heroStates":      tsm.heroStates,
 		"monsterStates":   tsm.monsterStates,
@@ -608,7 +605,7 @@ func (tsm *TurnStateManager) RestoreFromPersistence(data []byte) error {
 	tsm.mutex.Lock()
 	defer tsm.mutex.Unlock()
 
-	var restored map[string]interface{}
+	var restored map[string]any
 	if err := json.Unmarshal(data, &restored); err != nil {
 		return err
 	}

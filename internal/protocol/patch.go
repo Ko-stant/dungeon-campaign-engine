@@ -155,16 +155,16 @@ type MonsterTurnStateChanged struct {
 }
 
 type MonsterAbilityLite struct {
-	ID             string                 `json:"id"`
-	Name           string                 `json:"name"`
-	Type           string                 `json:"type"`
-	UsesPerTurn    int                    `json:"usesPerTurn"`
-	UsesPerQuest   int                    `json:"usesPerQuest"`
-	UsesLeftQuest  int                    `json:"usesLeftQuest"`
-	RequiresAction bool                   `json:"requiresAction"`
-	Range          int                    `json:"range"`
-	Description    string                 `json:"description"`
-	EffectDetails  map[string]interface{} `json:"effectDetails"`
+	ID             string         `json:"id"`
+	Name           string         `json:"name"`
+	Type           string         `json:"type"`
+	UsesPerTurn    int            `json:"usesPerTurn"`
+	UsesPerQuest   int            `json:"usesPerQuest"`
+	UsesLeftQuest  int            `json:"usesLeftQuest"`
+	RequiresAction bool           `json:"requiresAction"`
+	Range          int            `json:"range"`
+	Description    string         `json:"description"`
+	EffectDetails  map[string]any `json:"effectDetails"`
 }
 
 type MonsterSelectionChanged struct {

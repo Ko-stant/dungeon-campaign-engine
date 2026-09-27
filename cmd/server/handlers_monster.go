@@ -186,7 +186,7 @@ func handleRequestMonsterAttack(req protocol.RequestMonsterAttack, gameManager *
 		ActionType: "attack",
 		TargetID:   req.TargetID,
 		Success:    true,
-		Details:    map[string]interface{}{"type": "melee_attack"},
+		Details:    map[string]any{"type": "melee_attack"},
 	}
 
 	if err := turnStateManager.RecordMonsterAction(req.MonsterID, action); err != nil {

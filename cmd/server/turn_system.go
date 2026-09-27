@@ -887,11 +887,11 @@ func (tm *TurnManager) ResetMovementHistory(heroPos protocol.TileAddress) {
 }
 
 // GetMovementVisualizationData returns structured data for movement visualization
-func (tm *TurnManager) GetMovementVisualizationData() map[string]interface{} {
+func (tm *TurnManager) GetMovementVisualizationData() map[string]any {
 	tm.lock.RLock()
 	defer tm.lock.RUnlock()
 
-	return map[string]interface{}{
+	return map[string]any{
 		"history":            tm.state.MovementHistory,
 		"currentSegment":     tm.state.CurrentSegment,
 		"initialPosition":    tm.state.InitialHeroPosition,

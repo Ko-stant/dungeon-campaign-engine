@@ -9,7 +9,7 @@ func DevSegment() Segment {
 	doorSockets := make([]EdgeAddress, 0, 1)
 
 	// Full-height vertical wall at x=12, splits the board into left/right.
-	for y := 0; y < h; y++ {
+	for y := range h {
 		wallsV = append(wallsV, EdgeAddress{X: 12, Y: y, Orientation: Vertical})
 	}
 

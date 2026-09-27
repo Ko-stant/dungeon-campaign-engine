@@ -118,7 +118,7 @@ func TestTurnStateManager_RecordMonsterAction(t *testing.T) {
 		ActionType: "attack",
 		TargetID:   "hero-1",
 		Success:    true,
-		Details:    map[string]interface{}{"damage": 2},
+		Details:    map[string]any{"damage": 2},
 	}
 	err := tsm.RecordMonsterAction("monster-1", action)
 	if err != nil {

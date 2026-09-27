@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"sync"
 	"time"
 )
@@ -411,9 +412,7 @@ func (dtom *DynamicTurnOrderManager) GetHeroesActedThisCycle() map[string]bool {
 	defer dtom.mutex.RUnlock()
 
 	copy := make(map[string]bool)
-	for k, v := range dtom.heroesActedThisCycle {
-		copy[k] = v
-	}
+	maps.Copy(copy, dtom.heroesActedThisCycle)
 	return copy
 }
 
@@ -423,9 +422,7 @@ func (dtom *DynamicTurnOrderManager) GetPlayersReady() map[string]bool {
 	defer dtom.mutex.RUnlock()
 
 	copy := make(map[string]bool)
-	for k, v := range dtom.playersReady {
-		copy[k] = v
-	}
+	maps.Copy(copy, dtom.playersReady)
 	return copy
 }
 
@@ -435,9 +432,7 @@ func (dtom *DynamicTurnOrderManager) GetPlayerStartPositions() map[string]Positi
 	defer dtom.mutex.RUnlock()
 
 	copy := make(map[string]Position)
-	for k, v := range dtom.playerStartPositions {
-		copy[k] = v
-	}
+	maps.Copy(copy, dtom.playerStartPositions)
 	return copy
 }
 
@@ -550,11 +545,11 @@ func (dtom *DynamicTurnOrderManager) GetStateString() string {
 }
 
 // GetStateSummary returns a structured state summary (for snapshots)
-func (dtom *DynamicTurnOrderManager) GetStateSummary() map[string]interface{} {
+func (dtom *DynamicTurnOrderManager) GetStateSummary() map[string]any {
 	dtom.mutex.RLock()
 	defer dtom.mutex.RUnlock()
 
-	return map[string]interface{}{
+	return map[string]any{
 		"current_phase":         string(dtom.currentPhase),
 		"cycle_number":          dtom.cycleNumber,
 		"active_hero_player_id": dtom.activeHeroPlayerID,

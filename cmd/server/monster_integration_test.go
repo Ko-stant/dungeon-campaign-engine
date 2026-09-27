@@ -363,7 +363,7 @@ func TestMonsterSystem_ConcurrentActions(t *testing.T) {
 
 	// Spawn multiple monsters
 	monsters := make([]*Monster, 3)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		monster, err := gm.SpawnMonster(Goblin, protocol.TileAddress{X: 7 + i, Y: 7})
 		if err != nil {
 			t.Fatalf("Failed to spawn monster %d: %v", i, err)

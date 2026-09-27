@@ -60,12 +60,12 @@ type MovementDiceState struct {
 
 // ActionRecord represents the main action taken this turn
 type ActionRecord struct {
-	ActionType     string                 // "attack", "cast_spell", "search_treasure", "search_trap", etc.
-	TargetID       string                 // Entity ID if targeting something
-	TargetPosition *protocol.TileAddress  // Position if targeting a location
-	LocationKey    string                 // Room ID or corridor segment key
-	Success        bool                   // Whether action succeeded
-	Details        map[string]interface{} // Action-specific data (damage, spell name, search results, etc.)
+	ActionType     string                // "attack", "cast_spell", "search_treasure", "search_trap", etc.
+	TargetID       string                // Entity ID if targeting something
+	TargetPosition *protocol.TileAddress // Position if targeting a location
+	LocationKey    string                // Room ID or corridor segment key
+	Success        bool                  // Whether action succeeded
+	Details        map[string]any        // Action-specific data (damage, spell name, search results, etc.)
 	Timestamp      time.Time
 }
 
@@ -76,7 +76,7 @@ type Activity struct {
 	ItemName  string
 	Target    string // For pass_item: recipient hero ID; for doors: door ID
 	Context   string // "on_turn", "during_monster_attack", "during_hero_defense"
-	Details   map[string]interface{}
+	Details   map[string]any
 	Timestamp time.Time
 }
 
@@ -119,7 +119,7 @@ type SearchRecord struct {
 type TurnEvent struct {
 	EventType string // "door_opened", "door_closed", "monster_spawned", "gm_narration"
 	EntityID  string // Door ID, monster ID, etc.
-	Details   map[string]interface{}
+	Details   map[string]any
 	Timestamp time.Time
 }
 
@@ -377,7 +377,7 @@ func (hts *HeroTurnState) RecordSearch(searchType string, locationKey string, lo
 }
 
 // RecordTurnEvent logs a turn event
-func (hts *HeroTurnState) RecordTurnEvent(eventType string, entityID string, details map[string]interface{}) {
+func (hts *HeroTurnState) RecordTurnEvent(eventType string, entityID string, details map[string]any) {
 	event := TurnEvent{
 		EventType: eventType,
 		EntityID:  entityID,

@@ -134,7 +134,7 @@ func TestHeroTurnState_MovementFirst_Strategy(t *testing.T) {
 		ActionType: "attack",
 		TargetID:   "monster-1",
 		Success:    true,
-		Details:    make(map[string]interface{}),
+		Details:    make(map[string]any),
 	}
 	err = state.RecordAction(action)
 	if err != nil {
@@ -169,7 +169,7 @@ func TestHeroTurnState_ActionFirst_Strategy(t *testing.T) {
 		ActionType:  "search_treasure",
 		LocationKey: "room-17",
 		Success:     true,
-		Details:     make(map[string]interface{}),
+		Details:     make(map[string]any),
 	}
 	err := state.RecordAction(action)
 	if err != nil {
@@ -230,7 +230,7 @@ func TestHeroTurnState_SplitMovement_WithFlag(t *testing.T) {
 	_ = state.RecordMovement(protocol.TileAddress{X: 1, Y: 0})
 
 	// Take action
-	action := ActionRecord{ActionType: "attack", TargetID: "monster-1", Success: true, Details: make(map[string]interface{})}
+	action := ActionRecord{ActionType: "attack", TargetID: "monster-1", Success: true, Details: make(map[string]any)}
 	_ = state.RecordAction(action)
 
 	// Should still be able to move (split movement allowed)
@@ -360,7 +360,7 @@ func TestHeroTurnState_ResetForNewTurn(t *testing.T) {
 	// Do some stuff
 	_ = state.RollMovementDice([]int{3, 3})
 	_ = state.RecordMovement(protocol.TileAddress{X: 1, Y: 0})
-	_ = state.RecordAction(ActionRecord{ActionType: "attack", Success: true, Details: make(map[string]interface{})})
+	_ = state.RecordAction(ActionRecord{ActionType: "attack", Success: true, Details: make(map[string]any)})
 	state.RecordActivity(Activity{Type: "use_item", ItemID: "potion-1", ItemName: "Healing Potion"})
 
 	// Reset for new turn
@@ -410,7 +410,7 @@ func TestHeroTurnState_NoMovementAfterBothMoveAndAction(t *testing.T) {
 			ActionType: "attack",
 			TargetID:   "monster-1",
 			Success:    true,
-			Details:    make(map[string]interface{}),
+			Details:    make(map[string]any),
 		}
 		err = state.RecordAction(action)
 		if err != nil {
@@ -443,7 +443,7 @@ func TestHeroTurnState_NoMovementAfterBothMoveAndAction(t *testing.T) {
 			ActionType: "attack",
 			TargetID:   "monster-1",
 			Success:    true,
-			Details:    make(map[string]interface{}),
+			Details:    make(map[string]any),
 		}
 		err := state.RecordAction(action)
 		if err != nil {
@@ -489,7 +489,7 @@ func TestHeroTurnState_NoMovementAfterBothMoveAndAction(t *testing.T) {
 			ActionType: "attack",
 			TargetID:   "monster-1",
 			Success:    true,
-			Details:    make(map[string]interface{}),
+			Details:    make(map[string]any),
 		}
 		err = state.RecordAction(action)
 		if err != nil {

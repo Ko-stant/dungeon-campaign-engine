@@ -56,7 +56,7 @@ func TestMonsterCanMove(t *testing.T) {
 	}
 
 	// Consume all movement
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		newPos := protocol.TileAddress{X: 5 + i + 1, Y: 10}
 		if err := mts.RecordMovement(newPos); err != nil {
 			t.Fatalf("Failed to record movement: %v", err)
@@ -120,7 +120,7 @@ func TestMonsterCanTakeAction(t *testing.T) {
 		ActionType: "attack",
 		TargetID:   "hero-1",
 		Success:    true,
-		Details:    map[string]interface{}{"damage": 2},
+		Details:    map[string]any{"damage": 2},
 	}
 	if err := mts.RecordAction(action); err != nil {
 		t.Fatalf("Failed to record action: %v", err)
@@ -144,7 +144,7 @@ func TestMonsterRecordAction(t *testing.T) {
 		ActionType: "attack",
 		TargetID:   "hero-1",
 		Success:    true,
-		Details:    map[string]interface{}{"damage": 2},
+		Details:    map[string]any{"damage": 2},
 	}
 	if err := mts.RecordAction(action); err != nil {
 		t.Fatalf("Failed to record action: %v", err)
@@ -181,7 +181,7 @@ func TestMonsterSpecialAbilities(t *testing.T) {
 		RequiresAction: true,
 		Range:          6,
 		Description:    "Cast a fireball at a hero",
-		EffectDetails:  map[string]interface{}{"damage": "2d6"},
+		EffectDetails:  map[string]any{"damage": "2d6"},
 	}
 	mts.SpecialAbilities = append(mts.SpecialAbilities, ability)
 	mts.QuestAbilityUsageLeft["dread_spell_fireball"] = 3

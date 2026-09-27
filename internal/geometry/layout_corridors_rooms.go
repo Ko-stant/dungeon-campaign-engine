@@ -17,7 +17,7 @@ func CorridorsAndRoomsSegment(width, height int) Segment {
 	wallsV := make([]EdgeAddress, 0, width*height/2)
 	wallsH := make([]EdgeAddress, 0, width*height/2)
 
-	for y := 0; y < height; y++ {
+	for y := range height {
 		for x := 0; x < width-1; x++ {
 			if isCorr(x, y) != isCorr(x+1, y) {
 				wallsV = append(wallsV, EdgeAddress{X: x, Y: y, Orientation: Vertical})
@@ -25,7 +25,7 @@ func CorridorsAndRoomsSegment(width, height int) Segment {
 		}
 	}
 	for y := 0; y < height-1; y++ {
-		for x := 0; x < width; x++ {
+		for x := range width {
 			if isCorr(x, y) != isCorr(x, y+1) {
 				wallsH = append(wallsH, EdgeAddress{X: x, Y: y, Orientation: Horizontal})
 			}
@@ -59,7 +59,7 @@ func CorridorsAndRoomsWithDoorsSegment(width, height int) Segment {
 	wallsV := make([]EdgeAddress, 0, width*height/2)
 	wallsH := make([]EdgeAddress, 0, width*height/2)
 
-	for y := 0; y < height; y++ {
+	for y := range height {
 		for x := 0; x < width-1; x++ {
 			if isCorr(x, y) != isCorr(x+1, y) {
 				wallsV = append(wallsV, EdgeAddress{X: x, Y: y, Orientation: Vertical})
@@ -67,7 +67,7 @@ func CorridorsAndRoomsWithDoorsSegment(width, height int) Segment {
 		}
 	}
 	for y := 0; y < height-1; y++ {
-		for x := 0; x < width; x++ {
+		for x := range width {
 			if isCorr(x, y) != isCorr(x, y+1) {
 				wallsH = append(wallsH, EdgeAddress{X: x, Y: y, Orientation: Horizontal})
 			}

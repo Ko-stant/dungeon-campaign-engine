@@ -239,7 +239,7 @@ func TestMonsterTurnStateChanged_Serialization(t *testing.T) {
 				RequiresAction: true,
 				Range:          6,
 				Description:    "Cast a fireball",
-				EffectDetails:  map[string]interface{}{"damage": "2d6"},
+				EffectDetails:  map[string]any{"damage": "2d6"},
 			},
 		},
 		AbilityUsageThisTurn: map[string]int{

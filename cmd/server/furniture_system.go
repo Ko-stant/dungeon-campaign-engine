@@ -35,7 +35,7 @@ type FurnitureDefinition struct {
 		Container        bool           `json:"container,omitempty"`
 		Interactable     bool           `json:"interactable,omitempty"`
 		CustomProperties map[string]any `json:"customProperties,omitempty"`
-	} `json:"gameplayProperties,omitempty"`
+	} `json:"gameplayProperties"`
 }
 
 // FurnitureInstance represents a placed furniture piece in the game world

@@ -179,14 +179,14 @@ type MonsterTurnStateLite struct {
 }
 
 type MonsterAbilitySnapshotLite struct {
-	ID             string                 `json:"id"`
-	Name           string                 `json:"name"`
-	Type           string                 `json:"type"`
-	UsesPerTurn    int                    `json:"usesPerTurn"`
-	UsesPerQuest   int                    `json:"usesPerQuest"`
-	UsesLeftQuest  int                    `json:"usesLeftQuest"`
-	RequiresAction bool                   `json:"requiresAction"`
-	Range          int                    `json:"range"`
-	Description    string                 `json:"description,omitempty"`
-	EffectDetails  map[string]interface{} `json:"effectDetails,omitempty"`
+	ID             string         `json:"id"`
+	Name           string         `json:"name"`
+	Type           string         `json:"type"`
+	UsesPerTurn    int            `json:"usesPerTurn"`
+	UsesPerQuest   int            `json:"usesPerQuest"`
+	UsesLeftQuest  int            `json:"usesLeftQuest"`
+	RequiresAction bool           `json:"requiresAction"`
+	Range          int            `json:"range"`
+	Description    string         `json:"description,omitempty"`
+	EffectDetails  map[string]any `json:"effectDetails,omitempty"`
 }

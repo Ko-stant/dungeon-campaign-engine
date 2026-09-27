@@ -58,11 +58,11 @@ type MonsterTurnState struct {
 
 // MonsterActionRecord represents the main action taken by a monster this turn
 type MonsterActionRecord struct {
-	ActionType     string                 // "attack", "use_dread_spell", "special_ability"
-	TargetID       string                 // Hero ID or entity ID if targeting something
-	TargetPosition *protocol.TileAddress  // Position if targeting a location
-	Success        bool                   // Whether action succeeded
-	Details        map[string]interface{} // Action-specific data (damage dealt, spell cast, etc.)
+	ActionType     string                // "attack", "use_dread_spell", "special_ability"
+	TargetID       string                // Hero ID or entity ID if targeting something
+	TargetPosition *protocol.TileAddress // Position if targeting a location
+	Success        bool                  // Whether action succeeded
+	Details        map[string]any        // Action-specific data (damage dealt, spell cast, etc.)
 	Timestamp      time.Time
 }
 
@@ -76,7 +76,7 @@ type MonsterAbility struct {
 	RequiresAction bool   // Does using this consume the monster's action?
 	Range          int    // Range in tiles (0 = self, -1 = unlimited)
 	Description    string
-	EffectDetails  map[string]interface{} // Ability-specific parameters
+	EffectDetails  map[string]any // Ability-specific parameters
 }
 
 // MonsterActiveEffect represents a buff/debuff on a monster
@@ -94,7 +94,7 @@ type MonsterActiveEffect struct {
 type MonsterTurnEvent struct {
 	EventType string // "moved", "attacked", "used_ability", "damaged", "killed"
 	TargetID  string // Hero ID or entity ID affected by event
-	Details   map[string]interface{}
+	Details   map[string]any
 	Timestamp time.Time
 }
 
@@ -213,7 +213,7 @@ func (mts *MonsterTurnState) RecordMovement(to protocol.TileAddress) error {
 	mts.MovementRemaining--
 
 	// Log event
-	mts.RecordTurnEvent("moved", "", map[string]interface{}{
+	mts.RecordTurnEvent("moved", "", map[string]any{
 		"position":           to,
 		"movement_remaining": mts.MovementRemaining,
 	})
@@ -241,7 +241,7 @@ func (mts *MonsterTurnState) RecordAction(action MonsterActionRecord) error {
 }
 
 // UseAbility records usage of a special ability
-func (mts *MonsterTurnState) UseAbility(abilityID string, targetID string, targetPosition *protocol.TileAddress, success bool, details map[string]interface{}) error {
+func (mts *MonsterTurnState) UseAbility(abilityID string, targetID string, targetPosition *protocol.TileAddress, success bool, details map[string]any) error {
 	canUse, reason := mts.CanUseAbility(abilityID)
 	if !canUse {
 		return &GameError{Code: "cannot_use_ability", Message: reason}
@@ -273,7 +273,7 @@ func (mts *MonsterTurnState) UseAbility(abilityID string, targetID string, targe
 			TargetID:       targetID,
 			TargetPosition: targetPosition,
 			Success:        success,
-			Details: map[string]interface{}{
+			Details: map[string]any{
 				"ability_id":   abilityID,
 				"ability_name": ability.Name,
 			},
@@ -286,7 +286,7 @@ func (mts *MonsterTurnState) UseAbility(abilityID string, targetID string, targe
 	}
 
 	// Otherwise just log the event
-	mts.RecordTurnEvent("used_ability", targetID, map[string]interface{}{
+	mts.RecordTurnEvent("used_ability", targetID, map[string]any{
 		"ability_id":   abilityID,
 		"ability_name": ability.Name,
 		"success":      success,
@@ -328,7 +328,7 @@ func (mts *MonsterTurnState) TriggerEffects(trigger string) []MonsterActiveEffec
 }
 
 // RecordTurnEvent logs a turn event
-func (mts *MonsterTurnState) RecordTurnEvent(eventType string, targetID string, details map[string]interface{}) {
+func (mts *MonsterTurnState) RecordTurnEvent(eventType string, targetID string, details map[string]any) {
 	event := MonsterTurnEvent{
 		EventType: eventType,
 		TargetID:  targetID,
@@ -346,7 +346,7 @@ func (mts *MonsterTurnState) RecordDamage(damage int) {
 		mts.CurrentBody = 0
 	}
 
-	mts.RecordTurnEvent("damaged", "", map[string]interface{}{
+	mts.RecordTurnEvent("damaged", "", map[string]any{
 		"damage_taken": damage,
 		"old_body":     oldBody,
 		"new_body":     mts.CurrentBody,

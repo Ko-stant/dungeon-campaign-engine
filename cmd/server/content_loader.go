@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sync"
@@ -342,9 +343,7 @@ func (cm *ContentManager) GetAllEquipment() map[string]*ItemCard {
 	defer cm.mutex.RUnlock()
 	// Return a copy to prevent external modification
 	result := make(map[string]*ItemCard, len(cm.equipmentCards))
-	for k, v := range cm.equipmentCards {
-		result[k] = v
-	}
+	maps.Copy(result, cm.equipmentCards)
 	return result
 }
 
@@ -353,9 +352,7 @@ func (cm *ContentManager) GetAllArtifacts() map[string]*ItemCard {
 	cm.mutex.RLock()
 	defer cm.mutex.RUnlock()
 	result := make(map[string]*ItemCard, len(cm.artifactCards))
-	for k, v := range cm.artifactCards {
-		result[k] = v
-	}
+	maps.Copy(result, cm.artifactCards)
 	return result
 }
 
@@ -364,9 +361,7 @@ func (cm *ContentManager) GetAllTreasures() map[string]*TreasureCard {
 	cm.mutex.RLock()
 	defer cm.mutex.RUnlock()
 	result := make(map[string]*TreasureCard, len(cm.treasureCards))
-	for k, v := range cm.treasureCards {
-		result[k] = v
-	}
+	maps.Copy(result, cm.treasureCards)
 	return result
 }
 
@@ -430,8 +425,6 @@ func (cm *ContentManager) GetAllHeroes() map[string]*HeroCard {
 	cm.mutex.RLock()
 	defer cm.mutex.RUnlock()
 	result := make(map[string]*HeroCard, len(cm.heroCards))
-	for k, v := range cm.heroCards {
-		result[k] = v
-	}
+	maps.Copy(result, cm.heroCards)
 	return result
 }

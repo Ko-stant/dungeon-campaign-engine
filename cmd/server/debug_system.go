@@ -71,10 +71,7 @@ func (ds *DebugSystem) GetDiceOverrideSequence(rollType string, count int) ([]in
 	}
 
 	// Return up to the requested count, or all available results
-	resultCount := count
-	if resultCount > len(sequence) {
-		resultCount = len(sequence)
-	}
+	resultCount := min(count, len(sequence))
 
 	results := make([]int, resultCount)
 	copy(results, sequence[:resultCount])
@@ -697,10 +694,7 @@ func (ds *DebugSystem) handleCombatDiceTest(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	netDamage := attackSkulls - defenseShields
-	if netDamage < 0 {
-		netDamage = 0
-	}
+	netDamage := max(attackSkulls-defenseShields, 0)
 
 	ds.logDebugAction("combat_dice_test", map[string]any{
 		"attackDice":     req.AttackDice,

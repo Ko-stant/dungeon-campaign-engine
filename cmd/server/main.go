@@ -532,7 +532,7 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		if err != nil {
 			log.Printf("Movement request failed: %v", err)
 			// Send error response to UI
-			errorResult := map[string]interface{}{
+			errorResult := map[string]any{
 				"success": false,
 				"action":  "movement",
 				"message": err.Error(),
@@ -585,7 +585,7 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		if err != nil {
 			log.Printf("Hero action failed: %v", err)
 			// Send error response to UI
-			errorResult := map[string]interface{}{
+			errorResult := map[string]any{
 				"success": false,
 				"action":  req.Action,
 				"message": err.Error(),
@@ -694,7 +694,7 @@ func handleEnhancedWebSocketMessage(data []byte, gameManager *GameManager, state
 		if err != nil {
 			log.Printf("Instant action failed: %v", err)
 			// Send error response to UI
-			errorResult := map[string]interface{}{
+			errorResult := map[string]any{
 				"success": false,
 				"action":  req.Action,
 				"message": err.Error(),

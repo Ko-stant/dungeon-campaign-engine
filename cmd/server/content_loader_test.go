@@ -1,14 +1,15 @@
 package main
 
 import (
+	"slices"
 	"testing"
 )
 
 // testLogger implements Logger for testing
 type testLogger struct{}
 
-func (tl *testLogger) Printf(format string, args ...interface{}) {}
-func (tl *testLogger) Println(args ...interface{})               {}
+func (tl *testLogger) Printf(format string, args ...any) {}
+func (tl *testLogger) Println(args ...any)               {}
 
 func TestContentManager_LoadCampaign(t *testing.T) {
 	logger := &testLogger{}
@@ -148,7 +149,7 @@ func TestContentManager_ThreadSafety(t *testing.T) {
 
 	// Test concurrent reads
 	done := make(chan bool)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			card, _ := cm.GetEquipmentCard("crossbow")
 			if card != nil && card.Name != "Crossbow" {
@@ -158,7 +159,7 @@ func TestContentManager_ThreadSafety(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 }
@@ -284,13 +285,7 @@ func TestContentManager_SpecificHeroStats(t *testing.T) {
 	if len(barbarian.StartingEquipment.Weapons) == 0 {
 		t.Error("Barbarian should have starting weapons")
 	}
-	hasBroadsword := false
-	for _, weapon := range barbarian.StartingEquipment.Weapons {
-		if weapon == "broadsword" {
-			hasBroadsword = true
-			break
-		}
-	}
+	hasBroadsword := slices.Contains(barbarian.StartingEquipment.Weapons, "broadsword")
 	if !hasBroadsword {
 		t.Error("Barbarian should start with broadsword")
 	}

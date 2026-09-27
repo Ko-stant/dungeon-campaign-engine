@@ -1091,7 +1091,7 @@ func (ds *DiceSystem) RollDice(dieType Die, count int, rollType string) []DiceRo
 	}
 
 	// Fall back to individual die overrides or normal rolling
-	for i := 0; i < count; i++ {
+	for i := range count {
 		// Check for debug override (single die)
 		if ds.debugSystem != nil {
 			if override, exists := ds.debugSystem.GetDiceOverride(rollType); exists {
@@ -1161,10 +1161,7 @@ func CalculateCombatDamage(attackRolls, defenseRolls []DiceRoll) int {
 	}
 
 	// Net damage = skulls - black shields (minimum 0)
-	damage := skulls - blackShields
-	if damage < 0 {
-		damage = 0
-	}
+	damage := max(skulls-blackShields, 0)
 
 	return damage
 }
@@ -1190,10 +1187,7 @@ func CalculateHeroCombatDamage(attackRolls, defenseRolls []DiceRoll) int {
 	}
 
 	// Net damage = skulls - shields (minimum 0)
-	damage := skulls - shields
-	if damage < 0 {
-		damage = 0
-	}
+	damage := max(skulls-shields, 0)
 
 	return damage
 }
