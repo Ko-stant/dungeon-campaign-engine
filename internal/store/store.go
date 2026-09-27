@@ -103,6 +103,7 @@ func pgCode(err error) string {
 
 const (
 	fkViolation       = "23503"
+	uniqueViolation   = "23505"
 	restrictViolation = "23001"
 )
 
@@ -365,6 +366,89 @@ func (s *Store) UpdateCampaign(ctx context.Context, id, name string, heroes json
 		id, name, orEmptyArray(heroes)))
 }
 
+// --- Campaign chapters ---
+
+// Chapter is one quest in a campaign's play order, with its board.
+type Chapter struct {
+	CampaignID   string
+	CampaignName string
+	QuestID      string
+	QuestName    string
+	BoardID      string
+	BoardName    string
+	Position     int
+}
+
+const chapterQuery = `SELECT c.id::text, c.name, q.id::text, q.name, b.id::text, b.name, cc.position
+	FROM campaign_chapter cc
+	JOIN campaign c ON c.id = cc.campaign_id
+	JOIN quest q ON q.id = cc.quest_id
+	JOIN board b ON b.id = q.board_id`
+
+func collectChapters(rows pgx.Rows) ([]Chapter, error) {
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Chapter, error) {
+		var ch Chapter
+		err := row.Scan(&ch.CampaignID, &ch.CampaignName, &ch.QuestID, &ch.QuestName, &ch.BoardID, &ch.BoardName, &ch.Position)
+		return ch, err
+	})
+}
+
+// ListChapters returns a campaign's chapters in play order.
+func (s *Store) ListChapters(ctx context.Context, campaignID string) ([]Chapter, error) {
+	if !validID(campaignID) {
+		return []Chapter{}, nil
+	}
+	rows, err := s.pool.Query(ctx, chapterQuery+` WHERE cc.campaign_id = $1 ORDER BY cc.position`, campaignID)
+	if err != nil {
+		return nil, err
+	}
+	return collectChapters(rows)
+}
+
+// ListAllChapters returns every campaign's chapters, grouped by campaign
+// (by name) and in play order within each.
+func (s *Store) ListAllChapters(ctx context.Context) ([]Chapter, error) {
+	rows, err := s.pool.Query(ctx, chapterQuery+` ORDER BY lower(c.name), c.id, cc.position`)
+	if err != nil {
+		return nil, err
+	}
+	return collectChapters(rows)
+}
+
+// SetChapters replaces a campaign's chapters with questIDs, in that order. It
+// returns ErrNotFound (and changes nothing) if a quest or the campaign does
+// not exist.
+func (s *Store) SetChapters(ctx context.Context, campaignID string, questIDs []string) error {
+	if !validID(campaignID) {
+		return ErrNotFound
+	}
+	for _, id := range questIDs {
+		if !validID(id) {
+			return ErrNotFound
+		}
+	}
+	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `DELETE FROM campaign_chapter WHERE campaign_id = $1`, campaignID); err != nil {
+			return err
+		}
+		for i, id := range questIDs {
+			if _, err := tx.Exec(ctx,
+				`INSERT INTO campaign_chapter (campaign_id, quest_id, position) VALUES ($1, $2, $3)`,
+				campaignID, id, i+1); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	switch pgCode(err) {
+	case fkViolation:
+		return ErrNotFound
+	case uniqueViolation:
+		return errors.New("store: a quest can only be one chapter of a campaign")
+	}
+	return err
+}
+
 // --- Custom monsters ---
 
 // CustomMonster is a GM-made monster type. Doc holds its color, size and stats.
@@ -448,6 +532,9 @@ type SessionSummary struct {
 	ID         string
 	CampaignID string
 	QuestID    *string
+	// VisitedQuestIDs lists every quest (map) the session has played, when it
+	// travelled between maps; empty for single-map sessions.
+	VisitedQuestIDs []string
 	Name       string
 	Status     string
 	EventSeq   int64

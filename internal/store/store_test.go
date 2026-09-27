@@ -197,6 +197,66 @@ func TestCampaignLifecycle(t *testing.T) {
 	}
 }
 
+func TestCampaignChapters(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	b1, _ := s.CreateBoard(ctx, "Level One", 2, 2, json.RawMessage(`{}`))
+	b2, _ := s.CreateBoard(ctx, "Level Two", 2, 2, json.RawMessage(`{}`))
+	q1, _ := s.CreateQuest(ctx, b1.ID, "Upper Halls", json.RawMessage(`{}`))
+	q2, _ := s.CreateQuest(ctx, b2.ID, "Lower Vaults", json.RawMessage(`{}`))
+	q3, _ := s.CreateQuest(ctx, b2.ID, "Side Quest", json.RawMessage(`{}`))
+	c, _ := s.CreateCampaign(ctx, "Herald", nil)
+	other, _ := s.CreateCampaign(ctx, "Other", nil)
+
+	if err := s.SetChapters(ctx, c.ID, []string{q2.ID, q1.ID}); err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	got, err := s.ListChapters(ctx, c.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[0].QuestID != q2.ID || got[0].QuestName != "Lower Vaults" || got[0].BoardName != "Level Two" || got[0].BoardID != b2.ID || got[1].QuestID != q1.ID {
+		t.Fatalf("chapters: %+v", got)
+	}
+
+	if err := s.SetChapters(ctx, c.ID, []string{q1.ID, q2.ID, q3.ID}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetChapters(ctx, other.ID, []string{q3.ID}); err != nil {
+		t.Fatal(err)
+	}
+	all, err := s.ListAllChapters(ctx)
+	if err != nil || len(all) != 4 {
+		t.Fatalf("all chapters: %+v %v", all, err)
+	}
+	if all[0].CampaignName != "Herald" || all[0].QuestID != q1.ID || all[3].CampaignName != "Other" {
+		t.Fatalf("all chapters are grouped by campaign, in order: %+v", all)
+	}
+
+	if err := s.SetChapters(ctx, c.ID, []string{q1.ID, "01900000-0000-7000-8000-000000000000"}); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("unknown quest: %v", err)
+	}
+	if got, _ := s.ListChapters(ctx, c.ID); len(got) != 3 {
+		t.Fatalf("a failed set must leave the chapters alone: %+v", got)
+	}
+	if err := s.SetChapters(ctx, c.ID, []string{q1.ID, q1.ID}); err == nil {
+		t.Fatal("a quest can only be one chapter of a campaign")
+	}
+
+	if err := s.DeleteQuest(ctx, q1.ID); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.ListChapters(ctx, c.ID); len(got) != 2 || got[0].QuestID != q2.ID {
+		t.Fatalf("deleting a quest drops its chapter: %+v", got)
+	}
+	if err := s.SetChapters(ctx, c.ID, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.ListChapters(ctx, c.ID); len(got) != 0 {
+		t.Fatalf("cleared: %+v", got)
+	}
+}
+
 func TestCustomMonsterLifecycle(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()

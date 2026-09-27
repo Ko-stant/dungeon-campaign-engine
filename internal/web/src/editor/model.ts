@@ -358,6 +358,12 @@ export function removeItem(q: QuestDoc, id: string): QuestDoc {
   };
 }
 
+/** The quest id in a "?quest=" URL query, if it is one of the board's quests. */
+export function questFromSearch(search: string, quests: readonly { id: string }[]): string | null {
+  const id = new URLSearchParams(search).get('quest');
+  return id && quests.some((q) => q.id === id) ? id : null;
+}
+
 // --- Rendering ---
 
 /** Builds the renderer's view of a board and (optionally) a quest. */

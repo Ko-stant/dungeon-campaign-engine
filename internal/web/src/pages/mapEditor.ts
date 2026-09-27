@@ -16,6 +16,7 @@ import {
   setBlockedHiddenDoor,
   setRoomColor,
   setTeleportLabel,
+  questFromSearch,
   resizeBoard,
   rotateItem,
   setNoteText,
@@ -849,6 +850,14 @@ async function main(): Promise<void> {
 
   new ResizeObserver(requestDraw).observe(canvas);
   refresh();
+
+  // Links from a campaign ("Edit map") name the chapter's quest.
+  const linkedQuest = questFromSearch(location.search, quests);
+  if (linkedQuest) {
+    await openQuest(linkedQuest);
+    layer = 'quest';
+    refresh();
+  }
 }
 
 void main().catch((err: unknown) => {

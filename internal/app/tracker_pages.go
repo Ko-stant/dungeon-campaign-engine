@@ -111,21 +111,8 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 		return views.CampaignPageData{}, err
 	}
 	d.Sessions = sessionLinks(sessions)
-
-	boards, err := s.store.ListBoards(ctx)
-	if err != nil {
+	if err := s.addChapterPageData(ctx, &d, sessions); err != nil {
 		return views.CampaignPageData{}, err
-	}
-	boardNames := make(map[string]string, len(boards))
-	for _, b := range boards {
-		boardNames[b.ID] = b.Name
-	}
-	quests, err := s.store.ListQuests(ctx, "")
-	if err != nil {
-		return views.CampaignPageData{}, err
-	}
-	for _, q := range quests {
-		d.Quests = append(d.Quests, views.QuestOption{ID: q.ID, Label: q.Name + " — " + boardNames[q.BoardID]})
 	}
 	return d, nil
 }

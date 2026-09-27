@@ -36,7 +36,12 @@ func (s *Server) renderMapsPage(w http.ResponseWriter, r *http.Request, status i
 	for _, b := range boards {
 		items = append(items, views.MapListItem{ID: b.ID, Name: b.Name, Width: b.Width, Height: b.Height, UpdatedAt: b.UpdatedAt})
 	}
-	render(w, r, status, views.MapsPage(items, form))
+	groups, err := s.campaignMapGroups(r.Context())
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	render(w, r, status, views.MapsPage(items, groups, form))
 }
 
 func (s *Server) mapsPage(w http.ResponseWriter, r *http.Request) {

@@ -37,8 +37,29 @@ type HeroRow struct {
 
 // QuestOption is a quest to start, labelled with its board.
 type QuestOption struct {
-	ID    string
-	Label string
+	ID       string
+	Label    string
+	Selected bool
+}
+
+// ChapterRow is one chapter (a quest on its map) of a campaign.
+type ChapterRow struct {
+	Number    int
+	QuestID   string
+	QuestName string
+	BoardID   string
+	BoardName string
+	// Status is "not started", "in progress" or "done"; SessionID is the
+	// session to resume or view.
+	Status    string
+	SessionID string
+	First     bool
+	Last      bool
+}
+
+// EditURL opens the chapter's map in the editor with its quest selected.
+func (c ChapterRow) EditURL() templ.SafeURL {
+	return templ.SafeURL("/maps/" + c.BoardID + "/edit?quest=" + c.QuestID)
 }
 
 // ClassOption is a hero class for the add-hero form.
@@ -56,6 +77,19 @@ type CampaignPageData struct {
 	Quests   []QuestOption
 	Classes  []ClassOption
 	Error    string
+	Chapters []ChapterRow
+	// OtherQuests are quests that are not chapters yet (for "add chapter").
+	OtherQuests []QuestOption
+}
+
+func chapterStatusClass(status string) string {
+	switch status {
+	case "in progress":
+		return "rounded-full border border-amber-500/60 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-400"
+	case "done":
+		return "rounded-full border border-positive/60 px-2 py-0.5 text-xs text-positive"
+	}
+	return "rounded-full border border-border/60 px-2 py-0.5 text-xs opacity-70"
 }
 
 const (
@@ -174,6 +208,69 @@ templ CampaignPage(d CampaignPageData) {
 				</form>
 			</section>
 			<section class={ cardClass }>
+				<h2 class="mb-1 text-lg font-semibold">Chapters</h2>
+				<p class="mb-4 text-xs opacity-60">The campaign's quests in play order. Each chapter is a quest on its own map.</p>
+				if len(d.Chapters) == 0 {
+					<p class="mb-4 text-sm opacity-70">No chapters yet. Add an existing quest or make a new map below.</p>
+				} else {
+					<ol class="mb-4 divide-y divide-border/40 rounded-lg border border-border/60">
+						for _, ch := range d.Chapters {
+							<li id={ "chapter-" + ch.QuestID } class="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
+								<span class="w-6 text-right font-mono opacity-60">{ fmt.Sprint(ch.Number) }</span>
+								<div class="min-w-0 flex-1">
+									<span class="font-semibold">{ ch.QuestName }</span>
+									<span class="ml-1 text-xs opacity-60">on { ch.BoardName }</span>
+								</div>
+								<span class={ chapterStatusClass(ch.Status) }>{ ch.Status }</span>
+								if ch.SessionID != "" {
+									<a href={ templ.SafeURL("/play/" + ch.SessionID) } class={ linkButton }>
+										if ch.Status == "in progress" {
+											Resume
+										} else {
+											View
+										}
+									</a>
+								}
+								<a href={ ch.EditURL() } class={ linkButton }>Edit map</a>
+								<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/chapters/" + ch.QuestID + "/up") }>
+									<button type="submit" class={ linkButton } disabled?={ ch.First } aria-label={ "Move " + ch.QuestName + " up" }>↑</button>
+								</form>
+								<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/chapters/" + ch.QuestID + "/down") }>
+									<button type="submit" class={ linkButton } disabled?={ ch.Last } aria-label={ "Move " + ch.QuestName + " down" }>↓</button>
+								</form>
+								<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/chapters/" + ch.QuestID + "/remove") }>
+									<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove " + ch.QuestName + " from the campaign" }>Remove</button>
+								</form>
+							</li>
+						}
+					</ol>
+				}
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/maps") } class="space-y-2 rounded-md border border-border/60 p-3">
+						<h3 class="text-sm font-semibold">New map for this campaign</h3>
+						<label class="block text-xs"><span class="mb-1 block opacity-70">Name (used for the map and its quest)</span><input name="name" required maxlength="120" placeholder="e.g. Crumbling Halls" class={ inputClass }/></label>
+						<div class="grid grid-cols-2 gap-2">
+							<label class="block text-xs"><span class="mb-1 block opacity-70">Columns (width)</span><input name="width" type="number" min="1" max="200" value="26" required class={ inputClass }/></label>
+							<label class="block text-xs"><span class="mb-1 block opacity-70">Rows (height)</span><input name="height" type="number" min="1" max="200" value="19" required class={ inputClass }/></label>
+						</div>
+						<button type="submit" class={ buttonClass }>Create and open</button>
+					</form>
+					<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/chapters") } class="space-y-2 rounded-md border border-border/60 p-3">
+						<h3 class="text-sm font-semibold">Add an existing quest</h3>
+						if len(d.OtherQuests) == 0 {
+							<p class="text-xs opacity-60">Every quest is already a chapter.</p>
+						} else {
+							<select name="questId" class={ inputClass } aria-label="Quest to add">
+								for _, q := range d.OtherQuests {
+									<option value={ q.ID }>{ q.Label }</option>
+								}
+							</select>
+							<button type="submit" class={ linkButton }>Add as next chapter</button>
+						}
+					</form>
+				</div>
+			</section>
+			<section class={ cardClass }>
 				<h2 class="mb-4 text-lg font-semibold">Start a quest</h2>
 				if len(d.Quests) == 0 {
 					<p class="text-sm opacity-70">No quests yet. Build one in the <a href="/maps" class="underline">map creator</a>.</p>
@@ -183,7 +280,7 @@ templ CampaignPage(d CampaignPageData) {
 							<span class="mb-1 block opacity-80">Quest</span>
 							<select name="questId" class={ inputClass }>
 								for _, q := range d.Quests {
-									<option value={ q.ID }>{ q.Label }</option>
+									<option value={ q.ID } selected?={ q.Selected }>{ q.Label }</option>
 								}
 							</select>
 						</label>

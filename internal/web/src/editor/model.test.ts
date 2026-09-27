@@ -15,6 +15,7 @@ import {
   placeMonster,
   placeNote,
   placeTeleport,
+  questFromSearch,
   placeTrap,
   rectTiles,
   removeItem,
@@ -314,6 +315,15 @@ describe('quest items', () => {
     q = removeItem(q, 'note-1');
     expect(q.notes).toEqual([]);
     expect(q.monsters).toHaveLength(1);
+  });
+});
+
+describe('questFromSearch', () => {
+  const quests = [{ id: 'q1' }, { id: 'q2' }];
+  test('opens the quest named in ?quest= when the board has it', () => {
+    expect(questFromSearch('?quest=q2', quests)).toBe('q2');
+    expect(questFromSearch('?quest=zzz', quests)).toBeNull();
+    expect(questFromSearch('', quests)).toBeNull();
   });
 });
 
