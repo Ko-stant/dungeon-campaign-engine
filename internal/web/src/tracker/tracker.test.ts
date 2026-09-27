@@ -82,6 +82,16 @@ describe('trackerView', () => {
     expect(trackerView(s, catalog, { fog: false }).drawnWalls).toEqual([{ x: 2, y: 1, orientation: 'vertical' }]);
   });
 
+  test('shows exit squares and room colors but not start squares', () => {
+    const s = state();
+    s.quest = { ...s.quest, startTiles: [{ x: 1, y: 1 }], exitTiles: [{ x: 4, y: 2 }] };
+    s.board = { ...s.board, regions: [1, 0, 0, 0, 0, 0, 0, 0], rooms: [{ id: 1, name: 'Hall', color: '#aa0000' }] };
+    const view = trackerView(s, catalog, { fog: false });
+    expect(view.exitTiles).toEqual([{ x: 4, y: 2 }]);
+    expect(view.startTiles).toEqual([]);
+    expect(view.roomColors?.get(1)).toBe('#aa0000');
+  });
+
   test('a found secret door is drawn as a normal door', () => {
     const s = state();
     s.doors[1] = { id: 'door-2', state: 'closed', found: true };

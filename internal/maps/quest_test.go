@@ -61,6 +61,7 @@ func validQuest(b *Board) *Quest {
 		Traps:          []Trap{{ID: "t1", Kind: "pit", X: 3, Y: 1, State: TrapHidden}},
 		Notes:          []Note{{ID: "n1", Label: "A", X: 2, Y: 1, Text: "A chest of gold."}},
 		StartTiles:     []Tile{{X: 2, Y: 1}},
+		ExitTiles:      []Tile{{X: 1, Y: 3}},
 	}
 }
 
@@ -133,6 +134,7 @@ func TestQuestCheckReportsAdvisoryIssues(t *testing.T) {
 	)
 	q.Traps = append(q.Traps, Trap{ID: "t-void", Kind: "pit", X: 5, Y: 1, State: TrapHidden})
 	q.StartTiles = append(q.StartTiles, Tile{X: 5, Y: 2})
+	q.ExitTiles = append(q.ExitTiles, Tile{X: 5, Y: 3}, Tile{X: 6, Y: 1})
 	q.BlockedSquares = append(q.BlockedSquares, Rect{ID: "b-off", X: 5, Y: 1, W: 2, H: 1})
 
 	want := []string{
@@ -142,6 +144,8 @@ func TestQuestCheckReportsAdvisoryIssues(t *testing.T) {
 		"door-off-board:d-zero",
 		"door-on-board-edge:d-edge",
 		"door-same-region:d-same",
+		"exit-off-board:",
+		"exit-on-void:",
 		"furniture-on-void:f-void",
 		"furniture-unknown-type:f-unknown",
 		"piece-off-board:m-off",
@@ -170,7 +174,7 @@ func TestNewQuestIsEmptyAndBoundToBoard(t *testing.T) {
 	if q.BoardChecksum != b.Checksum() || q.Version != CurrentVersion {
 		t.Fatalf("unexpected quest: %+v", q)
 	}
-	if q.Doors == nil || q.Furniture == nil || q.Monsters == nil || q.Traps == nil || q.Notes == nil || q.StartTiles == nil || q.BlockedSquares == nil {
+	if q.Doors == nil || q.Furniture == nil || q.Monsters == nil || q.Traps == nil || q.Notes == nil || q.StartTiles == nil || q.ExitTiles == nil || q.BlockedSquares == nil {
 		t.Fatal("layers should be empty slices, not nil, so they encode as []")
 	}
 	if err := q.Validate(); err != nil {

@@ -36,6 +36,7 @@ export interface BoardTheme {
   highlight: string;
   preview: string;
   start: string;
+  exit: string;
   note: string;
   trap: Record<TrapState, string>;
 }
@@ -66,6 +67,7 @@ export function readTheme(el: Element = document.documentElement): BoardTheme {
     highlight: rgb('warning', '250 204 21'),
     preview: rgb('warning', '250 204 21', 0.25),
     start: rgb('positive', '74 222 128', 0.22),
+    exit: 'rgb(217 70 239 / 0.3)',
     note: rgb('warning', '250 204 21'),
     trap: {
       hidden: rgb('border', '95 104 123', 0.7),
@@ -152,7 +154,8 @@ export class BoardRenderer {
     ctx.fillRect(0, 0, width, height);
 
     this.#drawTiles(view, m);
-    this.#drawStartTiles(view, m);
+    this.#drawSquareMarks(view.startTiles, this.#theme.start, m);
+    this.#drawSquareMarks(view.exitTiles, this.#theme.exit, m);
     this.#drawGrid(m);
     this.#drawBlockedSquares(view, m);
     this.#drawFurniture(view, m);
@@ -186,17 +189,27 @@ export class BoardRenderer {
       ctx.fillStyle = region === VOID ? this.#theme.rock : region === CORRIDOR ? this.#theme.corridor : this.#theme.room;
       const r = tileRect(m, tileAt(view.cols, i));
       ctx.fillRect(r.x, r.y, r.w, r.h);
+      const color = region > CORRIDOR ? view.roomColors?.get(region) : undefined;
+      if (color) {
+        // A translucent wash keeps the grid, walls and artwork readable.
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = color;
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+        ctx.restore();
+      }
     });
   }
 
-  #drawStartTiles(view: BoardView, m: GridMetrics): void {
-    if (!view.startTiles?.length) {
+  /** Fills marked squares (start or exit) with a translucent color. */
+  #drawSquareMarks(tiles: readonly TileCoord[] | undefined, color: string, m: GridMetrics): void {
+    if (!tiles?.length) {
       return;
     }
     const ctx = this.#ctx;
     ctx.save();
-    ctx.fillStyle = this.#theme.start;
-    for (const t of view.startTiles) {
+    ctx.fillStyle = color;
+    for (const t of tiles) {
       const r = tileRect(m, t);
       ctx.fillRect(r.x, r.y, r.w, r.h);
     }

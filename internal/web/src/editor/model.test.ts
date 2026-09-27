@@ -21,7 +21,9 @@ import {
   resizeBoard,
   rotateItem,
   setNoteText,
+  setRoomColor,
   toBoardView,
+  toggleExitTile,
   toggleDoorState,
   toggleStartTile,
   toggleWall,
@@ -77,6 +79,13 @@ describe('board painting', () => {
     b = addRoom(b).board;
     b = renameRoom(b, 2, '  Throne Room ');
     expect(b.rooms).toEqual([{ id: 1, name: 'Room 1' }, { id: 2, name: 'Throne Room' }]);
+  });
+
+  test('setRoomColor sets or clears a room\'s color', () => {
+    let b = addRoom(board(1, 1)).board;
+    b = setRoomColor(b, 1, '#3a7bd5');
+    expect(b.rooms[0]).toEqual({ id: 1, name: 'Room 1', color: '#3a7bd5' });
+    expect(setRoomColor(b, 1, '').rooms[0]).toEqual({ id: 1, name: 'Room 1' });
   });
 
   test('rectTiles covers an inclusive rectangle from either corner', () => {
@@ -226,6 +235,17 @@ describe('quest items', () => {
     expect(q.startTiles).toEqual([]);
   });
 
+  test('toggleExitTile adds and removes, separately from start squares', () => {
+    let q = toggleStartTile(emptyQuest(), { x: 2, y: 3 });
+    q = toggleExitTile(q, { x: 2, y: 3 });
+    expect(q.exitTiles).toEqual([{ x: 2, y: 3 }]);
+    expect(q.startTiles).toEqual([{ x: 2, y: 3 }]);
+    expect(toggleExitTile(q, { x: 2, y: 3 }).exitTiles).toEqual([]);
+    const older: QuestDoc = emptyQuest(); // quests saved before exits existed
+    delete older.exitTiles;
+    expect(toggleExitTile(older, { x: 1, y: 1 }).exitTiles).toEqual([{ x: 1, y: 1 }]);
+  });
+
   test('itemsAt finds items covering a tile, including rotated furniture footprints', () => {
     let q = placeFurniture(emptyQuest(), 'table', { x: 1, y: 1 }, 90); // 2 wide x 3 tall: x 1..2, y 1..3 (up from the anchor)
     q = placeMonster(q, 'orc', { x: 2, y: 3 });
@@ -265,6 +285,16 @@ describe('toBoardView', () => {
     expect(view.doors[0]).toEqual({ id: 'door-1', edge: { x: 2, y: 2, orientation: 'horizontal' }, kind: 'normal', state: 'closed' });
     expect(view.notes).toEqual([{ id: 'note-1', label: 'A', at: { x: 3, y: 3 } }]);
     expect(view.startTiles).toEqual([{ x: 4, y: 1 }]);
+  });
+
+  test('passes room colors and exit squares to the renderer', () => {
+    let b = addRoom(board(2, 1, CORRIDOR)).board;
+    b = setRoomColor(b, 1, '#3a7bd5');
+    const q = toggleExitTile(emptyQuest(), { x: 2, y: 1 });
+    const view = toBoardView(b, q, catalog);
+    expect(view.roomColors).toEqual(new Map([[1, '#3a7bd5']]));
+    expect(view.exitTiles).toEqual([{ x: 2, y: 1 }]);
+    expect(toBoardView(b, null, catalog).exitTiles).toEqual([]);
   });
 
   test('passes the board\'s drawn walls to the renderer', () => {

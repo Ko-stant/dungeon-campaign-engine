@@ -92,6 +92,8 @@ type Quest struct {
 	Traps            []Trap      `json:"traps"`
 	Notes            []Note      `json:"notes"`
 	StartTiles       []Tile      `json:"startTiles"`
+	// ExitTiles mark where the heroes leave the dungeon.
+	ExitTiles []Tile `json:"exitTiles,omitempty"`
 }
 
 // NewQuest returns an empty quest bound to the board's current layout.
@@ -106,6 +108,7 @@ func NewQuest(b *Board) *Quest {
 		Traps:          []Trap{},
 		Notes:          []Note{},
 		StartTiles:     []Tile{},
+		ExitTiles:      []Tile{},
 	}
 }
 
@@ -281,6 +284,14 @@ func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
 			add("start-off-board", "", "start tile (%d,%d) is off the board", s.X, s.Y)
 		case b.RegionAt(s.X, s.Y) == Void:
 			add("start-on-void", "", "start tile (%d,%d) is on solid rock", s.X, s.Y)
+		}
+	}
+	for _, s := range q.ExitTiles {
+		switch {
+		case !b.OnBoard(s.X, s.Y):
+			add("exit-off-board", "", "exit tile (%d,%d) is off the board", s.X, s.Y)
+		case b.RegionAt(s.X, s.Y) == Void:
+			add("exit-on-void", "", "exit tile (%d,%d) is on solid rock", s.X, s.Y)
 		}
 	}
 	return issues

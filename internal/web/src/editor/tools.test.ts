@@ -60,6 +60,7 @@ describe('applyClick (quest tools)', () => {
       { kind: 'trap', trapKind: 'pit' },
       { kind: 'note' },
       { kind: 'start' },
+      { kind: 'exit' },
     ];
     let d = doc();
     for (const t of tools) {
@@ -70,6 +71,7 @@ describe('applyClick (quest tools)', () => {
     expect(d.quest?.traps).toHaveLength(1);
     expect(d.quest?.notes[0]?.label).toBe('A');
     expect(d.quest?.startTiles).toEqual([{ x: 2, y: 1 }]);
+    expect(d.quest?.exitTiles).toEqual([{ x: 2, y: 1 }]);
   });
 
   test('erase removes the door under an edge, else the topmost item under a tile', () => {

@@ -87,6 +87,10 @@ export interface BoardView {
   notes?: readonly NoteView[];
   /** Hero start squares (editor / setup only). */
   startTiles?: readonly TileCoord[];
+  /** Exit squares, where the heroes leave the dungeon. */
+  exitTiles?: readonly TileCoord[];
+  /** Fill colors for rooms, by region id. */
+  roomColors?: ReadonlyMap<number, string>;
   /** Discovered tile indexes. Omitted means everything is shown (GM view). */
   discovered?: ReadonlySet<number>;
 }

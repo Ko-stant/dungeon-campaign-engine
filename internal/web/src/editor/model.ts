@@ -5,7 +5,7 @@
  */
 import { edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
 import { VOID, onBoard as squareOnBoard, regionAt, tileIndex, type BoardView, type FurnitureView, type PieceView } from '../board/model.ts';
-import { DOC_VERSION, type BoardDoc, type Catalog, type QuestDoc } from '../maps/types.ts';
+import { DOC_VERSION, type BoardDoc, type Catalog, type QuestDoc, type Room } from '../maps/types.ts';
 
 export const MAX_BOARD_SIZE = 200;
 
@@ -37,6 +37,23 @@ export function paintTiles(b: BoardDoc, tiles: readonly TileCoord[], region: num
 export function addRoom(b: BoardDoc, name?: string): { board: BoardDoc; roomId: number } {
   const roomId = Math.max(0, ...b.rooms.map((r) => r.id), ...b.regions) + 1;
   return { board: { ...b, rooms: [...b.rooms, { id: roomId, name: name ?? `Room ${roomId}` }] }, roomId };
+}
+
+/** Sets a room's "#rrggbb" fill, or clears it with an empty string. */
+export function setRoomColor(b: BoardDoc, id: number, color: string): BoardDoc {
+  return {
+    ...b,
+    rooms: b.rooms.map((r) => {
+      if (r.id !== id) {
+        return r;
+      }
+      const next: Room = { id: r.id, name: r.name };
+      if (color) {
+        next.color = color;
+      }
+      return next;
+    }),
+  };
 }
 
 export function renameRoom(b: BoardDoc, id: number, name: string): BoardDoc {
@@ -200,6 +217,15 @@ export function toggleStartTile(q: QuestDoc, at: TileCoord): QuestDoc {
   };
 }
 
+export function toggleExitTile(q: QuestDoc, at: TileCoord): QuestDoc {
+  const exits = q.exitTiles ?? [];
+  const has = exits.some((t) => t.x === at.x && t.y === at.y);
+  return {
+    ...q,
+    exitTiles: has ? exits.filter((t) => t.x !== at.x || t.y !== at.y) : [...exits, { x: at.x, y: at.y }],
+  };
+}
+
 export function rotateItem(q: QuestDoc, id: string): QuestDoc {
   return {
     ...q,
@@ -291,6 +317,8 @@ export function toBoardView(b: BoardDoc, q: QuestDoc | null, catalog: Catalog): 
     traps: (q?.traps ?? []).map((t) => ({ id: t.id, kind: t.kind, at: { x: t.x, y: t.y }, state: t.state })),
     notes: (q?.notes ?? []).map((n) => ({ id: n.id, label: n.label, at: { x: n.x, y: n.y } })),
     startTiles: (q?.startTiles ?? []).map((t) => ({ x: t.x, y: t.y })),
+    exitTiles: (q?.exitTiles ?? []).map((t) => ({ x: t.x, y: t.y })),
+    roomColors: new Map(b.rooms.filter((r) => r.color).map((r) => [r.id, r.color ?? ''])),
   };
 }
 

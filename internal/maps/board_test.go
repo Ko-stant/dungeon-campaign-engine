@@ -40,6 +40,11 @@ func TestBoardValidate(t *testing.T) {
 	if err := valid().Validate(); err != nil {
 		t.Fatalf("valid board: %v", err)
 	}
+	colored := valid()
+	colored.Rooms[0].Color = "#3A7bd5"
+	if err := colored.Validate(); err != nil {
+		t.Fatalf("a #rrggbb room color is fine: %v", err)
+	}
 
 	cases := map[string]func(b *Board){
 		"too wide":           func(b *Board) { b.Width = MaxBoardSize + 1 },
@@ -48,6 +53,8 @@ func TestBoardValidate(t *testing.T) {
 		"unknown room":       func(b *Board) { b.Regions[2] = 7 },
 		"duplicate room id":  func(b *Board) { b.Rooms = append(b.Rooms, Room{ID: 1, Name: "Again"}) },
 		"non-positive room":  func(b *Board) { b.Rooms = append(b.Rooms, Room{ID: 0, Name: "Zero"}) },
+		"room color name":    func(b *Board) { b.Rooms[0].Color = "red" },
+		"room color short":   func(b *Board) { b.Rooms[0].Color = "#abc" },
 		"future doc version": func(b *Board) { b.Version = CurrentVersion + 1 },
 		"top-left version 1": func(b *Board) { b.Version = 1 },
 		"missing version":    func(b *Board) { b.Version = 0 },

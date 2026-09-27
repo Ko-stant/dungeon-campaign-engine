@@ -16,6 +16,7 @@ import {
   placeTrap,
   rectTiles,
   removeItem,
+  toggleExitTile,
   toggleStartTile,
   toggleWall,
 } from './model.ts';
@@ -36,6 +37,7 @@ export type Tool =
   | { kind: 'trap'; trapKind: string }
   | { kind: 'note' }
   | { kind: 'start' }
+  | { kind: 'exit' }
   | { kind: 'select' }
   | { kind: 'erase' };
 
@@ -123,6 +125,8 @@ export function applyClick(d: EditorDoc, tool: Tool, target: ClickTarget, catalo
       return withQuest(d, placeNote(q, t, ''));
     case 'start':
       return withQuest(d, toggleStartTile(q, t));
+    case 'exit':
+      return withQuest(d, toggleExitTile(q, t));
     case 'erase': {
       const top = itemsAt(q, catalog, t)[0];
       return top ? withQuest(d, removeItem(q, top)) : d;

@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 )
 
 // CurrentVersion is the document schema version written by this code.
@@ -62,10 +63,25 @@ type Tile struct {
 	Y int `json:"y"`
 }
 
-// Room names a region id.
+// Room names a region id. Color is an optional "#rrggbb" fill so rooms are
+// easy to tell apart on screen.
 type Room struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Color string `json:"color,omitempty"`
+}
+
+// IsHexColor reports whether s is a "#rrggbb" color.
+func IsHexColor(s string) bool {
+	if len(s) != 7 || s[0] != '#' {
+		return false
+	}
+	for _, c := range s[1:] {
+		if !strings.ContainsRune("0123456789abcdefABCDEF", c) {
+			return false
+		}
+	}
+	return true
 }
 
 // Board is the dungeon layout document.
@@ -117,6 +133,9 @@ func (b *Board) Validate() error {
 		}
 		if rooms[r.ID] {
 			return fmt.Errorf("duplicate room id %d", r.ID)
+		}
+		if r.Color != "" && !IsHexColor(r.Color) {
+			return fmt.Errorf("room %d color %q is not a #rrggbb color", r.ID, r.Color)
 		}
 		rooms[r.ID] = true
 	}

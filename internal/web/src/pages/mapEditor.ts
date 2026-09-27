@@ -13,6 +13,7 @@ import {
   moveItem,
   removeItem,
   renameRoom,
+  setRoomColor,
   resizeBoard,
   rotateItem,
   setNoteText,
@@ -28,17 +29,18 @@ const TRAP_KINDS = ['pit', 'spear', 'falling_block', 'chest', 'other'] as const;
 
 type Layer = 'board' | 'quest';
 type BoardBrush = 'corridor' | 'void' | 'room' | 'wall';
-type QuestToolKind = 'select' | 'door' | 'blocked' | 'furniture' | 'monster' | 'trap' | 'note' | 'start' | 'erase';
+type QuestToolKind = 'select' | 'door' | 'blocked' | 'furniture' | 'monster' | 'trap' | 'note' | 'start' | 'exit' | 'erase';
 
 const QUEST_TOOLS: { kind: QuestToolKind; label: string; hint: string }[] = [
   { kind: 'select', label: 'Select / move', hint: 'Click a piece or door to edit it; drag a piece to move it.' },
   { kind: 'door', label: 'Door', hint: 'Click a wall edge: none, door, secret door, none.' },
   { kind: 'blocked', label: 'Blocked squares', hint: 'Drag to cover impassable squares.' },
-  { kind: 'furniture', label: 'Furniture', hint: 'Click the top-left square. R rotates the selection.' },
+  { kind: 'furniture', label: 'Furniture', hint: 'Click the bottom-left square. R rotates the selection.' },
   { kind: 'monster', label: 'Monster', hint: 'Click a square to place.' },
   { kind: 'trap', label: 'Trap', hint: 'Click a square to place (starts hidden).' },
   { kind: 'note', label: 'Note', hint: 'Click a square, then type the note text.' },
-  { kind: 'start', label: 'Start square', hint: 'Click to toggle a hero start square.' },
+  { kind: 'start', label: 'Start square', hint: 'Click to toggle a hero start square (green).' },
+  { kind: 'exit', label: 'Exit square', hint: 'Click to toggle an exit square (magenta).' },
   { kind: 'erase', label: 'Erase', hint: 'Click a piece or door to remove it.' },
 ];
 
@@ -566,6 +568,17 @@ async function main(): Promise<void> {
             },
           }, String(room.id)),
           nameField,
+          h('input', {
+            type: 'color',
+            class: 'h-7 w-8 shrink-0 cursor-pointer rounded border border-border/60 bg-surface',
+            value: room.color ?? '#1a1d24',
+            title: 'Room color',
+            'aria-label': `Color of room ${room.id}`,
+            onchange: (e: Event) => { commit({ ...doc(), board: setRoomColor(doc().board, room.id, (e.target as HTMLInputElement).value) }); },
+          }),
+          room.color
+            ? h('button', { type: 'button', class: 'text-xs opacity-60 hover:opacity-100', title: 'Clear color', 'aria-label': `Clear color of room ${room.id}`, onclick: () => { commit({ ...doc(), board: setRoomColor(doc().board, room.id, '') }); } }, '×')
+            : null,
           h('span', { class: 'w-8 text-right text-xs opacity-60' }, String(counts.get(room.id) ?? 0)),
         );
       });

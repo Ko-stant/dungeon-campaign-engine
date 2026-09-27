@@ -8,6 +8,8 @@ import type { DoorKind, DoorState, TrapState } from '../board/model.ts';
 export interface Room {
   id: number;
   name: string;
+  /** Optional "#rrggbb" fill, to tell rooms apart on screen. */
+  color?: string;
 }
 
 /**
@@ -89,6 +91,8 @@ export interface QuestDoc {
   traps: TrapDoc[];
   notes: NoteDoc[];
   startTiles: TileCoord[];
+  /** Where the heroes leave the dungeon. Omitted when empty. */
+  exitTiles?: TileCoord[];
 }
 
 export interface Issue {
