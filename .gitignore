@@ -11,3 +11,6 @@ build/
 docs/base_campaign_reference
 # Local regression baselines (may contain copyrighted quest text)
 docs/baseline/
+
+# TypeScript client build output (bun scripts/build.ts)
+internal/web/static/dist/

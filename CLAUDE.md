@@ -28,9 +28,19 @@ This is a dungeon campaign engine for HeroQuest built with Go, featuring real-ti
 - `make db-migrate-new` - Create new migration file
 - `make db-psql` - Connect to database shell
 
-### Frontend Assets
-- `npm run tailwind:build` - Build TailwindCSS (production)
-- `npm run tailwind:watch` - Watch and rebuild TailwindCSS (development)
+### Frontend (Bun + TypeScript)
+- `bun install` - Install JS dependencies (Bun is the package manager and runtime; Node is not required)
+- `bun test` / `make test-js` - Run the TypeScript unit tests (`bun:test`)
+- `bun run typecheck` - Type-check with `tsc` (TypeScript pinned to 6.0.x until typescript-eslint supports 7)
+- `bun run lint` - ESLint 10 with typescript-eslint (type-checked rules)
+- `bun run build:web` / `bun run watch:web` - Bundle `internal/web/src/pages/*.ts` into `internal/web/static/dist/`
+- `bun run tailwind:build` / `bun run tailwind:watch` - Tailwind CSS v4 (CSS-first config in `internal/web/static/styles/index.css`)
+
+### Client-side development rules
+- New client code is TypeScript under `internal/web/src/`, written **test-first**: add the failing `*.test.ts` (bun:test) before the implementation.
+- Keep pure logic (geometry, models, hit-testing, command builders, serialization) separate from DOM/canvas code so it is testable without a browser; canvas drawing is verified visually.
+- `internal/web/static/js/` is the legacy vanilla client: reference only, never converted, excluded from lint, deleted when the multiplayer code is removed.
+- Board conventions: region ids are row-major (`-1` void, `0` corridor, `>0` room); a vertical edge (x,y) is the left side of tile (x,y), a horizontal edge its top side; walls exist wherever neighbouring regions differ.
 
 ## Architecture
 

@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-27 13:20 EDT
+**Last Updated**: 2026-09-27 13:30 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -182,11 +182,36 @@ same 19, no new failures.
       they are now transparent instead of the browser's gray;
     - the canvas board renders the same.
 
-## Phase 4 - Fresh TS client foundation (test-first)
-- [ ] tsconfig (TypeScript pinned 6.0.3; typescript-eslint doesn't support TS 7 yet)
-- [ ] Bun build pipeline + watch with templ proxy reload
-- [ ] `src/board/geometry.ts`, `types.ts`, `renderer.ts`, and the `/dev/board`
-      comparison page
+## Phase 4 - Fresh TS client foundation (test-first) [DONE 2026-09-27]
+
+- [x] Tooling: TypeScript 6.0.3 (pinned; typescript-eslint 8.70 needs <6.1), typescript-eslint
+      with `strictTypeChecked` + `stylisticTypeChecked`, `@types/bun`. `tsconfig.json` is
+      strict with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.
+      `make lint` = golangci-lint + ESLint + `tsc`. ESLint uses `defineConfig`
+      (`tseslint.config` is deprecated).
+- [x] Build pipeline: `scripts/build.ts` bundles every `internal/web/src/pages/*.ts` into
+      `internal/web/static/dist/<name>.js` (gitignored, excluded from Air). `make build`
+      runs it with `--minify`. `make dev` runs `watch:web`, which rebuilds on change and
+      calls `go tool templ generate --notify-proxy` to reload the browser.
+- [x] `internal/web.NoCache` (Go, test-first) sets `Cache-Control: no-cache` on `/static/`,
+      so rebuilt CSS/JS is never served stale; unchanged files still get a cheap 304.
+- [x] Test-first modules, 35 bun:test tests:
+  - `src/board/geometry.ts`: grid metrics for any board size (no 26/19 fallback),
+    tile rects, pixel-to-tile and pixel-to-edge hit-testing, edge/tile relations,
+    rotated furniture footprints, furniture draw box, door marker rects.
+  - `src/board/model.ts`: `BoardView` types. Regions are `-1` void, `0` corridor,
+    `>0` room; walls are derived wherever neighbouring regions differ, with
+    off-board treated as void.
+  - `src/board/renderer.ts` (canvas, checked visually): draws a `BoardView` passed in,
+    with no global state, so the editor, tracker and future TV view share it.
+- [x] New `components.Page(title, entry)` templ shell for TS-driven pages.
+- [x] Throwaway `/dev/board` + `/dev/board.json` (`cmd/server/dev_board.go`, deleted in
+      Phase 8). It renders board.json + quest-01 through the new renderer. Verified:
+      rooms, walls, doors, rotated furniture, monsters and blocked squares all in the
+      right places; hover hit-testing reports `door-1` as `edge horizontal (3,18)` and
+      tile (2,16) as region 20 (the starting room).
+- [x] Documented the test-first convention and new commands in `CLAUDE.md` and
+      `docs/IMPORTANT.md`.
 
 ## Phase 5 - Postgres persistence
 ## Phase 6 - Map creator
@@ -201,9 +226,6 @@ same 19, no new failures.
 - The local nvm Node 22.18.0 is an x64 build under Rosetta (Node 20.19.1 is arm64).
   The project no longer needs Node, but reinstalling Node 22 as arm64 would avoid
   surprises in editor tooling.
-- The Go static file server sends no cache headers, so browsers keep stale CSS/JS
-  across rebuilds (seen during the Tailwind check). Phase 4 adds
-  `Cache-Control: no-cache` in dev.
 - Optional: pin the Tailwind v3 palette in `@theme` if the v4 color shift is unwanted.
 - Move to TypeScript 7 when typescript-eslint supports it.
 - Xcode.app 26.2 is behind CLT 26.6. Update from the App Store when convenient.

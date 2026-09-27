@@ -44,16 +44,16 @@ tools:
 	@$(GO) install $(GOOSE_MODULE)@$(GOOSE_VERSION)
 
 dev:
-	@echo "==> Starting development mode (tailwind:watch + Templ --watch + Air)..."
+	@echo "==> Starting development mode (tailwind + TS watch + templ proxy + Air)..."
 	bun run tailwind:build && \
 	bun run tailwind:watch & \
 	PID_TW=$$!; \
+	bun run watch:web & \
+	PID_WEB=$$!; \
 	$(GO) tool templ generate --watch --proxy="http://localhost:$(APP_PORT)" --open-browser=false -path=./internal/web/views & \
 	PID_TEMPL=$$!; \
-	trap "kill $$PID_TW $$PID_TEMPL 2>/dev/null || true" EXIT; \
+	trap "kill $$PID_TW $$PID_WEB $$PID_TEMPL 2>/dev/null || true" EXIT; \
 	$(TOOLS_DIRECTORY)/air -c .air.toml
-
-
 
 run:
 	@$(GO) tool templ generate -path=./internal/web/views
@@ -78,6 +78,8 @@ test-all: test test-js
 
 lint:
 	@$(TOOLS_DIRECTORY)/golangci-lint run
+	@bun run lint
+	@bun run typecheck
 
 fmt:
 	@$(GO) fmt $(GO_PACKAGES)
@@ -133,5 +135,6 @@ tailwind-watch:
 	@bun run tailwind:watch
 
 build: tailwind-build
+	@bun run build:web
 	@$(GO) tool templ generate -path=./internal/web/views
 	@$(GO) build -trimpath -ldflags="-s -w" -o $(BINARY_OUTPUT_PATH) ./cmd/server

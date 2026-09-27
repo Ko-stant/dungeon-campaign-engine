@@ -13,6 +13,7 @@ import (
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/ws"
 )
@@ -213,10 +214,11 @@ func mainWithLobby() {
 	// Setup HTTP handlers
 	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir("internal/web/static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+	mux.Handle("/static/", web.NoCache(http.StripPrefix("/static/", fileServer)))
 
 	assetsServer := http.FileServer(http.Dir("."))
 	mux.Handle("/assets/", http.StripPrefix("/", assetsServer))
+	registerDevBoardRoutes(mux)
 
 	// Register debug endpoints if enabled
 	if debugConfig.Enabled {

@@ -13,6 +13,7 @@ import (
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/ws"
 )
@@ -93,7 +94,7 @@ func mainWithGameManager() {
 	// Setup HTTP handlers
 	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir("internal/web/static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+	mux.Handle("/static/", web.NoCache(http.StripPrefix("/static/", fileServer)))
 
 	// Serve assets directory for furniture images and other game assets
 	assetsServer := http.FileServer(http.Dir("."))

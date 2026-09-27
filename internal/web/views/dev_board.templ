@@ -1,0 +1,18 @@
+package views
+
+import "github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
+
+// DevBoardPage is a throwaway page that draws the base board and quest-01
+// through the new TypeScript renderer, for side-by-side comparison with the
+// legacy /gm view. Deleted in Phase 8.
+templ DevBoardPage() {
+	@components.Page("Board renderer check", "devBoard") {
+		<div class="flex flex-col h-screen p-3 gap-2">
+			<div class="flex items-center justify-between text-sm">
+				<h1 class="font-semibold">Board renderer check</h1>
+				<span id="hover-info" class="font-mono opacity-70">hover the board</span>
+			</div>
+			<canvas id="board" class="flex-1 min-h-0 w-full rounded-lg border border-border/60"></canvas>
+		</div>
+	}
+}

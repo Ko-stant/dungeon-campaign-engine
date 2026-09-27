@@ -7,14 +7,20 @@
     "tailwind:watch": "bunx --bun tailwindcss -i ./internal/web/static/styles/index.css -o ./internal/web/static/styles/app.css --watch=always",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "bun test --pass-with-no-tests"
+    "test": "bun test --pass-with-no-tests",
+    "typecheck": "tsc -p .",
+    "build:web": "bun scripts/build.ts --minify",
+    "watch:web": "bun scripts/build.ts --watch"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/cli": "^4.3.3",
+    "@types/bun": "^1.4.2",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.70.1"
   }
 }
