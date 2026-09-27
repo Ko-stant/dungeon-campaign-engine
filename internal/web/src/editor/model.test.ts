@@ -14,6 +14,7 @@ import {
   placeFurniture,
   placeMonster,
   placeNote,
+  placeTeleport,
   placeTrap,
   rectTiles,
   removeItem,
@@ -23,6 +24,7 @@ import {
   setBlockedHiddenDoor,
   setNoteText,
   setRoomColor,
+  setTeleportLabel,
   toBoardView,
   toggleExitTile,
   toggleDoorState,
@@ -277,6 +279,24 @@ describe('quest items', () => {
     q = setBlockedHiddenDoor(q, 'blocked-1', false);
     expect(q.blockedSquares[0]).toEqual({ id: 'blocked-1', x: 4, y: 15, w: 1, h: 1 });
     expect(toBoardView(board(5, 20), setBlockedHiddenDoor(q, 'blocked-1', true), catalog).blockedSquares).toEqual([{ id: 'blocked-1', x: 4, y: 15, w: 1, h: 1, hiddenDoor: true }]);
+  });
+
+  test('teleport squares can be placed, labelled, found, moved and removed', () => {
+    let q = placeTeleport(emptyQuest(), { x: 2, y: 2 });
+    q = placeTeleport(q, { x: 5, y: 5 });
+    expect(q.teleports).toEqual([{ id: 'teleport-1', x: 2, y: 2 }, { id: 'teleport-2', x: 5, y: 5 }]);
+    q = setTeleportLabel(q, 'teleport-1', ' 1 ');
+    expect(q.teleports?.[0]).toEqual({ id: 'teleport-1', x: 2, y: 2, label: '1' });
+    expect(setTeleportLabel(q, 'teleport-1', '').teleports?.[0]).toEqual({ id: 'teleport-1', x: 2, y: 2 });
+    expect(itemsAt(q, catalog, { x: 2, y: 2 })).toEqual(['teleport-1']);
+    q = moveItem(q, 'teleport-2', { x: 6, y: 6 });
+    expect(q.teleports?.[1]).toMatchObject({ x: 6, y: 6 });
+    expect(removeItem(q, 'teleport-1').teleports).toEqual([{ id: 'teleport-2', x: 6, y: 6 }]);
+    expect(toBoardView(board(8, 8), q, catalog).teleports).toEqual([{ id: 'teleport-1', at: { x: 2, y: 2 }, label: '1' }, { id: 'teleport-2', at: { x: 6, y: 6 } }]);
+    const older: QuestDoc = emptyQuest(); // quests saved before teleports existed
+    delete older.teleports;
+    expect(placeTeleport(older, { x: 1, y: 1 }).teleports).toHaveLength(1);
+    expect(toBoardView(board(2, 2), older, catalog).teleports).toEqual([]);
   });
 
   test('custom monsters cover their whole footprint', () => {

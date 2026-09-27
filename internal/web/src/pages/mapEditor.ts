@@ -15,6 +15,7 @@ import {
   renameRoom,
   setBlockedHiddenDoor,
   setRoomColor,
+  setTeleportLabel,
   resizeBoard,
   rotateItem,
   setNoteText,
@@ -27,11 +28,11 @@ import { ApiError, createApi } from '../maps/api.ts';
 import { monsterOptionLabel, type Issue, type QuestSummary } from '../maps/types.ts';
 import { h, replaceChildren } from '../ui/dom.ts';
 
-const TRAP_KINDS = ['pit', 'spear', 'falling_block', 'chest', 'other'] as const;
+const TRAP_KINDS = ['pit', 'spear', 'falling_block', 'chest', 'teleport', 'other'] as const;
 
 type Layer = 'board' | 'quest';
 type BoardBrush = 'corridor' | 'void' | 'room' | 'wall';
-type QuestToolKind = 'select' | 'door' | 'blocked' | 'furniture' | 'monster' | 'trap' | 'note' | 'start' | 'exit' | 'erase';
+type QuestToolKind = 'select' | 'door' | 'blocked' | 'furniture' | 'monster' | 'trap' | 'note' | 'start' | 'exit' | 'teleport' | 'erase';
 
 const QUEST_TOOLS: { kind: QuestToolKind; label: string; hint: string }[] = [
   { kind: 'select', label: 'Select / move', hint: 'Click a piece or door to edit it; drag a piece to move it.' },
@@ -43,6 +44,7 @@ const QUEST_TOOLS: { kind: QuestToolKind; label: string; hint: string }[] = [
   { kind: 'note', label: 'Note', hint: 'Click a square, then type the note text.' },
   { kind: 'start', label: 'Start square', hint: 'Click to toggle a hero start square (green).' },
   { kind: 'exit', label: 'Exit square', hint: 'Click to toggle an exit square (magenta).' },
+  { kind: 'teleport', label: 'Teleport', hint: 'Click to place a teleport square. Select one to give it a label (e.g. 1) to pair it with another. For a hidden teleport, use the Trap tool\'s "teleport" kind.' },
   { kind: 'erase', label: 'Erase', hint: 'Click a piece or door to remove it.' },
 ];
 
@@ -752,6 +754,7 @@ async function main(): Promise<void> {
     const trap = q?.traps.find((t) => t.id === id);
     const note = q?.notes.find((n) => n.id === id);
     const blocked = q?.blockedSquares.find((r) => r.id === id);
+    const teleport = q?.teleports?.find((t) => t.id === id);
 
     if (door && q) {
       rows.push(
@@ -791,6 +794,19 @@ async function main(): Promise<void> {
             }
           },
         }, note.text),
+      );
+    } else if (teleport && q) {
+      rows.push(
+        h('p', { class: 'text-sm' }, `Teleport square at (${teleport.x}, ${teleport.y})`),
+        h('label', { class: 'block space-y-1 text-sm' },
+          h('span', { class: 'opacity-80' }, 'Label (pairs it with others)'),
+          h('input', {
+            class: input,
+            value: teleport.label ?? '',
+            maxlength: 8,
+            placeholder: 'e.g. 1',
+            onchange: (e: Event) => { commit({ ...doc(), quest: setTeleportLabel(q, teleport.id, (e.target as HTMLInputElement).value) }); },
+          })),
       );
     } else if (blocked && q) {
       rows.push(

@@ -15,6 +15,7 @@ import {
   placeFurniture,
   placeMonster,
   placeNote,
+  placeTeleport,
   placeTrap,
   rectTiles,
   removeItem,
@@ -40,6 +41,7 @@ export type Tool =
   | { kind: 'note' }
   | { kind: 'start' }
   | { kind: 'exit' }
+  | { kind: 'teleport' }
   | { kind: 'select' }
   | { kind: 'erase' };
 
@@ -129,6 +131,8 @@ export function applyClick(d: EditorDoc, tool: Tool, target: ClickTarget, catalo
       return withQuest(d, toggleStartTile(q, t));
     case 'exit':
       return withQuest(d, toggleExitTile(q, t));
+    case 'teleport':
+      return withQuest(d, placeTeleport(q, t));
     case 'erase': {
       const top = itemsAt(q, catalog, t)[0];
       return top ? withQuest(d, removeItem(q, top)) : d;

@@ -92,6 +92,12 @@ export interface TrapView {
   state: TrapState;
 }
 
+export interface TeleportView {
+  id: string;
+  at: TileCoord;
+  label?: string;
+}
+
 export interface NoteView {
   id: string;
   label: string;
@@ -117,6 +123,8 @@ export interface BoardView {
   startTiles?: readonly TileCoord[];
   /** Exit squares, where the heroes leave the dungeon. */
   exitTiles?: readonly TileCoord[];
+  /** Teleport squares. */
+  teleports?: readonly TeleportView[];
   /** Fill colors for rooms, by region id. */
   roomColors?: ReadonlyMap<number, string>;
   /** Discovered tile indexes. Omitted means everything is shown (GM view). */

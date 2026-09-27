@@ -63,6 +63,7 @@ describe('applyClick (quest tools)', () => {
       { kind: 'note' },
       { kind: 'start' },
       { kind: 'exit' },
+      { kind: 'teleport' },
     ];
     let d = doc();
     for (const t of tools) {
@@ -74,6 +75,7 @@ describe('applyClick (quest tools)', () => {
     expect(d.quest?.notes[0]?.label).toBe('A');
     expect(d.quest?.startTiles).toEqual([{ x: 2, y: 1 }]);
     expect(d.quest?.exitTiles).toEqual([{ x: 2, y: 1 }]);
+    expect(d.quest?.teleports).toEqual([{ id: 'teleport-1', x: 2, y: 1 }]);
   });
 
   test('erase removes the door under an edge, else the topmost item under a tile', () => {

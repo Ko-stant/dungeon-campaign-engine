@@ -2,6 +2,7 @@ package maps
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -62,6 +63,7 @@ func validQuest(b *Board) *Quest {
 		Notes:          []Note{{ID: "n1", Label: "A", X: 2, Y: 1, Text: "A chest of gold."}},
 		StartTiles:     []Tile{{X: 2, Y: 1}},
 		ExitTiles:      []Tile{{X: 1, Y: 3}},
+		Teleports:      []Teleport{{ID: "tp1", X: 3, Y: 3, Label: "1"}},
 	}
 }
 
@@ -95,6 +97,8 @@ func TestQuestValidateRejectsMalformedData(t *testing.T) {
 		"empty blocked":     func(q *Quest) { q.BlockedSquares[0].W = 0 },
 		"duplicate id":      func(q *Quest) { q.Monsters[0].ID = "d1" },
 		"missing id":        func(q *Quest) { q.Notes[0].ID = "" },
+		"teleport id":       func(q *Quest) { q.Teleports[0].ID = "d1" },
+		"long label":        func(q *Quest) { q.Teleports[0].Label = "this label is far too long" },
 		"furniture type":    func(q *Quest) { q.Furniture[0].Type = "" },
 		"monster type":      func(q *Quest) { q.Monsters[0].Type = "" },
 		"negative override": func(q *Quest) { body := -1; q.Monsters[0].Body = &body },
@@ -144,25 +148,28 @@ func TestQuestCheckReportsAdvisoryIssues(t *testing.T) {
 		Furniture{ID: "f-unknown", Type: "harpsichord", X: 3, Y: 3},
 	)
 	q.Traps = append(q.Traps, Trap{ID: "t-void", Kind: "pit", X: 5, Y: 1, State: TrapHidden})
+	q.Teleports = append(q.Teleports, Teleport{ID: "tp-void", X: 5, Y: 2}, Teleport{ID: "tp-off", X: 0, Y: 2})
 	q.StartTiles = append(q.StartTiles, Tile{X: 5, Y: 2})
 	q.ExitTiles = append(q.ExitTiles, Tile{X: 5, Y: 3}, Tile{X: 6, Y: 1})
 	q.BlockedSquares = append(q.BlockedSquares, Rect{ID: "b-off", X: 5, Y: 1, W: 2, H: 1})
 
 	want := []string{
 		"blocked-off-board:b-off",
+		"door-inside-room:d-same",
 		"door-into-void:d-void",
 		"door-off-board:d-far",
 		"door-off-board:d-zero",
 		"door-on-board-edge:d-edge",
-		"door-same-region:d-same",
 		"exit-off-board:",
 		"exit-on-void:",
 		"furniture-on-void:f-void",
 		"furniture-unknown-type:f-unknown",
 		"piece-off-board:m-off",
 		"piece-off-board:m-zero",
+		"piece-off-board:tp-off",
 		"piece-on-void:m-void",
 		"piece-on-void:t-void",
+		"piece-on-void:tp-void",
 		"start-on-void:",
 	}
 	if got := issueCodes(q.Check(b, sizes)); !slices.Equal(got, want) {
@@ -185,7 +192,7 @@ func TestNewQuestIsEmptyAndBoundToBoard(t *testing.T) {
 	if q.BoardChecksum != b.Checksum() || q.Version != CurrentVersion {
 		t.Fatalf("unexpected quest: %+v", q)
 	}
-	if q.Doors == nil || q.Furniture == nil || q.Monsters == nil || q.Traps == nil || q.Notes == nil || q.StartTiles == nil || q.ExitTiles == nil || q.BlockedSquares == nil {
+	if q.Doors == nil || q.Furniture == nil || q.Monsters == nil || q.Traps == nil || q.Notes == nil || q.StartTiles == nil || q.ExitTiles == nil || q.Teleports == nil || q.BlockedSquares == nil {
 		t.Fatal("layers should be empty slices, not nil, so they encode as []")
 	}
 	if err := q.Validate(); err != nil {
@@ -193,18 +200,34 @@ func TestNewQuestIsEmptyAndBoundToBoard(t *testing.T) {
 	}
 }
 
-func TestDoorOnADrawnCorridorWallIsFine(t *testing.T) {
+func TestDoorsAndGatesAcrossACorridorAreFine(t *testing.T) {
 	b := testBoard()
-	// Column x3 is corridor from y1 to y3; draw a wall across it between y1 and y2.
-	b.DrawnWalls = []Edge{{X: 3, Y: 2, Orientation: Horizontal}}
 	q := validQuest(b)
-	q.Doors = append(q.Doors, Door{ID: "d-drawn", Edge: Edge{X: 3, Y: 2, Orientation: Horizontal}, Kind: DoorNormal, State: DoorClosed})
+	// Column x3 is corridor from y1 to y3: a gate across it and a secret door
+	// behind rubble are normal HeroQuest layouts, not misplaced doors.
+	q.Doors = append(q.Doors,
+		Door{ID: "d-gate", Edge: Edge{X: 3, Y: 2, Orientation: Horizontal}, Kind: DoorGate, State: DoorClosed, Locked: true},
+		Door{ID: "d-rubble", Edge: Edge{X: 3, Y: 3, Orientation: Horizontal}, Kind: DoorSecret, State: DoorClosed},
+	)
 	if issues := q.Check(b, sizes); len(issues) != 0 {
 		t.Fatalf("Check: %+v", issues)
 	}
-	b.DrawnWalls = nil
+}
+
+func TestDoorInsideARoomIsFlaggedUnlessAWallIsDrawnThere(t *testing.T) {
+	b := testBoard()
+	q := validQuest(b)
+	q.Doors = append(q.Doors, Door{ID: "d-in", Edge: Edge{X: 2, Y: 2, Orientation: Vertical}, Kind: DoorNormal, State: DoorClosed})
+	issues := q.Check(b, sizes)
+	if got := issueCodes(issues); !slices.Equal(got, []string{"door-inside-room:d-in"}) {
+		t.Fatalf("issues: %v", got)
+	}
+	if want := "d-in is inside West at (2,2), not on a wall"; !strings.Contains(issues[0].Message, want) {
+		t.Fatalf("message %q should contain %q", issues[0].Message, want)
+	}
+	b.DrawnWalls = []Edge{{X: 2, Y: 2, Orientation: Vertical}}
 	q.BoardChecksum = b.Checksum()
-	if got := issueCodes(q.Check(b, sizes)); !slices.Equal(got, []string{"door-same-region:d-drawn"}) {
-		t.Fatalf("without the drawn wall: %v", got)
+	if issues := q.Check(b, sizes); len(issues) != 0 {
+		t.Fatalf("a door on a drawn wall inside a room is fine: %+v", issues)
 	}
 }

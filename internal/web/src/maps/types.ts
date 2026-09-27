@@ -75,6 +75,14 @@ export interface TrapDoc {
   state: TrapState;
 }
 
+/** A teleport square; the optional short label pairs squares up. */
+export interface TeleportDoc {
+  id: string;
+  x: number;
+  y: number;
+  label?: string;
+}
+
 export interface NoteDoc {
   id: string;
   label: string;
@@ -97,6 +105,8 @@ export interface QuestDoc {
   startTiles: TileCoord[];
   /** Where the heroes leave the dungeon. Missing or null on quests saved before exits existed. */
   exitTiles?: TileCoord[] | null;
+  /** Teleport squares. Missing or null on quests saved before teleports existed. */
+  teleports?: TeleportDoc[] | null;
 }
 
 export interface Issue {

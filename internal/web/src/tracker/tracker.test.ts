@@ -122,6 +122,12 @@ describe('trackerView', () => {
     expect(pieceAt(s, { x: 2, y: 2 })).toBe('monster-3');
   });
 
+  test('shows teleport squares', () => {
+    const s = state();
+    s.quest = { ...s.quest, teleports: [{ id: 'teleport-1', x: 1, y: 1, label: 'A' }] };
+    expect(trackerView(s, catalog, { fog: false }).teleports).toEqual([{ id: 'teleport-1', at: { x: 1, y: 1 }, label: 'A' }]);
+  });
+
   test('a found secret door is drawn as a normal door', () => {
     const s = state();
     s.doors[1] = { id: 'door-2', state: 'closed', found: true, locked: false };

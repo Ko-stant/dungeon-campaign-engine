@@ -83,6 +83,18 @@ type Note struct {
 	Text  string `json:"text"`
 }
 
+// Teleport is a teleport square. Label (optional, short) lets the GM pair
+// squares up, e.g. two squares labelled "1". What it does is up to the GM.
+type Teleport struct {
+	ID    string `json:"id"`
+	X     int    `json:"x"`
+	Y     int    `json:"y"`
+	Label string `json:"label,omitempty"`
+}
+
+// MaxTeleportLabel bounds a teleport label's length in characters.
+const MaxTeleportLabel = 8
+
 // Quest is the set of layers placed on a board.
 type Quest struct {
 	Version          int         `json:"version"`
@@ -98,6 +110,8 @@ type Quest struct {
 	StartTiles       []Tile      `json:"startTiles"`
 	// ExitTiles mark where the heroes leave the dungeon.
 	ExitTiles []Tile `json:"exitTiles"`
+	// Teleports are teleport squares.
+	Teleports []Teleport `json:"teleports"`
 }
 
 // NewQuest returns an empty quest bound to the board's current layout.
@@ -113,6 +127,7 @@ func NewQuest(b *Board) *Quest {
 		Notes:          []Note{},
 		StartTiles:     []Tile{},
 		ExitTiles:      []Tile{},
+		Teleports:      []Teleport{},
 	}
 }
 
@@ -192,6 +207,12 @@ func (q *Quest) Validate() error {
 	for _, n := range q.Notes {
 		id("note", n.ID)
 	}
+	for _, tp := range q.Teleports {
+		id("teleport", tp.ID)
+		if len([]rune(tp.Label)) > MaxTeleportLabel {
+			errs = append(errs, fmt.Errorf("teleport %q: label must be at most %d characters", tp.ID, MaxTeleportLabel))
+		}
+	}
 	return errors.Join(errs...)
 }
 
@@ -233,8 +254,11 @@ func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
 			add("door-off-board", d.ID, "door %s is off the board", d.ID)
 		case boundary:
 			add("door-on-board-edge", d.ID, "door %s is on the outer edge of the board", d.ID)
-		case ra == rb && !b.IsWall(e):
-			add("door-same-region", d.ID, "door %s does not separate two different areas", d.ID)
+		case ra == rb && ra > Corridor && !b.IsWall(e):
+			// A door in the open middle of a room is almost always a misclick.
+			// Doors and gates across a corridor are normal, so they are not flagged.
+			add("door-inside-room", d.ID, "door %s is inside %s at (%d,%d), not on a wall; move it onto the room's wall or draw a wall there",
+				d.ID, b.roomName(ra), e.X, e.Y)
 		case ra == Void || rb == Void:
 			add("door-into-void", d.ID, "door %s opens into solid rock", d.ID)
 		}
@@ -281,6 +305,9 @@ func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
 	for _, n := range q.Notes {
 		piece(n.ID, n.X, n.Y)
 	}
+	for _, tp := range q.Teleports {
+		piece(tp.ID, tp.X, tp.Y)
+	}
 
 	for _, s := range q.StartTiles {
 		switch {
@@ -299,6 +326,16 @@ func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
 		}
 	}
 	return issues
+}
+
+// roomName returns a room's name, or "room N" when it has none.
+func (b *Board) roomName(id int) string {
+	for _, r := range b.Rooms {
+		if r.ID == id && r.Name != "" {
+			return r.Name
+		}
+	}
+	return fmt.Sprintf("room %d", id)
 }
 
 // areaIssue returns "off-board", "on-void" or "" for a rectangle of tiles.

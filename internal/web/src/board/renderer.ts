@@ -39,6 +39,7 @@ export interface BoardTheme {
   preview: string;
   start: string;
   exit: string;
+  teleport: string;
   note: string;
   trap: Record<TrapState, string>;
 }
@@ -72,6 +73,7 @@ export function readTheme(el: Element = document.documentElement): BoardTheme {
     preview: rgb('warning', '250 204 21', 0.25),
     start: rgb('positive', '74 222 128', 0.22),
     exit: 'rgb(217 70 239 / 0.3)',
+    teleport: 'rgb(45 212 191)',
     note: rgb('warning', '250 204 21'),
     trap: {
       hidden: rgb('border', '95 104 123', 0.7),
@@ -174,6 +176,7 @@ export class BoardRenderer {
     this.#drawBlockedSquares(view, m);
     this.#drawFurniture(view, m);
     this.#drawTraps(view, m);
+    this.#drawTeleports(view, m, highlights.selectedId ?? null);
     this.#drawWalls(view, m);
     this.#drawDoors(view, m, highlights.selectedId ?? null);
     this.#drawPieces(view.monsters, m, this.#theme.monster, highlights.selectedId ?? null);
@@ -418,6 +421,19 @@ export class BoardRenderer {
       if (trap.state === 'hidden') {
         ctx.setLineDash([3, 3]);
       }
+      if (trap.kind === 'teleport') {
+        if (trap.state === 'triggered') {
+          ctx.save();
+          ctx.globalAlpha = 0.3;
+          ctx.beginPath();
+          ctx.arc(r.cx, r.cy, m.tile * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        this.#swirl(r.cx, r.cy, m.tile * 0.36, Math.max(1.5, m.tile * 0.07));
+        ctx.restore();
+        continue;
+      }
       ctx.beginPath();
       ctx.moveTo(r.cx, r.cy - s);
       ctx.lineTo(r.cx + s, r.cy + s * 0.8);
@@ -430,6 +446,50 @@ export class BoardRenderer {
       }
       ctx.restore();
     }
+  }
+
+  #drawTeleports(view: BoardView, m: GridMetrics, selectedId: string | null): void {
+    const ctx = this.#ctx;
+    for (const t of view.teleports ?? []) {
+      const r = tileRect(m, t.at);
+      ctx.save();
+      ctx.fillStyle = 'rgb(45 212 191 / 0.15)';
+      ctx.fillRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
+      ctx.strokeStyle = this.#theme.teleport;
+      this.#swirl(r.cx, r.cy, m.tile * 0.38, Math.max(1.5, m.tile * 0.08));
+      if (t.id === selectedId) {
+        ctx.strokeStyle = this.#theme.highlight;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
+      }
+      ctx.restore();
+      if (t.label) {
+        this.#label(t.label, r.x + r.w - m.tile * 0.2, r.y + r.h - m.tile * 0.2, m.tile * 0.3, this.#theme.label, m.tile * 0.5);
+      }
+    }
+  }
+
+  /** A three-turn spiral in the current stroke style, for teleports. */
+  #swirl(cx: number, cy: number, radius: number, lineWidth: number): void {
+    const ctx = this.#ctx;
+    const turns = 3;
+    const steps = 72;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const angle = t * turns * Math.PI * 2;
+      const rad = radius * t;
+      const x = cx + Math.cos(angle) * rad;
+      const y = cy + Math.sin(angle) * rad;
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
   }
 
   #drawPieces(pieces: readonly PieceView[], m: GridMetrics, color: string, selectedId: string | null): void {

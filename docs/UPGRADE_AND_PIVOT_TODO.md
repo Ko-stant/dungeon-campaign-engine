@@ -52,6 +52,7 @@ Commits (oldest first):
 | 1fbaa07 | gates, locked doors, purple secret doors |
 | 31e81ac | hidden-door blocked squares, removable in play |
 | dd336c6 | custom monster library |
+| (next commit) | corridor doors no longer warned; teleport squares and traps |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
@@ -584,6 +585,19 @@ marked as hiding a secret door and any blocked square can be removed during play
   square and a 2x2 custom monster in the editor; in a test session, "Found the secret
   door", "Opened gate door-3" and "Unlocked gate door-3" all logged and drew correctly.
   The test monster was then deleted and the test session completed.
+
+## Post-plan: door check for corridors; teleports [DONE 2026-09-27]
+- The user's "Crumbling Halls" had six `door-same-region` warnings, all deliberate:
+  secret doors in the face of blocking tiles and locked gates across corridors (corridor
+  on both sides). The check assumed every door sits in a wall. Drawing board walls under
+  them would be wrong (board walls apply to every quest; gates and rubble are per quest),
+  so the check now only warns about a door **inside a room** (`door-inside-room`, with a
+  message naming the room and square). Corridor doors of any kind are never flagged.
+- Teleport squares: `Quest.Teleports` (`{id, x, y, label?}`, label up to 8 characters for
+  pairing), Teleport tool, label field when selected, movable/erasable, teal swirl
+  (label in the corner), shown in the tracker, checked like other pieces.
+- Teleport traps: trap kind `teleport` (trap kinds are free text), drawn as a swirl in
+  the trap-state color, with the usual hidden/revealed/triggered/disarmed states.
 
 ---
 

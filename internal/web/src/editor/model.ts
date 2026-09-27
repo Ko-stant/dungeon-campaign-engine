@@ -5,7 +5,7 @@
  */
 import { edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
 import { VOID, covers, withShape, onBoard as squareOnBoard, regionAt, tileIndex, type BlockedSquareView, type BoardView, type DoorKind, type FurnitureView, type PieceView } from '../board/model.ts';
-import { DOC_VERSION, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type RectDoc, type Room } from '../maps/types.ts';
+import { DOC_VERSION, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type RectDoc, type Room, type TeleportDoc } from '../maps/types.ts';
 
 export const MAX_BOARD_SIZE = 200;
 
@@ -116,7 +116,7 @@ export function resizeBoard(b: BoardDoc, width: number, height: number): BoardDo
 // --- Quest layer ---
 
 export function emptyQuest(): QuestDoc {
-  return { version: DOC_VERSION, boardChecksum: '', doors: [], blockedSquares: [], furniture: [], monsters: [], traps: [], notes: [], startTiles: [] };
+  return { version: DOC_VERSION, boardChecksum: '', doors: [], blockedSquares: [], furniture: [], monsters: [], traps: [], notes: [], startTiles: [], exitTiles: [], teleports: [] };
 }
 
 function allIds(q: QuestDoc): string[] {
@@ -127,6 +127,7 @@ function allIds(q: QuestDoc): string[] {
     ...q.monsters.map((m) => m.id),
     ...q.traps.map((t) => t.id),
     ...q.notes.map((n) => n.id),
+    ...(q.teleports ?? []).map((t) => t.id),
   ];
 }
 
@@ -262,6 +263,28 @@ export function toggleStartTile(q: QuestDoc, at: TileCoord): QuestDoc {
   };
 }
 
+export function placeTeleport(q: QuestDoc, at: TileCoord): QuestDoc {
+  return { ...q, teleports: [...(q.teleports ?? []), { id: nextId(q, 'teleport'), x: at.x, y: at.y }] };
+}
+
+/** Sets (or, when blank, clears) a teleport square's pairing label. */
+export function setTeleportLabel(q: QuestDoc, id: string, label: string): QuestDoc {
+  const trimmed = label.trim();
+  return {
+    ...q,
+    teleports: (q.teleports ?? []).map((t) => {
+      if (t.id !== id) {
+        return t;
+      }
+      const next: TeleportDoc = { id: t.id, x: t.x, y: t.y };
+      if (trimmed) {
+        next.label = trimmed;
+      }
+      return next;
+    }),
+  };
+}
+
 export function toggleExitTile(q: QuestDoc, at: TileCoord): QuestDoc {
   const exits = q.exitTiles ?? [];
   const has = exits.some((t) => t.x === at.x && t.y === at.y);
@@ -293,6 +316,7 @@ export function itemsAt(q: QuestDoc, catalog: Catalog, t: TileCoord): string[] {
   }).map((m) => m.id));
   ids.push(...q.traps.filter((tr) => hit(tr.x, tr.y)).map((tr) => tr.id));
   ids.push(...q.notes.filter((n) => hit(n.x, n.y)).map((n) => n.id));
+  ids.push(...(q.teleports ?? []).filter((tp) => hit(tp.x, tp.y)).map((tp) => tp.id));
   for (const f of q.furniture) {
     const size = furnitureSize(catalog, f.type);
     if (footprintTiles({ x: f.x, y: f.y }, size.width, size.height, f.rotation).some((ft) => hit(ft.x, ft.y))) {
@@ -317,6 +341,7 @@ export function moveItem(q: QuestDoc, id: string, to: TileCoord): QuestDoc {
     monsters: move(q.monsters),
     traps: move(q.traps),
     notes: move(q.notes),
+    teleports: move(q.teleports ?? []),
   };
 }
 
@@ -329,6 +354,7 @@ export function removeItem(q: QuestDoc, id: string): QuestDoc {
     monsters: q.monsters.filter((m) => m.id !== id),
     traps: q.traps.filter((t) => t.id !== id),
     notes: q.notes.filter((n) => n.id !== id),
+    teleports: (q.teleports ?? []).filter((t) => t.id !== id),
   };
 }
 
@@ -372,6 +398,7 @@ export function toBoardView(b: BoardDoc, q: QuestDoc | null, catalog: Catalog): 
     notes: (q?.notes ?? []).map((n) => ({ id: n.id, label: n.label, at: { x: n.x, y: n.y } })),
     startTiles: (q?.startTiles ?? []).map((t) => ({ x: t.x, y: t.y })),
     exitTiles: (q?.exitTiles ?? []).map((t) => ({ x: t.x, y: t.y })),
+    teleports: (q?.teleports ?? []).map((t) => (t.label ? { id: t.id, at: { x: t.x, y: t.y }, label: t.label } : { id: t.id, at: { x: t.x, y: t.y } })),
     roomColors: new Map(b.rooms.filter((r) => r.color).map((r) => [r.id, r.color ?? ''])),
   };
 }
