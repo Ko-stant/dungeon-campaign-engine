@@ -1,0 +1,229 @@
+package views
+
+import (
+	"fmt"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
+	"time"
+)
+
+// SessionLink is an active or completed session on the campaign pages.
+type SessionLink struct {
+	ID        string
+	Name      string
+	Status    string
+	Campaign  string
+	Events    int64
+	UpdatedAt time.Time
+}
+
+// CampaignListItem is one campaign on the /campaigns page.
+type CampaignListItem struct {
+	ID       string
+	Name     string
+	Heroes   int
+	Sessions []SessionLink
+}
+
+// HeroRow is a campaign hero on the campaign page.
+type HeroRow struct {
+	ID        string
+	Name      string
+	Player    string
+	Class     string
+	Gold      int
+	Equipment string
+	Notes     string
+}
+
+// QuestOption is a quest to start, labelled with its board.
+type QuestOption struct {
+	ID    string
+	Label string
+}
+
+// ClassOption is a hero class for the add-hero form.
+type ClassOption struct {
+	ID   string
+	Name string
+}
+
+// CampaignPageData is everything the campaign page shows.
+type CampaignPageData struct {
+	ID       string
+	Name     string
+	Heroes   []HeroRow
+	Sessions []SessionLink
+	Quests   []QuestOption
+	Classes  []ClassOption
+	Error    string
+}
+
+const (
+	cardClass   = "rounded-lg border border-border/60 bg-surface-2 p-5"
+	inputClass  = "w-full rounded-md border border-border/60 bg-surface px-3 py-2"
+	buttonClass = "rounded-md bg-amber-600 px-4 py-2 font-semibold text-white hover:bg-amber-700"
+	linkButton  = "rounded-md border border-border/60 px-3 py-1 text-sm hover:border-amber-500"
+)
+
+templ appNav(active string) {
+	<nav class="flex gap-4 text-sm">
+		<a href="/campaigns" class={ templ.KV("text-amber-400", active == "campaigns"), "hover:text-amber-400" }>Campaigns</a>
+		<a href="/maps" class={ templ.KV("text-amber-400", active == "maps"), "hover:text-amber-400" }>Maps</a>
+	</nav>
+}
+
+// CampaignsPage lists campaigns, their active sessions, and a create form.
+templ CampaignsPage(campaigns []CampaignListItem, formError string) {
+	@components.Page("Campaigns", "") {
+		<main class="mx-auto max-w-4xl space-y-8 p-6">
+			<header class="flex items-baseline justify-between">
+				<h1 class="text-2xl font-bold text-amber-400">Campaigns</h1>
+				@appNav("campaigns")
+			</header>
+			<section class={ cardClass }>
+				<h2 class="mb-4 text-lg font-semibold">New campaign</h2>
+				<form method="post" action="/campaigns" class="flex gap-3">
+					<input name="name" required maxlength="120" placeholder="e.g. The Winter Campaign" class={ inputClass }/>
+					<button type="submit" class={ buttonClass }>Create</button>
+				</form>
+				if formError != "" {
+					<p class="mt-3 text-sm text-danger" role="alert">{ formError }</p>
+				}
+			</section>
+			<section class="space-y-3">
+				<h2 class="text-lg font-semibold">Your campaigns</h2>
+				if len(campaigns) == 0 {
+					<p class="opacity-70">No campaigns yet. Create one, add the heroes, then start a quest.</p>
+				}
+				for _, c := range campaigns {
+					<div class="rounded-lg border border-border/60 p-4">
+						<div class="flex items-center justify-between">
+							<a href={ templ.SafeURL("/campaigns/" + c.ID) } class="text-lg font-semibold hover:text-amber-400">{ c.Name }</a>
+							<span class="text-xs opacity-60">{ fmt.Sprintf("%d heroes", c.Heroes) }</span>
+						</div>
+						for _, s := range c.Sessions {
+							if s.Status == "active" {
+								<div class="mt-2 flex items-center justify-between rounded-md bg-amber-500/10 px-3 py-2 text-sm">
+									<span>In progress: <strong>{ s.Name }</strong> · { fmt.Sprintf("%d events", s.Events) }</span>
+									<a href={ templ.SafeURL("/play/" + s.ID) } class={ linkButton }>Resume</a>
+								</div>
+							}
+						}
+					</div>
+				}
+			</section>
+		</main>
+	}
+}
+
+// CampaignPage shows a campaign's heroes and sessions and starts quests.
+templ CampaignPage(d CampaignPageData) {
+	@components.Page(d.Name, "") {
+		<main class="mx-auto max-w-5xl space-y-8 p-6">
+			<header class="flex items-baseline justify-between">
+				<div>
+					<a href="/campaigns" class="text-sm opacity-70 hover:text-amber-400">← Campaigns</a>
+					<h1 class="text-2xl font-bold text-amber-400">{ d.Name }</h1>
+				</div>
+				@appNav("campaigns")
+			</header>
+			if d.Error != "" {
+				<p class="rounded-md border border-danger/60 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{ d.Error }</p>
+			}
+			<section class={ cardClass }>
+				<h2 class="mb-4 text-lg font-semibold">Heroes</h2>
+				if len(d.Heroes) == 0 {
+					<p class="mb-4 text-sm opacity-70">No heroes yet. Add the party below.</p>
+				} else {
+					<table class="mb-4 w-full text-sm">
+						<thead class="text-left text-xs uppercase opacity-60">
+							<tr><th class="py-1">Hero</th><th>Player</th><th>Class</th><th>Gold</th><th>Equipment</th><th>Notes</th><th></th></tr>
+						</thead>
+						<tbody class="divide-y divide-border/40">
+							for _, h := range d.Heroes {
+								<tr>
+									<td class="py-2 font-semibold">{ h.Name }</td>
+									<td>{ h.Player }</td>
+									<td>{ h.Class }</td>
+									<td>{ fmt.Sprint(h.Gold) }</td>
+									<td class="max-w-48 truncate" title={ h.Equipment }>{ h.Equipment }</td>
+									<td class="max-w-48 truncate" title={ h.Notes }>{ h.Notes }</td>
+									<td class="text-right">
+										<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/heroes/" + h.ID + "/delete") }>
+											<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove " + h.Name }>Remove</button>
+										</form>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				}
+				<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/heroes") } class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_12rem_auto] sm:items-end">
+					<label class="block text-sm"><span class="mb-1 block opacity-80">Hero name</span><input name="name" required maxlength="120" class={ inputClass }/></label>
+					<label class="block text-sm"><span class="mb-1 block opacity-80">Player</span><input name="player" maxlength="120" class={ inputClass }/></label>
+					<label class="block text-sm">
+						<span class="mb-1 block opacity-80">Class</span>
+						<select name="class" class={ inputClass }>
+							for _, c := range d.Classes {
+								<option value={ c.ID }>{ c.Name }</option>
+							}
+						</select>
+					</label>
+					<button type="submit" class={ buttonClass }>Add hero</button>
+				</form>
+			</section>
+			<section class={ cardClass }>
+				<h2 class="mb-4 text-lg font-semibold">Start a quest</h2>
+				if len(d.Quests) == 0 {
+					<p class="text-sm opacity-70">No quests yet. Build one in the <a href="/maps" class="underline">map creator</a>.</p>
+				} else {
+					<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/sessions") } class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+						<label class="block text-sm">
+							<span class="mb-1 block opacity-80">Quest</span>
+							<select name="questId" class={ inputClass }>
+								for _, q := range d.Quests {
+									<option value={ q.ID }>{ q.Label }</option>
+								}
+							</select>
+						</label>
+						<label class="block text-sm"><span class="mb-1 block opacity-80">Session name (optional)</span><input name="name" maxlength="120" placeholder="e.g. Game night, March 3" class={ inputClass }/></label>
+						<button type="submit" class={ buttonClass }>Start</button>
+					</form>
+					<p class="mt-2 text-xs opacity-60">The quest and board are copied into the session, so later edits in the map creator won't change a game in progress.</p>
+				}
+			</section>
+			<section class="space-y-2">
+				<h2 class="text-lg font-semibold">Sessions</h2>
+				if len(d.Sessions) == 0 {
+					<p class="text-sm opacity-70">No sessions yet.</p>
+				}
+				<ul class="divide-y divide-border/40 rounded-lg border border-border/60">
+					for _, s := range d.Sessions {
+						<li class="flex items-center justify-between px-4 py-3 text-sm">
+							<div>
+								<span class="font-semibold">{ s.Name }</span>
+								<span class="ml-2 text-xs opacity-60">{ s.Status } · { fmt.Sprintf("%d events", s.Events) } · { s.UpdatedAt.Local().Format("Jan 2, 15:04") }</span>
+							</div>
+							<a href={ templ.SafeURL("/play/" + s.ID) } class={ linkButton }>
+								if s.Status == "active" {
+									Resume
+								} else {
+									View
+								}
+							</a>
+						</li>
+					}
+				</ul>
+			</section>
+		</main>
+	}
+}
+
+// PlayPage is the shell for the TypeScript tracker.
+templ PlayPage(sessionID string, title string) {
+	@components.Page(title, "tracker") {
+		<div id="tracker" data-session-id={ sessionID } class="flex h-screen flex-col">
+			<noscript class="p-6">The tracker needs JavaScript.</noscript>
+		</div>
+	}
+}

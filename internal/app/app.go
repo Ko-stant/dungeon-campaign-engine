@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
@@ -21,8 +22,10 @@ const maxNameLength = 120
 
 // Server holds the app's dependencies.
 type Server struct {
-	store   *store.Store
-	catalog *content.Catalog
+	store        *store.Store
+	catalog      *content.Catalog
+	sessionLocks sync.Map // session id -> *sync.Mutex
+	streams      streams
 }
 
 // New creates the app server.
@@ -46,7 +49,9 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/quests/{id}", s.updateQuest)
 	mux.HandleFunc("DELETE /api/quests/{id}", s.deleteQuest)
 
+	s.registerTracker(mux)
 	s.registerPages(mux)
+	s.registerTrackerPages(mux)
 }
 
 type errorResponse struct {

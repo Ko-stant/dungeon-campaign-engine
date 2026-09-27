@@ -372,6 +372,10 @@ export class BoardRenderer {
     for (const p of pieces) {
       const r = tileRect(m, p.at);
       const img = p.image ? this.#images.get(p.image) : undefined;
+      ctx.save();
+      if (p.dim) {
+        ctx.globalAlpha = 0.4;
+      }
       if (img) {
         ctx.drawImage(img, r.x, r.y, r.w, r.h);
       } else {
@@ -383,6 +387,7 @@ export class BoardRenderer {
           this.#label(p.label.slice(0, 2), r.cx, r.cy, m.tile * 0.35, 'rgb(0 0 0)');
         }
       }
+      ctx.restore();
       if (p.id === selectedId) {
         ctx.save();
         ctx.strokeStyle = this.#theme.highlight;

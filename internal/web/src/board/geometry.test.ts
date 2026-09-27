@@ -99,6 +99,12 @@ describe('pixelToEdge', () => {
     expect(pixelToEdge(m, 115, 584)).toEqual({ x: 3, y: 19, orientation: 'horizontal' });
   });
 
+  test('accepts a wider hit tolerance when asked', () => {
+    // 8px from the x=3 line (pixel 100) is outside the default 20% (6px) but inside 35% (10.5px).
+    expect(pixelToEdge(m, 108, 90)).toBeNull();
+    expect(pixelToEdge(m, 108, 90, 0.35)).toEqual({ x: 3, y: 2, orientation: 'vertical' });
+  });
+
   test('returns null outside the grid', () => {
     expect(pixelToEdge(m, 5, 90)).toBeNull();
     expect(pixelToEdge(m, 115, 590)).toBeNull();

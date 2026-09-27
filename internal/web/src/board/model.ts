@@ -50,6 +50,8 @@ export interface PieceView {
   at: TileCoord;
   label?: string;
   image?: string;
+  /** Drawn faded, e.g. a monster the heroes have not seen yet. */
+  dim?: boolean;
 }
 
 export interface TrapView {

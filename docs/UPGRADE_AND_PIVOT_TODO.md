@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-27 13:55 EDT
+**Last Updated**: 2026-09-27 14:10 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -305,7 +305,64 @@ same 19, no new failures.
   - Deferred polish: JSON export/import download, tracing image, friendlier issue
     wording (names instead of ids), monster stat overrides in the selection panel.
 
-## Phase 7 - Companion tracker
+## Phase 7 - Companion tracker [MVP DONE 2026-09-27]
+
+- [x] 7a `internal/tracker` (Go, test-first):
+  - `State` holds frozen board + quest copies, round, heroes (position/placed,
+    body/mind and max, gold, equipment, notes, status), monsters (catalog stats or
+    quest overrides, hidden/seen, alive), live door states (secret doors start
+    not found), trap states, used notes, and discovered squares (tile-level, so a
+    future TV view can use them).
+  - `NewSession` puts heroes on the start squares in order and reveals the
+    starting area.
+  - `Apply(state, command)` supports: `move`, `hero.update`, `monster.add|update|remove`,
+    `door.set` (re-closing allowed), `trap.set` (any state to any state),
+    `area.reveal`, `tiles.reveal|hide`, `note.consume`, `round.advance|set`,
+    `log.note`. It never enforces rules, only rejects malformed commands, and
+    returns a readable event such as "Moved Grom (Barbarian) from (1,14) to (4,17)".
+    It never mutates its input.
+  - `CarryOver` copies gold, equipment and notes back to the campaign heroes.
+- [x] 7b server (`internal/app`, DB-tested):
+  - Campaign API: `GET/POST /api/campaigns`, `GET/PUT /api/campaigns/{id}` (hero
+    classes are validated and ids assigned).
+  - Session API: `POST /api/campaigns/{id}/sessions` (start + "session.start"
+    event), `GET /api/sessions/{id}`, and
+    `POST /api/sessions/{id}/commands`. Commands are applied under a per-session
+    lock, then the state and event are saved in one transaction.
+  - `GET /api/sessions/{id}/events?after=N`.
+  - `POST .../complete` carries progress to the campaign; a completed session
+    refuses commands (409) until `.../reopen`.
+  - `GET .../stream` is a WebSocket that pushes every change to all open tabs.
+  - Pages: `/campaigns` (list + resume active sessions + create),
+    `/campaigns/{id}` (heroes add/remove, start a quest, session list), and
+    `/play/{id}` (tracker shell).
+- [x] 7c tracker page (TS):
+  - `tracker/view.ts`, `interaction.ts`, `format.ts` and `api.ts` are
+    test-first (95 bun tests in total).
+  - `pages/tracker.ts` includes:
+    - Round counter and next round.
+    - A fog toggle showing what the heroes have discovered.
+    - Hero cards: body/mind ± buttons, gold, status, equipment and notes.
+    - Board modes: select/move (click a door to open or close it), reveal area,
+      hide square, add monster.
+    - A selection panel for monsters (body, seen/hidden, kill/revive, remove),
+      doors (open/close, found) and traps (4 states).
+    - Quest notes with used toggles, a free-text log entry, and a live event log.
+    - A WebSocket live indicator with reconnect and catch-up, and
+      complete/reopen.
+  - Hidden monsters are drawn dimmed. Door clicks use a 35% edge tolerance
+    (tested) because squares are small at the table.
+- [x] Verified in the browser:
+  - Created a campaign and added Grom (Barbarian) and Ilsa (Wizard).
+  - Started "The Trial"; the heroes appear on the stairway start squares, all 24
+    monsters are hidden, and fog shows only the start room.
+  - Took a Body point, moved Grom, opened and then re-closed door-1, added a
+    free-text log note, and advanced to round 2.
+  - Reloaded the page and everything resumed exactly.
+- Deferred polish: tracker layout at narrow widths (the board is small at 1024px
+  with both 20rem panels), drag-to-move, line-of-sight reveal suggestions, event
+  log filters, monster stat panel, player TV view.
+
 ## Phase 8 - Remove multiplayer, docs cleanup
 
 ---

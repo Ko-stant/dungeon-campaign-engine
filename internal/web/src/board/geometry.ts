@@ -42,7 +42,7 @@ export interface TileRect {
   cy: number;
 }
 
-/** Fraction of a tile within which a point counts as "on" a grid line. */
+/** Default fraction of a tile within which a point counts as "on" a grid line. */
 const EDGE_HIT_FRACTION = 0.2;
 
 function assertBoardSize(cols: number, rows: number): void {
@@ -87,7 +87,7 @@ export function pixelToTile(m: GridMetrics, px: number, py: number): TileCoord |
  * The tile edge nearest a pixel, if the pixel lies within a fraction of a tile
  * of a grid line. Includes the outer boundary; use isInteriorEdge to exclude it.
  */
-export function pixelToEdge(m: GridMetrics, px: number, py: number): Edge | null {
+export function pixelToEdge(m: GridMetrics, px: number, py: number, hitFraction = EDGE_HIT_FRACTION): Edge | null {
   const gx = (px - m.originX) / m.tile;
   const gy = (py - m.originY) / m.tile;
   if (gx < 0 || gy < 0 || gx > m.cols || gy > m.rows) {
@@ -98,7 +98,7 @@ export function pixelToEdge(m: GridMetrics, px: number, py: number): Edge | null
   const lineY = Math.round(gy);
   const distX = Math.abs(gx - lineX);
   const distY = Math.abs(gy - lineY);
-  if (Math.min(distX, distY) > EDGE_HIT_FRACTION) {
+  if (Math.min(distX, distY) > hitFraction) {
     return null;
   }
 
