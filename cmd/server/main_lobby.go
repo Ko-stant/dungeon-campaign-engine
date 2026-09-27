@@ -219,6 +219,8 @@ func mainWithLobby() {
 	assetsServer := http.FileServer(http.Dir("."))
 	mux.Handle("/assets/", http.StripPrefix("/", assetsServer))
 	registerDevBoardRoutes(mux)
+	closeApp := mountApp(mux)
+	defer closeApp()
 
 	// Register debug endpoints if enabled
 	if debugConfig.Enabled {

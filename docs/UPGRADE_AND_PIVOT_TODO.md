@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-27 13:45 EDT
+**Last Updated**: 2026-09-27 13:55 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -258,8 +258,52 @@ same 19, no new failures.
       `CorridorsAndRooms*` (the only code using the right/bottom convention) and rewrote
       `TestRegionsAcrossDoor` against the real convention. It runs now instead of
       being skipped.
-- [ ] 6b editor UI: `/maps` list, `/maps/{id}/edit` canvas editor, `src/editor/model.ts`
-      (test-first), board + quest JSON API, JSON export/import.
+- [x] 6b map editor (`/maps`, `/maps/{id}/edit`):
+  - `internal/app` (Go, DB-tested with httptest): JSON API
+    - `GET /api/catalog`
+    - `GET/POST /api/boards`, `GET/PUT/DELETE /api/boards/{id}`
+    - `GET/POST /api/boards/{id}/quests`, `GET/PUT/DELETE /api/quests/{id}`
+
+    Saving a quest re-binds it to the current board; responses include advisory
+    `issues`. A board with quests can't be deleted (409). There are also
+    server-rendered `/maps` (list + create form) and editor shell pages.
+  - `internal/dotenv` (tested): the server loads `.env`, so DATABASE_URL works under
+    make dev, go run and the preview tool. `cmd/server/app_mount.go` mounts the app
+    (migrate, store, catalog) next to the legacy routes, and answers 503 with
+    instructions if the database is missing.
+  - TS, test-first (77 bun tests in total):
+    - `maps/types.ts` mirrors the Go JSON; `maps/api.ts` is a typed client with an
+      injectable fetch.
+    - `editor/model.ts` has immutable operations: paint, rectangle, new/rename room
+      (empty rooms pruned), resize (top-left anchored), cycle door
+      none/normal/secret, place/move/rotate/remove pieces, lettered notes, start
+      squares, `itemsAt`, `toBoardView`.
+    - `editor/history.ts`: undo/redo with dirty tracking. `editor/tools.ts`: what
+      each tool does on click/drag, plus `lineTiles` for gap-free brush strokes.
+  - `pages/mapEditor.ts` does the wiring:
+    - **Board layer**: corridor / solid rock / room brush, rectangle fill, rooms
+      list with rename and tile counts.
+    - **Quest layer**: select/move, door, blocked squares, furniture (type +
+      rotation), monster, trap, note (text editor), start square, erase.
+    - Header with resize, undo/redo and save; quest picker/create; checks panel;
+      shortcuts Ctrl/Cmd+S, Z, Shift+Z, Y, R, Delete, Esc; a warning before leaving
+      with unsaved changes.
+  - Renderer additions: start squares, lettered note markers, drag previews.
+  - Tailwind now also scans `internal/web/src/**/*.ts` (it was missing, so TS-only
+    classes were not generated).
+  - **Verified in the browser**:
+    - Created a 24x30 board through the form, rectangle-filled a corridor, added
+      and renamed two rooms, and saved; it survived a reload.
+    - Created a quest and placed a door, monster, trap, furniture, start squares and
+      a note with text. Dragged the monster, rotated the furniture with R, and
+      saved with Cmd+S. The API shows every change persisted.
+    - A monster placed on rock produced the advisory "is on solid rock" issue.
+    - The imported base board + "The Trial" render fully in the editor.
+    - Two bugs found and fixed during testing: the header layout shifted as the
+      hover readout appeared (it's now an overlay), and a panel re-render on
+      pointer-up stole focus from the note textarea.
+  - Deferred polish: JSON export/import download, tracing image, friendlier issue
+    wording (names instead of ids), monster stat overrides in the selection panel.
 
 ## Phase 7 - Companion tracker
 ## Phase 8 - Remove multiplayer, docs cleanup

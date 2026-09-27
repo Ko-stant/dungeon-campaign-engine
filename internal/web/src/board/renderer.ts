@@ -32,6 +32,9 @@ export interface BoardTheme {
   label: string;
   undiscovered: string;
   highlight: string;
+  preview: string;
+  start: string;
+  note: string;
   trap: Record<TrapState, string>;
 }
 
@@ -59,6 +62,9 @@ export function readTheme(el: Element = document.documentElement): BoardTheme {
     label: rgb('content', '231 236 243'),
     undiscovered: 'rgb(0 0 0 / 0.55)',
     highlight: rgb('warning', '250 204 21'),
+    preview: rgb('warning', '250 204 21', 0.25),
+    start: rgb('positive', '74 222 128', 0.22),
+    note: rgb('warning', '250 204 21'),
     trap: {
       hidden: rgb('border', '95 104 123', 0.7),
       revealed: rgb('warning', '250 204 21'),
@@ -101,6 +107,10 @@ export interface Highlights {
   tile?: TileCoord | null;
   edge?: Edge | null;
   selectedId?: string | null;
+  /** Inclusive rectangle preview (drag-fill), corner to corner. */
+  rect?: { from: TileCoord; to: TileCoord } | null;
+  /** Individual tiles to preview (drag-paint path). */
+  tiles?: readonly TileCoord[] | null;
 }
 
 export class BoardRenderer {
@@ -140,6 +150,7 @@ export class BoardRenderer {
     ctx.fillRect(0, 0, width, height);
 
     this.#drawTiles(view, m);
+    this.#drawStartTiles(view, m);
     this.#drawGrid(m);
     this.#drawBlockedSquares(view, m);
     this.#drawFurniture(view, m);
@@ -148,6 +159,7 @@ export class BoardRenderer {
     this.#drawDoors(view, m, highlights.selectedId ?? null);
     this.#drawPieces(view.monsters, m, this.#theme.monster, highlights.selectedId ?? null);
     this.#drawPieces(view.heroes, m, this.#theme.hero, highlights.selectedId ?? null);
+    this.#drawNotes(view, m, highlights.selectedId ?? null);
     this.#drawDiscovery(view, m);
     this.#drawHighlights(m, highlights);
   }
@@ -175,6 +187,45 @@ export class BoardRenderer {
         const r = tileRect(m, { x, y });
         ctx.fillRect(r.x, r.y, r.w, r.h);
       }
+    }
+  }
+
+  #drawStartTiles(view: BoardView, m: GridMetrics): void {
+    if (!view.startTiles?.length) {
+      return;
+    }
+    const ctx = this.#ctx;
+    ctx.save();
+    ctx.fillStyle = this.#theme.start;
+    for (const t of view.startTiles) {
+      const r = tileRect(m, t);
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+    }
+    ctx.restore();
+  }
+
+  #drawNotes(view: BoardView, m: GridMetrics, selectedId: string | null): void {
+    if (!view.notes?.length) {
+      return;
+    }
+    const ctx = this.#ctx;
+    for (const n of view.notes) {
+      const r = tileRect(m, n.at);
+      const radius = Math.max(5, m.tile * 0.22);
+      const cx = r.x + r.w - radius - 1;
+      const cy = r.y + radius + 1;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = this.#theme.note;
+      ctx.fill();
+      if (n.id === selectedId) {
+        ctx.strokeStyle = this.#theme.highlight;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.restore();
+      this.#label(n.label, cx, cy, radius * 1.2, 'rgb(0 0 0)');
     }
   }
 
@@ -370,6 +421,26 @@ export class BoardRenderer {
     if (h.edge) {
       const r = doorRect(m, h.edge);
       ctx.strokeRect(r.x, r.y, r.w, r.h);
+    }
+    if (h.tiles) {
+      ctx.fillStyle = this.#theme.preview;
+      for (const t of h.tiles) {
+        const r = tileRect(m, t);
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+      }
+    }
+    if (h.rect) {
+      const x0 = Math.min(h.rect.from.x, h.rect.to.x);
+      const y0 = Math.min(h.rect.from.y, h.rect.to.y);
+      const x1 = Math.max(h.rect.from.x, h.rect.to.x);
+      const y1 = Math.max(h.rect.from.y, h.rect.to.y);
+      const a = tileRect(m, { x: x0, y: y0 });
+      const w = (x1 - x0 + 1) * m.tile;
+      const hgt = (y1 - y0 + 1) * m.tile;
+      ctx.fillStyle = this.#theme.preview;
+      ctx.fillRect(a.x, a.y, w, hgt);
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(a.x + 0.5, a.y + 0.5, w - 1, hgt - 1);
     }
     ctx.restore();
   }

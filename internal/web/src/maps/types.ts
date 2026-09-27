@@ -1,0 +1,151 @@
+/**
+ * Board and quest documents, mirroring internal/maps (Go) JSON exactly, plus
+ * the API response shapes from internal/app.
+ */
+import type { Edge, Rotation, TileCoord } from '../board/geometry.ts';
+import type { DoorKind, DoorState, TrapState } from '../board/model.ts';
+
+export interface Room {
+  id: number;
+  name: string;
+}
+
+export interface BoardDoc {
+  version: number;
+  width: number;
+  height: number;
+  /** Row-major: -1 void, 0 corridor, >0 room id. */
+  regions: number[];
+  rooms: Room[];
+}
+
+export interface DoorDoc {
+  id: string;
+  edge: Edge;
+  kind: DoorKind;
+  state: DoorState;
+}
+
+export interface RectDoc {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface FurnitureDoc {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  rotation: Rotation;
+}
+
+export interface MonsterDoc {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  body?: number;
+  mind?: number;
+  notes?: string;
+}
+
+export interface TrapDoc {
+  id: string;
+  kind: string;
+  x: number;
+  y: number;
+  furnitureId?: string;
+  state: TrapState;
+}
+
+export interface NoteDoc {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  text: string;
+}
+
+export interface QuestDoc {
+  version: number;
+  boardChecksum: string;
+  description?: string;
+  wanderingMonster?: string;
+  doors: DoorDoc[];
+  blockedSquares: RectDoc[];
+  furniture: FurnitureDoc[];
+  monsters: MonsterDoc[];
+  traps: TrapDoc[];
+  notes: NoteDoc[];
+  startTiles: TileCoord[];
+}
+
+export interface Issue {
+  code: string;
+  itemId?: string;
+  message: string;
+}
+
+export interface FurnitureDef {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  blocksMovement: boolean;
+  blocksLineOfSight: boolean;
+  image?: string;
+}
+
+export interface MonsterDef {
+  id: string;
+  name: string;
+  body: number;
+  mind: number;
+  attack: number;
+  defense: number;
+  movement: number;
+  image?: string;
+}
+
+export interface HeroDef {
+  id: string;
+  name: string;
+  description?: string;
+  body: number;
+  mind: number;
+  attack: number;
+  defense: number;
+  movementDice: number;
+}
+
+export interface Catalog {
+  furniture: FurnitureDef[];
+  monsters: MonsterDef[];
+  heroes: HeroDef[];
+}
+
+export interface BoardResponse {
+  id: string;
+  name: string;
+  board: BoardDoc;
+  updatedAt: string;
+}
+
+export interface QuestSummary {
+  id: string;
+  boardId: string;
+  name: string;
+  updatedAt: string;
+}
+
+export interface QuestResponse {
+  id: string;
+  boardId: string;
+  name: string;
+  quest: QuestDoc;
+  issues: Issue[];
+  updatedAt: string;
+}

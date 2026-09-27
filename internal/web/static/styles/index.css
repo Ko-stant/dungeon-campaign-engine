@@ -1,10 +1,12 @@
 @import 'tailwindcss' source(none);
 
-/* Mirror the Tailwind v3 content globs exactly. */
+/* The Tailwind v3 content globs, plus the new TypeScript client. */
 @source '../../../web/views/**/*.templ';
 @source '../js/**/*.js';
 @source '../../../../cmd/**/*.go';
 @source '../../../**/*.go';
+/* TypeScript client (Phase 4+). */
+@source '../../src/**/*.ts';
 
 /*
   Semantic theme colors. The raw space-separated channels live in :root as

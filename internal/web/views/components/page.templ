@@ -1,7 +1,7 @@
 package components
 
-// Page is the HTML shell for pages driven by the TypeScript client. entry names
-// the bundle built from internal/web/src/pages/<entry>.ts into /static/dist.
+// Page is the HTML shell for the app's pages. entry names the bundle built from
+// internal/web/src/pages/<entry>.ts into /static/dist; "" loads no script.
 templ Page(title string, entry string) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="classic">
@@ -10,7 +10,9 @@ templ Page(title string, entry string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>{ title } - Dungeon Campaign Engine</title>
 			<link rel="stylesheet" href="/static/styles/app.css"/>
-			<script type="module" src={ "/static/dist/" + entry + ".js" }></script>
+			if entry != "" {
+				<script type="module" src={ "/static/dist/" + entry + ".js" }></script>
+			}
 		</head>
 		<body class="min-h-screen bg-surface text-content antialiased">
 			{ children... }

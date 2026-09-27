@@ -59,6 +59,12 @@ export interface TrapView {
   state: TrapState;
 }
 
+export interface NoteView {
+  id: string;
+  label: string;
+  at: TileCoord;
+}
+
 export interface BoardView {
   cols: number;
   rows: number;
@@ -70,6 +76,10 @@ export interface BoardView {
   monsters: readonly PieceView[];
   heroes: readonly PieceView[];
   traps: readonly TrapView[];
+  /** Lettered quest-note markers (editor / GM only). */
+  notes?: readonly NoteView[];
+  /** Hero start squares (editor / setup only). */
+  startTiles?: readonly TileCoord[];
   /** Discovered tile indexes. Omitted means everything is shown (GM view). */
   discovered?: ReadonlySet<number>;
 }

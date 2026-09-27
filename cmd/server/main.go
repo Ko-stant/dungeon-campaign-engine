@@ -11,6 +11,7 @@ import (
 
 	"github.com/coder/websocket"
 
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/dotenv"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web"
@@ -19,6 +20,10 @@ import (
 )
 
 func main() {
+	if err := dotenv.Load(".env"); err != nil {
+		log.Printf("warning: reading .env: %v", err)
+	}
+
 	// Check if we want lobby mode (default) or direct game mode
 	useLobby := os.Getenv("USE_LOBBY")
 	if useLobby == "" || useLobby == "true" {

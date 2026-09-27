@@ -1,0 +1,85 @@
+package views
+
+import (
+	"fmt"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
+	"time"
+)
+
+// MapListItem is one board on the /maps page.
+type MapListItem struct {
+	ID        string
+	Name      string
+	Width     int
+	Height    int
+	UpdatedAt time.Time
+}
+
+// MapCreateForm holds the create form's values and error.
+type MapCreateForm struct {
+	Name   string
+	Width  string
+	Height string
+	Error  string
+}
+
+// MapsPage lists boards and offers a form to create one.
+templ MapsPage(boards []MapListItem, form MapCreateForm) {
+	@components.Page("Maps", "") {
+		<main class="mx-auto max-w-4xl p-6 space-y-8">
+			<header class="flex items-baseline justify-between">
+				<h1 class="text-2xl font-bold text-amber-400">Maps</h1>
+				<span class="text-sm opacity-70">Boards and the quests laid out on them</span>
+			</header>
+			<section class="rounded-lg border border-border/60 bg-surface-2 p-5">
+				<h2 class="mb-4 text-lg font-semibold">New board</h2>
+				<form method="post" action="/maps" class="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_7rem_7rem_auto] sm:items-end">
+					<label class="block text-sm">
+						<span class="mb-1 block opacity-80">Name</span>
+						<input name="name" required maxlength="120" value={ form.Name } placeholder="e.g. Winter Keep" class="w-full rounded-md border border-border/60 bg-surface px-3 py-2"/>
+					</label>
+					<label class="block text-sm">
+						<span class="mb-1 block opacity-80">Width</span>
+						<input name="width" type="number" min="1" max="200" required value={ form.Width } class="w-full rounded-md border border-border/60 bg-surface px-3 py-2"/>
+					</label>
+					<label class="block text-sm">
+						<span class="mb-1 block opacity-80">Height</span>
+						<input name="height" type="number" min="1" max="200" required value={ form.Height } class="w-full rounded-md border border-border/60 bg-surface px-3 py-2"/>
+					</label>
+					<button type="submit" class="rounded-md bg-amber-600 px-4 py-2 font-semibold text-white hover:bg-amber-700">Create</button>
+				</form>
+				<p class="mt-2 text-xs opacity-60">The standard HeroQuest board is 26 × 19. Size can be changed later in the editor.</p>
+				if form.Error != "" {
+					<p class="mt-3 rounded-md border border-danger/60 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{ form.Error }</p>
+				}
+			</section>
+			<section>
+				<h2 class="mb-3 text-lg font-semibold">Boards</h2>
+				if len(boards) == 0 {
+					<p class="opacity-70">No boards yet. Create one above, or run <code class="font-mono">make import-content</code> to import the base board and quest.</p>
+				} else {
+					<ul class="divide-y divide-border/40 rounded-lg border border-border/60">
+						for _, b := range boards {
+							<li class="flex items-center justify-between gap-4 px-4 py-3">
+								<div>
+									<a href={ templ.SafeURL("/maps/" + b.ID + "/edit") } class="font-semibold hover:text-amber-400">{ b.Name }</a>
+									<div class="text-xs opacity-60">{ fmt.Sprintf("%d × %d", b.Width, b.Height) } · updated { b.UpdatedAt.Local().Format("Jan 2, 2006 15:04") }</div>
+								</div>
+								<a href={ templ.SafeURL("/maps/" + b.ID + "/edit") } class="rounded-md border border-border/60 px-3 py-1 text-sm hover:border-amber-500">Edit</a>
+							</li>
+						}
+					</ul>
+				}
+			</section>
+		</main>
+	}
+}
+
+// MapEditorPage is the shell for the TypeScript map editor.
+templ MapEditorPage(boardID string, boardName string) {
+	@components.Page(boardName, "mapEditor") {
+		<div id="map-editor" data-board-id={ boardID } class="flex h-screen flex-col">
+			<noscript class="p-6">The map editor needs JavaScript.</noscript>
+		</div>
+	}
+}
