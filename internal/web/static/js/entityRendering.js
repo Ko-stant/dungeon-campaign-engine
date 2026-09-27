@@ -35,9 +35,9 @@ export function drawDoors() {
     return;
   }
 
-  const closedRGB = getCSSColor('--color-brand');
-  const openRGB = getCSSColor('--color-positive');
-  const accentRGB = getCSSColor('--color-accent');
+  const closedRGB = getCSSColor('--rgb-brand');
+  const openRGB = getCSSColor('--rgb-positive');
+  const accentRGB = getCSSColor('--rgb-accent');
 
   ctx.save();
 
@@ -157,7 +157,7 @@ function drawBlockingWallImage(img, wall, size, metrics) {
  */
 function drawBlockingWallFallback(wall, size, metrics) {
   const ctx = gameState.canvasContext;
-  const wallColor = getCSSColor('--color-danger');
+  const wallColor = getCSSColor('--rgb-danger');
 
   ctx.save();
   ctx.fillStyle = `rgb(${wallColor})`;

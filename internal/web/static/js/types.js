@@ -134,11 +134,11 @@ export const MONSTER_COLORS = {
 
 // Furniture type colors for fallback rendering
 export const FURNITURE_COLORS = {
-  stairwell: { fill: '--color-accent', stroke: '--color-content' },
-  chest: { fill: '--color-positive', stroke: '--color-content' },
-  table: { fill: '--color-surface-2', stroke: '--color-border-rgb' },
-  alchemists_table: { fill: '--color-surface-2', stroke: '--color-border-rgb' },
-  sorcerers_table: { fill: '--color-surface-2', stroke: '--color-border-rgb' },
+  stairwell: { fill: '--rgb-accent', stroke: '--rgb-content' },
+  chest: { fill: '--rgb-positive', stroke: '--rgb-content' },
+  table: { fill: '--rgb-surface-2', stroke: '--color-border-rgb' },
+  alchemists_table: { fill: '--rgb-surface-2', stroke: '--color-border-rgb' },
+  sorcerers_table: { fill: '--rgb-surface-2', stroke: '--color-border-rgb' },
   default: { fill: '--color-surface-3', stroke: '--color-border-rgb' },
 };
 

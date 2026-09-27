@@ -186,19 +186,19 @@ export class EntityModalController {
 
     let html = '';
     if (equipment.weapon) {
-      html += `<div class="flex items-center justify-between p-2 bg-surface-2 rounded">
+      html += `<div class="flex items-center justify-between p-2 bg-surface-2 rounded-sm">
         <span class="opacity-70">Weapon:</span>
         <span class="font-medium">${equipment.weapon.name} (${equipment.weapon.attackDice}d)</span>
       </div>`;
     }
     if (equipment.armor) {
-      html += `<div class="flex items-center justify-between p-2 bg-surface-2 rounded">
+      html += `<div class="flex items-center justify-between p-2 bg-surface-2 rounded-sm">
         <span class="opacity-70">Armor:</span>
         <span class="font-medium">${equipment.armor.name} (${equipment.armor.defenseDice}d)</span>
       </div>`;
     }
     if (equipment.shield) {
-      html += `<div class="flex items-center justify-between p-2 bg-surface-2 rounded">
+      html += `<div class="flex items-center justify-between p-2 bg-surface-2 rounded-sm">
         <span class="opacity-70">Shield:</span>
         <span class="font-medium">${equipment.shield.name}</span>
       </div>`;

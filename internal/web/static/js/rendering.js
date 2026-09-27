@@ -58,7 +58,7 @@ export function getCSSColor(property) {
 export function drawGrid() {
   const m = getGridMetrics();
   const ctx = gameState.canvasContext;
-  const borderRGB = getCSSColor('--color-border');
+  const borderRGB = getCSSColor('--rgb-border');
 
   ctx.save();
   ctx.strokeStyle = `rgb(${borderRGB})`;
@@ -99,7 +99,7 @@ export function drawRegionBorders() {
     return;
   }
 
-  const brandRGB = getCSSColor('--color-brand');
+  const brandRGB = getCSSColor('--rgb-brand');
 
   ctx.save();
   ctx.strokeStyle = `rgb(${brandRGB})`;
@@ -167,8 +167,8 @@ export function drawBackground() {
   const ctx = gameState.canvasContext;
   const snapshot = gameState.snapshot;
 
-  const colorSurface = getCSSColor('--color-surface');
-  const colorSurface2 = getCSSColor('--color-surface-2');
+  const colorSurface = getCSSColor('--rgb-surface');
+  const colorSurface2 = getCSSColor('--rgb-surface-2');
 
   ctx.clearRect(0, 0, m.width, m.height);
   ctx.fillStyle = `rgb(${colorSurface})`;
@@ -194,7 +194,7 @@ export function drawBackground() {
 export function drawEntities() {
   const m = getGridMetrics();
   const ctx = gameState.canvasContext;
-  const accentRGB = getCSSColor('--color-accent');
+  const accentRGB = getCSSColor('--rgb-accent');
 
   for (const [, t] of gameState.entityPositions.entries()) {
     if (!t) {

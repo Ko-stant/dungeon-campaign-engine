@@ -313,7 +313,7 @@ export class GMControlsController {
 
     this.monsterList.innerHTML = monsters.map(monster => `
       <div
-        class="monster-item p-2 bg-slate-800/50 rounded border border-border/40 hover:border-amber-500/50 cursor-pointer transition-colors ${this.selectedMonsterID === monster.id ? 'border-amber-500 bg-amber-900/20' : ''}"
+        class="monster-item p-2 bg-slate-800/50 rounded-sm border border-border/40 hover:border-amber-500/50 cursor-pointer transition-colors ${this.selectedMonsterID === monster.id ? 'border-amber-500 bg-amber-900/20' : ''}"
         data-monster-id="${monster.id}"
       >
         <div class="flex items-center justify-between mb-1">
@@ -367,7 +367,7 @@ export class GMControlsController {
     // Update UI
     if (this.monsterMoveBtn) {
       this.monsterMoveBtn.textContent = 'Cancel Move';
-      this.monsterMoveBtn.className = 'px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded transition-colors text-sm';
+      this.monsterMoveBtn.className = 'px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-sm transition-colors text-sm';
     }
 
     this.logEvent(`Movement mode active for ${this.selectedMonsterData.type} (${this.selectedMonsterData.movement} tiles)`);
@@ -381,7 +381,7 @@ export class GMControlsController {
     // Restore button - remove the onclick handler and rely on the original event listener
     if (this.monsterMoveBtn) {
       this.monsterMoveBtn.textContent = 'Move';
-      this.monsterMoveBtn.className = 'px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed';
+      this.monsterMoveBtn.className = 'px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-sm transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed';
     }
 
     this.logEvent('Movement mode cancelled');
@@ -522,7 +522,7 @@ export class GMControlsController {
     // Update UI
     if (this.monsterAttackBtn) {
       this.monsterAttackBtn.textContent = 'Cancel Attack';
-      this.monsterAttackBtn.className = 'px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded transition-colors text-sm';
+      this.monsterAttackBtn.className = 'px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-sm transition-colors text-sm';
     }
 
     this.logEvent(`Attack mode active for ${this.selectedMonsterData.type} - select target`);
@@ -536,7 +536,7 @@ export class GMControlsController {
     // Restore button
     if (this.monsterAttackBtn) {
       this.monsterAttackBtn.textContent = 'Attack';
-      this.monsterAttackBtn.className = 'px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed';
+      this.monsterAttackBtn.className = 'px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-sm transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed';
     }
 
     this.logEvent('Attack mode cancelled');
@@ -747,7 +747,7 @@ export class GMControlsController {
     }
 
     const eventElement = document.createElement('div');
-    eventElement.className = `event-log-item px-2 py-1 rounded text-xs ${this.getEventClass(event.type)}`;
+    eventElement.className = `event-log-item px-2 py-1 rounded-sm text-xs ${this.getEventClass(event.type)}`;
     eventElement.innerHTML = `
       <span class="opacity-60">[${event.timestamp}]</span>
       <span class="ml-2">${event.message}</span>
@@ -861,7 +861,7 @@ export class GMControlsController {
       // GM Notes (GM-only)
       if (snapshot.questGMNotes) {
         html += `
-          <div class="mt-4 p-3 bg-purple-900/20 border border-purple-500/30 rounded">
+          <div class="mt-4 p-3 bg-purple-900/20 border border-purple-500/30 rounded-sm">
             <h4 class="text-sm font-semibold text-purple-400 mb-2">GM Notes:</h4>
             <div class="text-xs text-slate-300 whitespace-pre-wrap">${snapshot.questGMNotes}</div>
           </div>
@@ -871,7 +871,7 @@ export class GMControlsController {
       // Player-visible notes
       if (snapshot.questNotes) {
         html += `
-          <div class="mt-3 p-3 bg-blue-900/20 border border-blue-500/30 rounded">
+          <div class="mt-3 p-3 bg-blue-900/20 border border-blue-500/30 rounded-sm">
             <h4 class="text-sm font-semibold text-blue-400 mb-2">Player Notes:</h4>
             <div class="text-xs text-slate-300 whitespace-pre-wrap">${snapshot.questNotes}</div>
           </div>
@@ -890,7 +890,7 @@ export class GMControlsController {
       // Later this could be populated from quest metadata
       questRulesContent.innerHTML = `
         <p class="text-slate-300 mb-3">Standard HeroQuest rules apply with the following modifications:</p>
-        <div class="p-3 bg-slate-900/50 rounded border border-slate-700">
+        <div class="p-3 bg-slate-900/50 rounded-sm border border-slate-700">
           <h4 class="text-amber-400 font-semibold mb-2">Custom Dice Rules (Optional)</h4>
           <ul class="list-disc list-inside space-y-1 text-slate-400 text-xs">
             <li><strong>Double 1s:</strong> Roll one fewer attack die next attack</li>

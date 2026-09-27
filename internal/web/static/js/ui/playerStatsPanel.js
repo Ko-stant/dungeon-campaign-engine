@@ -205,7 +205,7 @@ export class PlayerStatsPanelController {
 
     if (!turnState.movementDiceRolled) {
       return `
-        <div class="p-2 bg-surface-2 rounded text-sm opacity-70 text-center">
+        <div class="p-2 bg-surface-2 rounded-sm text-sm opacity-70 text-center">
           Movement not rolled
         </div>
       `;
@@ -232,15 +232,15 @@ export class PlayerStatsPanelController {
       <div class="space-y-2">
         <h3 class="text-sm font-semibold opacity-80">Equipment</h3>
         <div class="space-y-1 text-sm">
-          <div class="flex items-center justify-between p-2 bg-surface-2 rounded">
+          <div class="flex items-center justify-between p-2 bg-surface-2 rounded-sm">
             <span class="opacity-70">Weapon:</span>
             <span class="font-medium">Dagger (1d)</span>
           </div>
-          <div class="flex items-center justify-between p-2 bg-surface-2 rounded">
+          <div class="flex items-center justify-between p-2 bg-surface-2 rounded-sm">
             <span class="opacity-70">Armor:</span>
             <span class="font-medium opacity-50">None</span>
           </div>
-          <div class="flex items-center justify-between p-2 bg-surface-2 rounded">
+          <div class="flex items-center justify-between p-2 bg-surface-2 rounded-sm">
             <span class="opacity-70">Shield:</span>
             <span class="font-medium opacity-50">None</span>
           </div>
@@ -263,19 +263,19 @@ export class PlayerStatsPanelController {
       <div class="space-y-2">
         <h3 class="text-sm font-semibold opacity-80">Spells</h3>
         <div class="space-y-1 text-sm">
-          <div class="p-2 bg-surface-2 rounded opacity-70">
+          <div class="p-2 bg-surface-2 rounded-sm opacity-70">
             <div class="flex items-center justify-between">
               <span>Heal Body</span>
               <span class="text-xs">3/3</span>
             </div>
           </div>
-          <div class="p-2 bg-surface-2 rounded opacity-70">
+          <div class="p-2 bg-surface-2 rounded-sm opacity-70">
             <div class="flex items-center justify-between">
               <span>Ball of Flame</span>
               <span class="text-xs">3/3</span>
             </div>
           </div>
-          <div class="p-2 bg-surface-2 rounded opacity-70">
+          <div class="p-2 bg-surface-2 rounded-sm opacity-70">
             <div class="flex items-center justify-between">
               <span>Swift Wind</span>
               <span class="text-xs">3/3</span>
@@ -298,7 +298,7 @@ export class PlayerStatsPanelController {
     }
 
     const abilitiesList = abilities.map(ability => `
-      <div class="p-2 bg-surface-2 rounded opacity-70">
+      <div class="p-2 bg-surface-2 rounded-sm opacity-70">
         <div class="font-medium">${ability.name}</div>
         <div class="text-xs opacity-70">${ability.description}</div>
       </div>

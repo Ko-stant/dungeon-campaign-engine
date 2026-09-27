@@ -4,7 +4,7 @@ import "github.com/Ko-stant/dungeon-campaign-engine/internal/protocol"
 
 // Header displays the top navigation bar with map/pack/turn info
 templ Header() {
-	<header class="border-b border-border/60 bg-surface/80 backdrop-blur">
+	<header class="border-b border-border/60 bg-surface/80 backdrop-blur-sm">
 		<div class="px-4 py-3 flex items-center justify-between">
 			<div class="text-lg font-semibold">Dungeon Campaign Engine</div>
 			<div id="headerInfo" class="flex items-center gap-4 text-sm">
@@ -16,7 +16,7 @@ templ Header() {
 
 // HeaderWithSnapshot provides initial snapshot data
 templ HeaderWithSnapshot(snapshot protocol.Snapshot) {
-	<header class="border-b border-border/60 bg-surface/80 backdrop-blur">
+	<header class="border-b border-border/60 bg-surface/80 backdrop-blur-sm">
 		<div class="px-6 py-3 flex items-center justify-between">
 			<div class="flex items-center gap-6">
 				<div class="text-xl font-bold text-primary">Dungeon Campaign Engine</div>
@@ -74,7 +74,7 @@ templ HeaderWithSnapshot(snapshot protocol.Snapshot) {
 						</svg>
 					</button>
 					<!-- Tooltip on hover -->
-					<div class="absolute top-full right-0 mt-2 min-w-max p-3 bg-slate-800/95 backdrop-blur-sm border border-border/60 rounded-lg shadow-xl opacity-0 invisible pointer-events-none group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+					<div class="absolute top-full right-0 mt-2 min-w-max p-3 bg-slate-800/95 backdrop-blur-xs border border-border/60 rounded-lg shadow-xl opacity-0 invisible pointer-events-none group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
 						<h4 class="text-xs font-semibold text-amber-400 mb-2">Keyboard Shortcuts</h4>
 						<div class="space-y-1 text-xs text-slate-300">
 							<div class="flex justify-between gap-4">

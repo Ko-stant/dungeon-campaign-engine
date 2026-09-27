@@ -210,10 +210,10 @@ class QuestSetupController {
       }
 
       const playerDiv = document.createElement('div');
-      playerDiv.className = 'flex items-center justify-between p-2 bg-slate-800/50 rounded border border-border/40';
+      playerDiv.className = 'flex items-center justify-between p-2 bg-slate-800/50 rounded-sm border border-border/40';
       playerDiv.innerHTML = `
         <div class="flex items-center gap-2">
-          <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded flex items-center justify-center text-sm">
+          <div class="w-8 h-8 bg-linear-to-br from-blue-500 to-purple-500 rounded-sm flex items-center justify-center text-sm">
             ${characterClass.charAt(0).toUpperCase()}
           </div>
           <span class="text-sm font-semibold text-slate-200">${displayName}</span>
@@ -269,7 +269,7 @@ class QuestSetupController {
       }
 
       const playerDiv = document.createElement('div');
-      playerDiv.className = 'flex items-center justify-between p-2 bg-slate-800/30 rounded text-xs';
+      playerDiv.className = 'flex items-center justify-between p-2 bg-slate-800/30 rounded-sm text-xs';
       playerDiv.innerHTML = `
         <span class="text-slate-200">${displayName}</span>
         <span class="${statusColor}">${statusText}</span>

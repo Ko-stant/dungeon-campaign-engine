@@ -1,26 +1,65 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss' source(none);
+
+/* Mirror the Tailwind v3 content globs exactly. */
+@source '../../../web/views/**/*.templ';
+@source '../js/**/*.js';
+@source '../../../../cmd/**/*.go';
+@source '../../../**/*.go';
+
+/*
+  Semantic theme colors. The raw space-separated channels live in :root as
+  --rgb-* so custom CSS below can use them with alpha (rgb(var(--rgb-x) / a)),
+  and @theme exposes them as Tailwind colors (bg-surface, border-border/40, ...).
+*/
+@theme {
+  --color-surface: rgb(var(--rgb-surface));
+  --color-surface-2: rgb(var(--rgb-surface-2));
+  --color-content: rgb(var(--rgb-content));
+  --color-border: rgb(var(--rgb-border));
+  --color-brand: rgb(var(--rgb-brand));
+  --color-accent: rgb(var(--rgb-accent));
+  --color-positive: rgb(var(--rgb-positive));
+  --color-warning: rgb(var(--rgb-warning));
+  --color-danger: rgb(var(--rgb-danger));
+}
+
+/*
+  Tailwind v3 compatibility: v4 changed the default border color to
+  currentcolor and the button cursor to default. Keep the v3 look.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 :root {
-  --color-surface: 20 22 28;
-  --color-surface-2: 26 29 36;
-  --color-content: 231 236 243;
-  --color-border: 95 104 123;
-  --color-border-rgb: rgb(var(--color-border));
-  --color-brand: 130 166 255;
-  --color-accent: 255 160 122;
-  --color-positive: 74 222 128;
-  --color-warning: 250 204 21;
-  --color-danger: 248 113 113;
+  --rgb-surface: 20 22 28;
+  --rgb-surface-2: 26 29 36;
+  --rgb-content: 231 236 243;
+  --rgb-border: 95 104 123;
+  --rgb-brand: 130 166 255;
+  --rgb-accent: 255 160 122;
+  --rgb-positive: 74 222 128;
+  --rgb-warning: 250 204 21;
+  --rgb-danger: 248 113 113;
 
   /* Treasure notification colors */
-  --color-treasure-gold: 202 138 4;
-  --color-treasure-gold-dark: 113 63 18;
-  --color-treasure-empty: 107 114 128;
-  --color-treasure-empty-dark: 55 65 81;
-  --color-treasure-hazard: 220 38 38;
-  --color-treasure-hazard-dark: 127 29 29;
+  --rgb-treasure-gold: 202 138 4;
+  --rgb-treasure-gold-dark: 113 63 18;
+  --rgb-treasure-empty: 107 114 128;
+  --rgb-treasure-empty-dark: 55 65 81;
+  --rgb-treasure-hazard: 220 38 38;
+  --rgb-treasure-hazard-dark: 127 29 29;
 }
 
 html[data-theme="classic"] {
@@ -29,16 +68,16 @@ html[data-theme="classic"] {
 }
 
 .bg-surface {
-  background-color: rgb(var(--color-surface));
+  background-color: rgb(var(--rgb-surface));
 }
 .bg-surface-2 {
-  background-color: rgb(var(--color-surface-2));
+  background-color: rgb(var(--rgb-surface-2));
 }
 .text-content {
-  color: rgb(var(--color-content));
+  color: rgb(var(--rgb-content));
 }
 .border-border {
-  border-color: rgb(var(--color-border));
+  border-color: rgb(var(--rgb-border));
 }
 
 /* Treasure notification styles */
@@ -67,28 +106,28 @@ html[data-theme="classic"] {
 }
 
 .gold-notification {
-  background-color: rgb(var(--color-treasure-gold-dark) / 0.3);
-  border-color: rgb(var(--color-treasure-gold) / 0.6);
+  background-color: rgb(var(--rgb-treasure-gold-dark) / 0.3);
+  border-color: rgb(var(--rgb-treasure-gold) / 0.6);
 }
 
 .items-notification {
-  background-color: rgb(var(--color-treasure-gold-dark) / 0.3);
-  border-color: rgb(var(--color-treasure-gold) / 0.6);
+  background-color: rgb(var(--rgb-treasure-gold-dark) / 0.3);
+  border-color: rgb(var(--rgb-treasure-gold) / 0.6);
 }
 
 .empty-notification {
-  background-color: rgb(var(--color-treasure-empty-dark) / 0.3);
-  border-color: rgb(var(--color-treasure-empty) / 0.6);
+  background-color: rgb(var(--rgb-treasure-empty-dark) / 0.3);
+  border-color: rgb(var(--rgb-treasure-empty) / 0.6);
 }
 
 .hazard-notification {
-  background-color: rgb(var(--color-treasure-hazard-dark) / 0.3);
-  border-color: rgb(var(--color-treasure-hazard) / 0.6);
+  background-color: rgb(var(--rgb-treasure-hazard-dark) / 0.3);
+  border-color: rgb(var(--rgb-treasure-hazard) / 0.6);
 }
 
 .monster-notification {
-  background-color: rgb(var(--color-treasure-hazard-dark) / 0.3);
-  border-color: rgb(var(--color-treasure-hazard) / 0.6);
+  background-color: rgb(var(--rgb-treasure-hazard-dark) / 0.3);
+  border-color: rgb(var(--rgb-treasure-hazard) / 0.6);
 }
 
 /* Quest Setup - Starting Position Styles */

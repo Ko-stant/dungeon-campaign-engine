@@ -35,7 +35,7 @@ func GMHeader(snapshot protocol.Snapshot) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"border-b border-border/60 bg-surface/80 backdrop-blur-sm\"><div class=\"px-6 py-4 flex items-center justify-between\"><!-- Left: Title & Phase Info --><div class=\"flex items-center gap-6\"><h1 class=\"text-2xl font-bold text-primary\">Game Master View</h1><!-- Turn Phase Indicator --><div id=\"gm-phase-indicator\" class=\"flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-dark border border-border\" data-phase=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"border-b border-border/60 bg-surface/80 backdrop-blur-xs\"><div class=\"px-6 py-4 flex items-center justify-between\"><!-- Left: Title & Phase Info --><div class=\"flex items-center gap-6\"><h1 class=\"text-2xl font-bold text-primary\">Game Master View</h1><!-- Turn Phase Indicator --><div id=\"gm-phase-indicator\" class=\"flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-dark border border-border\" data-phase=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

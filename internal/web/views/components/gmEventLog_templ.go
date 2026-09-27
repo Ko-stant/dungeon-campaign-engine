@@ -30,7 +30,7 @@ func GMEventLog() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex-1 overflow-hidden flex flex-col p-4\"><div class=\"flex items-center justify-between mb-3\"><h2 class=\"text-lg font-bold text-amber-400\">Event Log</h2><button id=\"clear-event-log-btn\" class=\"px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded transition-colors\">Clear</button></div><!-- Event Log Container --><div id=\"gm-event-log\" class=\"flex-1 overflow-y-auto space-y-1 text-sm bg-slate-900/50 rounded-lg p-3 border border-border/40\"><div class=\"text-slate-500 text-center py-4\">No events yet</div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex-1 overflow-hidden flex flex-col p-4\"><div class=\"flex items-center justify-between mb-3\"><h2 class=\"text-lg font-bold text-amber-400\">Event Log</h2><button id=\"clear-event-log-btn\" class=\"px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-sm transition-colors\">Clear</button></div><!-- Event Log Container --><div id=\"gm-event-log\" class=\"flex-1 overflow-y-auto space-y-1 text-sm bg-slate-900/50 rounded-lg p-3 border border-border/40\"><div class=\"text-slate-500 text-center py-4\">No events yet</div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

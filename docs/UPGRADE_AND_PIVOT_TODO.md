@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-27 13:10 EDT
+**Last Updated**: 2026-09-27 13:20 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -137,10 +137,50 @@ same 19, no new failures.
       `BuildRegionMap`, `DevSegment` and `CorridorsAndRooms*` are not used by
       production code.
 
-## Phase 3 - JS toolchain
-- [ ] 3a npm to Bun (`bun.lock`)
-- [ ] 3b ESLint 10, explicit `globals`, ignore old `static/js`; delete old JS tests
-- [ ] 3c Tailwind v4
+## Phase 3 - JS toolchain [DONE 2026-09-27]
+
+- [x] 3a npm to Bun (a79a3af). `bun.lock` was migrated with identical versions and
+      `package-lock.json` removed. The Makefile uses `bun run`. Tailwind v3 output was
+      byte-identical.
+- [x] 3b ESLint 10 (2c47285). eslint 10.11, @eslint/js 10.0.1,
+      eslint-config-prettier 10.1.8, and `globals` 17.12 is now declared explicitly.
+      The legacy `internal/web/static/js/**` is ignored as reference-only (ESLint 10's
+      recommended set would report 11 errors there, up from 7, via the new
+      `no-useless-assignment` rule). The home-made JS test framework and its 16
+      geometry tests were deleted. `bun test --pass-with-no-tests` passes until
+      Phase 4 adds tests.
+- [x] 3c Tailwind v3.4.17 -> v4.3.3 via `@tailwindcss/cli` (no PostCSS/autoprefixer).
+  - Ran the official `@tailwindcss/upgrade` through npx; bunx could not load its
+    native engine. It renamed classes in templ and JS: `rounded`->`rounded-sm`,
+    `backdrop-blur-sm`->`backdrop-blur-xs`, `outline-none`->`outline-hidden`,
+    `flex-shrink-0`->`shrink-0`, `bg-gradient-*`->`bg-linear-*`.
+  - **Tool bugs caught and fixed:** it rewrote the Go string `"ring"` (a jewelry
+    inventory slot) to `"ring-3"` in `cmd/server/inventory.go` (reverted). It
+    hand-edited `*_templ.go` (reverted, then regenerated from `.templ`). Its `@theme`
+    output referenced itself (`--color-surface: rgb(var(--color-surface))`).
+  - Theme: the raw color channels are now `--rgb-*` in `:root`, and `@theme` exposes
+    `--color-*` for utilities. The legacy canvas code (`rendering.js`,
+    `entityRendering.js`, `types.js`) reads `--rgb-*`.
+  - `@import 'tailwindcss' source(none)` plus explicit `@source` lines mirror the v3
+    content globs exactly. The v3-compat base layer keeps the gray-200 default
+    border color and `cursor: pointer` on buttons.
+  - Tailwind runs on Bun's runtime (`bunx --bun`) because the local nvm Node 22.18.0
+    is an **x64 (Rosetta) build**, which can't load the arm64 native modules.
+  - Watch mode uses `--watch=always`. Plain `--watch` exits when stdin closes, as
+    it does for background jobs in `make dev`.
+  - **Verification:** computed-style fingerprints of every element on the lobby,
+    GM and hero pages (v3 vs v4, same game state), with colors compared as
+    rendered sRGB:
+    - lobby 53/53, GM 165/165, hero 328/328 elements with **no width/height
+      changes**, apart from a 4px-shorter GM quest-notes panel;
+    - most color differences render identically;
+    - the rest are v4's intentionally updated default palette (OKLCH), e.g.
+      amber-600 (217,119,6)->(225,113,0) and green-400 (74,222,128)->(5,223,114);
+    - margin changes come from v4's `space-y` mechanics (bottom margins instead of
+      top) and don't move anything;
+    - the spawn-monster modal fields use an undefined `bg-surface-dark` class, so
+      they are now transparent instead of the browser's gray;
+    - the canvas board renders the same.
 
 ## Phase 4 - Fresh TS client foundation (test-first)
 - [ ] tsconfig (TypeScript pinned 6.0.3; typescript-eslint doesn't support TS 7 yet)
@@ -158,5 +198,12 @@ same 19, no new failures.
 ---
 
 ## Open follow-ups
+- The local nvm Node 22.18.0 is an x64 build under Rosetta (Node 20.19.1 is arm64).
+  The project no longer needs Node, but reinstalling Node 22 as arm64 would avoid
+  surprises in editor tooling.
+- The Go static file server sends no cache headers, so browsers keep stale CSS/JS
+  across rebuilds (seen during the Tailwind check). Phase 4 adds
+  `Cache-Control: no-cache` in dev.
+- Optional: pin the Tailwind v3 palette in `@theme` if the v4 color shift is unwanted.
 - Move to TypeScript 7 when typescript-eslint supports it.
 - Xcode.app 26.2 is behind CLT 26.6. Update from the App Store when convenient.
