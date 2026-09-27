@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dce-binary",
+      "runtimeExecutable": "./build/dungeon-campaign-engine",
+      "runtimeArgs": [],
+      "port": 8080
+    }
+  ]
+}

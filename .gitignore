@@ -9,3 +9,5 @@ internal/web/static/styles/app.css
 node_modules/
 build/
 docs/base_campaign_reference
+# Local regression baselines (may contain copyrighted quest text)
+docs/baseline/
