@@ -33,6 +33,8 @@ export interface DoorDoc {
   id: string;
   edge: Edge;
   kind: DoorKind;
+  /** Starts locked. Omitted when false. Nothing enforces it. */
+  locked?: boolean;
   state: DoorState;
 }
 

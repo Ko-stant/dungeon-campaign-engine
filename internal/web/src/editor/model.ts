@@ -4,8 +4,8 @@
  * is just a stack of snapshots.
  */
 import { edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
-import { VOID, onBoard as squareOnBoard, regionAt, tileIndex, type BoardView, type FurnitureView, type PieceView } from '../board/model.ts';
-import { DOC_VERSION, type BoardDoc, type Catalog, type QuestDoc, type Room } from '../maps/types.ts';
+import { VOID, onBoard as squareOnBoard, regionAt, tileIndex, type BoardView, type DoorKind, type FurnitureView, type PieceView } from '../board/model.ts';
+import { DOC_VERSION, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type Room } from '../maps/types.ts';
 
 export const MAX_BOARD_SIZE = 200;
 
@@ -148,16 +148,40 @@ function sameEdge(a: Edge, b: Edge): boolean {
   return a.x === b.x && a.y === b.y && a.orientation === b.orientation;
 }
 
-/** Cycles the door on an edge: none -> normal -> secret -> none. */
-export function cycleDoor(q: QuestDoc, edge: Edge): QuestDoc {
+/** Sets a door's kind and lock; `locked: false` drops the flag. */
+export function updateDoor(q: QuestDoc, doorId: string, change: { kind?: DoorKind; locked?: boolean }): QuestDoc {
+  return {
+    ...q,
+    doors: q.doors.map((d) => {
+      if (d.id !== doorId) {
+        return d;
+      }
+      const next: DoorDoc = { id: d.id, edge: d.edge, kind: change.kind ?? d.kind, state: d.state };
+      if (change.locked ?? d.locked) {
+        next.locked = true;
+      }
+      return next;
+    }),
+  };
+}
+
+/**
+ * Puts a door of the given kind on an edge. An existing door there is switched
+ * to that kind and lock; clicking again with the same choice removes it.
+ */
+export function placeDoor(q: QuestDoc, edge: Edge, kind: DoorKind, locked: boolean): QuestDoc {
   const existing = q.doors.find((d) => sameEdge(d.edge, edge));
   if (!existing) {
-    return { ...q, doors: [...q.doors, { id: nextId(q, 'door'), edge, kind: 'normal', state: 'closed' }] };
+    const door: DoorDoc = { id: nextId(q, 'door'), edge: { x: edge.x, y: edge.y, orientation: edge.orientation }, kind, state: 'closed' };
+    if (locked) {
+      door.locked = true;
+    }
+    return { ...q, doors: [...q.doors, door] };
   }
-  if (existing.kind === 'normal') {
-    return { ...q, doors: q.doors.map((d) => (d === existing ? { ...d, kind: 'secret' } : d)) };
+  if (existing.kind === kind && (existing.locked ?? false) === locked) {
+    return { ...q, doors: q.doors.filter((d) => d !== existing) };
   }
-  return { ...q, doors: q.doors.filter((d) => d !== existing) };
+  return updateDoor(q, existing.id, { kind, locked });
 }
 
 export function toggleDoorState(q: QuestDoc, doorId: string): QuestDoc {
@@ -309,7 +333,7 @@ export function toBoardView(b: BoardDoc, q: QuestDoc | null, catalog: Catalog): 
     rows: b.height,
     regions: b.regions,
     drawnWalls: b.drawnWalls ?? [],
-    doors: (q?.doors ?? []).map((d) => ({ id: d.id, edge: d.edge, kind: d.kind, state: d.state })),
+    doors: (q?.doors ?? []).map((d) => ({ id: d.id, edge: d.edge, kind: d.kind, state: d.state, locked: d.locked ?? false })),
     blockedSquares: (q?.blockedSquares ?? []).map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h })),
     furniture,
     monsters,

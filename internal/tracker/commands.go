@@ -373,9 +373,10 @@ func (a *applier) monsterRemove(payload json.RawMessage) (string, error) {
 
 func (a *applier) doorSet(payload json.RawMessage) (string, error) {
 	p, err := decode[struct {
-		ID    string  `json:"id"`
-		State *string `json:"state"`
-		Found *bool   `json:"found"`
+		ID     string  `json:"id"`
+		State  *string `json:"state"`
+		Found  *bool   `json:"found"`
+		Locked *bool   `json:"locked"`
 	}](payload)
 	if err != nil {
 		return "", err
@@ -389,8 +390,14 @@ func (a *applier) doorSet(payload json.RawMessage) (string, error) {
 	if door == nil {
 		return "", fmt.Errorf("no door %q", p.ID)
 	}
-	if p.State == nil && p.Found == nil {
+	if p.State == nil && p.Found == nil && p.Locked == nil {
 		return "", errors.New("nothing to change")
+	}
+	label := door.ID
+	for _, qd := range a.s.Quest.Doors {
+		if qd.ID == door.ID && qd.Kind == maps.DoorGate {
+			label = "gate " + door.ID
+		}
 	}
 	var parts []string
 	if p.Found != nil {
@@ -404,13 +411,21 @@ func (a *applier) doorSet(payload json.RawMessage) (string, error) {
 	if p.State != nil {
 		switch *p.State {
 		case maps.DoorOpen:
-			parts = append(parts, "Opened "+door.ID)
+			parts = append(parts, "Opened "+label)
 		case maps.DoorClosed:
-			parts = append(parts, "Closed "+door.ID)
+			parts = append(parts, "Closed "+label)
 		default:
 			return "", fmt.Errorf("invalid door state %q", *p.State)
 		}
 		door.State = *p.State
+	}
+	if p.Locked != nil {
+		door.Locked = *p.Locked
+		if *p.Locked {
+			parts = append(parts, "Locked "+label)
+		} else {
+			parts = append(parts, "Unlocked "+label)
+		}
 	}
 	return strings.Join(parts, "; "), nil
 }

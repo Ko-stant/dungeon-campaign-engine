@@ -39,7 +39,8 @@ export function trackerView(s: SessionState, catalog: Catalog, opts: ViewOptions
     doors: s.quest.doors.map((d) => {
       const live = liveDoors.get(d.id);
       const hiddenSecret = d.kind === 'secret' && !(live?.found ?? false);
-      return { id: d.id, edge: d.edge, kind: hiddenSecret ? 'secret' : 'normal', state: live?.state ?? d.state };
+      const kind = hiddenSecret ? 'secret' : d.kind === 'gate' ? 'gate' : 'normal';
+      return { id: d.id, edge: d.edge, kind, state: live?.state ?? d.state, locked: live?.locked ?? d.locked ?? false };
     }),
     traps: s.quest.traps.map((t) => ({ id: t.id, kind: t.kind, at: { x: t.x, y: t.y }, state: liveTraps.get(t.id)?.state ?? t.state })),
     monsters,

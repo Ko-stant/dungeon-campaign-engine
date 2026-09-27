@@ -4,12 +4,14 @@
  * pushes the returned document onto the undo history.
  */
 import type { Edge, Rotation, TileCoord } from '../board/geometry.ts';
+import type { DoorKind } from '../board/model.ts';
 import type { BoardDoc, Catalog, QuestDoc } from '../maps/types.ts';
 import {
   addBlockedSquare,
-  cycleDoor,
+
   itemsAt,
   paintTiles,
+  placeDoor,
   placeFurniture,
   placeMonster,
   placeNote,
@@ -30,7 +32,7 @@ export type Tool =
   | { kind: 'paint'; region: number }
   | { kind: 'fill'; region: number }
   | { kind: 'wall' }
-  | { kind: 'door' }
+  | { kind: 'door'; doorKind: DoorKind; locked: boolean }
   | { kind: 'blocked' }
   | { kind: 'furniture'; type: string; rotation: Rotation }
   | { kind: 'monster'; type: string }
@@ -102,7 +104,7 @@ export function applyClick(d: EditorDoc, tool: Tool, target: ClickTarget, catalo
     return d;
   }
   if (tool.kind === 'door') {
-    return target.edge ? withQuest(d, cycleDoor(q, target.edge)) : d;
+    return target.edge ? withQuest(d, placeDoor(q, target.edge, tool.doorKind, tool.locked)) : d;
   }
   if (tool.kind === 'erase' && target.edge) {
     const e = target.edge;

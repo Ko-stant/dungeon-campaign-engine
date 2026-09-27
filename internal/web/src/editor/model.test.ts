@@ -4,7 +4,7 @@ import { DOC_VERSION, type BoardDoc, type Catalog, type QuestDoc } from '../maps
 import {
   addBlockedSquare,
   addRoom,
-  cycleDoor,
+  placeDoor,
   emptyQuest,
   itemsAt,
   moveItem,
@@ -27,6 +27,7 @@ import {
   toggleDoorState,
   toggleStartTile,
   toggleWall,
+  updateDoor,
 } from './model.ts';
 
 function board(width: number, height: number, fill = VOID): BoardDoc {
@@ -182,18 +183,29 @@ describe('quest items', () => {
     expect(nextId(q, 'monster')).toBe('monster-1');
   });
 
-  test('cycleDoor goes none -> normal -> secret -> none on the same edge', () => {
+  test('placeDoor adds a door of the chosen kind, switches an existing one, and removes an identical one', () => {
     const edge = { x: 2, y: 1, orientation: 'vertical' as const };
-    let q = cycleDoor(emptyQuest(), edge);
+    let q = placeDoor(emptyQuest(), edge, 'normal', false);
     expect(q.doors).toEqual([{ id: 'door-1', edge, kind: 'normal', state: 'closed' }]);
-    q = cycleDoor(q, edge);
-    expect(q.doors[0]?.kind).toBe('secret');
-    q = cycleDoor(q, edge);
+    q = placeDoor(q, edge, 'secret', false);
+    expect(q.doors).toEqual([{ id: 'door-1', edge, kind: 'secret', state: 'closed' }]);
+    q = placeDoor(q, edge, 'gate', true);
+    expect(q.doors).toEqual([{ id: 'door-1', edge, kind: 'gate', state: 'closed', locked: true }]);
+    q = placeDoor(q, edge, 'gate', false);
+    expect(q.doors).toEqual([{ id: 'door-1', edge, kind: 'gate', state: 'closed' }]);
+    q = placeDoor(q, edge, 'gate', false);
     expect(q.doors).toEqual([]);
   });
 
+  test('updateDoor changes kind and lock of one door', () => {
+    let q = placeDoor(emptyQuest(), { x: 2, y: 1, orientation: 'vertical' }, 'normal', false);
+    q = updateDoor(q, 'door-1', { kind: 'gate', locked: true });
+    expect(q.doors[0]).toMatchObject({ kind: 'gate', locked: true });
+    expect(updateDoor(q, 'door-1', { locked: false }).doors[0]).toEqual({ id: 'door-1', edge: { x: 2, y: 1, orientation: 'vertical' }, kind: 'gate', state: 'closed' });
+  });
+
   test('toggleDoorState flips the initial state', () => {
-    let q = cycleDoor(emptyQuest(), { x: 2, y: 1, orientation: 'vertical' });
+    let q = placeDoor(emptyQuest(), { x: 2, y: 1, orientation: 'vertical' }, 'normal', false);
     q = toggleDoorState(q, 'door-1');
     expect(q.doors[0]?.state).toBe('open');
   });
@@ -272,7 +284,7 @@ describe('toBoardView', () => {
     let q = placeFurniture(emptyQuest(), 'table', { x: 1, y: 1 }, 270);
     q = placeFurniture(q, 'mystery', { x: 4, y: 3 }, 0);
     q = placeMonster(q, 'orc', { x: 2, y: 3 });
-    q = cycleDoor(q, { x: 2, y: 2, orientation: 'horizontal' });
+    q = placeDoor(q, { x: 2, y: 2, orientation: 'horizontal' }, 'normal', false);
     q = placeNote(q, { x: 3, y: 3 }, 'gold');
     q = toggleStartTile(q, { x: 4, y: 1 });
 
@@ -282,7 +294,7 @@ describe('toBoardView', () => {
     expect(view.furniture[0]).toEqual({ id: 'furniture-1', type: 'table', at: { x: 1, y: 1 }, width: 3, height: 2, rotation: 270, image: 'assets/table.png' });
     expect(view.furniture[1]).toMatchObject({ type: 'mystery', width: 1, height: 1 });
     expect(view.monsters[0]).toEqual({ id: 'monster-1', type: 'orc', at: { x: 2, y: 3 }, label: 'Orc', image: 'assets/orc.png' });
-    expect(view.doors[0]).toEqual({ id: 'door-1', edge: { x: 2, y: 2, orientation: 'horizontal' }, kind: 'normal', state: 'closed' });
+    expect(view.doors[0]).toEqual({ id: 'door-1', edge: { x: 2, y: 2, orientation: 'horizontal' }, kind: 'normal', state: 'closed', locked: false });
     expect(view.notes).toEqual([{ id: 'note-1', label: 'A', at: { x: 3, y: 3 } }]);
     expect(view.startTiles).toEqual([{ x: 4, y: 1 }]);
   });

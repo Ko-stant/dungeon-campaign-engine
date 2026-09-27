@@ -141,6 +141,27 @@ func TestDoorsCanBeOpenedAndReclosed(t *testing.T) {
 	}
 }
 
+func TestDoorsAndGatesCanBeLockedAndUnlocked(t *testing.T) {
+	s := newState(t)
+	s, ev := apply(t, s, cmd(t, "door.set", map[string]any{"id": "door-3", "locked": false}))
+	if s.Doors[2].Locked || ev.Summary != "Unlocked gate door-3" {
+		t.Fatalf("unlock: %q", ev.Summary)
+	}
+	s, ev = apply(t, s, cmd(t, "door.set", map[string]any{"id": "door-3", "state": "open"}))
+	if ev.Summary != "Opened gate door-3" {
+		t.Fatalf("open gate: %q", ev.Summary)
+	}
+	s, ev = apply(t, s, cmd(t, "door.set", map[string]any{"id": "door-1", "locked": true, "state": "closed"}))
+	if !s.Doors[0].Locked || ev.Summary != "Closed door-1; Locked door-1" {
+		t.Fatalf("close and lock: %q", ev.Summary)
+	}
+	// Nothing is enforced: a locked door can still be opened.
+	s, ev = apply(t, s, cmd(t, "door.set", map[string]any{"id": "door-1", "state": "open"}))
+	if s.Doors[0].State != "open" || !s.Doors[0].Locked || ev.Summary != "Opened door-1" {
+		t.Fatalf("open while locked: %q", ev.Summary)
+	}
+}
+
 func TestTrapsMoveBetweenAnyStates(t *testing.T) {
 	s := newState(t)
 	s, ev := apply(t, s, cmd(t, "trap.set", map[string]any{"id": "trap-1", "state": "triggered"}))

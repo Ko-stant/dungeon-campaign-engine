@@ -4,7 +4,7 @@
  * history; the renderer draws toBoardView() of the current documents.
  */
 import { pixelToEdge, pixelToTile, type Rotation, type TileCoord } from '../board/geometry.ts';
-import { CORRIDOR, VOID, tileAt, tileIndex } from '../board/model.ts';
+import { CORRIDOR, VOID, tileAt, tileIndex, type DoorKind } from '../board/model.ts';
 import { BoardRenderer, type Highlights } from '../board/renderer.ts';
 import { History } from '../editor/history.ts';
 import {
@@ -19,6 +19,7 @@ import {
   setNoteText,
   toBoardView,
   toggleDoorState,
+  updateDoor,
 } from '../editor/model.ts';
 import { applyClick, applyDrag, isDragTool, lineTiles, type ClickTarget, type EditorDoc, type Tool } from '../editor/tools.ts';
 import { ApiError, createApi } from '../maps/api.ts';
@@ -33,7 +34,7 @@ type QuestToolKind = 'select' | 'door' | 'blocked' | 'furniture' | 'monster' | '
 
 const QUEST_TOOLS: { kind: QuestToolKind; label: string; hint: string }[] = [
   { kind: 'select', label: 'Select / move', hint: 'Click a piece or door to edit it; drag a piece to move it.' },
-  { kind: 'door', label: 'Door', hint: 'Click a wall edge: none, door, secret door, none.' },
+  { kind: 'door', label: 'Door', hint: 'Pick a kind below, then click a wall edge. Click again with the same choice to remove it.' },
   { kind: 'blocked', label: 'Blocked squares', hint: 'Drag to cover impassable squares.' },
   { kind: 'furniture', label: 'Furniture', hint: 'Click the bottom-left square. R rotates the selection.' },
   { kind: 'monster', label: 'Monster', hint: 'Click a square to place.' },
@@ -43,6 +44,12 @@ const QUEST_TOOLS: { kind: QuestToolKind; label: string; hint: string }[] = [
   { kind: 'exit', label: 'Exit square', hint: 'Click to toggle an exit square (magenta).' },
   { kind: 'erase', label: 'Erase', hint: 'Click a piece or door to remove it.' },
 ];
+
+const DOOR_KINDS: [DoorKind, string][] = [['normal', 'Door'], ['secret', 'Secret door'], ['gate', 'Gate']];
+
+function doorKindLabel(kind: DoorKind): string {
+  return DOOR_KINDS.find(([k]) => k === kind)?.[1] ?? 'Door';
+}
 
 const btn = 'rounded-md border border-border/60 px-2 py-1 text-sm hover:border-amber-500 disabled:opacity-40 disabled:hover:border-border/60';
 const btnActive = 'rounded-md border border-amber-500 bg-amber-500/15 px-2 py-1 text-sm';
@@ -77,6 +84,8 @@ async function main(): Promise<void> {
   let furnitureRotation: Rotation = 0;
   let monsterType = catalog.monsters[0]?.id ?? '';
   let trapKind: string = TRAP_KINDS[0];
+  let doorKind: DoorKind = 'normal';
+  let doorLocked = false;
   let selectedId: string | null = null;
   let hover: ClickTarget = { tile: null, edge: null };
   let drag: { points: TileCoord[] } | null = null;
@@ -188,6 +197,8 @@ async function main(): Promise<void> {
         return { kind: 'monster', type: monsterType };
       case 'trap':
         return { kind: 'trap', trapKind };
+      case 'door':
+        return { kind: 'door', doorKind, locked: doorLocked };
       default:
         return { kind: questTool };
     }
@@ -632,6 +643,11 @@ async function main(): Promise<void> {
         options.push(select('Monster', catalog.monsters.map((m) => [m.id, m.name]), monsterType, (v) => { monsterType = v; }));
       } else if (questTool === 'trap') {
         options.push(select('Trap', TRAP_KINDS.map((k) => [k, k.replaceAll('_', ' ')]), trapKind, (v) => { trapKind = v; }));
+      } else if (questTool === 'door') {
+        options.push(
+          select('Kind', DOOR_KINDS.map(([k, label]) => [k, label]), doorKind, (v) => { doorKind = v as DoorKind; }),
+          lockedBox(doorLocked, (v) => { doorLocked = v; refresh(); }),
+        );
       }
       children.push(
         h('section', { class: 'space-y-2' },
@@ -646,6 +662,12 @@ async function main(): Promise<void> {
       }
     }
     replaceChildren(leftPanel, ...children);
+  }
+
+  function lockedBox(checked: boolean, onChange: (v: boolean) => void): HTMLLabelElement {
+    return h('label', { class: 'flex items-center gap-2 text-sm' },
+      h('input', { type: 'checkbox', checked, onchange: (e: Event) => { onChange((e.target as HTMLInputElement).checked); } }),
+      'Locked');
   }
 
   function select(label: string, opts: string[][], value: string, onChange: (v: string) => void): HTMLLabelElement {
@@ -727,7 +749,9 @@ async function main(): Promise<void> {
 
     if (door && q) {
       rows.push(
-        h('p', { class: 'text-sm' }, `${door.kind === 'secret' ? 'Secret door' : 'Door'} at (${door.edge.x}, ${door.edge.y}) ${door.edge.orientation}`),
+        h('p', { class: 'text-sm' }, `${doorKindLabel(door.kind)} at (${door.edge.x}, ${door.edge.y}) ${door.edge.orientation}`),
+        select('Kind', DOOR_KINDS.map(([k, label]) => [k, label]), door.kind, (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { kind: v as DoorKind }) }); }),
+        lockedBox(door.locked ?? false, (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { locked: v }) }); }),
         h('button', { type: 'button', class: btn, onclick: () => { commit({ ...doc(), quest: toggleDoorState(q, door.id) }); } }, `Starts ${door.state} (toggle)`),
       );
     } else if (furniture && q) {

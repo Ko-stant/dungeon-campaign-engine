@@ -27,6 +27,8 @@ export interface BoardTheme {
   doorClosed: string;
   doorOpen: string;
   doorSecret: string;
+  doorGate: string;
+  lock: string;
   blocked: string;
   furniture: string;
   monster: string;
@@ -57,7 +59,9 @@ export function readTheme(el: Element = document.documentElement): BoardTheme {
     wall: rgb('brand', '130 166 255', 0.85),
     doorClosed: rgb('brand', '130 166 255'),
     doorOpen: rgb('positive', '74 222 128'),
-    doorSecret: rgb('accent', '255 160 122'),
+    doorSecret: 'rgb(192 132 252)',
+    doorGate: 'rgb(203 213 225)',
+    lock: rgb('warning', '250 204 21'),
     blocked: rgb('danger', '248 113 113', 0.5),
     furniture: rgb('border', '95 104 123', 0.6),
     monster: 'rgb(220 20 60)',
@@ -281,9 +285,33 @@ export class BoardRenderer {
     const ctx = this.#ctx;
     for (const door of view.doors) {
       const r = doorRect(m, door.edge);
-      const color = door.kind === 'secret' ? this.#theme.doorSecret : door.state === 'open' ? this.#theme.doorOpen : this.#theme.doorClosed;
+      const color =
+        door.kind === 'secret' ? this.#theme.doorSecret
+          : door.kind === 'gate' ? this.#theme.doorGate
+            : door.state === 'open' ? this.#theme.doorOpen : this.#theme.doorClosed;
       ctx.save();
-      if (door.state === 'open') {
+      if (door.kind === 'gate' && door.state !== 'open') {
+        // A closed gate: bars across the opening.
+        ctx.fillStyle = this.#theme.background;
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(r.x, r.y, r.w, r.h);
+        ctx.beginPath();
+        const vertical = r.h > r.w;
+        for (let i = 1; i <= 3; i++) {
+          if (vertical) {
+            const y = r.y + (r.h * i) / 4;
+            ctx.moveTo(r.x - 2, y);
+            ctx.lineTo(r.x + r.w + 2, y);
+          } else {
+            const x = r.x + (r.w * i) / 4;
+            ctx.moveTo(x, r.y - 2);
+            ctx.lineTo(x, r.y + r.h + 2);
+          }
+        }
+        ctx.stroke();
+      } else if (door.state === 'open') {
         ctx.fillStyle = this.#theme.background;
         ctx.fillRect(r.x, r.y, r.w, r.h);
         ctx.strokeStyle = color;
@@ -297,6 +325,17 @@ export class BoardRenderer {
         ctx.setLineDash([2, 2]);
         ctx.strokeStyle = this.#theme.label;
         ctx.strokeRect(r.x, r.y, r.w, r.h);
+        ctx.setLineDash([]);
+      }
+      if (door.locked) {
+        const size = Math.max(4, m.tile * 0.22);
+        const cx = r.x + r.w / 2;
+        const cy = r.y + r.h / 2;
+        ctx.fillStyle = this.#theme.lock;
+        ctx.strokeStyle = 'rgb(0 0 0 / 0.7)';
+        ctx.lineWidth = 1;
+        ctx.fillRect(cx - size / 2, cy - size / 2, size, size);
+        ctx.strokeRect(cx - size / 2, cy - size / 2, size, size);
       }
       if (door.id === selectedId) {
         ctx.setLineDash([]);

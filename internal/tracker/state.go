@@ -81,7 +81,8 @@ type DoorState struct {
 	ID    string `json:"id"`
 	State string `json:"state"`
 	// Found is false for a secret door the heroes have not discovered yet.
-	Found bool `json:"found"`
+	Found  bool `json:"found"`
+	Locked bool `json:"locked"`
 }
 
 // TrapState is the live state of a quest trap.
@@ -158,7 +159,7 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 	}
 
 	for _, d := range quest.Doors {
-		s.Doors = append(s.Doors, DoorState{ID: d.ID, State: d.State, Found: d.Kind != maps.DoorSecret})
+		s.Doors = append(s.Doors, DoorState{ID: d.ID, State: d.State, Found: d.Kind != maps.DoorSecret, Locked: d.Locked})
 	}
 	for _, t := range quest.Traps {
 		s.Traps = append(s.Traps, TrapState{ID: t.ID, State: t.State})

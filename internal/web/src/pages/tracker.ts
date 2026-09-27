@@ -340,10 +340,13 @@ async function main(): Promise<void> {
     } else if (door) {
       const live = state.doors.find((d) => d.id === door.id);
       rows.push(
-        h('p', { class: 'font-semibold' }, `${door.kind === 'secret' ? 'Secret door' : 'Door'} ${door.id}`),
+        h('p', { class: 'font-semibold' }, `${door.kind === 'secret' ? 'Secret door' : door.kind === 'gate' ? 'Gate' : 'Door'} ${door.id}`,
+          live?.locked ? h('span', { class: 'ml-2 text-xs text-amber-400' }, 'locked') : null),
         h('div', { class: 'flex flex-wrap gap-2' },
           h('button', { type: 'button', class: btn, onclick: () => { void send({ type: 'door.set', payload: { id: door.id, state: live?.state === 'open' ? 'closed' : 'open' } }); } },
             live?.state === 'open' ? 'Close' : 'Open'),
+          h('button', { type: 'button', class: btn, onclick: () => { void send({ type: 'door.set', payload: { id: door.id, locked: !(live?.locked ?? false) } }); } },
+            live?.locked ? 'Unlock' : 'Lock'),
           door.kind === 'secret'
             ? h('button', { type: 'button', class: btn, onclick: () => { void send({ type: 'door.set', payload: { id: door.id, found: !(live?.found ?? false) } }); } },
               live?.found ? 'Mark not found' : 'Mark found')

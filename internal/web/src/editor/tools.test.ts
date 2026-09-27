@@ -47,10 +47,10 @@ describe('applyDrag (board tools)', () => {
 });
 
 describe('applyClick (quest tools)', () => {
-  test('door cycles the clicked edge and ignores tile clicks', () => {
-    const d1 = applyClick(doc(), { kind: 'door' }, edge(1, 1, 'vertical'), catalog);
-    expect(d1.quest?.doors).toHaveLength(1);
-    expect(applyClick(d1, { kind: 'door' }, tile(1, 1), catalog)).toBe(d1);
+  test('door places the chosen kind on the clicked edge and ignores tile clicks', () => {
+    const d1 = applyClick(doc(), { kind: 'door', doorKind: 'gate', locked: true }, edge(2, 1, 'vertical'), catalog);
+    expect(d1.quest?.doors).toEqual([{ id: 'door-1', edge: { x: 2, y: 1, orientation: 'vertical' }, kind: 'gate', state: 'closed', locked: true }]);
+    expect(applyClick(d1, { kind: 'door', doorKind: 'gate', locked: true }, tile(1, 1), catalog)).toBe(d1);
   });
 
   test('placement tools add pieces on the clicked tile', () => {
@@ -75,7 +75,7 @@ describe('applyClick (quest tools)', () => {
   });
 
   test('erase removes the door under an edge, else the topmost item under a tile', () => {
-    let d = applyClick(doc(), { kind: 'door' }, edge(1, 1, 'vertical'), catalog);
+    let d = applyClick(doc(), { kind: 'door', doorKind: 'normal', locked: false }, edge(1, 1, 'vertical'), catalog);
     d = { ...d, quest: placeMonster(d.quest ?? emptyQuest(), 'orc', { x: 3, y: 2 }) };
     d = applyClick(d, { kind: 'furniture', type: 'chest', rotation: 0 }, tile(3, 2), catalog);
 

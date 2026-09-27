@@ -41,6 +41,7 @@ export interface LiveDoor {
   id: string;
   state: DoorState;
   found: boolean;
+  locked: boolean;
 }
 
 export interface LiveTrap {

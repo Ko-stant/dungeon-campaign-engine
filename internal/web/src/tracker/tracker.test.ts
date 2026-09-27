@@ -44,8 +44,8 @@ function state(): SessionState {
       { id: 'monster-2', type: 'orc', name: 'Orc', x: 4, y: 1, body: 0, maxBody: 1, mind: 2, visibility: 'seen', alive: false },
     ],
     doors: [
-      { id: 'door-1', state: 'open', found: true },
-      { id: 'door-2', state: 'closed', found: false },
+      { id: 'door-1', state: 'open', found: true, locked: false },
+      { id: 'door-2', state: 'closed', found: false, locked: false },
     ],
     traps: [{ id: 'trap-1', state: 'triggered' }],
     consumedNotes: [],
@@ -58,8 +58,8 @@ describe('trackerView', () => {
     const view = trackerView(state(), catalog, { fog: false });
     expect(view.cols).toBe(4);
     expect(view.doors).toEqual([
-      { id: 'door-1', edge: { x: 3, y: 2, orientation: 'vertical' }, kind: 'normal', state: 'open' },
-      { id: 'door-2', edge: { x: 4, y: 1, orientation: 'vertical' }, kind: 'secret', state: 'closed' },
+      { id: 'door-1', edge: { x: 3, y: 2, orientation: 'vertical' }, kind: 'normal', state: 'open', locked: false },
+      { id: 'door-2', edge: { x: 4, y: 1, orientation: 'vertical' }, kind: 'secret', state: 'closed', locked: false },
     ]);
     expect(view.traps).toEqual([{ id: 'trap-1', kind: 'pit', at: { x: 2, y: 2 }, state: 'triggered' }]);
     expect(view.furniture[0]).toMatchObject({ id: 'furniture-1', width: 2, height: 1, image: 'assets/table.png' });
@@ -92,9 +92,19 @@ describe('trackerView', () => {
     expect(view.roomColors?.get(1)).toBe('#aa0000');
   });
 
+  test('gates keep their kind and doors show their live lock', () => {
+    const s = state();
+    s.quest = { ...s.quest, doors: [...s.quest.doors, { id: 'door-3', edge: { x: 2, y: 2, orientation: 'horizontal' }, kind: 'gate', state: 'closed', locked: true }] };
+    s.doors = [...s.doors, { id: 'door-3', state: 'closed', found: true, locked: false }];
+    s.doors[0] = { id: 'door-1', state: 'open', found: true, locked: true };
+    const view = trackerView(s, catalog, { fog: false });
+    expect(view.doors[2]).toEqual({ id: 'door-3', edge: { x: 2, y: 2, orientation: 'horizontal' }, kind: 'gate', state: 'closed', locked: false });
+    expect(view.doors[0]?.locked).toBe(true);
+  });
+
   test('a found secret door is drawn as a normal door', () => {
     const s = state();
-    s.doors[1] = { id: 'door-2', state: 'closed', found: true };
+    s.doors[1] = { id: 'door-2', state: 'closed', found: true, locked: false };
     expect(trackerView(s, catalog, { fog: false }).doors[1]?.kind).toBe('normal');
   });
 

@@ -5,10 +5,11 @@ import (
 	"fmt"
 )
 
-// Door kinds and states.
+// Door kinds and states. A gate (portcullis) opens and closes like a door.
 const (
 	DoorNormal = "normal"
 	DoorSecret = "secret"
+	DoorGate   = "gate"
 	DoorOpen   = "open"
 	DoorClosed = "closed"
 )
@@ -21,12 +22,13 @@ const (
 	TrapDisarmed  = "disarmed"
 )
 
-// Door sits on a tile edge.
+// Door sits on a tile edge. Locked is its starting lock; nothing enforces it.
 type Door struct {
-	ID    string `json:"id"`
-	Edge  Edge   `json:"edge"`
-	Kind  string `json:"kind"`
-	State string `json:"state"`
+	ID     string `json:"id"`
+	Edge   Edge   `json:"edge"`
+	Kind   string `json:"kind"`
+	State  string `json:"state"`
+	Locked bool   `json:"locked,omitempty"`
 }
 
 // Rect is a block of impassable squares (rubble / blocked-square tiles),
@@ -146,7 +148,7 @@ func (q *Quest) Validate() error {
 		if d.Edge.Orientation != Vertical && d.Edge.Orientation != Horizontal {
 			errs = append(errs, fmt.Errorf("door %q: invalid orientation %q", d.ID, d.Edge.Orientation))
 		}
-		if d.Kind != DoorNormal && d.Kind != DoorSecret {
+		if d.Kind != DoorNormal && d.Kind != DoorSecret && d.Kind != DoorGate {
 			errs = append(errs, fmt.Errorf("door %q: invalid kind %q", d.ID, d.Kind))
 		}
 		if d.State != DoorOpen && d.State != DoorClosed {

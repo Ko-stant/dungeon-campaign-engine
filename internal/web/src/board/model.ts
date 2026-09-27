@@ -16,7 +16,7 @@ import type { Edge, Rotation, TileCoord } from './geometry.ts';
 export const VOID = -1;
 export const CORRIDOR = 0;
 
-export type DoorKind = 'normal' | 'secret';
+export type DoorKind = 'normal' | 'secret' | 'gate';
 export type DoorState = 'open' | 'closed';
 export type TrapState = 'hidden' | 'revealed' | 'triggered' | 'disarmed';
 
@@ -25,6 +25,7 @@ export interface DoorView {
   edge: Edge;
   kind: DoorKind;
   state: DoorState;
+  locked?: boolean;
 }
 
 /** A rectangle of impassable squares (rubble / blocked-square tiles), anchored bottom-left. */

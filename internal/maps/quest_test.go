@@ -112,6 +112,16 @@ func TestQuestValidateRejectsMalformedData(t *testing.T) {
 	}
 }
 
+func TestGatesAndLockedDoorsAreValid(t *testing.T) {
+	b := testBoard()
+	q := validQuest(b)
+	q.Doors[0].Kind = DoorGate
+	q.Doors[1].Locked = true
+	if err := q.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestQuestCheckReportsAdvisoryIssues(t *testing.T) {
 	b := testBoard()
 	q := validQuest(b)

@@ -34,6 +34,7 @@ func fixture() (*maps.Board, *maps.Quest, *content.Catalog) {
 	q.Doors = []maps.Door{
 		{ID: "door-1", Edge: maps.Edge{X: 3, Y: 4, Orientation: maps.Vertical}, Kind: maps.DoorNormal, State: maps.DoorClosed},
 		{ID: "door-2", Edge: maps.Edge{X: 5, Y: 2, Orientation: maps.Vertical}, Kind: maps.DoorSecret, State: maps.DoorClosed},
+		{ID: "door-3", Edge: maps.Edge{X: 4, Y: 3, Orientation: maps.Horizontal}, Kind: maps.DoorGate, State: maps.DoorClosed, Locked: true},
 	}
 	q.Traps = []maps.Trap{{ID: "trap-1", Kind: "pit", X: 4, Y: 3, State: maps.TrapHidden}}
 	q.Monsters = []maps.Monster{
@@ -85,8 +86,11 @@ func TestNewSessionSetsUpFromQuest(t *testing.T) {
 		t.Fatalf("monsters start hidden and alive: %+v", s.Monsters[0])
 	}
 
-	if len(s.Doors) != 2 || s.Doors[0].State != maps.DoorClosed || s.Doors[1].Found {
+	if len(s.Doors) != 3 || s.Doors[0].State != maps.DoorClosed || s.Doors[1].Found || s.Doors[0].Locked {
 		t.Fatalf("doors: %+v", s.Doors)
+	}
+	if !s.Doors[2].Found || !s.Doors[2].Locked {
+		t.Fatalf("a locked gate starts found and locked: %+v", s.Doors[2])
 	}
 	if len(s.Traps) != 1 || s.Traps[0].State != maps.TrapHidden {
 		t.Fatalf("traps: %+v", s.Traps)
