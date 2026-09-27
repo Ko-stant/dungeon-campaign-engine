@@ -45,8 +45,8 @@ tools:
 
 dev:
 	@echo "==> Starting development mode (tailwind:watch + Templ --watch + Air)..."
-	npm run tailwind:build && \
-	npm run tailwind:watch & \
+	bun run tailwind:build && \
+	bun run tailwind:watch & \
 	PID_TW=$$!; \
 	$(GO) tool templ generate --watch --proxy="http://localhost:$(APP_PORT)" --open-browser=false -path=./internal/web/views & \
 	PID_TEMPL=$$!; \
@@ -71,7 +71,7 @@ cover:
 
 test-js:
 	@echo "==> Running JavaScript tests..."
-	@npm run test:js
+	@bun run test:js
 
 test-all: test test-js
 	@echo "==> All tests completed"
@@ -127,10 +127,10 @@ db-migrate-down:
 
 # --- Tailwind commands ---
 tailwind-build:
-	@npm run tailwind:build
+	@bun run tailwind:build
 
 tailwind-watch:
-	@npm run tailwind:watch
+	@bun run tailwind:watch
 
 build: tailwind-build
 	@$(GO) tool templ generate -path=./internal/web/views
