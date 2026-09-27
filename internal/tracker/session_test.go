@@ -48,7 +48,10 @@ func fixture() (*maps.Board, *maps.Quest, *content.Catalog) {
 	q.Notes = []maps.Note{{ID: "note-A", Label: "A", X: 6, Y: 2, Text: "84 gold"}}
 	q.StartTiles = []maps.Tile{{X: 1, Y: 4}, {X: 2, Y: 4}, {X: 1, Y: 3}}
 	cat := &content.Catalog{
-		Monsters: []content.MonsterDef{{ID: "orc", Name: "Orc", Body: 1, Mind: 2, Attack: 3, Defense: 2, Movement: 8}},
+		Monsters: []content.MonsterDef{
+			{ID: "orc", Name: "Orc", Body: 1, Mind: 2, Attack: 3, Defense: 2, Movement: 8},
+			{ID: "custom-ogre", Name: "Cave Ogre", Body: 6, Mind: 1, Width: 2, Height: 2, Color: "#aa3300", Custom: true},
+		},
 		Heroes: []content.HeroDef{
 			{ID: "barbarian", Name: "Barbarian", Body: 8, Mind: 2},
 			{ID: "wizard", Name: "Wizard", Body: 4, Mind: 6},
@@ -106,6 +109,22 @@ func TestNewSessionSetsUpFromQuest(t *testing.T) {
 	// The starting room is discovered: tiles (1,3) (2,3) (1,4) (2,4) = indexes 12 13 18 19.
 	if !reflect.DeepEqual(s.Discovered, []int{12, 13, 18, 19}) {
 		t.Fatalf("discovered = %v", s.Discovered)
+	}
+}
+
+func TestSessionMonstersKeepTheirSizeAndColor(t *testing.T) {
+	b, q, cat := fixture()
+	q.Monsters = append(q.Monsters, maps.Monster{ID: "monster-3", Type: "custom-ogre", X: 1, Y: 1})
+	s, err := NewSession(b, q, "Q", party(), cat)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ogre := s.Monsters[2]
+	if ogre.Name != "Cave Ogre" || ogre.Body != 6 || ogre.Width != 2 || ogre.Height != 2 || ogre.Color != "#aa3300" {
+		t.Fatalf("custom monster: %+v", ogre)
+	}
+	if orc := s.Monsters[0]; orc.Width != 1 || orc.Height != 1 || orc.Color != "" {
+		t.Fatalf("catalog monsters are 1x1 with artwork: %+v", orc)
 	}
 }
 

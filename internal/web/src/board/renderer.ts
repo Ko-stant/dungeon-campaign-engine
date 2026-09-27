@@ -82,6 +82,16 @@ export function readTheme(el: Element = document.documentElement): BoardTheme {
   };
 }
 
+/** Black or white, whichever reads better on a "#rrggbb" color. */
+function readableOn(hex: string): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  if (Number.isNaN(n)) {
+    return 'rgb(0 0 0)';
+  }
+  const luminance = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return luminance > 150 ? 'rgb(0 0 0)' : 'rgb(255 255 255)';
+}
+
 /** Loads images once and asks for a redraw when each one arrives. */
 export class ImageCache {
   readonly #images = new Map<string, HTMLImageElement | null>();
@@ -425,7 +435,7 @@ export class BoardRenderer {
   #drawPieces(pieces: readonly PieceView[], m: GridMetrics, color: string, selectedId: string | null): void {
     const ctx = this.#ctx;
     for (const p of pieces) {
-      const r = tileRect(m, p.at);
+      const r = footprintRect(m, p.at, p.width ?? 1, p.height ?? 1);
       const img = p.image ? this.#images.get(p.image) : undefined;
       ctx.save();
       if (p.dim) {
@@ -433,6 +443,20 @@ export class BoardRenderer {
       }
       if (img) {
         ctx.drawImage(img, r.x, r.y, r.w, r.h);
+      } else if (p.color) {
+        // Custom monster: a colored block over its footprint, named in the middle.
+        const inset = Math.max(1, m.tile * 0.08);
+        ctx.fillStyle = p.color;
+        ctx.strokeStyle = 'rgb(0 0 0 / 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(r.x + inset, r.y + inset, r.w - 2 * inset, r.h - 2 * inset, Math.max(2, m.tile * 0.15));
+        ctx.fill();
+        ctx.stroke();
+        if (p.label) {
+          const big = (p.width ?? 1) > 1 || (p.height ?? 1) > 1;
+          this.#label(big ? p.label : p.label.slice(0, 2), r.cx, r.cy, m.tile * (big ? 0.3 : 0.35), readableOn(p.color), r.w - 4);
+        }
       } else {
         ctx.beginPath();
         ctx.arc(r.cx, r.cy, Math.max(2, m.tile * 0.35), 0, Math.PI * 2);
@@ -501,14 +525,18 @@ export class BoardRenderer {
     ctx.restore();
   }
 
-  #label(text: string, x: number, y: number, size: number, color = this.#theme.label): void {
+  #label(text: string, x: number, y: number, size: number, color = this.#theme.label, maxWidth?: number): void {
     const ctx = this.#ctx;
     ctx.save();
     ctx.fillStyle = color;
     ctx.font = `600 ${Math.max(8, Math.round(size))}px ui-sans-serif, system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, x, y);
+    if (maxWidth === undefined) {
+      ctx.fillText(text, x, y);
+    } else {
+      ctx.fillText(text, x, y, maxWidth);
+    }
     ctx.restore();
   }
 }

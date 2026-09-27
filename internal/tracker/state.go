@@ -74,6 +74,11 @@ type Monster struct {
 	Visibility string `json:"visibility"`
 	Alive      bool   `json:"alive"`
 	Notes      string `json:"notes,omitempty"`
+	// Size and color are copied from the monster type when it enters the
+	// session, so later edits to a custom monster never change a game.
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Color  string `json:"color,omitempty"`
 }
 
 // DoorState is the live state of a quest door.
@@ -148,9 +153,10 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 	}
 
 	for _, qm := range quest.Monsters {
-		m := Monster{ID: qm.ID, Type: qm.Type, Name: qm.Type, X: qm.X, Y: qm.Y, Visibility: MonsterHidden, Alive: true, Notes: qm.Notes}
+		m := Monster{ID: qm.ID, Type: qm.Type, Name: qm.Type, X: qm.X, Y: qm.Y, Visibility: MonsterHidden, Alive: true, Notes: qm.Notes, Width: 1, Height: 1}
 		if def, ok := catalog.Monster(qm.Type); ok {
-			m.Name, m.Body, m.Mind = def.Name, def.Body, def.Mind
+			m.Name, m.Body, m.Mind, m.Color = def.Name, def.Body, def.Mind, def.Color
+			m.Width, m.Height = def.Size()
 		}
 		if qm.Body != nil {
 			m.Body = *qm.Body

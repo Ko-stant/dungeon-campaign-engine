@@ -34,6 +34,18 @@ type MonsterDef struct {
 	Defense  int    `json:"defense"`
 	Movement int    `json:"movement"`
 	Image    string `json:"image,omitempty"`
+	// Custom monsters (made by the GM) have a color instead of artwork and may
+	// cover several squares. Width and Height of 0 mean 1.
+	Width  int    `json:"width,omitempty"`
+	Height int    `json:"height,omitempty"`
+	Color  string `json:"color,omitempty"`
+	Notes  string `json:"notes,omitempty"`
+	Custom bool   `json:"custom,omitempty"`
+}
+
+// Size returns the monster's footprint in squares (at least 1x1).
+func (m MonsterDef) Size() (int, int) {
+	return max(m.Width, 1), max(m.Height, 1)
 }
 
 // HeroDef is a hero class with its starting stats.

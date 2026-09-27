@@ -124,6 +124,17 @@ export interface MonsterDef {
   defense: number;
   movement: number;
   image?: string;
+  /** Custom monsters (made on the Monsters page): size in squares, color, notes. */
+  width?: number;
+  height?: number;
+  color?: string;
+  notes?: string;
+  custom?: boolean;
+}
+
+/** A monster's name for pickers; custom monsters show their size. */
+export function monsterOptionLabel(m: MonsterDef): string {
+  return m.custom ? `${m.name} (custom ${m.width ?? 1}×${m.height ?? 1})` : m.name;
 }
 
 export interface HeroDef {

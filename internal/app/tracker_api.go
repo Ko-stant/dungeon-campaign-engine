@@ -271,7 +271,11 @@ func (s *Server) newSession(ctx context.Context, campaignID, questID, name strin
 	if err != nil {
 		return store.Session{}, err
 	}
-	state, err := tracker.NewSession(board, &quest, questRec.Name, heroes, s.catalog)
+	cat, err := s.catalogFor(ctx)
+	if err != nil {
+		return store.Session{}, err
+	}
+	state, err := tracker.NewSession(board, &quest, questRec.Name, heroes, cat)
 	if err != nil {
 		return store.Session{}, fmt.Errorf("%w: %v", errBadInput, err)
 	}
@@ -408,7 +412,12 @@ func (s *Server) sessionCommand(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "this session is completed; reopen it to make changes")
 		return
 	}
-	next, ev, err := tracker.Apply(state, cmd, s.catalog)
+	cat, err := s.catalogFor(r.Context())
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	next, ev, err := tracker.Apply(state, cmd, cat)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "%v", err)
 		return

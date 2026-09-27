@@ -197,6 +197,44 @@ func TestCampaignLifecycle(t *testing.T) {
 	}
 }
 
+func TestCustomMonsterLifecycle(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	doc := json.RawMessage(`{"color":"#aa3300","width":2,"height":2,"body":6}`)
+	m, err := s.CreateCustomMonster(ctx, "Cave Ogre", doc)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if m.ID == "" || m.Name != "Cave Ogre" {
+		t.Fatalf("created: %+v", m)
+	}
+	jsonEqual(t, m.Doc, doc)
+
+	more := json.RawMessage(`{"color":"#aa3300","width":3,"height":2,"body":8}`)
+	upd, err := s.UpdateCustomMonster(ctx, m.ID, "Cave Ogre Chief", more)
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if upd.Name != "Cave Ogre Chief" {
+		t.Fatalf("updated: %+v", upd)
+	}
+	jsonEqual(t, upd.Doc, more)
+
+	list, err := s.ListCustomMonsters(ctx)
+	if err != nil || len(list) != 1 || list[0].ID != m.ID {
+		t.Fatalf("list: %+v %v", list, err)
+	}
+	if err := s.DeleteCustomMonster(ctx, m.ID); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if err := s.DeleteCustomMonster(ctx, m.ID); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("second delete: %v", err)
+	}
+	if _, err := s.UpdateCustomMonster(ctx, "nope", "x", doc); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("bad id: %v", err)
+	}
+}
+
 func TestSessionEventsUpdateStateInOrder(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()

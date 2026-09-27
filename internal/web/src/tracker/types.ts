@@ -35,6 +35,10 @@ export interface Monster {
   visibility: Visibility;
   alive: boolean;
   notes?: string;
+  /** Size in squares and color, copied from the monster type (missing on older sessions). */
+  width?: number;
+  height?: number;
+  color?: string;
 }
 
 export interface LiveDoor {

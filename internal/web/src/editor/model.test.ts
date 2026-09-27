@@ -40,7 +40,10 @@ const catalog: Catalog = {
     { id: 'table', name: 'Table', width: 3, height: 2, blocksMovement: true, blocksLineOfSight: false, image: 'assets/table.png' },
     { id: 'chest', name: 'Chest', width: 1, height: 1, blocksMovement: true, blocksLineOfSight: false },
   ],
-  monsters: [{ id: 'orc', name: 'Orc', body: 1, mind: 2, attack: 3, defense: 2, movement: 8, image: 'assets/orc.png' }],
+  monsters: [
+    { id: 'orc', name: 'Orc', body: 1, mind: 2, attack: 3, defense: 2, movement: 8, image: 'assets/orc.png' },
+    { id: 'custom-ogre', name: 'Cave Ogre', body: 6, mind: 1, attack: 4, defense: 3, movement: 6, width: 2, height: 2, color: '#aa3300', custom: true },
+  ],
   heroes: [],
 };
 
@@ -274,6 +277,13 @@ describe('quest items', () => {
     q = setBlockedHiddenDoor(q, 'blocked-1', false);
     expect(q.blockedSquares[0]).toEqual({ id: 'blocked-1', x: 4, y: 15, w: 1, h: 1 });
     expect(toBoardView(board(5, 20), setBlockedHiddenDoor(q, 'blocked-1', true), catalog).blockedSquares).toEqual([{ id: 'blocked-1', x: 4, y: 15, w: 1, h: 1, hiddenDoor: true }]);
+  });
+
+  test('custom monsters cover their whole footprint', () => {
+    const q = placeMonster(emptyQuest(), 'custom-ogre', { x: 3, y: 3 });
+    expect(itemsAt(q, catalog, { x: 4, y: 4 })).toEqual(['monster-1']);
+    expect(itemsAt(q, catalog, { x: 5, y: 4 })).toEqual([]);
+    expect(toBoardView(board(6, 6), q, catalog).monsters[0]).toEqual({ id: 'monster-1', type: 'custom-ogre', at: { x: 3, y: 3 }, label: 'Cave Ogre', width: 2, height: 2, color: '#aa3300' });
   });
 
   test('moveItem and removeItem work for every layer', () => {

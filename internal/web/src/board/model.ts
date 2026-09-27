@@ -59,6 +59,30 @@ export interface PieceView {
   image?: string;
   /** Drawn faded, e.g. a monster the heroes have not seen yet. */
   dim?: boolean;
+  /** Footprint in squares from the bottom-left `at` (default 1x1). */
+  width?: number;
+  height?: number;
+  /** Solid color for pieces without artwork (custom monsters). */
+  color?: string;
+}
+
+/** Copies a piece's size (when bigger than one square) and color onto a view. */
+export function withShape(view: PieceView, shape: { width?: number | undefined; height?: number | undefined; color?: string | undefined }): PieceView {
+  const w = shape.width ?? 1;
+  const h = shape.height ?? 1;
+  if (w > 1 || h > 1) {
+    view.width = w;
+    view.height = h;
+  }
+  if (shape.color) {
+    view.color = shape.color;
+  }
+  return view;
+}
+
+/** True when square t lies on a piece of the given size anchored at (x, y). */
+export function covers(x: number, y: number, width: number | undefined, height: number | undefined, t: TileCoord): boolean {
+  return t.x >= x && t.x < x + (width ?? 1) && t.y >= y && t.y < y + (height ?? 1);
 }
 
 export interface TrapView {

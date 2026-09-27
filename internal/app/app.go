@@ -52,6 +52,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	s.registerTracker(mux)
 	s.registerPages(mux)
 	s.registerTrackerPages(mux)
+	s.registerMonsterPages(mux)
 }
 
 type errorResponse struct {
@@ -104,8 +105,4 @@ func cleanName(name string) (string, error) {
 		return "", fmt.Errorf("name must be at most %d characters", maxNameLength)
 	}
 	return name, nil
-}
-
-func (s *Server) getCatalog(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, s.catalog)
 }

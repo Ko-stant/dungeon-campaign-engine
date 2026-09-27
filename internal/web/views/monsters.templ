@@ -1,0 +1,126 @@
+package views
+
+import (
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
+	"strconv"
+)
+
+// MonsterForm holds a custom monster form's values as typed.
+type MonsterForm struct {
+	Name     string
+	Color    string
+	Width    string
+	Height   string
+	Body     string
+	Mind     string
+	Attack   string
+	Defense  string
+	Movement string
+	Notes    string
+}
+
+// MonsterItem is one custom monster on the /monsters page.
+type MonsterItem struct {
+	ID   string
+	Form MonsterForm
+}
+
+// DefaultMonsterForm is the empty create form: a 1x1 red monster.
+func DefaultMonsterForm() MonsterForm {
+	return MonsterForm{Color: "#b91c1c", Width: "1", Height: "1", Body: "1", Mind: "1", Attack: "2", Defense: "2", Movement: "6"}
+}
+
+// MonsterFormFromDef fills a form from a stored custom monster.
+func MonsterFormFromDef(m content.MonsterDef) MonsterForm {
+	w, h := m.Size()
+	return MonsterForm{
+		Name: m.Name, Color: m.Color, Width: strconv.Itoa(w), Height: strconv.Itoa(h),
+		Body: strconv.Itoa(m.Body), Mind: strconv.Itoa(m.Mind), Attack: strconv.Itoa(m.Attack),
+		Defense: strconv.Itoa(m.Defense), Movement: strconv.Itoa(m.Movement), Notes: m.Notes,
+	}
+}
+
+const smallInputClass = "w-full rounded-md border border-border/60 bg-surface px-2 py-1"
+
+templ monsterNumber(label, name, value string, min, max int) {
+	<label class="block text-xs">
+		<span class="mb-1 block opacity-70">{ label }</span>
+		<input name={ name } type="number" min={ strconv.Itoa(min) } max={ strconv.Itoa(max) } required value={ value } class={ smallInputClass }/>
+	</label>
+}
+
+templ monsterFields(f MonsterForm) {
+	<div class="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_4rem_4rem_4rem]">
+		<label class="col-span-2 block text-xs sm:col-span-1">
+			<span class="mb-1 block opacity-70">Name</span>
+			<input name="name" required maxlength="120" value={ f.Name } placeholder="e.g. Cave Ogre" class={ smallInputClass }/>
+		</label>
+		<label class="block text-xs">
+			<span class="mb-1 block opacity-70">Color</span>
+			<input name="color" type="color" value={ f.Color } class="h-8 w-full cursor-pointer rounded-md border border-border/60 bg-surface"/>
+		</label>
+		@monsterNumber("Width", "width", f.Width, 1, 4)
+		@monsterNumber("Height", "height", f.Height, 1, 4)
+	</div>
+	<div class="grid grid-cols-5 gap-3">
+		@monsterNumber("Body", "body", f.Body, 0, 99)
+		@monsterNumber("Mind", "mind", f.Mind, 0, 99)
+		@monsterNumber("Attack", "attack", f.Attack, 0, 99)
+		@monsterNumber("Defend", "defense", f.Defense, 0, 99)
+		@monsterNumber("Move", "movement", f.Movement, 0, 99)
+	</div>
+	<label class="block text-xs">
+		<span class="mb-1 block opacity-70">Notes</span>
+		<input name="notes" maxlength="500" value={ f.Notes } placeholder="Special rules, reminders" class={ smallInputClass }/>
+	</label>
+}
+
+// MonstersPage is the custom monster library: GM-made monster types with a
+// color, a size in squares and optional stats.
+templ MonstersPage(items []MonsterItem, form MonsterForm, formError string) {
+	@components.Page("Monsters", "") {
+		<main class="mx-auto max-w-4xl p-6 space-y-8">
+			<header class="flex items-baseline justify-between">
+				<div>
+					<h1 class="text-2xl font-bold text-amber-400">Monsters</h1>
+					<span class="text-sm opacity-70">Your own monsters, placeable in any quest</span>
+				</div>
+				@appNav("monsters")
+			</header>
+			if formError != "" {
+				<p class="rounded-md border border-danger/60 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{ formError }</p>
+			}
+			<section class={ cardClass }>
+				<h2 class="mb-4 text-lg font-semibold">New custom monster</h2>
+				<form method="post" action="/monsters" class="space-y-3">
+					@monsterFields(form)
+					<button type="submit" class={ buttonClass }>Create</button>
+				</form>
+				<p class="mt-2 text-xs opacity-60">Custom monsters are drawn as colored blocks covering width × height squares, anchored at their bottom-left square. Sessions keep the size and color a monster had when it entered the game.</p>
+			</section>
+			<section class="space-y-3">
+				<h2 class="text-lg font-semibold">Your monsters</h2>
+				if len(items) == 0 {
+					<p class="opacity-70">No custom monsters yet.</p>
+				}
+				for _, m := range items {
+					<div class="rounded-lg border border-border/60 p-4">
+						<div class="mb-3 flex items-center gap-2">
+							<span class="inline-block h-4 w-4 rounded-sm border border-border/60" style={ "background-color: " + m.Form.Color }></span>
+							<span class="font-semibold">{ m.Form.Name }</span>
+							<span class="text-xs opacity-60">{ m.Form.Width } × { m.Form.Height }</span>
+						</div>
+						<form method="post" action={ templ.SafeURL("/monsters/" + m.ID) } class="space-y-3">
+							@monsterFields(m.Form)
+							<div class="flex items-center gap-2">
+								<button type="submit" class={ linkButton }>Save</button>
+								<button type="submit" formaction={ templ.SafeURL("/monsters/" + m.ID + "/delete") } class="rounded-md border border-danger/60 px-3 py-1 text-sm text-danger hover:bg-danger/10" onclick="return confirm('Delete this monster? Quests that placed it keep the placement.')">Delete</button>
+							</div>
+						</form>
+					</div>
+				}
+			</section>
+		</main>
+	}
+}

@@ -105,6 +105,12 @@ func TestMonsterLifecycle(t *testing.T) {
 		t.Fatalf("added: %+v %q", added, ev.Summary)
 	}
 
+	s, ev = apply(t, s, cmd(t, "monster.add", map[string]any{"type": "custom-ogre", "x": 1, "y": 1}))
+	ogre := s.Monsters[len(s.Monsters)-1]
+	if ogre.Width != 2 || ogre.Height != 2 || ogre.Color != "#aa3300" || ev.Summary != "Added Cave Ogre (monster-4) at (1,1)" {
+		t.Fatalf("custom: %+v %q", ogre, ev.Summary)
+	}
+
 	s, ev = apply(t, s, cmd(t, "monster.update", map[string]any{"id": "monster-1", "visibility": "seen"}))
 	if s.Monsters[0].Visibility != MonsterSeen || ev.Summary != "Orc (monster-1): now seen" {
 		t.Fatalf("seen: %q", ev.Summary)
@@ -120,7 +126,7 @@ func TestMonsterLifecycle(t *testing.T) {
 	}
 
 	s, ev = apply(t, s, cmd(t, "monster.remove", map[string]any{"id": "monster-3"}))
-	if len(s.Monsters) != 2 || ev.Summary != "Removed Orc (monster-3)" {
+	if len(s.Monsters) != 3 || ev.Summary != "Removed Orc (monster-3)" {
 		t.Fatalf("remove: %d %q", len(s.Monsters), ev.Summary)
 	}
 }

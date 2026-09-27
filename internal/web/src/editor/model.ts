@@ -4,7 +4,7 @@
  * is just a stack of snapshots.
  */
 import { edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
-import { VOID, onBoard as squareOnBoard, regionAt, tileIndex, type BlockedSquareView, type BoardView, type DoorKind, type FurnitureView, type PieceView } from '../board/model.ts';
+import { VOID, covers, withShape, onBoard as squareOnBoard, regionAt, tileIndex, type BlockedSquareView, type BoardView, type DoorKind, type FurnitureView, type PieceView } from '../board/model.ts';
 import { DOC_VERSION, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type RectDoc, type Room } from '../maps/types.ts';
 
 export const MAX_BOARD_SIZE = 200;
@@ -287,7 +287,10 @@ function furnitureSize(catalog: Catalog, type: string): { width: number; height:
 export function itemsAt(q: QuestDoc, catalog: Catalog, t: TileCoord): string[] {
   const hit = (x: number, y: number): boolean => x === t.x && y === t.y;
   const ids: string[] = [];
-  ids.push(...q.monsters.filter((m) => hit(m.x, m.y)).map((m) => m.id));
+  ids.push(...q.monsters.filter((m) => {
+    const def = catalog.monsters.find((d) => d.id === m.type);
+    return covers(m.x, m.y, def?.width, def?.height, t);
+  }).map((m) => m.id));
   ids.push(...q.traps.filter((tr) => hit(tr.x, tr.y)).map((tr) => tr.id));
   ids.push(...q.notes.filter((n) => hit(n.x, n.y)).map((n) => n.id));
   for (const f of q.furniture) {
@@ -347,7 +350,7 @@ export function toBoardView(b: BoardDoc, q: QuestDoc | null, catalog: Catalog): 
     if (def?.image) {
       view.image = def.image;
     }
-    return view;
+    return def ? withShape(view, def) : view;
   });
   return {
     cols: b.width,

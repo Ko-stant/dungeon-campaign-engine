@@ -5,6 +5,7 @@
  */
 import { pixelToEdge, pixelToTile } from '../board/geometry.ts';
 import { tileIndex } from '../board/model.ts';
+import { monsterOptionLabel } from '../maps/types.ts';
 import { BoardRenderer } from '../board/renderer.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
@@ -260,7 +261,7 @@ async function main(): Promise<void> {
         mode = { kind: 'addMonster', monsterType };
         refresh();
       },
-    }, ...catalog.monsters.map((m) => h('option', { value: m.id, selected: m.id === monsterType }, m.name)));
+    }, ...catalog.monsters.map((m) => h('option', { value: m.id, selected: m.id === monsterType }, monsterOptionLabel(m))));
     const hint: Record<Mode['kind'], string> = {
       select: 'Click a hero or monster, then a square to move it. Click a door to open or close it.',
       reveal: 'Click a room to reveal it (or a corridor square).',

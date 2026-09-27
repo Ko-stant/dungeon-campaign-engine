@@ -365,6 +365,69 @@ func (s *Store) UpdateCampaign(ctx context.Context, id, name string, heroes json
 		id, name, orEmptyArray(heroes)))
 }
 
+// --- Custom monsters ---
+
+// CustomMonster is a GM-made monster type. Doc holds its color, size and stats.
+type CustomMonster struct {
+	ID        string
+	Name      string
+	Doc       json.RawMessage
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+const customMonsterColumns = `id::text, name, doc, created_at, updated_at`
+
+func scanCustomMonster(row pgx.Row) (CustomMonster, error) {
+	var m CustomMonster
+	err := row.Scan(&m.ID, &m.Name, &m.Doc, &m.CreatedAt, &m.UpdatedAt)
+	return m, notFoundIfNoRows(err)
+}
+
+// CreateCustomMonster stores a new custom monster.
+func (s *Store) CreateCustomMonster(ctx context.Context, name string, doc json.RawMessage) (CustomMonster, error) {
+	return scanCustomMonster(s.pool.QueryRow(ctx,
+		`INSERT INTO custom_monster (name, doc) VALUES ($1, $2) RETURNING `+customMonsterColumns,
+		name, orEmptyObject(doc)))
+}
+
+// ListCustomMonsters returns every custom monster by name.
+func (s *Store) ListCustomMonsters(ctx context.Context) ([]CustomMonster, error) {
+	rows, err := s.pool.Query(ctx, `SELECT `+customMonsterColumns+` FROM custom_monster ORDER BY lower(name), id`)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (CustomMonster, error) {
+		return scanCustomMonster(row)
+	})
+}
+
+// UpdateCustomMonster replaces a custom monster's name and doc.
+func (s *Store) UpdateCustomMonster(ctx context.Context, id, name string, doc json.RawMessage) (CustomMonster, error) {
+	if !validID(id) {
+		return CustomMonster{}, ErrNotFound
+	}
+	return scanCustomMonster(s.pool.QueryRow(ctx,
+		`UPDATE custom_monster SET name = $2, doc = $3, updated_at = now() WHERE id = $1 RETURNING `+customMonsterColumns,
+		id, name, orEmptyObject(doc)))
+}
+
+// DeleteCustomMonster removes a custom monster. Quests that placed it keep
+// the placement, and running sessions keep their copy of its size and color.
+func (s *Store) DeleteCustomMonster(ctx context.Context, id string) error {
+	if !validID(id) {
+		return ErrNotFound
+	}
+	tag, err := s.pool.Exec(ctx, `DELETE FROM custom_monster WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // --- Sessions and events ---
 
 // Session is one quest being played, with its complete current state.

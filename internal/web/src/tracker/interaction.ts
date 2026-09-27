@@ -1,5 +1,6 @@
 /** What a click on the tracker board means in each mode. */
 import type { Edge, TileCoord } from '../board/geometry.ts';
+import { covers } from '../board/model.ts';
 import type { Command, SessionState } from './types.ts';
 
 export type Mode = { kind: 'select' } | { kind: 'reveal' } | { kind: 'hide' } | { kind: 'addMonster'; monsterType: string };
@@ -23,7 +24,7 @@ export function pieceAt(s: SessionState, t: TileCoord): string | null {
   if (hero) {
     return hero.id;
   }
-  return s.monsters.find((m) => m.alive && at(m.x, m.y, t))?.id ?? null;
+  return s.monsters.find((m) => m.alive && covers(m.x, m.y, m.width, m.height, t))?.id ?? null;
 }
 
 export function doorAt(s: SessionState, e: Edge): string | null {

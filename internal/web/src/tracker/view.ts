@@ -1,5 +1,5 @@
 /** Builds the renderer's view of a live session for the GM. */
-import type { BoardView, PieceView } from '../board/model.ts';
+import { withShape, type BoardView, type PieceView } from '../board/model.ts';
 import { toBoardView } from '../editor/model.ts';
 import type { Catalog } from '../maps/types.ts';
 import type { SessionState } from './types.ts';
@@ -29,7 +29,7 @@ export function trackerView(s: SessionState, catalog: Catalog, opts: ViewOptions
       if (m.visibility === 'hidden') {
         view.dim = true;
       }
-      return view;
+      return withShape(view, m);
     });
 
   const heroes: PieceView[] = s.heroes.filter((h) => h.placed).map((h) => ({ id: h.id, type: h.class, at: { x: h.x, y: h.y }, label: h.name }));

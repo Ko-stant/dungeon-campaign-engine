@@ -114,6 +114,14 @@ describe('trackerView', () => {
     expect(trackerView(older, catalog, { fog: false }).blockedSquares).toHaveLength(2);
   });
 
+  test('custom monsters are drawn with their size and color and can be picked anywhere on them', () => {
+    const s = state();
+    s.monsters = [...s.monsters, { id: 'monster-3', type: 'custom-ogre', name: 'Cave Ogre', x: 1, y: 1, body: 6, maxBody: 6, mind: 1, visibility: 'seen', alive: true, width: 2, height: 2, color: '#aa3300' }];
+    const view = trackerView(s, catalog, { fog: false });
+    expect(view.monsters[1]).toEqual({ id: 'monster-3', type: 'custom-ogre', at: { x: 1, y: 1 }, label: 'Cave Ogre', width: 2, height: 2, color: '#aa3300' });
+    expect(pieceAt(s, { x: 2, y: 2 })).toBe('monster-3');
+  });
+
   test('a found secret door is drawn as a normal door', () => {
     const s = state();
     s.doors[1] = { id: 'door-2', state: 'closed', found: true, locked: false };

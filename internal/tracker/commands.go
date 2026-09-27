@@ -294,7 +294,9 @@ func (a *applier) monsterAdd(payload json.RawMessage) (string, error) {
 	m := Monster{
 		ID: a.nextMonsterID(), Type: def.ID, Name: def.Name, X: p.X, Y: p.Y,
 		Body: def.Body, MaxBody: def.Body, Mind: def.Mind, Visibility: p.Visibility, Alive: true,
+		Color: def.Color,
 	}
+	m.Width, m.Height = def.Size()
 	a.s.Monsters = append(a.s.Monsters, m)
 	return fmt.Sprintf("Added %s at (%d,%d)", monsterLabel(&m), p.X, p.Y), nil
 }

@@ -24,7 +24,7 @@ import {
 } from '../editor/model.ts';
 import { applyClick, applyDrag, isDragTool, lineTiles, type ClickTarget, type EditorDoc, type Tool } from '../editor/tools.ts';
 import { ApiError, createApi } from '../maps/api.ts';
-import type { Issue, QuestSummary } from '../maps/types.ts';
+import { monsterOptionLabel, type Issue, type QuestSummary } from '../maps/types.ts';
 import { h, replaceChildren } from '../ui/dom.ts';
 
 const TRAP_KINDS = ['pit', 'spear', 'falling_block', 'chest', 'other'] as const;
@@ -644,7 +644,7 @@ async function main(): Promise<void> {
           select('Rotation', [['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']], String(furnitureRotation), (v) => { furnitureRotation = Number(v) as Rotation; }),
         );
       } else if (questTool === 'monster') {
-        options.push(select('Monster', catalog.monsters.map((m) => [m.id, m.name]), monsterType, (v) => { monsterType = v; }));
+        options.push(select('Monster', catalog.monsters.map((m) => [m.id, monsterOptionLabel(m)]), monsterType, (v) => { monsterType = v; }));
       } else if (questTool === 'trap') {
         options.push(select('Trap', TRAP_KINDS.map((k) => [k, k.replaceAll('_', ' ')]), trapKind, (v) => { trapKind = v; }));
       } else if (questTool === 'blocked') {
@@ -771,6 +771,9 @@ async function main(): Promise<void> {
       rows.push(h('p', { class: 'text-sm' }, `${def?.name ?? monster.type} at (${monster.x}, ${monster.y})`));
       if (def) {
         rows.push(h('p', { class: 'text-xs opacity-70' }, `Body ${def.body} · Mind ${def.mind} · Attack ${def.attack} · Defend ${def.defense} · Move ${def.movement}`));
+        if (def.custom) {
+          rows.push(h('p', { class: 'text-xs opacity-70' }, `Custom monster, ${def.width ?? 1}×${def.height ?? 1} squares${def.notes ? ` · ${def.notes}` : ''}`));
+        }
       }
     } else if (trap) {
       rows.push(h('p', { class: 'text-sm' }, `${trap.kind.replaceAll('_', ' ')} trap at (${trap.x}, ${trap.y})`));
