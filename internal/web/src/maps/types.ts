@@ -44,6 +44,8 @@ export interface RectDoc {
   y: number;
   w: number;
   h: number;
+  /** The block hides a secret door; finding it removes the block. Omitted when false. */
+  hiddenDoor?: boolean;
 }
 
 export interface FurnitureDoc {

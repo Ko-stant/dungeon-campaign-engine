@@ -37,6 +37,10 @@ func fixture() (*maps.Board, *maps.Quest, *content.Catalog) {
 		{ID: "door-3", Edge: maps.Edge{X: 4, Y: 3, Orientation: maps.Horizontal}, Kind: maps.DoorGate, State: maps.DoorClosed, Locked: true},
 	}
 	q.Traps = []maps.Trap{{ID: "trap-1", Kind: "pit", X: 4, Y: 3, State: maps.TrapHidden}}
+	q.BlockedSquares = []maps.Rect{
+		{ID: "blocked-1", X: 3, Y: 1, W: 1, H: 1, HiddenDoor: true},
+		{ID: "blocked-2", X: 4, Y: 4, W: 2, H: 1},
+	}
 	q.Monsters = []maps.Monster{
 		{ID: "monster-1", Type: "orc", X: 5, Y: 2},
 		{ID: "monster-2", Type: "orc", X: 6, Y: 1, Body: &body},
@@ -94,6 +98,9 @@ func TestNewSessionSetsUpFromQuest(t *testing.T) {
 	}
 	if len(s.Traps) != 1 || s.Traps[0].State != maps.TrapHidden {
 		t.Fatalf("traps: %+v", s.Traps)
+	}
+	if s.RemovedBlocks == nil || len(s.RemovedBlocks) != 0 {
+		t.Fatalf("no blocked squares start removed: %+v", s.RemovedBlocks)
 	}
 
 	// The starting room is discovered: tiles (1,3) (2,3) (1,4) (2,4) = indexes 12 13 18 19.

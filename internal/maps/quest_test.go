@@ -117,6 +117,7 @@ func TestGatesAndLockedDoorsAreValid(t *testing.T) {
 	q := validQuest(b)
 	q.Doors[0].Kind = DoorGate
 	q.Doors[1].Locked = true
+	q.BlockedSquares[0].HiddenDoor = true
 	if err := q.Validate(); err != nil {
 		t.Fatal(err)
 	}

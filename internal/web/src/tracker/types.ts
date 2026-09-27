@@ -59,6 +59,8 @@ export interface SessionState {
   monsters: Monster[];
   doors: LiveDoor[];
   traps: LiveTrap[];
+  /** Quest blocked squares removed during play. Missing on sessions started before this existed. */
+  removedBlocks?: string[];
   consumedNotes: string[];
   discovered: number[];
 }

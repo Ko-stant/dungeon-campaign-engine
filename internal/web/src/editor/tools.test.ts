@@ -31,13 +31,15 @@ describe('applyDrag (board tools)', () => {
   });
 
   test('blocked adds one blocked-square rectangle from the drag', () => {
-    const out = applyDrag(doc(), { kind: 'blocked' }, [{ x: 2, y: 1 }, { x: 1, y: 2 }]);
+    const out = applyDrag(doc(), { kind: 'blocked', hiddenDoor: false }, [{ x: 2, y: 1 }, { x: 1, y: 2 }]);
     expect(out.quest?.blockedSquares).toEqual([{ id: 'blocked-1', x: 1, y: 1, w: 2, h: 2 }]);
+    const hidden = applyDrag(doc(), { kind: 'blocked', hiddenDoor: true }, [{ x: 3, y: 2 }]);
+    expect(hidden.quest?.blockedSquares).toEqual([{ id: 'blocked-1', x: 3, y: 2, w: 1, h: 1, hiddenDoor: true }]);
   });
 
   test('quest tools do nothing when no quest is open', () => {
     const before = doc(false);
-    expect(applyDrag(before, { kind: 'blocked' }, [{ x: 1, y: 1 }])).toBe(before);
+    expect(applyDrag(before, { kind: 'blocked', hiddenDoor: false }, [{ x: 1, y: 1 }])).toBe(before);
   });
 
   test('an empty drag changes nothing', () => {

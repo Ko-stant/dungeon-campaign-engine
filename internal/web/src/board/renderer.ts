@@ -362,6 +362,16 @@ export class BoardRenderer {
           }
         }
       }
+      if (b.hiddenDoor) {
+        // GM marker: a dashed purple outline in the secret-door color.
+        const r = footprintRect(m, { x: b.x, y: b.y }, b.w, b.h);
+        ctx.save();
+        ctx.strokeStyle = this.#theme.doorSecret;
+        ctx.lineWidth = Math.max(2, m.tile / 10);
+        ctx.setLineDash([4, 3]);
+        ctx.strokeRect(r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3);
+        ctx.restore();
+      }
     }
   }
 

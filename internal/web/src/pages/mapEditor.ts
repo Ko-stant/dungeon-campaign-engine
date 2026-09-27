@@ -13,6 +13,7 @@ import {
   moveItem,
   removeItem,
   renameRoom,
+  setBlockedHiddenDoor,
   setRoomColor,
   resizeBoard,
   rotateItem,
@@ -86,6 +87,7 @@ async function main(): Promise<void> {
   let trapKind: string = TRAP_KINDS[0];
   let doorKind: DoorKind = 'normal';
   let doorLocked = false;
+  let blockHidesDoor = false;
   let selectedId: string | null = null;
   let hover: ClickTarget = { tile: null, edge: null };
   let drag: { points: TileCoord[] } | null = null;
@@ -199,6 +201,8 @@ async function main(): Promise<void> {
         return { kind: 'trap', trapKind };
       case 'door':
         return { kind: 'door', doorKind, locked: doorLocked };
+      case 'blocked':
+        return { kind: 'blocked', hiddenDoor: blockHidesDoor };
       default:
         return { kind: questTool };
     }
@@ -643,10 +647,12 @@ async function main(): Promise<void> {
         options.push(select('Monster', catalog.monsters.map((m) => [m.id, m.name]), monsterType, (v) => { monsterType = v; }));
       } else if (questTool === 'trap') {
         options.push(select('Trap', TRAP_KINDS.map((k) => [k, k.replaceAll('_', ' ')]), trapKind, (v) => { trapKind = v; }));
+      } else if (questTool === 'blocked') {
+        options.push(checkbox('Hides a secret door', blockHidesDoor, (v) => { blockHidesDoor = v; refresh(); }));
       } else if (questTool === 'door') {
         options.push(
           select('Kind', DOOR_KINDS.map(([k, label]) => [k, label]), doorKind, (v) => { doorKind = v as DoorKind; }),
-          lockedBox(doorLocked, (v) => { doorLocked = v; refresh(); }),
+          checkbox('Locked', doorLocked, (v) => { doorLocked = v; refresh(); }),
         );
       }
       children.push(
@@ -664,10 +670,10 @@ async function main(): Promise<void> {
     replaceChildren(leftPanel, ...children);
   }
 
-  function lockedBox(checked: boolean, onChange: (v: boolean) => void): HTMLLabelElement {
+  function checkbox(label: string, checked: boolean, onChange: (v: boolean) => void): HTMLLabelElement {
     return h('label', { class: 'flex items-center gap-2 text-sm' },
       h('input', { type: 'checkbox', checked, onchange: (e: Event) => { onChange((e.target as HTMLInputElement).checked); } }),
-      'Locked');
+      label);
   }
 
   function select(label: string, opts: string[][], value: string, onChange: (v: string) => void): HTMLLabelElement {
@@ -751,7 +757,7 @@ async function main(): Promise<void> {
       rows.push(
         h('p', { class: 'text-sm' }, `${doorKindLabel(door.kind)} at (${door.edge.x}, ${door.edge.y}) ${door.edge.orientation}`),
         select('Kind', DOOR_KINDS.map(([k, label]) => [k, label]), door.kind, (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { kind: v as DoorKind }) }); }),
-        lockedBox(door.locked ?? false, (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { locked: v }) }); }),
+        checkbox('Locked', door.locked ?? false, (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { locked: v }) }); }),
         h('button', { type: 'button', class: btn, onclick: () => { commit({ ...doc(), quest: toggleDoorState(q, door.id) }); } }, `Starts ${door.state} (toggle)`),
       );
     } else if (furniture && q) {
@@ -783,8 +789,11 @@ async function main(): Promise<void> {
           },
         }, note.text),
       );
-    } else if (blocked) {
-      rows.push(h('p', { class: 'text-sm' }, `Blocked squares ${blocked.w}×${blocked.h} at (${blocked.x}, ${blocked.y})`));
+    } else if (blocked && q) {
+      rows.push(
+        h('p', { class: 'text-sm' }, `Blocked squares ${blocked.w}×${blocked.h} at (${blocked.x}, ${blocked.y})`),
+        checkbox('Hides a secret door', blocked.hiddenDoor ?? false, (v) => { commit({ ...doc(), quest: setBlockedHiddenDoor(q, blocked.id, v) }); }),
+      );
     } else {
       return h('section', {});
     }

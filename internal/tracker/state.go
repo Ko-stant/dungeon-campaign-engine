@@ -95,17 +95,20 @@ type TrapState struct {
 // copies taken at session start, so later edits in the map creator never
 // change a game in progress.
 type State struct {
-	Version       int         `json:"version"`
-	Board         maps.Board  `json:"board"`
-	Quest         maps.Quest  `json:"quest"`
-	QuestName     string      `json:"questName"`
-	Round         int         `json:"round"`
-	Heroes        []Hero      `json:"heroes"`
-	Monsters      []Monster   `json:"monsters"`
-	Doors         []DoorState `json:"doors"`
-	Traps         []TrapState `json:"traps"`
-	ConsumedNotes []string    `json:"consumedNotes"`
-	Discovered    []int       `json:"discovered"`
+	Version   int         `json:"version"`
+	Board     maps.Board  `json:"board"`
+	Quest     maps.Quest  `json:"quest"`
+	QuestName string      `json:"questName"`
+	Round     int         `json:"round"`
+	Heroes    []Hero      `json:"heroes"`
+	Monsters  []Monster   `json:"monsters"`
+	Doors     []DoorState `json:"doors"`
+	Traps     []TrapState `json:"traps"`
+	// RemovedBlocks lists quest blocked squares taken off the board during
+	// play (for example a found secret door).
+	RemovedBlocks []string `json:"removedBlocks"`
+	ConsumedNotes []string `json:"consumedNotes"`
+	Discovered    []int    `json:"discovered"`
 }
 
 // NewSession sets up round 1 of a quest: heroes on the start squares in
@@ -123,6 +126,7 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 		Monsters:      []Monster{},
 		Doors:         []DoorState{},
 		Traps:         []TrapState{},
+		RemovedBlocks: []string{},
 		ConsumedNotes: []string{},
 		Discovered:    []int{},
 	}

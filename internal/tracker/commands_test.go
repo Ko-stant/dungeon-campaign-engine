@@ -162,6 +162,25 @@ func TestDoorsAndGatesCanBeLockedAndUnlocked(t *testing.T) {
 	}
 }
 
+func TestBlockedSquaresCanBeRemovedAndPutBack(t *testing.T) {
+	s := newState(t)
+	s, ev := apply(t, s, cmd(t, "blocked.set", map[string]any{"id": "blocked-1", "removed": true}))
+	if !reflect.DeepEqual(s.RemovedBlocks, []string{"blocked-1"}) || ev.Summary != "Found the secret door at (3,1) (blocked-1 removed)" {
+		t.Fatalf("hidden door: %v %q", s.RemovedBlocks, ev.Summary)
+	}
+	s, ev = apply(t, s, cmd(t, "blocked.set", map[string]any{"id": "blocked-2", "removed": true}))
+	if len(s.RemovedBlocks) != 2 || ev.Summary != "Removed blocked-2 at (4,4)" {
+		t.Fatalf("plain block: %v %q", s.RemovedBlocks, ev.Summary)
+	}
+	s, ev = apply(t, s, cmd(t, "blocked.set", map[string]any{"id": "blocked-1", "removed": false}))
+	if !reflect.DeepEqual(s.RemovedBlocks, []string{"blocked-2"}) || ev.Summary != "Put back blocked-1 at (3,1)" {
+		t.Fatalf("put back: %v %q", s.RemovedBlocks, ev.Summary)
+	}
+	if _, _, err := Apply(s, cmd(t, "blocked.set", map[string]any{"id": "blocked-9", "removed": true}), nil); err == nil {
+		t.Fatal("unknown blocked square should be an error")
+	}
+}
+
 func TestTrapsMoveBetweenAnyStates(t *testing.T) {
 	s := newState(t)
 	s, ev := apply(t, s, cmd(t, "trap.set", map[string]any{"id": "trap-1", "state": "triggered"}))

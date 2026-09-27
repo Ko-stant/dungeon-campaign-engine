@@ -32,13 +32,15 @@ type Door struct {
 }
 
 // Rect is a block of impassable squares (rubble / blocked-square tiles),
-// anchored at its bottom-left square.
+// anchored at its bottom-left square. HiddenDoor marks a block that hides a
+// secret door: finding it during play removes the block.
 type Rect struct {
-	ID string `json:"id"`
-	X  int    `json:"x"`
-	Y  int    `json:"y"`
-	W  int    `json:"w"`
-	H  int    `json:"h"`
+	ID         string `json:"id"`
+	X          int    `json:"x"`
+	Y          int    `json:"y"`
+	W          int    `json:"w"`
+	H          int    `json:"h"`
+	HiddenDoor bool   `json:"hiddenDoor,omitempty"`
 }
 
 // Furniture is placed by the bottom-left square of its rotated footprint; its

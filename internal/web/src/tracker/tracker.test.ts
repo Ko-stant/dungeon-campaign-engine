@@ -26,7 +26,10 @@ function state(): SessionState {
         { id: 'door-1', edge: { x: 3, y: 2, orientation: 'vertical' }, kind: 'normal', state: 'closed' },
         { id: 'door-2', edge: { x: 4, y: 1, orientation: 'vertical' }, kind: 'secret', state: 'closed' },
       ],
-      blockedSquares: [],
+      blockedSquares: [
+        { id: 'blocked-1', x: 1, y: 2, w: 1, h: 1, hiddenDoor: true },
+        { id: 'blocked-2', x: 3, y: 2, w: 1, h: 1 },
+      ],
       furniture: [{ id: 'furniture-1', type: 'table', x: 1, y: 1, rotation: 0 }],
       monsters: [],
       traps: [{ id: 'trap-1', kind: 'pit', x: 2, y: 2, state: 'hidden' }],
@@ -48,6 +51,7 @@ function state(): SessionState {
       { id: 'door-2', state: 'closed', found: false, locked: false },
     ],
     traps: [{ id: 'trap-1', state: 'triggered' }],
+    removedBlocks: [],
     consumedNotes: [],
     discovered: [0, 1],
   };
@@ -102,6 +106,14 @@ describe('trackerView', () => {
     expect(view.doors[0]?.locked).toBe(true);
   });
 
+  test('removed blocked squares are not drawn', () => {
+    const s = { ...state(), removedBlocks: ['blocked-2'] };
+    expect(trackerView(s, catalog, { fog: false }).blockedSquares).toEqual([{ id: 'blocked-1', x: 1, y: 2, w: 1, h: 1, hiddenDoor: true }]);
+    const older: SessionState = state();
+    delete older.removedBlocks; // sessions started before blocks could be removed
+    expect(trackerView(older, catalog, { fog: false }).blockedSquares).toHaveLength(2);
+  });
+
   test('a found secret door is drawn as a normal door', () => {
     const s = state();
     s.doors[1] = { id: 'door-2', state: 'closed', found: true, locked: false };
@@ -146,6 +158,10 @@ describe('interaction', () => {
 
   test('select mode: clicking an empty square with nothing selected clears the selection', () => {
     expect(clickCommand(state(), select, null, { tile: { x: 1, y: 1 }, edge: null })).toEqual({ command: null, select: null });
+  });
+
+  test('select mode: clicking a blocked square selects it', () => {
+    expect(clickCommand(state(), select, null, { tile: { x: 3, y: 2 }, edge: null })).toEqual({ command: null, select: 'blocked-2' });
   });
 
   test('select mode: clicking a trap or note square selects it when no piece is there', () => {

@@ -58,6 +58,8 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.doorSet(c.Payload)
 	case "trap.set":
 		summary, err = a.trapSet(c.Payload)
+	case "blocked.set":
+		summary, err = a.blockedSet(c.Payload)
 	case "area.reveal":
 		summary, err = a.areaReveal(c.Payload)
 	case "tiles.reveal":
@@ -428,6 +430,30 @@ func (a *applier) doorSet(payload json.RawMessage) (string, error) {
 		}
 	}
 	return strings.Join(parts, "; "), nil
+}
+
+func (a *applier) blockedSet(payload json.RawMessage) (string, error) {
+	p, err := decode[struct {
+		ID      string `json:"id"`
+		Removed bool   `json:"removed"`
+	}](payload)
+	if err != nil {
+		return "", err
+	}
+	i := slices.IndexFunc(a.s.Quest.BlockedSquares, func(r maps.Rect) bool { return r.ID == p.ID })
+	if i < 0 {
+		return "", fmt.Errorf("no blocked square %q", p.ID)
+	}
+	r := a.s.Quest.BlockedSquares[i]
+	a.s.RemovedBlocks = slices.DeleteFunc(a.s.RemovedBlocks, func(id string) bool { return id == r.ID })
+	if !p.Removed {
+		return fmt.Sprintf("Put back %s at (%d,%d)", r.ID, r.X, r.Y), nil
+	}
+	a.s.RemovedBlocks = append(a.s.RemovedBlocks, r.ID)
+	if r.HiddenDoor {
+		return fmt.Sprintf("Found the secret door at (%d,%d) (%s removed)", r.X, r.Y, r.ID), nil
+	}
+	return fmt.Sprintf("Removed %s at (%d,%d)", r.ID, r.X, r.Y), nil
 }
 
 func (a *applier) trapSet(payload json.RawMessage) (string, error) {

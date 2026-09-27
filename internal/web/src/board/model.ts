@@ -30,6 +30,9 @@ export interface DoorView {
 
 /** A rectangle of impassable squares (rubble / blocked-square tiles), anchored bottom-left. */
 export interface BlockedSquareView {
+  id: string;
+  /** Hides a secret door (marked for the GM). */
+  hiddenDoor?: boolean;
   x: number;
   y: number;
   w: number;

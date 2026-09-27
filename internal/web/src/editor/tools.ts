@@ -33,7 +33,7 @@ export type Tool =
   | { kind: 'fill'; region: number }
   | { kind: 'wall' }
   | { kind: 'door'; doorKind: DoorKind; locked: boolean }
-  | { kind: 'blocked' }
+  | { kind: 'blocked'; hiddenDoor: boolean }
   | { kind: 'furniture'; type: string; rotation: Rotation }
   | { kind: 'monster'; type: string }
   | { kind: 'trap'; trapKind: string }
@@ -80,7 +80,7 @@ export function applyDrag(d: EditorDoc, tool: Tool, points: readonly TileCoord[]
       }
       const x = Math.min(first.x, last.x);
       const y = Math.min(first.y, last.y);
-      return withQuest(d, addBlockedSquare(d.quest, { x, y, w: Math.abs(last.x - first.x) + 1, h: Math.abs(last.y - first.y) + 1 }));
+      return withQuest(d, addBlockedSquare(d.quest, { x, y, w: Math.abs(last.x - first.x) + 1, h: Math.abs(last.y - first.y) + 1, hiddenDoor: tool.hiddenDoor }));
     }
     default:
       return d;

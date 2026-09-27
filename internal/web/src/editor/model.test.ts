@@ -20,6 +20,7 @@ import {
   renameRoom,
   resizeBoard,
   rotateItem,
+  setBlockedHiddenDoor,
   setNoteText,
   setRoomColor,
   toBoardView,
@@ -265,6 +266,14 @@ describe('quest items', () => {
     expect(itemsAt(q, catalog, { x: 2, y: 3 })).toEqual(['monster-1', 'furniture-1']);
     expect(itemsAt(q, catalog, { x: 3, y: 1 })).toEqual([]);
     expect(itemsAt(q, catalog, { x: 6, y: 1 })).toEqual(['blocked-1']);
+  });
+
+  test('a blocked square can be marked as hiding a secret door', () => {
+    let q = addBlockedSquare(emptyQuest(), { x: 4, y: 15, w: 1, h: 1, hiddenDoor: true });
+    expect(q.blockedSquares[0]).toEqual({ id: 'blocked-1', x: 4, y: 15, w: 1, h: 1, hiddenDoor: true });
+    q = setBlockedHiddenDoor(q, 'blocked-1', false);
+    expect(q.blockedSquares[0]).toEqual({ id: 'blocked-1', x: 4, y: 15, w: 1, h: 1 });
+    expect(toBoardView(board(5, 20), setBlockedHiddenDoor(q, 'blocked-1', true), catalog).blockedSquares).toEqual([{ id: 'blocked-1', x: 4, y: 15, w: 1, h: 1, hiddenDoor: true }]);
   });
 
   test('moveItem and removeItem work for every layer', () => {

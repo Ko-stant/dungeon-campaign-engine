@@ -326,6 +326,7 @@ async function main(): Promise<void> {
     const door = state.quest.doors.find((d) => d.id === id);
     const trap = state.quest.traps.find((t) => t.id === id);
     const note = state.quest.notes.find((n) => n.id === id);
+    const block = state.quest.blockedSquares.find((r) => r.id === id);
     const rows: (Node | null)[] = [];
     if (monster) {
       rows.push(
@@ -354,6 +355,11 @@ async function main(): Promise<void> {
       );
     } else if (trap) {
       rows.push(h('p', { class: 'font-semibold' }, `${trap.kind.replaceAll('_', ' ')} trap ${trap.id}`), trapButtons(trap.id));
+    } else if (block) {
+      rows.push(
+        h('p', { class: 'font-semibold' }, block.hiddenDoor ? 'Blocked square (hides a secret door) ' : 'Blocked squares ', h('span', { class: 'text-xs opacity-60' }, `${block.id} (${block.x}, ${block.y})`)),
+        blockButton(block.id, block.hiddenDoor ?? false),
+      );
     } else if (note) {
       rows.push(h('p', { class: 'font-semibold' }, `Note ${note.label}`), h('p', { class: 'whitespace-pre-wrap text-sm' }, note.text || '(no text)'), noteButton(note.id));
     } else {
@@ -376,6 +382,12 @@ async function main(): Promise<void> {
       }, s)));
   }
 
+  function blockButton(blockId: string, hiddenDoor: boolean): HTMLElement {
+    const removed = (state.removedBlocks ?? []).includes(blockId);
+    const label = removed ? 'Put back' : hiddenDoor ? 'Found the secret door (remove)' : 'Remove';
+    return h('button', { type: 'button', class: btn, onclick: () => { void send({ type: 'blocked.set', payload: { id: blockId, removed: !removed } }); } }, label);
+  }
+
   function noteButton(noteId: string): HTMLElement {
     const used = state.consumedNotes.includes(noteId);
     return h('button', { type: 'button', class: btn, onclick: () => { void send({ type: 'note.consume', payload: { id: noteId, consumed: !used } }); } }, used ? 'Mark unused' : 'Mark used');
@@ -390,6 +402,12 @@ async function main(): Promise<void> {
         h('span', { class: 'font-mono text-xs' }, `${m.body}/${m.maxBody}`)));
     const traps = state.quest.traps.map((t) =>
       h('li', { class: 'space-y-1 text-sm' }, h('span', {}, `${t.kind.replaceAll('_', ' ')} `, h('span', { class: 'text-xs opacity-60' }, `${t.id} (${t.x}, ${t.y})`)), trapButtons(t.id)));
+    // Blocks worth listing: ones hiding a secret door, and any already removed (to put back).
+    const removedBlocks = new Set(state.removedBlocks ?? []);
+    const blocks = state.quest.blockedSquares.filter((r) => (r.hiddenDoor ?? false) || removedBlocks.has(r.id)).map((r) =>
+      h('li', { class: 'flex items-center justify-between gap-2 text-sm' },
+        h('span', { class: removedBlocks.has(r.id) ? 'line-through opacity-50' : '' }, r.hiddenDoor ? 'Secret door ' : 'Blocked ', h('span', { class: 'text-xs opacity-60' }, `${r.id} (${r.x}, ${r.y})`)),
+        blockButton(r.id, r.hiddenDoor ?? false)));
     const notes = state.quest.notes.map((n) =>
       h('li', { class: 'flex items-start justify-between gap-2 text-sm' },
         h('span', { class: state.consumedNotes.includes(n.id) ? 'line-through opacity-50' : '' }, h('strong', {}, `${n.label}: `), n.text || '(no text)'),
@@ -420,6 +438,7 @@ async function main(): Promise<void> {
         h('ol', { class: 'max-h-80 space-y-2 overflow-y-auto' }, ...eventItems)),
       h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, `Monsters (${state.monsters.filter((m) => m.alive).length} alive)`), h('ul', { class: 'space-y-1' }, ...monsters)),
       traps.length ? h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, 'Traps'), h('ul', { class: 'space-y-2' }, ...traps)) : null,
+      blocks.length ? h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, 'Blocked squares'), h('ul', { class: 'space-y-2' }, ...blocks)) : null,
       notes.length ? h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, 'Quest notes'), h('ul', { class: 'space-y-2' }, ...notes)) : null,
     );
   }

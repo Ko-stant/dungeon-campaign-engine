@@ -34,8 +34,10 @@ export function trackerView(s: SessionState, catalog: Catalog, opts: ViewOptions
 
   const heroes: PieceView[] = s.heroes.filter((h) => h.placed).map((h) => ({ id: h.id, type: h.class, at: { x: h.x, y: h.y }, label: h.name }));
 
+  const removed = new Set(s.removedBlocks ?? []);
   const view: BoardView = {
     ...base,
+    blockedSquares: base.blockedSquares.filter((b) => !removed.has(b.id)),
     doors: s.quest.doors.map((d) => {
       const live = liveDoors.get(d.id);
       const hiddenSecret = d.kind === 'secret' && !(live?.found ?? false);

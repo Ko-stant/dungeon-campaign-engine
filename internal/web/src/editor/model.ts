@@ -4,8 +4,8 @@
  * is just a stack of snapshots.
  */
 import { edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
-import { VOID, onBoard as squareOnBoard, regionAt, tileIndex, type BoardView, type DoorKind, type FurnitureView, type PieceView } from '../board/model.ts';
-import { DOC_VERSION, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type Room } from '../maps/types.ts';
+import { VOID, onBoard as squareOnBoard, regionAt, tileIndex, type BlockedSquareView, type BoardView, type DoorKind, type FurnitureView, type PieceView } from '../board/model.ts';
+import { DOC_VERSION, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type RectDoc, type Room } from '../maps/types.ts';
 
 export const MAX_BOARD_SIZE = 200;
 
@@ -200,8 +200,29 @@ export function placeTrap(q: QuestDoc, kind: string, at: TileCoord): QuestDoc {
   return { ...q, traps: [...q.traps, { id: nextId(q, 'trap'), kind, x: at.x, y: at.y, state: 'hidden' }] };
 }
 
-export function addBlockedSquare(q: QuestDoc, rect: { x: number; y: number; w: number; h: number }): QuestDoc {
-  return { ...q, blockedSquares: [...q.blockedSquares, { id: nextId(q, 'blocked'), ...rect }] };
+export function addBlockedSquare(q: QuestDoc, rect: { x: number; y: number; w: number; h: number; hiddenDoor?: boolean }): QuestDoc {
+  const block: RectDoc = { id: nextId(q, 'blocked'), x: rect.x, y: rect.y, w: rect.w, h: rect.h };
+  if (rect.hiddenDoor) {
+    block.hiddenDoor = true;
+  }
+  return { ...q, blockedSquares: [...q.blockedSquares, block] };
+}
+
+/** Marks (or unmarks) a blocked square as hiding a secret door. */
+export function setBlockedHiddenDoor(q: QuestDoc, id: string, hiddenDoor: boolean): QuestDoc {
+  return {
+    ...q,
+    blockedSquares: q.blockedSquares.map((r) => {
+      if (r.id !== id) {
+        return r;
+      }
+      const next: RectDoc = { id: r.id, x: r.x, y: r.y, w: r.w, h: r.h };
+      if (hiddenDoor) {
+        next.hiddenDoor = true;
+      }
+      return next;
+    }),
+  };
 }
 
 function labelValue(label: string): number {
@@ -334,7 +355,13 @@ export function toBoardView(b: BoardDoc, q: QuestDoc | null, catalog: Catalog): 
     regions: b.regions,
     drawnWalls: b.drawnWalls ?? [],
     doors: (q?.doors ?? []).map((d) => ({ id: d.id, edge: d.edge, kind: d.kind, state: d.state, locked: d.locked ?? false })),
-    blockedSquares: (q?.blockedSquares ?? []).map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h })),
+    blockedSquares: (q?.blockedSquares ?? []).map((r) => {
+      const view: BlockedSquareView = { id: r.id, x: r.x, y: r.y, w: r.w, h: r.h };
+      if (r.hiddenDoor) {
+        view.hiddenDoor = true;
+      }
+      return view;
+    }),
     furniture,
     monsters,
     heroes: [],

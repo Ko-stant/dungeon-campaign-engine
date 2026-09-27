@@ -63,7 +63,9 @@ export function clickCommand(s: SessionState, mode: Mode, selectedId: string | n
       }
       const trap = s.quest.traps.find((tr) => at(tr.x, tr.y, t));
       const note = s.quest.notes.find((n) => at(n.x, n.y, t) && !s.consumedNotes.includes(n.id));
-      return { command: null, select: trap?.id ?? note?.id ?? null };
+      const removed = new Set(s.removedBlocks ?? []);
+      const block = s.quest.blockedSquares.find((r) => !removed.has(r.id) && t.x >= r.x && t.x < r.x + r.w && t.y >= r.y && t.y < r.y + r.h);
+      return { command: null, select: trap?.id ?? note?.id ?? block?.id ?? null };
     }
   }
 }
