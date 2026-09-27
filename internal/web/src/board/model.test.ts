@@ -86,6 +86,17 @@ describe('deriveWalls', () => {
     ]);
   });
 
+  test('drawn walls split squares of the same region and are listed after the derived walls', () => {
+    const drawn = { x: 2, y: 1, orientation: 'vertical' as const };
+    const walls = deriveWalls(2, 1, [CORRIDOR, CORRIDOR], [drawn]);
+    expect(walls).toHaveLength(7);
+    expect(walls[walls.length - 1]).toEqual(drawn);
+  });
+
+  test('a drawn wall on a derived wall is not listed twice', () => {
+    expect(deriveWalls(2, 1, [CORRIDOR, 1], [{ x: 2, y: 1, orientation: 'vertical' }])).toHaveLength(7);
+  });
+
   test('an all-void board has no walls', () => {
     expect(deriveWalls(4, 3, new Array<number>(12).fill(VOID))).toEqual([]);
   });

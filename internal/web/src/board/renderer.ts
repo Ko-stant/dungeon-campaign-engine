@@ -255,7 +255,7 @@ export class BoardRenderer {
     ctx.lineWidth = Math.max(1, Math.round(m.tile / 15));
     ctx.lineCap = 'square';
     ctx.beginPath();
-    for (const e of deriveWalls(view.cols, view.rows, view.regions)) {
+    for (const e of deriveWalls(view.cols, view.rows, view.regions, view.drawnWalls)) {
       const s = edgeSegment(m, e);
       ctx.moveTo(s.x1 + 0.5, s.y1 + 0.5);
       ctx.lineTo(s.x2 + 0.5, s.y2 + 0.5);

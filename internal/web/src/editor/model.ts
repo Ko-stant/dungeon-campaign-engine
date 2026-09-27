@@ -3,8 +3,8 @@
  * function returns a new document and never mutates its input, so undo/redo
  * is just a stack of snapshots.
  */
-import { footprintTiles, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
-import { VOID, onBoard as squareOnBoard, tileIndex, type BoardView, type FurnitureView, type PieceView } from '../board/model.ts';
+import { edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
+import { VOID, onBoard as squareOnBoard, regionAt, tileIndex, type BoardView, type FurnitureView, type PieceView } from '../board/model.ts';
 import { DOC_VERSION, type BoardDoc, type Catalog, type QuestDoc } from '../maps/types.ts';
 
 export const MAX_BOARD_SIZE = 200;
@@ -43,6 +43,26 @@ export function renameRoom(b: BoardDoc, id: number, name: string): BoardDoc {
   return { ...b, rooms: b.rooms.map((r) => (r.id === id ? { ...r, name: name.trim() } : r)) };
 }
 
+/**
+ * Draws a wall on an interior edge, or removes one drawn there before. Edges on
+ * the outer boundary, and edges already walled because the regions on either
+ * side differ, are left alone.
+ */
+export function toggleWall(b: BoardDoc, edge: Edge): BoardDoc {
+  const drawn = b.drawnWalls ?? [];
+  if (drawn.some((e) => sameEdge(e, edge))) {
+    return { ...b, drawnWalls: drawn.filter((e) => !sameEdge(e, edge)) };
+  }
+  if (!isInteriorEdge(edge, b.width, b.height)) {
+    return b;
+  }
+  const [a, c] = edgeTiles(edge);
+  if (regionAt(b.width, b.height, b.regions, a) !== regionAt(b.width, b.height, b.regions, c)) {
+    return b;
+  }
+  return { ...b, drawnWalls: [...drawn, { x: edge.x, y: edge.y, orientation: edge.orientation }] };
+}
+
 /** Every tile in the inclusive rectangle spanned by two corners, row by row. */
 export function rectTiles(a: TileCoord, b: TileCoord): TileCoord[] {
   const tiles: TileCoord[] = [];
@@ -69,7 +89,11 @@ export function resizeBoard(b: BoardDoc, width: number, height: number): BoardDo
       regions[tileIndex(width, { x, y })] = b.regions[tileIndex(b.width, { x, y })] ?? VOID;
     }
   }
-  return pruneRooms({ ...b, width, height, regions });
+  const next: BoardDoc = { ...b, width, height, regions };
+  if (b.drawnWalls) {
+    next.drawnWalls = b.drawnWalls.filter((e) => isInteriorEdge(e, width, height));
+  }
+  return pruneRooms(next);
 }
 
 // --- Quest layer ---
@@ -258,6 +282,7 @@ export function toBoardView(b: BoardDoc, q: QuestDoc | null, catalog: Catalog): 
     cols: b.width,
     rows: b.height,
     regions: b.regions,
+    drawnWalls: b.drawnWalls ?? [],
     doors: (q?.doors ?? []).map((d) => ({ id: d.id, edge: d.edge, kind: d.kind, state: d.state })),
     blockedSquares: (q?.blockedSquares ?? []).map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h })),
     furniture,

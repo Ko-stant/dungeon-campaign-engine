@@ -73,7 +73,10 @@ Tailwind CSS v4, canvas rendering.
   they are the one place rows are flipped. Legacy `content/` files are top-left, 0-based and
   are converted in `internal/maps/legacy.go`.
 - Sizes are columns × rows (width × height); landscape boards have more columns than rows.
-- Walls are never stored: they exist wherever neighbouring regions differ (off-board = void).
+- Walls are derived wherever neighbouring regions differ (off-board = void). The GM can also
+  draw walls on interior edges (`drawnWalls` on the board, e.g. between two corridors that
+  touch); those are the only stored walls. Use `Board.IsWall` / `deriveWalls(..., drawn)` so
+  both kinds count.
 - A session stores frozen copies of its board and quest, so map edits never change a game in progress.
 - Every tracker change is one command -> one event row; corrections are just more events.
 

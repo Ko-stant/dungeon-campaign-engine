@@ -76,6 +76,12 @@ describe('trackerView', () => {
     expect(trackerView(used, catalog, { fog: false }).notes).toEqual([]);
   });
 
+  test('draws the frozen board\'s drawn walls', () => {
+    const s = state();
+    s.board = { ...s.board, drawnWalls: [{ x: 2, y: 1, orientation: 'vertical' }] };
+    expect(trackerView(s, catalog, { fog: false }).drawnWalls).toEqual([{ x: 2, y: 1, orientation: 'vertical' }]);
+  });
+
   test('a found secret door is drawn as a normal door', () => {
     const s = state();
     s.doors[1] = { id: 'door-2', state: 'closed', found: true };

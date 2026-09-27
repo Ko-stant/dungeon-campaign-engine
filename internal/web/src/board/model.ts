@@ -6,8 +6,10 @@
  *   VOID (-1)      solid rock / outside the dungeon
  *   CORRIDOR (0)   open corridor
  *   1, 2, 3 ...    a room
- * Walls are never stored: one exists wherever two neighbouring tiles belong to
- * different regions, treating anything off the board as VOID.
+ * Walls are derived wherever two neighbouring tiles belong to different
+ * regions, treating anything off the board as VOID. The GM can also draw walls
+ * on interior edges (e.g. between two stretches of corridor); those are the
+ * only walls stored.
  */
 import type { Edge, Rotation, TileCoord } from './geometry.ts';
 
@@ -73,6 +75,8 @@ export interface BoardView {
   rows: number;
   /** Row-major region ids from the bottom row up, length cols * rows. */
   regions: readonly number[];
+  /** Walls drawn by the GM, in addition to the derived ones. */
+  drawnWalls?: readonly Edge[];
   doors: readonly DoorView[];
   blockedSquares: readonly BlockedSquareView[];
   furniture: readonly FurnitureView[];
@@ -121,10 +125,11 @@ export function assertBoardShape(cols: number, rows: number, regions: readonly n
 }
 
 /**
- * Every wall edge on the board: vertical edges row by row, then horizontal
- * edges row by row. A wall sits wherever the regions on either side differ.
+ * Every wall edge on the board: derived vertical edges row by row, then derived
+ * horizontal edges row by row (a wall sits wherever the regions on either side
+ * differ), then any drawn walls that are not already derived.
  */
-export function deriveWalls(cols: number, rows: number, regions: readonly number[]): Edge[] {
+export function deriveWalls(cols: number, rows: number, regions: readonly number[], drawn: readonly Edge[] = []): Edge[] {
   const walls: Edge[] = [];
   const at = (x: number, y: number): number => regionAt(cols, rows, regions, { x, y });
 
@@ -140,6 +145,12 @@ export function deriveWalls(cols: number, rows: number, regions: readonly number
       if (at(x, y - 1) !== at(x, y)) {
         walls.push({ x, y, orientation: 'horizontal' });
       }
+    }
+  }
+  for (const e of drawn) {
+    const [a, b] = e.orientation === 'vertical' ? [at(e.x - 1, e.y), at(e.x, e.y)] : [at(e.x, e.y - 1), at(e.x, e.y)];
+    if (a === b) {
+      walls.push(e);
     }
   }
   return walls;

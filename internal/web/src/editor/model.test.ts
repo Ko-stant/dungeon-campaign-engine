@@ -24,6 +24,7 @@ import {
   toBoardView,
   toggleDoorState,
   toggleStartTile,
+  toggleWall,
 } from './model.ts';
 
 function board(width: number, height: number, fill = VOID): BoardDoc {
@@ -86,7 +87,45 @@ describe('board painting', () => {
   });
 });
 
+describe('toggleWall', () => {
+  const between = { x: 2, y: 1, orientation: 'vertical' as const }; // (1,1) | (2,1)
+
+  test('draws a wall between two squares of the same region, and a second click removes it', () => {
+    const before = board(3, 2, CORRIDOR);
+    const walled = toggleWall(before, between);
+    expect(walled.drawnWalls).toEqual([between]);
+    expect(before.drawnWalls).toBeUndefined();
+    expect(toggleWall(walled, between).drawnWalls).toEqual([]);
+  });
+
+  test('ignores the outer edge of the board', () => {
+    const b = board(3, 2, CORRIDOR);
+    expect(toggleWall(b, { x: 1, y: 1, orientation: 'vertical' })).toBe(b);
+    expect(toggleWall(b, { x: 1, y: 3, orientation: 'horizontal' })).toBe(b);
+  });
+
+  test('ignores edges that are already walls because the regions differ', () => {
+    const b = paintTiles(board(3, 2, CORRIDOR), [{ x: 1, y: 1 }], VOID);
+    expect(toggleWall(b, between)).toBe(b);
+  });
+
+  test('still removes a drawn wall whose sides were repainted into different regions', () => {
+    let b = toggleWall(board(3, 2, CORRIDOR), between);
+    b = paintTiles(b, [{ x: 1, y: 1 }], VOID);
+    expect(toggleWall(b, between).drawnWalls).toEqual([]);
+  });
+});
+
 describe('resizeBoard', () => {
+  test('drops drawn walls that are no longer inside the board', () => {
+    let b = board(3, 3, CORRIDOR);
+    b = toggleWall(b, { x: 3, y: 1, orientation: 'vertical' });
+    b = toggleWall(b, { x: 1, y: 3, orientation: 'horizontal' });
+    b = toggleWall(b, { x: 2, y: 1, orientation: 'vertical' });
+    // At 2 wide, x=3 is the outer edge; at 2 tall, the horizontal edge at y=3 is the top edge.
+    expect(resizeBoard(b, 2, 2).drawnWalls).toEqual([{ x: 2, y: 1, orientation: 'vertical' }]);
+  });
+
   test('keeps the bottom-left: new columns appear on the right and new rows on top', () => {
     let b = board(2, 2, CORRIDOR);
     b = addRoom(b).board;
@@ -226,6 +265,11 @@ describe('toBoardView', () => {
     expect(view.doors[0]).toEqual({ id: 'door-1', edge: { x: 2, y: 2, orientation: 'horizontal' }, kind: 'normal', state: 'closed' });
     expect(view.notes).toEqual([{ id: 'note-1', label: 'A', at: { x: 3, y: 3 } }]);
     expect(view.startTiles).toEqual([{ x: 4, y: 1 }]);
+  });
+
+  test('passes the board\'s drawn walls to the renderer', () => {
+    const b = toggleWall(board(2, 1, CORRIDOR), { x: 2, y: 1, orientation: 'vertical' });
+    expect(toBoardView(b, null, catalog).drawnWalls).toEqual([{ x: 2, y: 1, orientation: 'vertical' }]);
   });
 
   test('works without a quest (board layer only)', () => {

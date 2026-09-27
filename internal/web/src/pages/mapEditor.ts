@@ -27,7 +27,7 @@ import { h, replaceChildren } from '../ui/dom.ts';
 const TRAP_KINDS = ['pit', 'spear', 'falling_block', 'chest', 'other'] as const;
 
 type Layer = 'board' | 'quest';
-type BoardBrush = 'corridor' | 'void' | 'room';
+type BoardBrush = 'corridor' | 'void' | 'room' | 'wall';
 type QuestToolKind = 'select' | 'door' | 'blocked' | 'furniture' | 'monster' | 'trap' | 'note' | 'start' | 'erase';
 
 const QUEST_TOOLS: { kind: QuestToolKind; label: string; hint: string }[] = [
@@ -150,7 +150,7 @@ async function main(): Promise<void> {
     } else if (layer === 'board' && brush === 'room' && activeRoom !== null) {
       highlights.tiles = roomTiles(activeRoom);
     }
-    if (tool.kind === 'door' || tool.kind === 'erase' || tool.kind === 'select') {
+    if (tool.kind === 'door' || tool.kind === 'wall' || tool.kind === 'erase' || tool.kind === 'select') {
       highlights.edge = hover.edge;
     }
     if (!hover.edge || tool.kind === 'paint' || tool.kind === 'fill') {
@@ -173,6 +173,9 @@ async function main(): Promise<void> {
   // --- Tools ---
   function currentTool(): Tool {
     if (layer === 'board') {
+      if (brush === 'wall') {
+        return { kind: 'wall' };
+      }
       const region = brush === 'corridor' ? CORRIDOR : brush === 'void' ? VOID : (activeRoom ?? CORRIDOR);
       return rectMode ? { kind: 'fill', region } : { kind: 'paint', region };
     }
@@ -257,7 +260,13 @@ async function main(): Promise<void> {
     }
 
     const before = doc().quest;
-    commit(applyClick(doc(), tool, target, catalog));
+    const next = applyClick(doc(), tool, target, catalog);
+    if (tool.kind === 'wall' && target.edge && next === doc()) {
+      status = 'That edge is already a wall (the outer edge, or where two areas meet).';
+      refresh();
+      return;
+    }
+    commit(next);
     const after = doc().quest;
     if (tool.kind === 'note' && after && after !== before) {
       selectedId = after.notes[after.notes.length - 1]?.id ?? null;
@@ -563,11 +572,14 @@ async function main(): Promise<void> {
       children.push(
         h('section', { class: 'space-y-2' },
           h('h2', { class: 'text-sm font-semibold' }, 'Paint'),
-          h('div', { class: 'flex flex-wrap gap-2' }, brushBtn('corridor', 'Corridor'), brushBtn('void', 'Solid rock'), brushBtn('room', 'Room')),
-          h('label', { class: 'flex items-center gap-2 text-sm' },
-            h('input', { type: 'checkbox', checked: rectMode, onchange: (e: Event) => { rectMode = (e.target as HTMLInputElement).checked; refresh(); } }),
-            'Rectangle fill (drag corner to corner)'),
-          h('p', { class: 'text-xs opacity-60' }, 'Drag on the board to paint. Walls appear automatically wherever areas meet.'),
+          h('div', { class: 'flex flex-wrap gap-2' }, brushBtn('corridor', 'Corridor'), brushBtn('void', 'Solid rock'), brushBtn('room', 'Room'), brushBtn('wall', 'Wall')),
+          brush === 'wall'
+            ? h('p', { class: 'text-xs opacity-60' }, 'Click an edge to draw a wall, for example between two corridors that touch. Click it again to remove it. Walls between different areas are automatic.')
+            : h('div', { class: 'space-y-2' },
+              h('label', { class: 'flex items-center gap-2 text-sm' },
+                h('input', { type: 'checkbox', checked: rectMode, onchange: (e: Event) => { rectMode = (e.target as HTMLInputElement).checked; refresh(); } }),
+                'Rectangle fill (drag corner to corner)'),
+              h('p', { class: 'text-xs opacity-60' }, 'Drag on the board to paint. Walls appear automatically wherever areas meet; use Wall for any others.')),
         ),
         h('section', { class: 'space-y-2' },
           h('div', { class: 'flex items-center justify-between' },

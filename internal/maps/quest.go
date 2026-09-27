@@ -226,7 +226,7 @@ func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
 			add("door-off-board", d.ID, "door %s is off the board", d.ID)
 		case boundary:
 			add("door-on-board-edge", d.ID, "door %s is on the outer edge of the board", d.ID)
-		case ra == rb:
+		case ra == rb && !b.IsWall(e):
 			add("door-same-region", d.ID, "door %s does not separate two different areas", d.ID)
 		case ra == Void || rb == Void:
 			add("door-into-void", d.ID, "door %s opens into solid rock", d.ID)

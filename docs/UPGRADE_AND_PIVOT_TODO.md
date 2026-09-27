@@ -47,6 +47,7 @@ Commits (oldest first):
 | 5c17cbe | 8 multiplayer removed, docs rewritten |
 | 450cbad | docs: resume summary |
 | 7a85e91 | post-plan: (1,1) at the bottom-left, columns × rows labels |
+| (next commit) | post-plan: drawn walls on the board layer |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
@@ -519,6 +520,31 @@ What changed (tests written first, then code):
   and doors sit where they did; click-to-move in the tracker moves up the screen as y
   grows and logs "Moved Grom (Barbarian) from (3,2) to (2,4)"; the 30x24 test board
   renders landscape.
+
+## Post-plan: drawn walls [DONE 2026-09-27]
+Found while building the first real map: on the physical board, two stretches of
+corridor are sometimes separated only by a wall (e.g. between columns 10 and 11 for
+y=1..8, and between rows 2 and 3 at x=24). Derived walls only appear where regions
+differ, so the workaround was a column of solid rock, which wastes squares.
+
+What changed (tests first):
+- Board documents gain `drawnWalls` (interior edges, omitted when empty). No version
+  bump: older version 2 boards simply have none. `Validate` rejects boundary,
+  off-board, badly oriented and duplicate drawn walls.
+- Go: `Board.IsWall` (derived or drawn), `IsInteriorEdge`; `Walls()` appends drawn
+  walls that are not already derived; `Checksum()` includes drawn walls (order-free),
+  unchanged for boards without them, so quests are flagged when walls are drawn after
+  they were saved. `Quest.Check` no longer reports `door-same-region` for a door on a
+  drawn wall (a door between two corridors).
+- TS: `deriveWalls(cols, rows, regions, drawn)`; `BoardView.drawnWalls`;
+  `toggleWall` (ignores the outer edge and edges already walled by differing regions;
+  always removes an existing drawn wall); `resizeBoard` drops drawn walls that stop
+  being interior; the tracker draws the frozen board's drawn walls.
+- Editor: a **Wall** brush on the Board tab. Click an edge to draw a wall, click again
+  to remove it; clicking an edge that is already a wall shows a status message.
+- Not browser-verified yet: the user was running their own server at the time. Unit
+  tests cover the model, tools and view; the renderer change is the extra argument
+  to `deriveWalls`.
 
 ---
 

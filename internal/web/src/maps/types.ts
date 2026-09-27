@@ -23,6 +23,8 @@ export interface BoardDoc {
   /** Row-major from the bottom row up: -1 void, 0 corridor, >0 room id. */
   regions: number[];
   rooms: Room[];
+  /** Walls the GM drew on interior edges, on top of the derived ones. Omitted when empty. */
+  drawnWalls?: Edge[];
 }
 
 export interface DoorDoc {

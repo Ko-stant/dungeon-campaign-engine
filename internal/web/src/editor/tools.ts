@@ -17,6 +17,7 @@ import {
   rectTiles,
   removeItem,
   toggleStartTile,
+  toggleWall,
 } from './model.ts';
 
 export interface EditorDoc {
@@ -27,6 +28,7 @@ export interface EditorDoc {
 export type Tool =
   | { kind: 'paint'; region: number }
   | { kind: 'fill'; region: number }
+  | { kind: 'wall' }
   | { kind: 'door' }
   | { kind: 'blocked' }
   | { kind: 'furniture'; type: string; rotation: Rotation }
@@ -44,7 +46,7 @@ export function isDragTool(tool: Tool): boolean {
 
 /** Tools that need an open quest. */
 export function isQuestTool(tool: Tool): boolean {
-  return tool.kind !== 'paint' && tool.kind !== 'fill';
+  return tool.kind !== 'paint' && tool.kind !== 'fill' && tool.kind !== 'wall';
 }
 
 export interface ClickTarget {
@@ -85,6 +87,13 @@ export function applyDrag(d: EditorDoc, tool: Tool, points: readonly TileCoord[]
 export function applyClick(d: EditorDoc, tool: Tool, target: ClickTarget, catalog: Catalog): EditorDoc {
   if (tool.kind === 'paint' || tool.kind === 'fill') {
     return target.tile ? applyDrag(d, tool, [target.tile]) : d;
+  }
+  if (tool.kind === 'wall') {
+    if (!target.edge) {
+      return d;
+    }
+    const board = toggleWall(d.board, target.edge);
+    return board === d.board ? d : { ...d, board };
   }
   const q = d.quest;
   if (!q) {

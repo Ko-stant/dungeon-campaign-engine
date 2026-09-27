@@ -11,16 +11,20 @@
 //     1..Height+1.
 //   - Rectangles and furniture are anchored at their bottom-left square and
 //     extend right and up.
-//   - Walls are derived, never stored: one exists wherever neighbouring tiles
-//     belong to different regions, with anything off the board treated as Void.
+//   - Walls are derived wherever neighbouring tiles belong to different
+//     regions, with anything off the board treated as Void. The GM can also
+//     draw walls on interior edges (DrawnWalls), for example a wall between two
+//     stretches of corridor; drawn walls are the only walls stored.
 package maps
 
 import (
+	"cmp"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 )
 
 // CurrentVersion is the document schema version written by this code.
@@ -71,6 +75,9 @@ type Board struct {
 	Height  int    `json:"height"`
 	Regions []int  `json:"regions"`
 	Rooms   []Room `json:"rooms"`
+	// DrawnWalls are walls the GM drew on interior edges, in addition to the
+	// derived ones (typically between two squares of the same region).
+	DrawnWalls []Edge `json:"drawnWalls,omitempty"`
 }
 
 func checkSize(width, height int) error {
@@ -127,7 +134,33 @@ func (b *Board) Validate() error {
 			break
 		}
 	}
+	seen := make(map[Edge]bool, len(b.DrawnWalls))
+	for _, e := range b.DrawnWalls {
+		switch {
+		case e.Orientation != Vertical && e.Orientation != Horizontal:
+			errs = append(errs, fmt.Errorf("drawn wall (%d,%d) has invalid orientation %q", e.X, e.Y, e.Orientation))
+		case !b.IsInteriorEdge(e):
+			errs = append(errs, fmt.Errorf("drawn %s wall (%d,%d) is not an interior edge of the board", e.Orientation, e.X, e.Y))
+		case seen[e]:
+			errs = append(errs, fmt.Errorf("drawn %s wall (%d,%d) is listed twice", e.Orientation, e.X, e.Y))
+		}
+		seen[e] = true
+	}
 	return errors.Join(errs...)
+}
+
+// IsInteriorEdge reports whether both sides of the edge are on the board.
+func (b *Board) IsInteriorEdge(e Edge) bool {
+	if e.Orientation == Vertical {
+		return e.X >= 2 && e.X <= b.Width && e.Y >= 1 && e.Y <= b.Height
+	}
+	return e.X >= 1 && e.X <= b.Width && e.Y >= 2 && e.Y <= b.Height
+}
+
+// IsWall reports whether an edge is a wall, derived or drawn.
+func (b *Board) IsWall(e Edge) bool {
+	ra, rb := b.EdgeRegions(e)
+	return ra != rb || slices.Contains(b.DrawnWalls, e)
 }
 
 func checkVersion(kind string, version int) error {
@@ -167,8 +200,9 @@ func (b *Board) RegionAt(x, y int) int {
 	return b.Regions[i]
 }
 
-// Walls returns every wall edge: vertical edges row by row, then horizontal
-// edges row by row, from the bottom row up.
+// Walls returns every wall edge: derived vertical edges row by row, then
+// derived horizontal edges row by row (from the bottom row up), then drawn
+// walls that are not already derived.
 func (b *Board) Walls() []Edge {
 	var walls []Edge
 	for y := 1; y <= b.Height; y++ {
@@ -185,6 +219,11 @@ func (b *Board) Walls() []Edge {
 			}
 		}
 	}
+	for _, e := range b.DrawnWalls {
+		if ra, rb := b.EdgeRegions(e); ra == rb {
+			walls = append(walls, e)
+		}
+	}
 	return walls
 }
 
@@ -196,8 +235,9 @@ func (b *Board) EdgeRegions(e Edge) (int, int) {
 	return b.RegionAt(e.X, e.Y-1), b.RegionAt(e.X, e.Y)
 }
 
-// Checksum identifies the layout (size and regions, not room names). Quests
-// record it so an edit to their board after the fact can be flagged.
+// Checksum identifies the layout (size, regions and drawn walls, not room
+// names). Quests record it so an edit to their board after the fact can be
+// flagged. A board without drawn walls checksums as it did before they existed.
 func (b *Board) Checksum() string {
 	h := sha256.New()
 	var buf [8]byte
@@ -209,6 +249,18 @@ func (b *Board) Checksum() string {
 	write(b.Height)
 	for _, r := range b.Regions {
 		write(r)
+	}
+	if len(b.DrawnWalls) > 0 {
+		walls := slices.Clone(b.DrawnWalls)
+		slices.SortFunc(walls, func(a, c Edge) int {
+			return cmp.Or(cmp.Compare(a.Orientation, c.Orientation), cmp.Compare(a.Y, c.Y), cmp.Compare(a.X, c.X))
+		})
+		h.Write([]byte("drawnWalls"))
+		for _, e := range walls {
+			h.Write([]byte(e.Orientation))
+			write(e.X)
+			write(e.Y)
+		}
 	}
 	return "sha256:" + hex.EncodeToString(h.Sum(nil))
 }

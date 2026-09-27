@@ -30,7 +30,7 @@ enforces rules; the GM decides, and the app remembers.
 ### Helping the GM remember
 - [ ] "Already searched" markers per room (treasure / traps / secret doors), per
       hero if wanted. (From the old roadmap's search tracking.)
-- [ ] Line-of-sight suggestions when a door opens: offer to reveal what the
+- [ ] Line-of-sight suggestions when a door opens (must treat drawn walls as walls): offer to reveal what the
       heroes can see. The legacy LOS code is in git history (`cmd/server/visibility.go`
       before commit "Phase 8"), and would be ported into `internal/maps`.
 - [ ] Wandering monster reminder from the quest's wandering monster type.

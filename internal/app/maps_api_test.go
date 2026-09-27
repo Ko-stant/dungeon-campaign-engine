@@ -97,12 +97,13 @@ func TestBoardAPILifecycle(t *testing.T) {
 	edited.Regions[0] = maps.Corridor
 	edited.Regions[1] = 1
 	edited.Rooms = []maps.Room{{ID: 1, Name: "Guard Room"}}
+	edited.DrawnWalls = []maps.Edge{{X: 5, Y: 3, Orientation: maps.Vertical}}
 	code, data = call(t, srv, http.MethodPut, "/api/boards/"+created.ID, map[string]any{"name": "Winter Keep", "board": edited})
 	if code != http.StatusOK {
 		t.Fatalf("update: %d %s", code, data)
 	}
 	updated := decode[BoardResponse](t, data)
-	if updated.Name != "Winter Keep" || updated.Board.Regions[1] != 1 || updated.Board.Rooms[0].Name != "Guard Room" {
+	if updated.Name != "Winter Keep" || updated.Board.Regions[1] != 1 || updated.Board.Rooms[0].Name != "Guard Room" || len(updated.Board.DrawnWalls) != 1 {
 		t.Fatalf("updated: %+v", updated)
 	}
 
@@ -140,6 +141,11 @@ func TestBoardAPIRejectsInvalidInput(t *testing.T) {
 	bad.Regions = bad.Regions[:1]
 	if code, _ := call(t, srv, http.MethodPut, "/api/boards/"+b.ID, map[string]any{"name": "ok", "board": bad}); code != http.StatusBadRequest {
 		t.Fatalf("invalid board update: %d", code)
+	}
+	onEdge := b.Board
+	onEdge.DrawnWalls = []maps.Edge{{X: 1, Y: 1, Orientation: maps.Vertical}} // the board's outer edge
+	if code, _ := call(t, srv, http.MethodPut, "/api/boards/"+b.ID, map[string]any{"name": "ok", "board": onEdge}); code != http.StatusBadRequest {
+		t.Fatalf("drawn wall on the outer edge: %d", code)
 	}
 	if code, _ := call(t, srv, http.MethodGet, "/api/boards/not-an-id", nil); code != http.StatusNotFound {
 		t.Fatalf("bad id: %d", code)

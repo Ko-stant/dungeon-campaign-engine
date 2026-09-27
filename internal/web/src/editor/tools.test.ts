@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { CORRIDOR, VOID } from '../board/model.ts';
 import { DOC_VERSION, type BoardDoc, type Catalog } from '../maps/types.ts';
 import { emptyQuest, placeMonster } from './model.ts';
-import { applyClick, applyDrag, lineTiles, type EditorDoc, type Tool } from './tools.ts';
+import { applyClick, applyDrag, isDragTool, isQuestTool, lineTiles, type EditorDoc, type Tool } from './tools.ts';
 
 const catalog: Catalog = {
   furniture: [{ id: 'chest', name: 'Chest', width: 1, height: 1, blocksMovement: true, blocksLineOfSight: false }],
@@ -91,6 +91,16 @@ describe('applyClick (quest tools)', () => {
     expect(applyClick(d, { kind: 'monster', type: 'orc' }, { tile: null, edge: null }, catalog)).toBe(d);
     const noQuest = doc(false);
     expect(applyClick(noQuest, { kind: 'monster', type: 'orc' }, tile(1, 1), catalog)).toBe(noQuest);
+  });
+
+  test('the wall tool toggles a drawn wall on the clicked edge, with or without a quest', () => {
+    const noQuest = doc(false);
+    const walled = applyClick(noQuest, { kind: 'wall' }, edge(2, 1, 'vertical'), catalog);
+    expect(walled.board.drawnWalls).toEqual([{ x: 2, y: 1, orientation: 'vertical' }]);
+    expect(applyClick(walled, { kind: 'wall' }, edge(2, 1, 'vertical'), catalog).board.drawnWalls).toEqual([]);
+    expect(applyClick(noQuest, { kind: 'wall' }, tile(2, 1), catalog)).toBe(noQuest);
+    expect(isQuestTool({ kind: 'wall' })).toBe(false);
+    expect(isDragTool({ kind: 'wall' })).toBe(false);
   });
 
   test('the paint tool also works as a single click', () => {

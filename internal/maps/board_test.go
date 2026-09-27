@@ -177,3 +177,85 @@ func TestBoardJSONRoundTrip(t *testing.T) {
 		t.Fatalf("round trip mismatch: %+v", back)
 	}
 }
+
+func TestDrawnWallsSplitAreasOfTheSameRegion(t *testing.T) {
+	// A 2x2 corridor, with a wall drawn between the two bottom squares.
+	b := &Board{Version: CurrentVersion, Width: 2, Height: 2, Regions: []int{Corridor, Corridor, Corridor, Corridor},
+		DrawnWalls: []Edge{{X: 2, Y: 1, Orientation: Vertical}}}
+	if err := b.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	walls := b.Walls()
+	if len(walls) != 9 { // 8 perimeter edges + the drawn one
+		t.Fatalf("walls = %+v", walls)
+	}
+	if !b.IsWall(Edge{X: 2, Y: 1, Orientation: Vertical}) {
+		t.Fatal("the drawn edge should be a wall")
+	}
+	if b.IsWall(Edge{X: 2, Y: 2, Orientation: Vertical}) || b.IsWall(Edge{X: 1, Y: 2, Orientation: Horizontal}) {
+		t.Fatal("an open edge inside the corridor is not a wall")
+	}
+	if !b.IsWall(Edge{X: 1, Y: 1, Orientation: Vertical}) {
+		t.Fatal("derived walls count too")
+	}
+}
+
+func TestDrawnWallOnADerivedWallIsNotDuplicated(t *testing.T) {
+	b := &Board{Version: CurrentVersion, Width: 2, Height: 1, Regions: []int{Corridor, 1}, Rooms: []Room{{ID: 1}},
+		DrawnWalls: []Edge{{X: 2, Y: 1, Orientation: Vertical}}}
+	if got := len(b.Walls()); got != 7 {
+		t.Fatalf("got %d walls, want 7", got)
+	}
+}
+
+func TestValidateRejectsBadDrawnWalls(t *testing.T) {
+	cases := map[string]Edge{
+		"left boundary":   {X: 1, Y: 1, Orientation: Vertical},
+		"right boundary":  {X: 4, Y: 1, Orientation: Vertical},
+		"bottom boundary": {X: 1, Y: 1, Orientation: Horizontal},
+		"top boundary":    {X: 1, Y: 3, Orientation: Horizontal},
+		"off the board":   {X: 9, Y: 9, Orientation: Vertical},
+		"orientation":     {X: 2, Y: 1, Orientation: "diagonal"},
+	}
+	for name, e := range cases {
+		t.Run(name, func(t *testing.T) {
+			b, _ := NewBoard(3, 2)
+			b.DrawnWalls = []Edge{e}
+			if err := b.Validate(); err == nil {
+				t.Fatal("expected an error")
+			}
+		})
+	}
+	t.Run("duplicate", func(t *testing.T) {
+		b, _ := NewBoard(3, 2)
+		e := Edge{X: 2, Y: 1, Orientation: Vertical}
+		b.DrawnWalls = []Edge{e, e}
+		if err := b.Validate(); err == nil {
+			t.Fatal("expected an error")
+		}
+	})
+	t.Run("interior edges are fine", func(t *testing.T) {
+		b, _ := NewBoard(3, 2)
+		b.DrawnWalls = []Edge{{X: 3, Y: 2, Orientation: Vertical}, {X: 3, Y: 2, Orientation: Horizontal}}
+		if err := b.Validate(); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestChecksumCoversDrawnWalls(t *testing.T) {
+	plain := &Board{Width: 2, Height: 1, Regions: []int{Corridor, Corridor}}
+	empty := &Board{Width: 2, Height: 1, Regions: []int{Corridor, Corridor}, DrawnWalls: []Edge{}}
+	walled := &Board{Width: 2, Height: 1, Regions: []int{Corridor, Corridor}, DrawnWalls: []Edge{{X: 2, Y: 1, Orientation: Vertical}}}
+	if plain.Checksum() != empty.Checksum() {
+		t.Error("no drawn walls must checksum the same as before drawn walls existed")
+	}
+	if plain.Checksum() == walled.Checksum() {
+		t.Error("drawing a wall changes the layout")
+	}
+	a := &Board{Width: 3, Height: 1, Regions: []int{0, 0, 0}, DrawnWalls: []Edge{{X: 2, Y: 1, Orientation: Vertical}, {X: 3, Y: 1, Orientation: Vertical}}}
+	b := &Board{Width: 3, Height: 1, Regions: []int{0, 0, 0}, DrawnWalls: []Edge{{X: 3, Y: 1, Orientation: Vertical}, {X: 2, Y: 1, Orientation: Vertical}}}
+	if a.Checksum() != b.Checksum() {
+		t.Error("drawn wall order must not matter")
+	}
+}

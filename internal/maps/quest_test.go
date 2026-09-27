@@ -177,3 +177,19 @@ func TestNewQuestIsEmptyAndBoundToBoard(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDoorOnADrawnCorridorWallIsFine(t *testing.T) {
+	b := testBoard()
+	// Column x3 is corridor from y1 to y3; draw a wall across it between y1 and y2.
+	b.DrawnWalls = []Edge{{X: 3, Y: 2, Orientation: Horizontal}}
+	q := validQuest(b)
+	q.Doors = append(q.Doors, Door{ID: "d-drawn", Edge: Edge{X: 3, Y: 2, Orientation: Horizontal}, Kind: DoorNormal, State: DoorClosed})
+	if issues := q.Check(b, sizes); len(issues) != 0 {
+		t.Fatalf("Check: %+v", issues)
+	}
+	b.DrawnWalls = nil
+	q.BoardChecksum = b.Checksum()
+	if got := issueCodes(q.Check(b, sizes)); !slices.Equal(got, []string{"door-same-region:d-drawn"}) {
+		t.Fatalf("without the drawn wall: %v", got)
+	}
+}
