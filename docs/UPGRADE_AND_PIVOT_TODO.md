@@ -46,7 +46,7 @@ Commits (oldest first):
 | 2fb7d7d | 7 tracker |
 | 5c17cbe | 8 multiplayer removed, docs rewritten |
 | 450cbad | docs: resume summary |
-| (next commit) | post-plan: (1,1) at the bottom-left, columns × rows labels |
+| 7a85e91 | post-plan: (1,1) at the bottom-left, columns × rows labels |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
