@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/legacy"
 )
 
 // legacyBoard is a synthetic 4x3 legacy board:
@@ -12,12 +12,12 @@ import (
 //	y0: 1 1 . .
 //	y1: 1 1 . .
 //	y2: . . . 2
-func legacyBoard() *geometry.BoardDefinition {
-	b := &geometry.BoardDefinition{ID: "tiny", Name: "Tiny Board"}
+func legacyBoard() *legacy.BoardDefinition {
+	b := &legacy.BoardDefinition{ID: "tiny", Name: "Tiny Board"}
 	b.Dimensions.Width, b.Dimensions.Height = 4, 3
-	b.Rooms = []geometry.Room{
-		{ID: 1, Name: "Entry", Tiles: []geometry.TileCoordinate{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}, {X: 1, Y: 1}}},
-		{ID: 2, Name: "Vault", Tiles: []geometry.TileCoordinate{{X: 3, Y: 2}}},
+	b.Rooms = []legacy.Room{
+		{ID: 1, Name: "Entry", Tiles: []legacy.TileCoordinate{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}, {X: 1, Y: 1}}},
+		{ID: 2, Name: "Vault", Tiles: []legacy.TileCoordinate{{X: 3, Y: 2}}},
 	}
 	return b
 }
@@ -44,10 +44,10 @@ func TestBoardFromLegacy(t *testing.T) {
 }
 
 func TestBoardFromLegacyRejectsBadRooms(t *testing.T) {
-	cases := map[string]func(b *geometry.BoardDefinition){
-		"tile off board":    func(b *geometry.BoardDefinition) { b.Rooms[1].Tiles[0] = geometry.TileCoordinate{X: 4, Y: 0} },
-		"tile in two rooms": func(b *geometry.BoardDefinition) { b.Rooms[1].Tiles[0] = geometry.TileCoordinate{X: 0, Y: 0} },
-		"room id zero":      func(b *geometry.BoardDefinition) { b.Rooms[1].ID = 0 },
+	cases := map[string]func(b *legacy.BoardDefinition){
+		"tile off board":    func(b *legacy.BoardDefinition) { b.Rooms[1].Tiles[0] = legacy.TileCoordinate{X: 4, Y: 0} },
+		"tile in two rooms": func(b *legacy.BoardDefinition) { b.Rooms[1].Tiles[0] = legacy.TileCoordinate{X: 0, Y: 0} },
+		"room id zero":      func(b *legacy.BoardDefinition) { b.Rooms[1].ID = 0 },
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -65,25 +65,25 @@ func TestQuestFromLegacy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	def := &geometry.QuestDefinition{
+	def := &legacy.QuestDefinition{
 		ID:               "q1",
 		Name:             "Test Quest",
 		Description:      "Find the vault.",
 		StartingRoom:     1,
 		WanderingMonster: "orc",
-		Doors: []geometry.QuestDoor{
+		Doors: []legacy.QuestDoor{
 			{ID: "door-1", X: 2, Y: 1, Orientation: "vertical", State: "closed", Type: "normal"},
 			{ID: "door-2", X: 3, Y: 2, Orientation: "horizontal", State: "", Type: "secret"},
 		},
-		BlockingWalls: []geometry.QuestBlockingWall{
+		BlockingWalls: []legacy.QuestBlockingWall{
 			{ID: "wall-1", X: 2, Y: 0, Orientation: "vertical", Size: 2},
 			{ID: "wall-2", X: 2, Y: 2, Orientation: "horizontal", Size: 0},
 		},
-		Furniture: []geometry.QuestFurniture{{ID: "furniture-1", Type: "table", X: 0, Y: 0, Rotation: 90, SwapAspectOnRotate: true}},
-		Monsters:  []geometry.QuestMonster{{ID: "monster-1", Type: "orc", X: 3, Y: 2, Notes: "Guards the vault"}},
-		QuestNotes: map[string]*geometry.QuestTreasureNote{
-			"B": {NoteID: "B", Location: geometry.TreasureLocation{X: 3, Y: 2}, Description: "The vault is empty."},
-			"A": {NoteID: "A", Location: geometry.TreasureLocation{X: 1, Y: 1}, Description: "A rusty key."},
+		Furniture: []legacy.QuestFurniture{{ID: "furniture-1", Type: "table", X: 0, Y: 0, Rotation: 90, SwapAspectOnRotate: true}},
+		Monsters:  []legacy.QuestMonster{{ID: "monster-1", Type: "orc", X: 3, Y: 2, Notes: "Guards the vault"}},
+		QuestNotes: map[string]*legacy.QuestTreasureNote{
+			"B": {NoteID: "B", Location: legacy.TreasureLocation{X: 3, Y: 2}, Description: "The vault is empty."},
+			"A": {NoteID: "A", Location: legacy.TreasureLocation{X: 1, Y: 1}, Description: "A rusty key."},
 		},
 	}
 
@@ -133,7 +133,7 @@ func TestQuestFromLegacy(t *testing.T) {
 
 func TestQuestFromLegacyRejectsBadOrientation(t *testing.T) {
 	board, _ := BoardFromLegacy(legacyBoard())
-	def := &geometry.QuestDefinition{Doors: []geometry.QuestDoor{{ID: "d", X: 1, Y: 1, Orientation: "sideways"}}}
+	def := &legacy.QuestDefinition{Doors: []legacy.QuestDoor{{ID: "d", X: 1, Y: 1, Orientation: "sideways"}}}
 	if _, err := QuestFromLegacy(def, board); err == nil {
 		t.Fatal("expected an error")
 	}

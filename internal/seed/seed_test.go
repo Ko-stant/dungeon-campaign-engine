@@ -5,21 +5,21 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/legacy"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store/storetest"
 )
 
-func legacyDefs() (*geometry.BoardDefinition, *geometry.QuestDefinition) {
-	b := &geometry.BoardDefinition{ID: "tiny", Name: "Tiny Board"}
+func legacyDefs() (*legacy.BoardDefinition, *legacy.QuestDefinition) {
+	b := &legacy.BoardDefinition{ID: "tiny", Name: "Tiny Board"}
 	b.Dimensions.Width, b.Dimensions.Height = 3, 2
-	b.Rooms = []geometry.Room{{ID: 1, Name: "Entry", Tiles: []geometry.TileCoordinate{{X: 0, Y: 0}, {X: 0, Y: 1}}}}
-	q := &geometry.QuestDefinition{
+	b.Rooms = []legacy.Room{{ID: 1, Name: "Entry", Tiles: []legacy.TileCoordinate{{X: 0, Y: 0}, {X: 0, Y: 1}}}}
+	q := &legacy.QuestDefinition{
 		ID:           "q1",
 		Name:         "First Steps",
 		StartingRoom: 1,
-		Doors:        []geometry.QuestDoor{{ID: "door-1", X: 1, Y: 0, Orientation: "vertical", State: "closed", Type: "normal"}},
-		Monsters:     []geometry.QuestMonster{{ID: "monster-1", Type: "orc", X: 2, Y: 1}},
+		Doors:        []legacy.QuestDoor{{ID: "door-1", X: 1, Y: 0, Orientation: "vertical", State: "closed", Type: "normal"}},
+		Monsters:     []legacy.QuestMonster{{ID: "monster-1", Type: "orc", X: 2, Y: 1}},
 	}
 	return b, q
 }

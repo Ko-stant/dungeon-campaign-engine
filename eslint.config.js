@@ -17,8 +17,6 @@ const styleRules = {
 export default defineConfig(
   {
     ignores: [
-      // Legacy vanilla JS client: reference only, never converted, deleted in Phase 8.
-      'internal/web/static/js/**',
       // Build output.
       'internal/web/static/dist/**',
       'build/**',

@@ -1,115 +1,77 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Also read `docs/IMPORTANT.md` (working rules) before making changes.
 
 ## Project Overview
 
-This is a dungeon campaign engine for HeroQuest built with Go, featuring real-time gameplay through WebSockets and a web frontend using Templ templates with TailwindCSS.
+Dungeon Campaign Engine is a **single-GM companion app for in-person HeroQuest**. The GM builds
+maps in the browser, runs a quest at the table, and records outcomes (moves, body points, doors,
+traps, monsters seen) so a session can be resumed later with a readable event log.
+
+It deliberately **enforces no game rules**: the GM may re-close doors, un-trigger traps, revive
+monsters or move anything anywhere. The app only records the result and describes each change.
+
+Stack: Go 1.27 (net/http, templ, pgx), Postgres 18 (Docker), TypeScript 6 bundled by Bun,
+Tailwind CSS v4, canvas rendering.
 
 ## Common Commands
 
-### Development
-- `make dev` - Start development mode with hot reloading (runs tailwind watch, templ watch, and air)
-- `make tools` - Install all development tools (air, templ, gotestsum, golangci-lint, goose)
-- `make run` - Build and run the server once
-- `make build` - Build production binary to `./build/dungeon-campaign-engine`
+### Everyday
+- `make db-up` - Start Postgres (host port 5433; see `.env`)
+- `make dev` - Tailwind watch + TS watch + templ proxy + Air hot reload (app on :8080, proxy on :7331)
+- `make import-content [QUEST=base/quests/quest-01.json]` - Import the legacy base board + a quest (idempotent)
+- `make build` - Production build to `./build/dungeon-campaign-engine`
 
-### Testing and Quality
-- `make test` - Run tests with gotestsum
-- `make test-race` - Run tests with race detection
-- `make cover` - Generate test coverage report
-- `make lint` - Run golangci-lint
-- `make fmt` - Format and vet Go code
+### Testing and quality
+- `make test` - Go tests (database tests skip without a URL)
+- `make test-db` - Go tests including database tests (each uses a throwaway schema)
+- `make test-race` - Go tests with the race detector
+- `bun test` / `make test-js` - TypeScript unit tests (bun:test)
+- `make lint` - golangci-lint v2 + ESLint 10 (typescript-eslint) + `tsc`
+- `make fmt` - gofmt + go vet
 
-### Database (PostgreSQL via Docker Compose)
-- `make db-up` - Start PostgreSQL container
-- `make db-migrate-up` - Run pending migrations
-- `make db-migrate-down` - Rollback last migration
-- `make db-migrate-new` - Create new migration file
-- `make db-psql` - Connect to database shell
-
-### Frontend (Bun + TypeScript)
-- `bun install` - Install JS dependencies (Bun is the package manager and runtime; Node is not required)
-- `bun test` / `make test-js` - Run the TypeScript unit tests (`bun:test`)
-- `bun run typecheck` - Type-check with `tsc` (TypeScript pinned to 6.0.x until typescript-eslint supports 7)
-- `bun run lint` - ESLint 10 with typescript-eslint (type-checked rules)
+### Frontend
+- `bun install` - JS dependencies (Bun is the package manager and runtime; Node is not needed)
 - `bun run build:web` / `bun run watch:web` - Bundle `internal/web/src/pages/*.ts` into `internal/web/static/dist/`
-- `bun run tailwind:build` / `bun run tailwind:watch` - Tailwind CSS v4 (CSS-first config in `internal/web/static/styles/index.css`)
+- `bun run tailwind:build` / `bun run tailwind:watch` - Tailwind v4 (config is CSS-first in `internal/web/static/styles/index.css`)
 
-### Client-side development rules
-- New client code is TypeScript under `internal/web/src/`, written **test-first**: add the failing `*.test.ts` (bun:test) before the implementation.
-- Keep pure logic (geometry, models, hit-testing, command builders, serialization) separate from DOM/canvas code so it is testable without a browser; canvas drawing is verified visually.
-- `internal/web/static/js/` is the legacy vanilla client: reference only, never converted, excluded from lint, deleted when the multiplayer code is removed.
-- Board conventions: region ids are row-major (`-1` void, `0` corridor, `>0` room); a vertical edge (x,y) is the left side of tile (x,y), a horizontal edge its top side; walls exist wherever neighbouring regions differ.
+### Database
+- `make db-migrate-up` / `make db-migrate-down` / `make db-migrate-new` - goose CLI (the server also migrates on start)
+- `make db-psql`, `make db-backup`, `make db-restore`
 
 ## Architecture
 
-### Core Components
+- `cmd/server` - Entry point: static files, `/` redirects to `/campaigns`, mounts `internal/app`.
+- `cmd/import-content` - Imports legacy `content/board.json` + quest JSON as map documents.
+- `internal/app` - HTTP layer: JSON APIs, templ pages, per-session command locking, WebSocket stream.
+  - Maps: `/maps`, `/maps/{id}/edit`, `/api/boards...`, `/api/quests...`, `/api/catalog`
+  - Tracker: `/campaigns`, `/campaigns/{id}`, `/play/{id}`, `/api/campaigns...`, `/api/sessions/{id}/(commands|events|complete|reopen|stream)`
+- `internal/maps` - Board and quest documents (Go), validation, advisory `Check`, legacy converters.
+- `internal/tracker` - Session `State`, `NewSession`, `Apply(state, command)` -> new state + readable event, `CarryOver`.
+- `internal/store` - Postgres (pgx) persistence; `RecordEvent` atomically saves state + event. `storetest` gives tests a throwaway schema.
+- `internal/content` - Hero/monster/furniture catalogs from `content/` (any `fs.FS`).
+- `internal/legacy` - Readers for the original board/quest JSON formats (import only).
+- `internal/seed` - Idempotent legacy import. `internal/dotenv` - `.env` loader. `internal/web` - `NoCache` helper, templ views, static assets, TS sources.
+- `db/migrations` - goose SQL, embedded via `db.Migrations`.
 
-**Game State Management** (`cmd/server/main.go`):
-- Central `GameState` struct manages dungeon layout, entities, doors, and visibility
-- Real-time updates via WebSocket protocol with sequence numbers
-- Thread-safe operations using mutexes
+### Client (`internal/web/src`)
+- `board/` - geometry (metrics, hit-testing, footprints), `BoardView` model (derived walls), canvas renderer.
+- `maps/` - document types + API client. `editor/` - pure editing model, tools, undo history.
+- `tracker/` - session types, view builder, click interaction, event formatting, API client.
+- `pages/` - thin DOM wiring per page (`mapEditor.ts`, `tracker.ts`), bundled to `static/dist/`.
 
-**Geometry System** (`internal/geometry/`):
-- `Segment` - Represents dungeon layout with walls, doors, and dimensions
-- `RegionMap` - Maps tiles to room/corridor regions for visibility calculations
-- Line-of-sight algorithm using grid traversal for door visibility
-- Procedural dungeon generation with corridors and rooms
+### Conventions
+- Regions are row-major: `-1` void (solid rock), `0` corridor, `>0` room id.
+- A vertical edge (x,y) is the left side of tile (x,y); a horizontal edge is its top side.
+- Walls are never stored: they exist wherever neighbouring regions differ (off-board = void).
+- A session stores frozen copies of its board and quest, so map edits never change a game in progress.
+- Every tracker change is one command -> one event row; corrections are just more events.
 
-**Protocol** (`internal/protocol/`):
-- Event-driven architecture with `IntentEnvelope` (client→server) and `PatchEnvelope` (server→client)
-- Snapshot system for initial game state delivery
-- Real-time patches for movement, door state, visibility, and region discovery
-
-**Web Frontend** (`internal/web/`):
-- Templ templates for server-side rendering
-- WebSocket client for real-time game updates
-- TailwindCSS for styling (built from `internal/web/static/styles/index.css`)
-
-### Key Patterns
-
-**Visibility System**:
-- Regions are "known" (discovered), "revealed" (accessible), or "visible" (currently in line-of-sight)
-- Opening doors reveals connected rooms and updates visibility calculations
-
-**Movement Validation**:
-- Checks map boundaries, wall collisions, and door states
-- Uses edge-based collision detection system
-
-**Template System**:
-- Uses `a-h/templ` for type-safe HTML generation
-- Templates must be generated before building: `templ generate -path=./internal/web/views`
-
-## Game Master Overrides & Custom Rules
-
-Beyond standard HeroQuest mechanics, this engine is designed to support Game Master agency and custom rule variations:
-
-### Monster Placement Flexibility
-- **Delayed Monster Reveal**: Monsters may not be immediately revealed when doors open, even if technically "visible"
-- GM can choose to place monsters on-demand when heroes enter rooms, particularly for enemies in corners or areas outside initial line-of-sight
-- Allows for dramatic timing and narrative control over encounters
-
-### Custom Dice Rolling Rules
-- **Double Dice Effects** (custom house rules):
-  - Double 1s: Roll one fewer attack die on next attack
-  - Double 2-5: Can reroll one attack die
-  - Double 6s: Can reroll 2 attack dice
-- System should support toggling these custom rules on/off per campaign
-
-### Player Negotiation & Dynamic Rewards
-- **Bargaining System**: GM can offer alternative outcomes based on dice rolls or player actions
-- Example: Allow players to risk/gamble rewards (e.g., "roll double 6s to keep treasure chest")
-- Support for ad-hoc rule modifications during gameplay to maintain engagement
-
-### Line of Sight Overrides
-- **Flexible LOS Rules**: GM can override strict "center-of-tile to center-of-tile" calculations
-- Allow attacks/actions that would normally be blocked by allies or monsters
-- Provide narrative context for rule bends (e.g., "Knight ducks to allow crossbow shot")
-- Prioritize fun and roleplay over rigid rule adherence
-
-### Implementation Considerations
-- All GM overrides should be optional toggles, not replacing core mechanics
-- Need UI controls for GM to make real-time rule adjustments
-- Consider logging override decisions for campaign consistency
-- Custom rules should be per-campaign configurable, not global settings
+## Development Rules
+- **Test-first**: write the failing Go test / `bun:test` before the implementation. Keep pure logic
+  (models, geometry, commands, formatting) separate from DOM/canvas and HTTP wiring.
+- Never hand-edit `*_templ.go`; change the `.templ` file and run `go tool templ generate`.
+- `content/` and `assets/` are gitignored (copyrighted HeroQuest material). Tests must not require
+  them (content-dependent tests skip without them).
+- GM-facing behaviour: never add a rule check that blocks the GM; at most show advice.

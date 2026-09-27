@@ -13,7 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/legacy"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/seed"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 )
@@ -30,11 +30,11 @@ func main() {
 	}
 	ctx := context.Background()
 
-	boardDef, err := geometry.LoadBoardFromFile(filepath.Join(*contentDir, *boardFile))
+	boardDef, err := legacy.LoadBoardFromFile(filepath.Join(*contentDir, *boardFile))
 	if err != nil {
 		log.Fatal(err)
 	}
-	questDef, err := geometry.LoadQuestFromFile(filepath.Join(*contentDir, *questFile))
+	questDef, err := legacy.LoadQuestFromFile(filepath.Join(*contentDir, *questFile))
 	if err != nil {
 		log.Fatal(err)
 	}

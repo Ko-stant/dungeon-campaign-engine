@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/legacy"
 )
 
 // BoardFromLegacy converts a legacy board.json definition. Legacy boards have
 // no solid rock: every tile outside a room is corridor.
-func BoardFromLegacy(def *geometry.BoardDefinition) (*Board, error) {
+func BoardFromLegacy(def *legacy.BoardDefinition) (*Board, error) {
 	b, err := NewBoard(def.Dimensions.Width, def.Dimensions.Height)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func BoardFromLegacy(def *geometry.BoardDefinition) (*Board, error) {
 }
 
 // QuestFromLegacy converts a legacy quest definition placed on board.
-func QuestFromLegacy(def *geometry.QuestDefinition, board *Board) (*Quest, error) {
+func QuestFromLegacy(def *legacy.QuestDefinition, board *Board) (*Quest, error) {
 	q := NewQuest(board)
 	q.Description = def.Description
 	q.WanderingMonster = def.WanderingMonster

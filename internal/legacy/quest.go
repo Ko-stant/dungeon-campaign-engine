@@ -1,4 +1,4 @@
-package geometry
+package legacy
 
 import (
 	"encoding/json"
@@ -126,73 +126,4 @@ func LoadQuestFromFile(filepath string) (*QuestDefinition, error) {
 	}
 
 	return &quest, nil
-}
-
-// ConvertQuestDoorsToEdges converts quest doors to EdgeAddress structures
-func ConvertQuestDoorsToEdges(doors []QuestDoor) []EdgeAddress {
-	edges := make([]EdgeAddress, len(doors))
-	for i, door := range doors {
-		orientation := Vertical
-		if door.Orientation == "horizontal" {
-			orientation = Horizontal
-		}
-
-		edges[i] = EdgeAddress{
-			X:           door.X,
-			Y:           door.Y,
-			Orientation: orientation,
-		}
-	}
-	return edges
-}
-
-// ConvertQuestBlockingWallsToEdges converts quest blocking walls to EdgeAddress structures
-func ConvertQuestBlockingWallsToEdges(walls []QuestBlockingWall) []EdgeAddress {
-	var edges []EdgeAddress
-
-	for _, wall := range walls {
-		orientation := Vertical
-		if wall.Orientation == "horizontal" {
-			orientation = Horizontal
-		}
-
-		// Handle multi-tile walls
-		size := wall.Size
-		if size <= 0 {
-			size = 1 // Default to single tile
-		}
-
-		for i := 0; i < size; i++ {
-			edge := EdgeAddress{
-				X:           wall.X,
-				Y:           wall.Y,
-				Orientation: orientation,
-			}
-
-			// Offset for multi-tile walls
-			if orientation == Horizontal {
-				edge.X += i
-			} else {
-				edge.Y += i
-			}
-
-			edges = append(edges, edge)
-		}
-	}
-
-	return edges
-}
-
-// FindStartingTileInRoom finds the first available tile in a specific room
-func FindStartingTileInRoom(board *BoardDefinition, roomID int) (int, int, error) {
-	for _, room := range board.Rooms {
-		if room.ID == roomID {
-			if len(room.Tiles) == 0 {
-				return 0, 0, fmt.Errorf("room %d has no tiles", roomID)
-			}
-			// Return the first tile in the room
-			return room.Tiles[0].X, room.Tiles[0].Y, nil
-		}
-	}
-	return 0, 0, fmt.Errorf("room %d not found", roomID)
 }

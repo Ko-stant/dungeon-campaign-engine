@@ -74,7 +74,7 @@ cover:
 test-db:
 	@set -a; [ -f .env ] && . ./.env; set +a; \
 	TEST_DATABASE_URL="$${TEST_DATABASE_URL:-$$DATABASE_URL}" \
-	$(TOOLS_DIRECTORY)/gotestsum --format testname -- -count=1 -timeout $(GO_TEST_TIMEOUT) ./internal/... ./db/...
+	$(TOOLS_DIRECTORY)/gotestsum --format testname -- -count=1 -timeout $(GO_TEST_TIMEOUT) $(GO_PACKAGES)
 
 test-js:
 	@echo "==> Running JavaScript tests..."

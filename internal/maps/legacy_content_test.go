@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
-	"github.com/Ko-stant/dungeon-campaign-engine/internal/geometry"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/legacy"
 )
 
 // TestLegacyQuestOneConvertsCleanly converts the real (gitignored) base board
@@ -15,11 +15,11 @@ func TestLegacyQuestOneConvertsCleanly(t *testing.T) {
 	if _, err := os.Stat(root + "/board.json"); err != nil {
 		t.Skip("content/ not present (gitignored)")
 	}
-	boardDef, err := geometry.LoadBoardFromFile(root + "/board.json")
+	boardDef, err := legacy.LoadBoardFromFile(root + "/board.json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	questDef, err := geometry.LoadQuestFromFile(root + "/base/quests/quest-01.json")
+	questDef, err := legacy.LoadQuestFromFile(root + "/base/quests/quest-01.json")
 	if err != nil {
 		t.Fatal(err)
 	}

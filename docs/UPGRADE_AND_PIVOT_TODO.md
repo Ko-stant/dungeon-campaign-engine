@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-27 14:10 EDT
+**Last Updated**: 2026-09-27 14:25 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -363,7 +363,41 @@ same 19, no new failures.
   with both 20rem panels), drag-to-move, line-of-sight reveal suggestions, event
   log filters, monster stat panel, player TV view.
 
-## Phase 8 - Remove multiplayer, docs cleanup
+## Phase 8 - Remove multiplayer, docs cleanup [DONE 2026-09-27]
+
+- [x] Deleted the legacy multiplayer server:
+  - `cmd/server` except the new `main.go` + `app_mount.go`: lobby, turn/election
+    systems, rules engine, dice, debug routes, legacy game state, the golden
+    baseline test and its 19 known-failing tests.
+  - `internal/protocol`, `internal/ws`, and the legacy templ views/components
+    (only `components/page.templ` remains).
+  - The vanilla JS client (`internal/web/static/js`) and the `/dev/board`
+    comparison page.
+
+  About 22k lines removed. The line-of-sight code is kept in git history for
+  the roadmap's reveal suggestions.
+- [x] `internal/geometry` became `internal/legacy`: only the board/quest JSON readers
+      the importer needs.
+- [x] New `cmd/server/main.go` (tested):
+  - `/` redirects to `/campaigns`; `/lobby` etc. are gone (404).
+  - `/static/` is served no-cache and `/assets/` from `assets/`.
+  - App routes answer 503 with instructions when the database is missing.
+  - Graceful shutdown.
+- [x] Lint and styles: the golangci-lint exclusion, the ESLint legacy ignore and the
+      legacy-only CSS are removed. Tailwind now scans only templ views + TS
+      sources.
+- [x] `make test` has zero failures (the 19 legacy failures went with the legacy
+      code). `make test-db` covers all packages.
+- [x] Docs:
+  - `CLAUDE.md` and `README.md` are rewritten for the companion app.
+  - New `docs/ROADMAP.md`, with the still-relevant ideas from the old roadmap
+    carried over.
+  - `docs/IMPORTANT.md` is updated (no USE_LOBBY; the GM is never blocked).
+  - Deleted the election/turn docs, `DEFERRED_BUGS.md`,
+    `CONTENT_EFFECTS_IMPLEMENTATION_PLAN.md` and `DEVELOPMENT_ROADMAP.md`.
+- [x] Verified in the browser: `/` goes to campaigns, the in-progress session resumes
+      after a server restart with identical state and log, all board art loads
+      through the new `/assets/` route, and the map creator lists both boards.
 
 ---
 
@@ -372,5 +406,8 @@ same 19, no new failures.
   The project no longer needs Node, but reinstalling Node 22 as arm64 would avoid
   surprises in editor tooling.
 - Optional: pin the Tailwind v3 palette in `@theme` if the v4 color shift is unwanted.
-- Move to TypeScript 7 when typescript-eslint supports it.
+- Move to TypeScript 7 when typescript-eslint supports it (also in docs/ROADMAP.md).
+- The old Postgres 16 Docker volume `dungeon-campaign-engine_pgdata` is unused;
+  remove it with `docker volume rm dungeon-campaign-engine_pgdata` once you're sure
+  nothing in it matters.
 - Xcode.app 26.2 is behind CLT 26.6. Update from the App Store when convenient.
