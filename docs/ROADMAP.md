@@ -14,12 +14,23 @@ enforces rules; the GM decides, and the app remembers.
 - Tracker: live session state, GM commands with a readable event log, fog of
   what the heroes have seen, resumable from Postgres, live sync across tabs.
 
+## Done after the plan (2026-09-27)
+- Squares count from (1,1) at the bottom-left; sizes read columns × rows.
+- Drawn walls on the board layer (e.g. between two corridors).
+- Room colors; exit squares; gates and locked doors; purple secret doors.
+- Blocked squares that hide a secret door, removable (and restorable) during play.
+- Custom monster library (`/monsters`): color, size up to 4x4, stats, notes.
+
 ## Next
 ### Table polish
 - [ ] Tracker layout for smaller screens (collapsible side panels, bigger board).
 - [ ] Drag to move pieces; keyboard nudges for the selected piece.
 - [ ] Event log filters (round, hero, monster) and search.
 - [ ] Monster detail panel with catalog stats (attack/defend/move) and notes.
+- [ ] Map checks for multi-square monsters: `Quest.Check` only checks a monster's
+      anchor square, so a 2x2 custom monster hanging off the board or into rock is
+      not flagged yet.
+- [ ] Drag to draw a run of walls (drawn walls are one click per edge today).
 - [ ] Friendlier advisory messages in the map creator (names instead of ids).
 
 ### Player TV view (read-only)

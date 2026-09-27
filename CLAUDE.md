@@ -46,6 +46,9 @@ Tailwind CSS v4, canvas rendering.
 - `cmd/import-content` - Imports legacy `content/board.json` + quest JSON as map documents.
 - `internal/app` - HTTP layer: JSON APIs, templ pages, per-session command locking, WebSocket stream.
   - Maps: `/maps`, `/maps/{id}/edit`, `/api/boards...`, `/api/quests...`, `/api/catalog`
+  - Custom monsters: `/monsters` (server-rendered forms; table `custom_monster`). `/api/catalog`
+    merges them into `monsters` with `custom-<uuid>` ids; use `Server.catalogFor(ctx)`, not
+    `s.catalog`, wherever monsters are looked up.
   - Tracker: `/campaigns`, `/campaigns/{id}`, `/play/{id}`, `/api/campaigns...`, `/api/sessions/{id}/(commands|events|complete|reopen|stream)`
 - `internal/maps` - Board and quest documents (Go), validation, advisory `Check`, legacy converters.
 - `internal/tracker` - Session `State`, `NewSession`, `Apply(state, command)` -> new state + readable event, `CarryOver`.

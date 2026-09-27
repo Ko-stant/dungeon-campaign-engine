@@ -48,6 +48,10 @@ Commits (oldest first):
 | 450cbad | docs: resume summary |
 | 7a85e91 | post-plan: (1,1) at the bottom-left, columns × rows labels |
 | 7bbd2e0 | post-plan: drawn walls on the board layer |
+| 883fba3, 341c81c | room colors, exit squares |
+| 1fbaa07 | gates, locked doors, purple secret doors |
+| 31e81ac | hidden-door blocked squares, removable in play |
+| dd336c6 | custom monster library |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
@@ -545,6 +549,41 @@ What changed (tests first):
 - Not browser-verified yet: the user was running their own server at the time. Unit
   tests cover the model, tools and view; the renderer change is the extra argument
   to `deriveWalls`.
+
+## Post-plan: quest features batch [DONE 2026-09-27]
+Asked for after building the first real map ("Beginners Herald" / "Crumbling Halls"):
+custom monsters (colors, multiple squares), hidden doors behind blocking tiles that
+can be removed mid-game, secret doors colored differently, room colors on the base
+board, locked doors/gates, and exit squares colored differently from start squares.
+Decisions (asked): custom monsters are a reusable library; a blocked square can be
+marked as hiding a secret door and any blocked square can be removed during play.
+
+- Room colors: `Room.Color` (#rrggbb, validated); color pickers per room on the Board
+  tab; drawn as a 35% wash in editor and tracker.
+- Exit squares: `Quest.ExitTiles` (always written; quests saved earlier send null),
+  Exit square tool, drawn magenta (start squares stay green); shown in the tracker;
+  `exit-off-board` / `exit-on-void` checks.
+- Doors: kind `gate`, `Door.Locked`; the door tool takes an explicit kind + Locked box
+  (replacing the none/normal/secret cycle), a selected door can change kind/lock.
+  Tracker `DoorState.Locked`, `door.set {locked}` ("Locked gate door-3"), Lock/Unlock
+  button. Closed gates draw as bars, locked doors get an amber mark, secret doors are
+  purple (heroes keep the salmon accent).
+- Hidden doors behind blocks: `Rect.HiddenDoor`; tool option and selection checkbox
+  "Hides a secret door", purple dashed outline. Tracker `State.RemovedBlocks`,
+  command `blocked.set {id, removed}` ("Found the secret door at (x,y) (id removed)" /
+  "Removed ..." / "Put back ..."); blocks are selectable on the board and listed (secret
+  ones and removed ones) in the right panel.
+- Custom monsters: migration `00002_custom_monster.sql`, store CRUD, `/monsters` page
+  (create/edit/delete forms), `content.MonsterDef` gains width/height/color/notes/custom,
+  `Server.catalogFor` merges them (ids `custom-<uuid>`) for `/api/catalog`, session start
+  and commands. Session monsters copy width/height/color. Drawn as colored rounded
+  blocks over the footprint with the name; hit-testing covers the footprint.
+- Also fixed: the furniture hint still said "top-left square".
+- Verified in the browser on a separate :8090 server (config `dce-binary-alt`, re-added)
+  against the test board/quest: room colors, a locked gate, a hidden-door block, an exit
+  square and a 2x2 custom monster in the editor; in a test session, "Found the secret
+  door", "Opened gate door-3" and "Unlocked gate door-3" all logged and drew correctly.
+  The test monster was then deleted and the test session completed.
 
 ---
 

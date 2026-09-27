@@ -6,6 +6,13 @@
       "runtimeExecutable": "./build/dungeon-campaign-engine",
       "runtimeArgs": [],
       "port": 8080
+    },
+    {
+      "name": "dce-binary-alt",
+      "runtimeExecutable": "./build/dungeon-campaign-engine",
+      "runtimeArgs": [],
+      "env": { "APP_PORT": "8090" },
+      "port": 8090
     }
   ]
 }
