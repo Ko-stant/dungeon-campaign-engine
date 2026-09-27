@@ -73,7 +73,7 @@ func MapsPage(boards []MapListItem, form MapCreateForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</header><section class=\"rounded-lg border border-border/60 bg-surface-2 p-5\"><h2 class=\"mb-4 text-lg font-semibold\">New board</h2><form method=\"post\" action=\"/maps\" class=\"grid grid-cols-1 gap-4 sm:grid-cols-[1fr_7rem_7rem_auto] sm:items-end\"><label class=\"block text-sm\"><span class=\"mb-1 block opacity-80\">Name</span> <input name=\"name\" required maxlength=\"120\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</header><section class=\"rounded-lg border border-border/60 bg-surface-2 p-5\"><h2 class=\"mb-4 text-lg font-semibold\">New board</h2><form method=\"post\" action=\"/maps\" class=\"grid grid-cols-1 gap-4 sm:grid-cols-[1fr_9rem_9rem_auto] sm:items-end\"><label class=\"block text-sm\"><span class=\"mb-1 block opacity-80\">Name</span> <input name=\"name\" required maxlength=\"120\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -86,7 +86,7 @@ func MapsPage(boards []MapListItem, form MapCreateForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" placeholder=\"e.g. Winter Keep\" class=\"w-full rounded-md border border-border/60 bg-surface px-3 py-2\"></label> <label class=\"block text-sm\"><span class=\"mb-1 block opacity-80\">Width</span> <input name=\"width\" type=\"number\" min=\"1\" max=\"200\" required value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" placeholder=\"e.g. Winter Keep\" class=\"w-full rounded-md border border-border/60 bg-surface px-3 py-2\"></label> <label class=\"block text-sm\"><span class=\"mb-1 block opacity-80\">Columns (width)</span> <input name=\"width\" type=\"number\" min=\"1\" max=\"200\" required value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -99,7 +99,7 @@ func MapsPage(boards []MapListItem, form MapCreateForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"w-full rounded-md border border-border/60 bg-surface px-3 py-2\"></label> <label class=\"block text-sm\"><span class=\"mb-1 block opacity-80\">Height</span> <input name=\"height\" type=\"number\" min=\"1\" max=\"200\" required value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"w-full rounded-md border border-border/60 bg-surface px-3 py-2\"></label> <label class=\"block text-sm\"><span class=\"mb-1 block opacity-80\">Rows (height)</span> <input name=\"height\" type=\"number\" min=\"1\" max=\"200\" required value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -112,7 +112,7 @@ func MapsPage(boards []MapListItem, form MapCreateForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" class=\"w-full rounded-md border border-border/60 bg-surface px-3 py-2\"></label> <button type=\"submit\" class=\"rounded-md bg-amber-600 px-4 py-2 font-semibold text-white hover:bg-amber-700\">Create</button></form><p class=\"mt-2 text-xs opacity-60\">The standard HeroQuest board is 26 × 19. Size can be changed later in the editor.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" class=\"w-full rounded-md border border-border/60 bg-surface px-3 py-2\"></label> <button type=\"submit\" class=\"rounded-md bg-amber-600 px-4 py-2 font-semibold text-white hover:bg-amber-700\">Create</button></form><p class=\"mt-2 text-xs opacity-60\">Columns run left to right and rows bottom to top, so a landscape board has more columns than rows. The standard HeroQuest board is 26 columns × 19 rows. Squares count from (1,1) at the bottom-left. Size can be changed later in the editor.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

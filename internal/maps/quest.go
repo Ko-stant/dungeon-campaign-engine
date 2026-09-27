@@ -29,7 +29,8 @@ type Door struct {
 	State string `json:"state"`
 }
 
-// Rect is a block of impassable squares (rubble / blocked-square tiles).
+// Rect is a block of impassable squares (rubble / blocked-square tiles),
+// anchored at its bottom-left square.
 type Rect struct {
 	ID string `json:"id"`
 	X  int    `json:"x"`
@@ -38,8 +39,8 @@ type Rect struct {
 	H  int    `json:"h"`
 }
 
-// Furniture is placed by its top-left tile after rotation; its size comes
-// from the furniture catalog and swaps at 90 and 270 degrees.
+// Furniture is placed by the bottom-left square of its rotated footprint; its
+// size comes from the furniture catalog and swaps at 90 and 270 degrees.
 type Furniture struct {
 	ID       string `json:"id"`
 	Type     string `json:"type"`
@@ -121,8 +122,8 @@ func RotatedSize(width, height, rotation int) (int, int, error) {
 
 // Validate reports malformed data. Placement problems are advisory; see Check.
 func (q *Quest) Validate() error {
-	if q.Version > CurrentVersion {
-		return fmt.Errorf("quest document version %d is newer than supported version %d", q.Version, CurrentVersion)
+	if err := checkVersion("quest", q.Version); err != nil {
+		return err
 	}
 	var errs []error
 	seen := map[string]bool{}
@@ -204,7 +205,6 @@ func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
 	add := func(code, itemID, format string, args ...any) {
 		issues = append(issues, Issue{Code: code, ItemID: itemID, Message: fmt.Sprintf(format, args...)})
 	}
-	onBoard := func(x, y int) bool { return x >= 0 && y >= 0 && x < b.Width && y < b.Height }
 
 	if q.BoardChecksum != "" && q.BoardChecksum != b.Checksum() {
 		add("board-changed", "", "the board layout changed after this quest was saved; check placements")
@@ -214,11 +214,11 @@ func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
 		e := d.Edge
 		var inRange, boundary bool
 		if e.Orientation == Vertical {
-			inRange = e.X >= 0 && e.X <= b.Width && e.Y >= 0 && e.Y < b.Height
-			boundary = e.X == 0 || e.X == b.Width
+			inRange = e.X >= 1 && e.X <= b.Width+1 && e.Y >= 1 && e.Y <= b.Height
+			boundary = e.X == 1 || e.X == b.Width+1
 		} else {
-			inRange = e.X >= 0 && e.X < b.Width && e.Y >= 0 && e.Y <= b.Height
-			boundary = e.Y == 0 || e.Y == b.Height
+			inRange = e.X >= 1 && e.X <= b.Width && e.Y >= 1 && e.Y <= b.Height+1
+			boundary = e.Y == 1 || e.Y == b.Height+1
 		}
 		ra, rb := b.EdgeRegions(e)
 		switch {
@@ -259,7 +259,7 @@ func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
 
 	piece := func(id string, x, y int) {
 		switch {
-		case !onBoard(x, y):
+		case !b.OnBoard(x, y):
 			add("piece-off-board", id, "%s is off the board", id)
 		case b.RegionAt(x, y) == Void:
 			add("piece-on-void", id, "%s is on solid rock", id)
@@ -277,7 +277,7 @@ func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
 
 	for _, s := range q.StartTiles {
 		switch {
-		case !onBoard(s.X, s.Y):
+		case !b.OnBoard(s.X, s.Y):
 			add("start-off-board", "", "start tile (%d,%d) is off the board", s.X, s.Y)
 		case b.RegionAt(s.X, s.Y) == Void:
 			add("start-on-void", "", "start tile (%d,%d) is on solid rock", s.X, s.Y)
@@ -291,7 +291,7 @@ func (b *Board) areaIssue(x, y, w, h int) string {
 	onVoid := false
 	for ty := y; ty < y+h; ty++ {
 		for tx := x; tx < x+w; tx++ {
-			if tx < 0 || ty < 0 || tx >= b.Width || ty >= b.Height {
+			if !b.OnBoard(tx, ty) {
 				return "off-board"
 			}
 			if b.RegionAt(tx, ty) == Void {

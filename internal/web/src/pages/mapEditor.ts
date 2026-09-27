@@ -4,7 +4,7 @@
  * history; the renderer draws toBoardView() of the current documents.
  */
 import { pixelToEdge, pixelToTile, type Rotation, type TileCoord } from '../board/geometry.ts';
-import { CORRIDOR, VOID, tileIndex } from '../board/model.ts';
+import { CORRIDOR, VOID, tileAt, tileIndex } from '../board/model.ts';
 import { BoardRenderer, type Highlights } from '../board/renderer.ts';
 import { History } from '../editor/history.ts';
 import {
@@ -86,8 +86,8 @@ async function main(): Promise<void> {
   // --- Layout ---
   const canvas = h('canvas', { class: 'block h-full w-full touch-none' });
   const nameInput = h('input', { class: `${field} w-64 font-semibold`, value: boardName, maxlength: 120, 'aria-label': 'Board name' });
-  const widthInput = h('input', { class: `${field} w-16`, type: 'number', min: 1, max: 200, 'aria-label': 'Width' });
-  const heightInput = h('input', { class: `${field} w-16`, type: 'number', min: 1, max: 200, 'aria-label': 'Height' });
+  const widthInput = h('input', { class: `${field} w-16`, type: 'number', min: 1, max: 200, 'aria-label': 'Columns (width)', title: 'Columns, left to right' });
+  const heightInput = h('input', { class: `${field} w-16`, type: 'number', min: 1, max: 200, 'aria-label': 'Rows (height)', title: 'Rows, bottom to top' });
   const resizeBtn = h('button', { class: btn, type: 'button' }, 'Resize');
   const undoBtn = h('button', { class: btn, type: 'button', title: 'Undo (Ctrl+Z)' }, 'Undo');
   const redoBtn = h('button', { class: btn, type: 'button', title: 'Redo (Ctrl+Shift+Z)' }, 'Redo');
@@ -104,7 +104,7 @@ async function main(): Promise<void> {
       { class: 'flex items-center gap-2 overflow-x-auto whitespace-nowrap border-b border-border/60 px-3 py-2' },
       h('a', { href: '/maps', class: 'text-sm opacity-70 hover:text-amber-400' }, '← Maps'),
       nameInput,
-      h('span', { class: 'ml-2 text-xs opacity-70' }, 'Size'),
+      h('span', { class: 'ml-2 text-xs opacity-70' }, 'Columns × rows'),
       widthInput,
       h('span', { class: 'text-xs opacity-70' }, '×'),
       heightInput,
@@ -164,7 +164,7 @@ async function main(): Promise<void> {
     const tiles: TileCoord[] = [];
     b.regions.forEach((r, i) => {
       if (r === roomId) {
-        tiles.push({ x: i % b.width, y: Math.floor(i / b.width) });
+        tiles.push(tileAt(b.width, i));
       }
     });
     return tiles;

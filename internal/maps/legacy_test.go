@@ -7,11 +7,14 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/legacy"
 )
 
-// legacyBoard is a synthetic 4x3 legacy board:
+// legacyBoard is a synthetic 4x3 legacy board. Legacy files count from 0 at
+// the top-left:
 //
 //	y0: 1 1 . .
 //	y1: 1 1 . .
 //	y2: . . . 2
+//
+// Converted, the same picture is rows y3 (top) to y1 (bottom), x1 to x4.
 func legacyBoard() *legacy.BoardDefinition {
 	b := &legacy.BoardDefinition{ID: "tiny", Name: "Tiny Board"}
 	b.Dimensions.Width, b.Dimensions.Height = 4, 3
@@ -27,11 +30,11 @@ func TestBoardFromLegacy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []int{
-		1, 1, 0, 0,
-		1, 1, 0, 0,
-		0, 0, 0, 2,
-	}
+	want := rowsTopFirst(
+		[]int{1, 1, 0, 0},
+		[]int{1, 1, 0, 0},
+		[]int{0, 0, 0, 2},
+	)
 	if b.Width != 4 || b.Height != 3 || !reflect.DeepEqual(b.Regions, want) {
 		t.Fatalf("board: %+v", b)
 	}
@@ -87,7 +90,7 @@ func TestQuestFromLegacy(t *testing.T) {
 		},
 	}
 
-	q, err := QuestFromLegacy(def, board)
+	q, err := QuestFromLegacy(def, board, sizes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,30 +99,34 @@ func TestQuestFromLegacy(t *testing.T) {
 		t.Fatalf("quest header: %+v", q)
 	}
 	wantDoors := []Door{
-		{ID: "door-1", Edge: Edge{X: 2, Y: 1, Orientation: Vertical}, Kind: DoorNormal, State: DoorClosed},
-		{ID: "door-2", Edge: Edge{X: 3, Y: 2, Orientation: Horizontal}, Kind: DoorSecret, State: DoorClosed},
+		// Legacy left side of (2,1) is the left side of (3,2).
+		{ID: "door-1", Edge: Edge{X: 3, Y: 2, Orientation: Vertical}, Kind: DoorNormal, State: DoorClosed},
+		// Legacy top side of (3,2) (the vault) is the bottom side of (4,2).
+		{ID: "door-2", Edge: Edge{X: 4, Y: 2, Orientation: Horizontal}, Kind: DoorSecret, State: DoorClosed},
 	}
 	if !reflect.DeepEqual(q.Doors, wantDoors) {
 		t.Fatalf("doors: %+v", q.Doors)
 	}
-	wantBlocked := []Rect{{ID: "wall-1", X: 2, Y: 0, W: 1, H: 2}, {ID: "wall-2", X: 2, Y: 2, W: 1, H: 1}}
+	// Rectangles are anchored at their bottom-left square.
+	wantBlocked := []Rect{{ID: "wall-1", X: 3, Y: 2, W: 1, H: 2}, {ID: "wall-2", X: 3, Y: 1, W: 1, H: 1}}
 	if !reflect.DeepEqual(q.BlockedSquares, wantBlocked) {
 		t.Fatalf("blocked squares: %+v", q.BlockedSquares)
 	}
-	if !reflect.DeepEqual(q.Furniture, []Furniture{{ID: "furniture-1", Type: "table", X: 0, Y: 0, Rotation: 90}}) {
+	// The 2x1 table turned 90 degrees is 1x2, covering legacy (0,0) and (0,1).
+	if !reflect.DeepEqual(q.Furniture, []Furniture{{ID: "furniture-1", Type: "table", X: 1, Y: 2, Rotation: 90}}) {
 		t.Fatalf("furniture: %+v", q.Furniture)
 	}
-	if !reflect.DeepEqual(q.Monsters, []Monster{{ID: "monster-1", Type: "orc", X: 3, Y: 2, Notes: "Guards the vault"}}) {
+	if !reflect.DeepEqual(q.Monsters, []Monster{{ID: "monster-1", Type: "orc", X: 4, Y: 1, Notes: "Guards the vault"}}) {
 		t.Fatalf("monsters: %+v", q.Monsters)
 	}
 	wantNotes := []Note{
-		{ID: "note-A", Label: "A", X: 1, Y: 1, Text: "A rusty key."},
-		{ID: "note-B", Label: "B", X: 3, Y: 2, Text: "The vault is empty."},
+		{ID: "note-A", Label: "A", X: 2, Y: 2, Text: "A rusty key."},
+		{ID: "note-B", Label: "B", X: 4, Y: 1, Text: "The vault is empty."},
 	}
 	if !reflect.DeepEqual(q.Notes, wantNotes) {
 		t.Fatalf("notes: %+v", q.Notes)
 	}
-	wantStart := []Tile{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}, {X: 1, Y: 1}}
+	wantStart := []Tile{{X: 1, Y: 2}, {X: 2, Y: 2}, {X: 1, Y: 3}, {X: 2, Y: 3}}
 	if !reflect.DeepEqual(q.StartTiles, wantStart) {
 		t.Fatalf("start tiles: %+v", q.StartTiles)
 	}
@@ -129,12 +136,15 @@ func TestQuestFromLegacy(t *testing.T) {
 	if err := q.Validate(); err != nil {
 		t.Fatal(err)
 	}
+	if issues := q.Check(board, sizes); len(issues) != 0 {
+		t.Fatalf("converted quest has placement issues: %+v", issues)
+	}
 }
 
 func TestQuestFromLegacyRejectsBadOrientation(t *testing.T) {
 	board, _ := BoardFromLegacy(legacyBoard())
 	def := &legacy.QuestDefinition{Doors: []legacy.QuestDoor{{ID: "d", X: 1, Y: 1, Orientation: "sideways"}}}
-	if _, err := QuestFromLegacy(def, board); err == nil {
+	if _, err := QuestFromLegacy(def, board, sizes); err == nil {
 		t.Fatal("expected an error")
 	}
 }

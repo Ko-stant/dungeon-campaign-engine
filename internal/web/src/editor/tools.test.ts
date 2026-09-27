@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { CORRIDOR, VOID } from '../board/model.ts';
-import type { BoardDoc, Catalog } from '../maps/types.ts';
+import { DOC_VERSION, type BoardDoc, type Catalog } from '../maps/types.ts';
 import { emptyQuest, placeMonster } from './model.ts';
 import { applyClick, applyDrag, lineTiles, type EditorDoc, type Tool } from './tools.ts';
 
@@ -11,7 +11,7 @@ const catalog: Catalog = {
 };
 
 function doc(withQuest = true): EditorDoc {
-  const board: BoardDoc = { version: 1, width: 4, height: 3, regions: new Array<number>(12).fill(CORRIDOR), rooms: [] };
+  const board: BoardDoc = { version: DOC_VERSION, width: 4, height: 3, regions: new Array<number>(12).fill(CORRIDOR), rooms: [] };
   return { board, quest: withQuest ? emptyQuest() : null };
 }
 
@@ -20,14 +20,14 @@ const edge = (x: number, y: number, orientation: 'vertical' | 'horizontal') => (
 
 describe('applyDrag (board tools)', () => {
   test('paint paints the visited tiles with the chosen region', () => {
-    const out = applyDrag(doc(), { kind: 'paint', region: VOID }, [{ x: 0, y: 0 }, { x: 1, y: 0 }]);
-    expect(out.board.regions.slice(0, 3)).toEqual([VOID, VOID, CORRIDOR]);
+    const out = applyDrag(doc(), { kind: 'paint', region: VOID }, [{ x: 1, y: 1 }, { x: 2, y: 1 }]);
+    expect(out.board.regions.slice(0, 3)).toEqual([VOID, VOID, CORRIDOR]); // bottom row
   });
 
   test('fill paints the rectangle between the first and last points', () => {
-    const out = applyDrag(doc(), { kind: 'fill', region: VOID }, [{ x: 1, y: 1 }, { x: 5, y: 5 }, { x: 2, y: 2 }]);
+    const out = applyDrag(doc(), { kind: 'fill', region: VOID }, [{ x: 2, y: 2 }, { x: 6, y: 6 }, { x: 3, y: 3 }]);
     const voids = out.board.regions.map((r, i) => (r === VOID ? i : -1)).filter((i) => i >= 0);
-    expect(voids).toEqual([5, 6, 9, 10]);
+    expect(voids).toEqual([5, 6, 9, 10]); // x 2..3 on rows 2 and 3
   });
 
   test('blocked adds one blocked-square rectangle from the drag', () => {
@@ -37,7 +37,7 @@ describe('applyDrag (board tools)', () => {
 
   test('quest tools do nothing when no quest is open', () => {
     const before = doc(false);
-    expect(applyDrag(before, { kind: 'blocked' }, [{ x: 0, y: 0 }])).toBe(before);
+    expect(applyDrag(before, { kind: 'blocked' }, [{ x: 1, y: 1 }])).toBe(before);
   });
 
   test('an empty drag changes nothing', () => {
@@ -90,11 +90,11 @@ describe('applyClick (quest tools)', () => {
     const d = doc();
     expect(applyClick(d, { kind: 'monster', type: 'orc' }, { tile: null, edge: null }, catalog)).toBe(d);
     const noQuest = doc(false);
-    expect(applyClick(noQuest, { kind: 'monster', type: 'orc' }, tile(0, 0), catalog)).toBe(noQuest);
+    expect(applyClick(noQuest, { kind: 'monster', type: 'orc' }, tile(1, 1), catalog)).toBe(noQuest);
   });
 
   test('the paint tool also works as a single click', () => {
-    const out = applyClick(doc(), { kind: 'paint', region: VOID }, tile(3, 2), catalog);
+    const out = applyClick(doc(), { kind: 'paint', region: VOID }, tile(4, 3), catalog); // top-right
     expect(out.board.regions[11]).toBe(VOID);
   });
 });

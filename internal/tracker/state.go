@@ -14,8 +14,9 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
 )
 
-// StateVersion is the session state schema version.
-const StateVersion = 1
+// StateVersion is the session state schema version. Version 2 uses the
+// bottom-left, 1-based squares of maps.CurrentVersion 2.
+const StateVersion = 2
 
 // Hero statuses.
 const (
@@ -177,12 +178,12 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 // that tile when it is corridor, rock or off the board.
 func (s *State) areaTiles(x, y int) []int {
 	b := &s.Board
-	if x < 0 || y < 0 || x >= b.Width || y >= b.Height {
+	if !b.OnBoard(x, y) {
 		return nil
 	}
 	region := b.RegionAt(x, y)
 	if region <= maps.Corridor {
-		return []int{y*b.Width + x}
+		return []int{b.Index(x, y)}
 	}
 	var out []int
 	for i, r := range b.Regions {

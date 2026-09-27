@@ -4,15 +4,15 @@
  * is just a stack of snapshots.
  */
 import { footprintTiles, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
-import { VOID, type BoardView, type FurnitureView, type PieceView } from '../board/model.ts';
-import type { BoardDoc, Catalog, QuestDoc } from '../maps/types.ts';
+import { VOID, onBoard as squareOnBoard, tileIndex, type BoardView, type FurnitureView, type PieceView } from '../board/model.ts';
+import { DOC_VERSION, type BoardDoc, type Catalog, type QuestDoc } from '../maps/types.ts';
 
 export const MAX_BOARD_SIZE = 200;
 
 // --- Board layer ---
 
 function onBoard(b: BoardDoc, t: TileCoord): boolean {
-  return t.x >= 0 && t.y >= 0 && t.x < b.width && t.y < b.height;
+  return squareOnBoard(b.width, b.height, t);
 }
 
 /** Drops rooms no tile uses any more, except `keep` (e.g. the room being painted). */
@@ -27,7 +27,7 @@ export function paintTiles(b: BoardDoc, tiles: readonly TileCoord[], region: num
   const regions = [...b.regions];
   for (const t of tiles) {
     if (onBoard(b, t)) {
-      regions[t.y * b.width + t.x] = region;
+      regions[tileIndex(b.width, t)] = region;
     }
   }
   return pruneRooms({ ...b, regions }, keepRoomId ?? (region > 0 ? region : undefined));
@@ -54,15 +54,19 @@ export function rectTiles(a: TileCoord, b: TileCoord): TileCoord[] {
   return tiles;
 }
 
-/** Resizes keeping the top-left corner: new tiles are VOID, cropped rooms are dropped. */
+/**
+ * Resizes keeping the bottom-left corner, so every square keeps its
+ * coordinates: new columns appear on the right and new rows on top, filled with
+ * VOID. Cropped rooms are dropped.
+ */
 export function resizeBoard(b: BoardDoc, width: number, height: number): BoardDoc {
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > MAX_BOARD_SIZE || height > MAX_BOARD_SIZE) {
     throw new RangeError(`board size must be 1..${MAX_BOARD_SIZE} in each dimension, got ${width}x${height}`);
   }
   const regions = new Array<number>(width * height).fill(VOID);
-  for (let y = 0; y < Math.min(height, b.height); y++) {
-    for (let x = 0; x < Math.min(width, b.width); x++) {
-      regions[y * width + x] = b.regions[y * b.width + x] ?? VOID;
+  for (let y = 1; y <= Math.min(height, b.height); y++) {
+    for (let x = 1; x <= Math.min(width, b.width); x++) {
+      regions[tileIndex(width, { x, y })] = b.regions[tileIndex(b.width, { x, y })] ?? VOID;
     }
   }
   return pruneRooms({ ...b, width, height, regions });
@@ -71,7 +75,7 @@ export function resizeBoard(b: BoardDoc, width: number, height: number): BoardDo
 // --- Quest layer ---
 
 export function emptyQuest(): QuestDoc {
-  return { version: 1, boardChecksum: '', doors: [], blockedSquares: [], furniture: [], monsters: [], traps: [], notes: [], startTiles: [] };
+  return { version: DOC_VERSION, boardChecksum: '', doors: [], blockedSquares: [], furniture: [], monsters: [], traps: [], notes: [], startTiles: [] };
 }
 
 function allIds(q: QuestDoc): string[] {

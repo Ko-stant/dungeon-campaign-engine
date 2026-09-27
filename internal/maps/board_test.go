@@ -35,7 +35,7 @@ func TestNewBoardRejectsBadSizes(t *testing.T) {
 
 func TestBoardValidate(t *testing.T) {
 	valid := func() *Board {
-		return &Board{Width: 2, Height: 2, Regions: []int{Void, Corridor, 1, 1}, Rooms: []Room{{ID: 1, Name: "Hall"}}}
+		return &Board{Version: CurrentVersion, Width: 2, Height: 2, Regions: []int{Void, Corridor, 1, 1}, Rooms: []Room{{ID: 1, Name: "Hall"}}}
 	}
 	if err := valid().Validate(); err != nil {
 		t.Fatalf("valid board: %v", err)
@@ -49,6 +49,8 @@ func TestBoardValidate(t *testing.T) {
 		"duplicate room id":  func(b *Board) { b.Rooms = append(b.Rooms, Room{ID: 1, Name: "Again"}) },
 		"non-positive room":  func(b *Board) { b.Rooms = append(b.Rooms, Room{ID: 0, Name: "Zero"}) },
 		"future doc version": func(b *Board) { b.Version = CurrentVersion + 1 },
+		"top-left version 1": func(b *Board) { b.Version = 1 },
+		"missing version":    func(b *Board) { b.Version = 0 },
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -63,10 +65,10 @@ func TestBoardValidate(t *testing.T) {
 
 func TestRegionAtTreatsOffBoardAsVoid(t *testing.T) {
 	b := &Board{Width: 2, Height: 1, Regions: []int{Corridor, 3}, Rooms: []Room{{ID: 3}}}
-	if got := b.RegionAt(1, 0); got != 3 {
-		t.Fatalf("RegionAt(1,0) = %d", got)
+	if got := b.RegionAt(2, 1); got != 3 {
+		t.Fatalf("RegionAt(2,1) = %d", got)
 	}
-	for _, p := range [][2]int{{-1, 0}, {2, 0}, {0, -1}, {0, 1}} {
+	for _, p := range [][2]int{{0, 1}, {3, 1}, {1, 0}, {1, 2}} {
 		if got := b.RegionAt(p[0], p[1]); got != Void {
 			t.Errorf("RegionAt(%d,%d) = %d, want Void", p[0], p[1], got)
 		}
@@ -77,10 +79,10 @@ func TestWallsMatchTheClientRule(t *testing.T) {
 	// The same cases as internal/web/src/board/model.test.ts deriveWalls.
 	single := &Board{Width: 1, Height: 1, Regions: []int{Corridor}}
 	want := []Edge{
-		{X: 0, Y: 0, Orientation: Vertical},
-		{X: 1, Y: 0, Orientation: Vertical},
-		{X: 0, Y: 0, Orientation: Horizontal},
-		{X: 0, Y: 1, Orientation: Horizontal},
+		{X: 1, Y: 1, Orientation: Vertical},
+		{X: 2, Y: 1, Orientation: Vertical},
+		{X: 1, Y: 1, Orientation: Horizontal},
+		{X: 1, Y: 2, Orientation: Horizontal},
 	}
 	if got := single.Walls(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("single tile walls = %+v", got)
@@ -88,21 +90,53 @@ func TestWallsMatchTheClientRule(t *testing.T) {
 
 	voidEdge := &Board{Width: 3, Height: 1, Regions: []int{Void, Void, Corridor}}
 	want = []Edge{
-		{X: 2, Y: 0, Orientation: Vertical},
-		{X: 3, Y: 0, Orientation: Vertical},
-		{X: 2, Y: 0, Orientation: Horizontal},
-		{X: 2, Y: 1, Orientation: Horizontal},
+		{X: 3, Y: 1, Orientation: Vertical},
+		{X: 4, Y: 1, Orientation: Vertical},
+		{X: 3, Y: 1, Orientation: Horizontal},
+		{X: 3, Y: 2, Orientation: Horizontal},
 	}
 	if got := voidEdge.Walls(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("void edge walls = %+v", got)
 	}
 
-	big, _ := NewBoard(24, 30)
+	big, _ := NewBoard(30, 24)
 	for i := range big.Regions {
 		big.Regions[i] = Corridor
 	}
-	if got := len(big.Walls()); got != 2*24+2*30 {
-		t.Fatalf("24x30 open board has %d walls, want only the perimeter", got)
+	if got := len(big.Walls()); got != 2*30+2*24 {
+		t.Fatalf("30x24 open board has %d walls, want only the perimeter", got)
+	}
+}
+
+func TestTilesAreOneBasedFromTheBottomLeft(t *testing.T) {
+	// 3x2, drawn top row first: row y=2 is "C 1 1", row y=1 is "V C C".
+	b := &Board{Version: CurrentVersion, Width: 3, Height: 2, Regions: []int{Void, Corridor, Corridor, Corridor, 1, 1}, Rooms: []Room{{ID: 1}}}
+	cases := []struct {
+		x, y, index, region int
+	}{
+		{1, 1, 0, Void},     // bottom-left corner
+		{3, 1, 2, Corridor}, // bottom-right
+		{1, 2, 3, Corridor}, // top-left
+		{3, 2, 5, 1},        // top-right
+	}
+	for _, c := range cases {
+		if got := b.Index(c.x, c.y); got != c.index {
+			t.Errorf("Index(%d,%d) = %d, want %d", c.x, c.y, got, c.index)
+		}
+		if got := b.TileAt(c.index); got != (Tile{X: c.x, Y: c.y}) {
+			t.Errorf("TileAt(%d) = %+v, want (%d,%d)", c.index, got, c.x, c.y)
+		}
+		if got := b.RegionAt(c.x, c.y); got != c.region {
+			t.Errorf("RegionAt(%d,%d) = %d, want %d", c.x, c.y, got, c.region)
+		}
+		if !b.OnBoard(c.x, c.y) {
+			t.Errorf("OnBoard(%d,%d) = false", c.x, c.y)
+		}
+	}
+	for _, p := range [][2]int{{0, 1}, {1, 0}, {4, 1}, {1, 3}} {
+		if b.OnBoard(p[0], p[1]) {
+			t.Errorf("OnBoard(%d,%d) = true, want false", p[0], p[1])
+		}
 	}
 }
 

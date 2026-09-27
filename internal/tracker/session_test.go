@@ -11,31 +11,37 @@ import (
 
 // fixture: a 6x4 board with room 1 in the top-left 2x2, room 2 in the
 // bottom-right 2x2, corridor elsewhere; a quest with a door, a secret door, a
-// trap, two monsters, a note and three start squares in room 1.
+// trap, two monsters, a note and three start squares in room 1. Squares count
+// from (1,1) at the bottom-left, so regions list the bottom row first:
+//
+//	y4: 1 1 . . . .
+//	y3: 1 1 . . . .
+//	y2: . . . . 2 2
+//	y1: . . . . 2 2
 func fixture() (*maps.Board, *maps.Quest, *content.Catalog) {
 	b := &maps.Board{
 		Version: maps.CurrentVersion, Width: 6, Height: 4,
 		Regions: []int{
-			1, 1, 0, 0, 0, 0,
-			1, 1, 0, 0, 0, 0,
 			0, 0, 0, 0, 2, 2,
 			0, 0, 0, 0, 2, 2,
+			1, 1, 0, 0, 0, 0,
+			1, 1, 0, 0, 0, 0,
 		},
 		Rooms: []maps.Room{{ID: 1, Name: "Start"}, {ID: 2, Name: "Lair"}},
 	}
 	body := 5
 	q := maps.NewQuest(b)
 	q.Doors = []maps.Door{
-		{ID: "door-1", Edge: maps.Edge{X: 2, Y: 0, Orientation: maps.Vertical}, Kind: maps.DoorNormal, State: maps.DoorClosed},
-		{ID: "door-2", Edge: maps.Edge{X: 4, Y: 2, Orientation: maps.Vertical}, Kind: maps.DoorSecret, State: maps.DoorClosed},
+		{ID: "door-1", Edge: maps.Edge{X: 3, Y: 4, Orientation: maps.Vertical}, Kind: maps.DoorNormal, State: maps.DoorClosed},
+		{ID: "door-2", Edge: maps.Edge{X: 5, Y: 2, Orientation: maps.Vertical}, Kind: maps.DoorSecret, State: maps.DoorClosed},
 	}
-	q.Traps = []maps.Trap{{ID: "trap-1", Kind: "pit", X: 3, Y: 1, State: maps.TrapHidden}}
+	q.Traps = []maps.Trap{{ID: "trap-1", Kind: "pit", X: 4, Y: 3, State: maps.TrapHidden}}
 	q.Monsters = []maps.Monster{
-		{ID: "monster-1", Type: "orc", X: 4, Y: 2},
-		{ID: "monster-2", Type: "orc", X: 5, Y: 3, Body: &body},
+		{ID: "monster-1", Type: "orc", X: 5, Y: 2},
+		{ID: "monster-2", Type: "orc", X: 6, Y: 1, Body: &body},
 	}
-	q.Notes = []maps.Note{{ID: "note-A", Label: "A", X: 5, Y: 2, Text: "84 gold"}}
-	q.StartTiles = []maps.Tile{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}}
+	q.Notes = []maps.Note{{ID: "note-A", Label: "A", X: 6, Y: 2, Text: "84 gold"}}
+	q.StartTiles = []maps.Tile{{X: 1, Y: 4}, {X: 2, Y: 4}, {X: 1, Y: 3}}
 	cat := &content.Catalog{
 		Monsters: []content.MonsterDef{{ID: "orc", Name: "Orc", Body: 1, Mind: 2, Attack: 3, Defense: 2, Movement: 8}},
 		Heroes: []content.HeroDef{
@@ -65,8 +71,8 @@ func TestNewSessionSetsUpFromQuest(t *testing.T) {
 	}
 
 	wantHeroes := []Hero{
-		{ID: "hero-1", Name: "Grom", Player: "Sam", Class: "barbarian", X: 0, Y: 0, Placed: true, Body: 8, MaxBody: 8, Mind: 2, MaxMind: 2, Gold: 30, Equipment: "Broadsword", Status: HeroActive},
-		{ID: "hero-2", Name: "Ilsa", Player: "Jo", Class: "wizard", X: 1, Y: 0, Placed: true, Body: 4, MaxBody: 4, Mind: 6, MaxMind: 6, Status: HeroActive},
+		{ID: "hero-1", Name: "Grom", Player: "Sam", Class: "barbarian", X: 1, Y: 4, Placed: true, Body: 8, MaxBody: 8, Mind: 2, MaxMind: 2, Gold: 30, Equipment: "Broadsword", Status: HeroActive},
+		{ID: "hero-2", Name: "Ilsa", Player: "Jo", Class: "wizard", X: 2, Y: 4, Placed: true, Body: 4, MaxBody: 4, Mind: 6, MaxMind: 6, Status: HeroActive},
 	}
 	if !reflect.DeepEqual(s.Heroes, wantHeroes) {
 		t.Fatalf("heroes:\n got  %+v\n want %+v", s.Heroes, wantHeroes)
@@ -86,8 +92,8 @@ func TestNewSessionSetsUpFromQuest(t *testing.T) {
 		t.Fatalf("traps: %+v", s.Traps)
 	}
 
-	// The starting room is discovered: tiles (0,0) (1,0) (0,1) (1,1) = indexes 0 1 6 7.
-	if !reflect.DeepEqual(s.Discovered, []int{0, 1, 6, 7}) {
+	// The starting room is discovered: tiles (1,3) (2,3) (1,4) (2,4) = indexes 12 13 18 19.
+	if !reflect.DeepEqual(s.Discovered, []int{12, 13, 18, 19}) {
 		t.Fatalf("discovered = %v", s.Discovered)
 	}
 }

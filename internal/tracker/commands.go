@@ -33,6 +33,9 @@ type Event struct {
 // never modifies s. Errors mean the command itself is malformed (unknown ids,
 // squares off the board, invalid values); no game rule is ever enforced.
 func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error) {
+	if s.Version != StateVersion {
+		return nil, Event{}, fmt.Errorf("session state version %d is not the current version %d (squares now count from the bottom-left); start a new session", s.Version, StateVersion)
+	}
 	next, err := clone(s)
 	if err != nil {
 		return nil, Event{}, err
@@ -119,7 +122,7 @@ func decode[T any](payload json.RawMessage) (T, error) {
 }
 
 func (a *applier) onBoard(x, y int) error {
-	if x < 0 || y < 0 || x >= a.s.Board.Width || y >= a.s.Board.Height {
+	if !a.s.Board.OnBoard(x, y) {
 		return fmt.Errorf("square (%d,%d) is off the %dx%d board", x, y, a.s.Board.Width, a.s.Board.Height)
 	}
 	return nil
@@ -497,7 +500,7 @@ func (a *applier) tilesSet(payload json.RawMessage, discovered bool) (string, er
 	var indexes []int
 	for _, t := range p.Tiles {
 		if a.onBoard(t.X, t.Y) == nil {
-			indexes = append(indexes, t.Y*a.s.Board.Width+t.X)
+			indexes = append(indexes, a.s.Board.Index(t.X, t.Y))
 		}
 	}
 	if len(indexes) == 0 {

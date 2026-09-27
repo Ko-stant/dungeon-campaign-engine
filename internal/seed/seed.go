@@ -22,13 +22,14 @@ type Result struct {
 
 // ImportLegacy converts a legacy board and quest and stores them. A board with
 // the same name, or a quest with the same name on that board, is reused rather
-// than duplicated, so running it twice is safe.
-func ImportLegacy(ctx context.Context, st *store.Store, boardDef *legacy.BoardDefinition, questDef *legacy.QuestDefinition) (Result, error) {
+// than duplicated, so running it twice is safe. sizes gives furniture
+// footprints (see maps.QuestFromLegacy).
+func ImportLegacy(ctx context.Context, st *store.Store, boardDef *legacy.BoardDefinition, questDef *legacy.QuestDefinition, sizes maps.SizeLookup) (Result, error) {
 	board, err := maps.BoardFromLegacy(boardDef)
 	if err != nil {
 		return Result{}, fmt.Errorf("convert board: %w", err)
 	}
-	quest, err := maps.QuestFromLegacy(questDef, board)
+	quest, err := maps.QuestFromLegacy(questDef, board, sizes)
 	if err != nil {
 		return Result{}, fmt.Errorf("convert quest: %w", err)
 	}

@@ -10,11 +10,17 @@ export interface Room {
   name: string;
 }
 
+/**
+ * Document version written by this client and the server. Version 2 counts
+ * squares from (1, 1) at the bottom-left (see board/geometry.ts).
+ */
+export const DOC_VERSION = 2;
+
 export interface BoardDoc {
   version: number;
   width: number;
   height: number;
-  /** Row-major: -1 void, 0 corridor, >0 room id. */
+  /** Row-major from the bottom row up: -1 void, 0 corridor, >0 room id. */
   regions: number[];
   rooms: Room[];
 }

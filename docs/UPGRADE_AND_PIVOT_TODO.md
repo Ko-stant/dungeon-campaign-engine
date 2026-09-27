@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-27 14:35 EDT
+**Last Updated**: 2026-09-27 14:41 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -16,7 +16,9 @@ Goals, in order:
 
 ## Resume here (current state)
 
-**Status: all 8 phases are complete and committed on `dce-table-only`.** Nothing is
+**Status: all 8 phases are complete and committed on `dce-table-only`,** plus one
+post-plan change: squares now count from (1,1) at the bottom-left and sizes read as
+columns × rows (see "Post-plan: bottom-left coordinates" near the end). Nothing is
 pushed or merged into `main`. The next work is in `docs/ROADMAP.md`.
 
 What the app is now: a single-GM companion for in-person HeroQuest.
@@ -43,11 +45,13 @@ Commits (oldest first):
 | 6fec549 | 6b map editor |
 | 2fb7d7d | 7 tracker |
 | 5c17cbe | 8 multiplayer removed, docs rewritten |
+| 450cbad | docs: resume summary |
+| (next commit) | post-plan: (1,1) at the bottom-left, columns × rows labels |
 
-Test status at 5c17cbe:
-- `make test`: 97 Go tests, 0 failures (DB tests skip without a URL).
-- `make test-db`: all packages pass against Postgres.
-- `bun test`: 95 tests pass.
+Test status after the bottom-left change:
+- `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
+- `make test-db`: 102 tests pass against Postgres.
+- `bun test`: 106 tests pass.
 - `make lint` (golangci-lint + ESLint + tsc): clean.
 
 Local environment:
@@ -59,11 +63,15 @@ Local environment:
 - `.claude/launch.json` config `dce-binary` runs `./build/dungeon-campaign-engine` on
   :8080, for the Claude preview browser. Run `make build` first.
 
-Dev database contents (from manual testing; safe to delete):
-- Boards: "HeroQuest Base Game Board" 26x19 (imported via `make import-content`) with
-  quest "The Trial", and "Test Board 24x30" with quest "Test Quest".
-- Campaign "Test Campaign" with heroes Grom (Barbarian) and Ilsa (Wizard), and an
-  active session "Game night 1" on The Trial (round 2, 7 events).
+Dev database contents (rebuilt 2026-09-27 14:40 for the bottom-left change; a backup of
+the old top-left data is in `db/backups/backup-20260927-143900.sql`, gitignored):
+- Boards: "HeroQuest Base Game Board" 26x19 (re-imported via `make import-content`) with
+  quest "The Trial", and "Test Board 30x24" (landscape, rebuilt through the API) with
+  quest "Test Quest".
+- Campaign "Test Campaign" with heroes Grom (Barbarian) and Ilsa (Wizard), and a new
+  active session "Game night 1" on The Trial (round 1, 3 events). The old session was
+  removed because it was stored in top-left coordinates.
+- Campaign "Test Numba 2" (no heroes, no sessions; created by the user, kept as is).
 
 Browser-testing tips:
 - Native `confirm()` dialogs are suppressed in the Claude browser (they return false).
@@ -307,7 +315,8 @@ same 19, no new failures.
 ## Phase 6 - Map creator [DONE 2026-09-27, 6a 3eede05, 6b 6fec549]
 - [x] 6a documents (Go, test-first) in `internal/maps`:
   - `Board`: version, width, height (1..200), row-major regions (-1 void, 0 corridor,
-    >0 room) and rooms. Walls are derived with the same rule as the TS client.
+    >0 room) and rooms. **(later: squares count from (1,1) at the bottom-left and
+    regions start from the bottom row; see "Post-plan: bottom-left coordinates")** Walls are derived with the same rule as the TS client.
     `Checksum()` covers the layout only (not room names).
   - `Quest`: board checksum, doors (edge, normal/secret, open/closed), blocked-square
     rects, furniture (catalog type, quarter-turn rotation), monsters (optional body/mind
@@ -468,6 +477,48 @@ same 19, no new failures.
 - [x] Verified in the browser: `/` goes to campaigns, the in-progress session resumes
       after a server restart with identical state and log, all board art loads
       through the new `/assets/` route, and the map creator lists both boards.
+
+## Post-plan: bottom-left coordinates, columns × rows [DONE 2026-09-27]
+Asked for: the board's coordinates start at (1,1) in the lower-left corner, and the
+default shape is landscape. Decisions (asked and answered):
+- Coordinates change in **storage too**, not just on screen.
+- Landscape: keep 26 × 19 as the default, label sizes "Columns (width)" and
+  "Rows (height)" with a note that the long side runs left to right, and rebuild the
+  portrait test board as 30 columns × 24 rows. (The user writes sizes rows-first, e.g.
+  "24x30" meant 24 rows by 30 columns.)
+
+What changed (tests written first, then code):
+- Convention: x runs 1..width left to right, y runs 1..height bottom to top. Regions
+  are row-major from the bottom row (`(y-1)*width + (x-1)`). A horizontal edge (x,y) is
+  now the **bottom** side of tile (x,y) (vertical is still the left side), so the
+  "which two squares does an edge separate" rule is unchanged: (x-1,y)|(x,y) and
+  (x,y-1)|(x,y). Furniture and blocked squares anchor at their bottom-left square.
+- Versions: board/quest documents `maps.CurrentVersion` 1 -> 2, session state
+  `tracker.StateVersion` 1 -> 2. `Validate` rejects older documents with a
+  "re-import or recreate" message, and `tracker.Apply` refuses a version 1 state, so old
+  top-left data is never silently misread. No automatic upgrade was written: the only
+  stored data was imported or test data.
+- Go: `Board.OnBoard/Index/TileAt` helpers; `Walls`, `RegionAt`, `Quest.Check` door and
+  area bounds, tracker bounds/indexes use them. Event summaries and advisory messages
+  print the stored (now bottom-left) coordinates directly.
+- Legacy import: `internal/maps/legacy.go` converts from the top-left, 0-based legacy
+  files (tile -> (x+1, H-y); horizontal edge -> (x+1, H-y+1); blocks -> bottom-left
+  anchor). `QuestFromLegacy` and `seed.ImportLegacy` now take a furniture `SizeLookup`
+  (the rotated height is needed for the anchor); `cmd/import-content` loads the catalog.
+  The real base board + quest-01 still convert with zero placement issues.
+- TS: `board/geometry.ts` is the only place rows flip (pixel <-> square): `tileRect`,
+  new `footprintRect` and `edgeSegment`, `pixelToTile`, `pixelToEdge`, `doorRect`,
+  `furnitureDrawBox` (now takes metrics and returns pixels). `board/model.ts` gains
+  `tileAt` and `onBoard`; the renderer, editor model (resize now keeps the bottom-left,
+  so new rows appear on top), tracker hover and map editor use them. `DOC_VERSION = 2`
+  in `maps/types.ts`.
+- UI: the new-board form and editor header say columns × rows; the help text explains
+  landscape and the (1,1) origin. The form's grid columns widened to fit the labels.
+- Verified in the browser: hover reads (1,1) at the bottom-left and (26,19) at the
+  top-right of the base board; "Top-left" rooms are at the top; The Trial's furniture
+  and doors sit where they did; click-to-move in the tracker moves up the screen as y
+  grows and logs "Moved Grom (Barbarian) from (3,2) to (2,4)"; the 30x24 test board
+  renders landscape.
 
 ---
 

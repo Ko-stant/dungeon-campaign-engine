@@ -6,6 +6,8 @@
 import {
   computeGridMetrics,
   doorRect,
+  edgeSegment,
+  footprintRect,
   furnitureDrawBox,
   rotatedFootprint,
   tileRect,
@@ -13,7 +15,7 @@ import {
   type GridMetrics,
   type TileCoord,
 } from './geometry.ts';
-import { CORRIDOR, VOID, deriveWalls, tileIndex, type BoardView, type PieceView, type TrapState } from './model.ts';
+import { CORRIDOR, VOID, deriveWalls, tileAt, type BoardView, type PieceView, type TrapState } from './model.ts';
 
 export interface BoardTheme {
   background: string;
@@ -180,14 +182,11 @@ export class BoardRenderer {
 
   #drawTiles(view: BoardView, m: GridMetrics): void {
     const ctx = this.#ctx;
-    for (let y = 0; y < view.rows; y++) {
-      for (let x = 0; x < view.cols; x++) {
-        const region = view.regions[tileIndex(view.cols, { x, y })] ?? VOID;
-        ctx.fillStyle = region === VOID ? this.#theme.rock : region === CORRIDOR ? this.#theme.corridor : this.#theme.room;
-        const r = tileRect(m, { x, y });
-        ctx.fillRect(r.x, r.y, r.w, r.h);
-      }
-    }
+    view.regions.forEach((region, i) => {
+      ctx.fillStyle = region === VOID ? this.#theme.rock : region === CORRIDOR ? this.#theme.corridor : this.#theme.room;
+      const r = tileRect(m, tileAt(view.cols, i));
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+    });
   }
 
   #drawStartTiles(view: BoardView, m: GridMetrics): void {
@@ -257,15 +256,9 @@ export class BoardRenderer {
     ctx.lineCap = 'square';
     ctx.beginPath();
     for (const e of deriveWalls(view.cols, view.rows, view.regions)) {
-      const x = m.originX + e.x * m.tile + 0.5;
-      const y = m.originY + e.y * m.tile + 0.5;
-      if (e.orientation === 'vertical') {
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y + m.tile);
-      } else {
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + m.tile, y);
-      }
+      const s = edgeSegment(m, e);
+      ctx.moveTo(s.x1 + 0.5, s.y1 + 0.5);
+      ctx.lineTo(s.x2 + 0.5, s.y2 + 0.5);
     }
     ctx.stroke();
     ctx.restore();
@@ -323,21 +316,21 @@ export class BoardRenderer {
   #drawFurniture(view: BoardView, m: GridMetrics): void {
     const ctx = this.#ctx;
     for (const f of view.furniture) {
-      const box = furnitureDrawBox(f.at, f.width, f.height, f.rotation);
       const img = f.image ? this.#images.get(f.image) : undefined;
       if (img) {
+        const box = furnitureDrawBox(m, f.at, f.width, f.height, f.rotation);
         ctx.save();
-        ctx.translate(m.originX + box.centerX * m.tile, m.originY + box.centerY * m.tile);
+        ctx.translate(box.cx, box.cy);
         ctx.rotate(box.radians);
-        ctx.drawImage(img, (-box.width * m.tile) / 2, (-box.height * m.tile) / 2, box.width * m.tile, box.height * m.tile);
+        ctx.drawImage(img, -box.width / 2, -box.height / 2, box.width, box.height);
         ctx.restore();
         continue;
       }
       const size = rotatedFootprint(f.width, f.height, f.rotation);
-      const r = tileRect(m, f.at);
+      const r = footprintRect(m, f.at, size.width, size.height);
       ctx.fillStyle = this.#theme.furniture;
-      ctx.fillRect(r.x + 2, r.y + 2, size.width * m.tile - 4, size.height * m.tile - 4);
-      this.#label(f.type.replaceAll('_', ' '), r.x + (size.width * m.tile) / 2, r.y + (size.height * m.tile) / 2, m.tile * 0.3);
+      ctx.fillRect(r.x + 2, r.y + 2, r.w - 4, r.h - 4);
+      this.#label(f.type.replaceAll('_', ' '), r.cx, r.cy, m.tile * 0.3);
     }
   }
 
@@ -404,12 +397,10 @@ export class BoardRenderer {
     }
     const ctx = this.#ctx;
     ctx.fillStyle = this.#theme.undiscovered;
-    for (let y = 0; y < view.rows; y++) {
-      for (let x = 0; x < view.cols; x++) {
-        if (!view.discovered.has(tileIndex(view.cols, { x, y }))) {
-          const r = tileRect(m, { x, y });
-          ctx.fillRect(r.x, r.y, r.w, r.h);
-        }
+    for (let i = 0; i < view.regions.length; i++) {
+      if (!view.discovered.has(i)) {
+        const r = tileRect(m, tileAt(view.cols, i));
+        ctx.fillRect(r.x, r.y, r.w, r.h);
       }
     }
   }
@@ -439,13 +430,11 @@ export class BoardRenderer {
       const y0 = Math.min(h.rect.from.y, h.rect.to.y);
       const x1 = Math.max(h.rect.from.x, h.rect.to.x);
       const y1 = Math.max(h.rect.from.y, h.rect.to.y);
-      const a = tileRect(m, { x: x0, y: y0 });
-      const w = (x1 - x0 + 1) * m.tile;
-      const hgt = (y1 - y0 + 1) * m.tile;
+      const a = footprintRect(m, { x: x0, y: y0 }, x1 - x0 + 1, y1 - y0 + 1);
       ctx.fillStyle = this.#theme.preview;
-      ctx.fillRect(a.x, a.y, w, hgt);
+      ctx.fillRect(a.x, a.y, a.w, a.h);
       ctx.setLineDash([4, 3]);
-      ctx.strokeRect(a.x + 0.5, a.y + 0.5, w - 1, hgt - 1);
+      ctx.strokeRect(a.x + 0.5, a.y + 0.5, a.w - 1, a.h - 1);
     }
     ctx.restore();
   }

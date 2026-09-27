@@ -29,7 +29,7 @@ func TestImportLegacyCreatesBoardAndQuest(t *testing.T) {
 	ctx := context.Background()
 	boardDef, questDef := legacyDefs()
 
-	res, err := ImportLegacy(ctx, st, boardDef, questDef)
+	res, err := ImportLegacy(ctx, st, boardDef, questDef, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,11 +73,11 @@ func TestImportLegacyIsIdempotent(t *testing.T) {
 	ctx := context.Background()
 	boardDef, questDef := legacyDefs()
 
-	first, err := ImportLegacy(ctx, st, boardDef, questDef)
+	first, err := ImportLegacy(ctx, st, boardDef, questDef, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := ImportLegacy(ctx, st, boardDef, questDef)
+	second, err := ImportLegacy(ctx, st, boardDef, questDef, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

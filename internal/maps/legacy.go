@@ -7,6 +7,25 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/legacy"
 )
 
+// Legacy files count squares from (0,0) at the top-left, with a horizontal
+// edge on the top side of its tile and rectangles anchored at their top-left
+// square. These helpers convert to this package's bottom-left, 1-based
+// convention on a board of the given height.
+
+func legacyTile(height, x, y int) (int, int) { return x + 1, height - y }
+
+func legacyEdge(height, x, y int, o Orientation) Edge {
+	if o == Horizontal {
+		// The top side of legacy row y is the bottom side of the row above it.
+		return Edge{X: x + 1, Y: height - y + 1, Orientation: o}
+	}
+	return Edge{X: x + 1, Y: height - y, Orientation: o}
+}
+
+// legacyAnchor converts the top-left square of a block h squares tall to its
+// bottom-left square.
+func legacyAnchor(height, x, y, h int) (int, int) { return x + 1, height - y - h + 1 }
+
 // BoardFromLegacy converts a legacy board.json definition. Legacy boards have
 // no solid rock: every tile outside a room is corridor.
 func BoardFromLegacy(def *legacy.BoardDefinition) (*Board, error) {
@@ -26,7 +45,7 @@ func BoardFromLegacy(def *legacy.BoardDefinition) (*Board, error) {
 			if t.X < 0 || t.Y < 0 || t.X >= b.Width || t.Y >= b.Height {
 				return nil, fmt.Errorf("legacy room %d tile (%d,%d) is off the board", room.ID, t.X, t.Y)
 			}
-			i := t.Y*b.Width + t.X
+			i := b.Index(legacyTile(b.Height, t.X, t.Y))
 			if b.Regions[i] != Corridor {
 				return nil, fmt.Errorf("tile (%d,%d) is in rooms %d and %d", t.X, t.Y, b.Regions[i], room.ID)
 			}
@@ -39,8 +58,11 @@ func BoardFromLegacy(def *legacy.BoardDefinition) (*Board, error) {
 	return b, nil
 }
 
-// QuestFromLegacy converts a legacy quest definition placed on board.
-func QuestFromLegacy(def *legacy.QuestDefinition, board *Board) (*Quest, error) {
+// QuestFromLegacy converts a legacy quest definition placed on board. Furniture
+// sizes are needed to find each piece's bottom-left square; a type the lookup
+// does not know (or a nil lookup) is treated as 1x1.
+func QuestFromLegacy(def *legacy.QuestDefinition, board *Board, sizes SizeLookup) (*Quest, error) {
+	h := board.Height
 	q := NewQuest(board)
 	q.Description = def.Description
 	q.WanderingMonster = def.WanderingMonster
@@ -58,7 +80,7 @@ func QuestFromLegacy(def *legacy.QuestDefinition, board *Board) (*Quest, error) 
 		if d.State == DoorOpen {
 			state = DoorOpen
 		}
-		q.Doors = append(q.Doors, Door{ID: d.ID, Edge: Edge{X: d.X, Y: d.Y, Orientation: orientation}, Kind: kind, State: state})
+		q.Doors = append(q.Doors, Door{ID: d.ID, Edge: legacyEdge(h, d.X, d.Y, orientation), Kind: kind, State: state})
 	}
 
 	// Legacy "blocking walls" are runs of blocked squares along an orientation.
@@ -68,18 +90,32 @@ func QuestFromLegacy(def *legacy.QuestDefinition, board *Board) (*Quest, error) 
 			return nil, fmt.Errorf("blocking wall %q: %w", w.ID, err)
 		}
 		size := max(w.Size, 1)
-		r := Rect{ID: w.ID, X: w.X, Y: w.Y, W: 1, H: size}
+		r := Rect{ID: w.ID, W: 1, H: size}
 		if orientation == Horizontal {
 			r.W, r.H = size, 1
 		}
+		r.X, r.Y = legacyAnchor(h, w.X, w.Y, r.H)
 		q.BlockedSquares = append(q.BlockedSquares, r)
 	}
 
 	for _, f := range def.Furniture {
-		q.Furniture = append(q.Furniture, Furniture{ID: f.ID, Type: f.Type, X: f.X, Y: f.Y, Rotation: f.Rotation})
+		fw, fh, ok := 1, 1, false
+		if sizes != nil {
+			fw, fh, ok = sizes(f.Type)
+		}
+		if !ok {
+			fw, fh = 1, 1
+		}
+		_, rh, err := RotatedSize(fw, fh, f.Rotation)
+		if err != nil {
+			return nil, fmt.Errorf("furniture %q: %w", f.ID, err)
+		}
+		x, y := legacyAnchor(h, f.X, f.Y, rh)
+		q.Furniture = append(q.Furniture, Furniture{ID: f.ID, Type: f.Type, X: x, Y: y, Rotation: f.Rotation})
 	}
 	for _, m := range def.Monsters {
-		q.Monsters = append(q.Monsters, Monster{ID: m.ID, Type: m.Type, X: m.X, Y: m.Y, Notes: m.Notes})
+		x, y := legacyTile(h, m.X, m.Y)
+		q.Monsters = append(q.Monsters, Monster{ID: m.ID, Type: m.Type, X: x, Y: y, Notes: m.Notes})
 	}
 
 	labels := make([]string, 0, len(def.QuestNotes))
@@ -92,12 +128,13 @@ func QuestFromLegacy(def *legacy.QuestDefinition, board *Board) (*Quest, error) 
 		if n == nil {
 			continue
 		}
-		q.Notes = append(q.Notes, Note{ID: "note-" + label, Label: label, X: n.Location.X, Y: n.Location.Y, Text: n.Description})
+		x, y := legacyTile(h, n.Location.X, n.Location.Y)
+		q.Notes = append(q.Notes, Note{ID: "note-" + label, Label: label, X: x, Y: y, Text: n.Description})
 	}
 
 	if def.StartingRoom > 0 {
-		for y := 0; y < board.Height; y++ {
-			for x := 0; x < board.Width; x++ {
+		for y := 1; y <= board.Height; y++ {
+			for x := 1; x <= board.Width; x++ {
 				if board.RegionAt(x, y) == def.StartingRoom {
 					q.StartTiles = append(q.StartTiles, Tile{X: x, Y: y})
 				}

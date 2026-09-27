@@ -62,8 +62,17 @@ Tailwind CSS v4, canvas rendering.
 - `pages/` - thin DOM wiring per page (`mapEditor.ts`, `tracker.ts`), bundled to `static/dist/`.
 
 ### Conventions
-- Regions are row-major: `-1` void (solid rock), `0` corridor, `>0` room id.
-- A vertical edge (x,y) is the left side of tile (x,y); a horizontal edge is its top side.
+- Squares count from **(1,1) at the bottom-left**: x runs 1..width left to right, y runs
+  1..height bottom to top. This is also what is stored (board/quest document version 2,
+  session state version 2); older top-left documents are rejected, not misread.
+- Regions are row-major from the bottom row up (index `(y-1)*width + (x-1)`): `-1` void
+  (solid rock), `0` corridor, `>0` room id.
+- A vertical edge (x,y) is the left side of tile (x,y); a horizontal edge is its bottom side.
+- Furniture and blocked squares are anchored at their bottom-left square and extend right and up.
+- Only `board/geometry.ts` functions that take `GridMetrics` deal in screen pixels (y down);
+  they are the one place rows are flipped. Legacy `content/` files are top-left, 0-based and
+  are converted in `internal/maps/legacy.go`.
+- Sizes are columns × rows (width × height); landscape boards have more columns than rows.
 - Walls are never stored: they exist wherever neighbouring regions differ (off-board = void).
 - A session stores frozen copies of its board and quest, so map edits never change a game in progress.
 - Every tracker change is one command -> one event row; corrections are just more events.

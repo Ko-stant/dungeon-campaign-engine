@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { CORRIDOR, VOID } from '../board/model.ts';
-import type { BoardDoc, Catalog, QuestDoc } from '../maps/types.ts';
+import { DOC_VERSION, type BoardDoc, type Catalog, type QuestDoc } from '../maps/types.ts';
 import {
   addBlockedSquare,
   addRoom,
@@ -27,7 +27,7 @@ import {
 } from './model.ts';
 
 function board(width: number, height: number, fill = VOID): BoardDoc {
-  return { version: 1, width, height, regions: new Array<number>(width * height).fill(fill), rooms: [] };
+  return { version: DOC_VERSION, width, height, regions: new Array<number>(width * height).fill(fill), rooms: [] };
 }
 
 const catalog: Catalog = {
@@ -42,7 +42,8 @@ const catalog: Catalog = {
 describe('board painting', () => {
   test('paintTiles sets regions and ignores off-board tiles without mutating the input', () => {
     const before = board(3, 2);
-    const after = paintTiles(before, [{ x: 0, y: 0 }, { x: 2, y: 1 }, { x: 5, y: 5 }], CORRIDOR);
+    // (1,1) is the bottom-left square (index 0); (3,2) the top-right (index 5).
+    const after = paintTiles(before, [{ x: 1, y: 1 }, { x: 3, y: 2 }, { x: 5, y: 5 }, { x: 0, y: 1 }, { x: 1, y: 0 }], CORRIDOR);
     expect(after.regions).toEqual([CORRIDOR, VOID, VOID, VOID, VOID, CORRIDOR]);
     expect(before.regions).toEqual(new Array<number>(6).fill(VOID));
   });
@@ -58,16 +59,16 @@ describe('board painting', () => {
 
   test('rooms that lose all their tiles are pruned; rooms still painted are kept', () => {
     let b = addRoom(board(2, 1)).board;
-    b = paintTiles(b, [{ x: 0, y: 0 }], 1);
+    b = paintTiles(b, [{ x: 1, y: 1 }], 1);
     expect(b.rooms).toHaveLength(1);
-    b = paintTiles(b, [{ x: 0, y: 0 }], CORRIDOR);
+    b = paintTiles(b, [{ x: 1, y: 1 }], CORRIDOR);
     expect(b.rooms).toHaveLength(0);
   });
 
   test('a freshly added room survives until it is painted over', () => {
     const { board: b } = addRoom(board(2, 1));
     // Painting unrelated tiles must not prune the brand-new (still empty) room.
-    expect(paintTiles(b, [{ x: 1, y: 0 }], CORRIDOR, 1).rooms).toHaveLength(1);
+    expect(paintTiles(b, [{ x: 2, y: 1 }], CORRIDOR, 1).rooms).toHaveLength(1);
   });
 
   test('renameRoom trims and keeps other rooms', () => {
@@ -86,22 +87,32 @@ describe('board painting', () => {
 });
 
 describe('resizeBoard', () => {
-  test('keeps the top-left, fills new space with void, and crops the rest', () => {
+  test('keeps the bottom-left: new columns appear on the right and new rows on top', () => {
     let b = board(2, 2, CORRIDOR);
     b = addRoom(b).board;
-    b = paintTiles(b, [{ x: 1, y: 1 }], 1);
+    b = paintTiles(b, [{ x: 2, y: 2 }], 1); // top-right square
 
     const bigger = resizeBoard(b, 3, 3);
     expect(bigger.regions).toEqual([
-      CORRIDOR, CORRIDOR, VOID,
-      CORRIDOR, 1, VOID,
-      VOID, VOID, VOID,
+      CORRIDOR, CORRIDOR, VOID, // y=1
+      CORRIDOR, 1, VOID, //        y=2
+      VOID, VOID, VOID, //         y=3 (new)
     ]);
     expect(bigger.rooms).toHaveLength(1);
+  });
 
-    const smaller = resizeBoard(b, 1, 2);
-    expect(smaller.regions).toEqual([CORRIDOR, CORRIDOR]);
-    expect(smaller.rooms).toHaveLength(0); // room 1 was cropped away
+  test('shrinking crops the right-hand columns and the top rows', () => {
+    let b = board(2, 2, CORRIDOR);
+    b = addRoom(b).board;
+    b = paintTiles(b, [{ x: 2, y: 2 }], 1);
+
+    const narrower = resizeBoard(b, 1, 2);
+    expect(narrower.regions).toEqual([CORRIDOR, CORRIDOR]);
+    expect(narrower.rooms).toHaveLength(0); // room 1 was cropped away
+
+    const shorter = resizeBoard(b, 2, 1);
+    expect(shorter.regions).toEqual([CORRIDOR, CORRIDOR]);
+    expect(shorter.rooms).toHaveLength(0);
   });
 
   test('rejects sizes outside 1..200', () => {
@@ -111,10 +122,14 @@ describe('resizeBoard', () => {
 });
 
 describe('quest items', () => {
+  test('emptyQuest uses the current (bottom-left) document version', () => {
+    expect(emptyQuest().version).toBe(DOC_VERSION);
+  });
+
   test('nextId counts past the highest existing id with that prefix', () => {
     let q = emptyQuest();
     expect(nextId(q, 'door')).toBe('door-1');
-    q = { ...q, doors: [{ id: 'door-7', edge: { x: 1, y: 0, orientation: 'vertical' }, kind: 'normal', state: 'closed' }] };
+    q = { ...q, doors: [{ id: 'door-7', edge: { x: 2, y: 1, orientation: 'vertical' }, kind: 'normal', state: 'closed' }] };
     expect(nextId(q, 'door')).toBe('door-8');
     expect(nextId(q, 'monster')).toBe('monster-1');
   });
@@ -152,15 +167,15 @@ describe('quest items', () => {
   });
 
   test('notes get sequential letters', () => {
-    let q = placeNote(emptyQuest(), { x: 0, y: 0 }, 'first');
-    q = placeNote(q, { x: 1, y: 0 }, 'second');
+    let q = placeNote(emptyQuest(), { x: 1, y: 1 }, 'first');
+    q = placeNote(q, { x: 2, y: 1 }, 'second');
     expect(q.notes.map((n) => n.label)).toEqual(['A', 'B']);
-    expect(nextNoteLabel({ ...q, notes: [{ id: 'note-z', label: 'Z', x: 0, y: 0, text: '' }] })).toBe('AA');
+    expect(nextNoteLabel({ ...q, notes: [{ id: 'note-z', label: 'Z', x: 1, y: 1, text: '' }] })).toBe('AA');
   });
 
   test('setNoteText edits only the chosen note', () => {
-    let q = placeNote(emptyQuest(), { x: 0, y: 0 }, '');
-    q = placeNote(q, { x: 1, y: 0 }, 'keep');
+    let q = placeNote(emptyQuest(), { x: 1, y: 1 }, '');
+    q = placeNote(q, { x: 2, y: 1 }, 'keep');
     q = setNoteText(q, 'note-1', 'The chest holds 84 gold coins.');
     expect(q.notes.map((n) => n.text)).toEqual(['The chest holds 84 gold coins.', 'keep']);
   });
@@ -173,12 +188,12 @@ describe('quest items', () => {
   });
 
   test('itemsAt finds items covering a tile, including rotated furniture footprints', () => {
-    let q = placeFurniture(emptyQuest(), 'table', { x: 1, y: 1 }, 90); // 2 wide x 3 tall: x 1..2, y 1..3
+    let q = placeFurniture(emptyQuest(), 'table', { x: 1, y: 1 }, 90); // 2 wide x 3 tall: x 1..2, y 1..3 (up from the anchor)
     q = placeMonster(q, 'orc', { x: 2, y: 3 });
-    q = addBlockedSquare(q, { x: 5, y: 0, w: 2, h: 1 });
+    q = addBlockedSquare(q, { x: 5, y: 1, w: 2, h: 1 });
     expect(itemsAt(q, catalog, { x: 2, y: 3 })).toEqual(['monster-1', 'furniture-1']);
     expect(itemsAt(q, catalog, { x: 3, y: 1 })).toEqual([]);
-    expect(itemsAt(q, catalog, { x: 6, y: 0 })).toEqual(['blocked-1']);
+    expect(itemsAt(q, catalog, { x: 6, y: 1 })).toEqual(['blocked-1']);
   });
 
   test('moveItem and removeItem work for every layer', () => {
@@ -195,22 +210,22 @@ describe('quest items', () => {
 describe('toBoardView', () => {
   test('maps documents into the renderer view using catalog sizes and images', () => {
     const b = board(4, 3, CORRIDOR);
-    let q = placeFurniture(emptyQuest(), 'table', { x: 0, y: 0 }, 270);
-    q = placeFurniture(q, 'mystery', { x: 3, y: 2 }, 0);
-    q = placeMonster(q, 'orc', { x: 1, y: 2 });
-    q = cycleDoor(q, { x: 1, y: 1, orientation: 'horizontal' });
-    q = placeNote(q, { x: 2, y: 2 }, 'gold');
-    q = toggleStartTile(q, { x: 3, y: 0 });
+    let q = placeFurniture(emptyQuest(), 'table', { x: 1, y: 1 }, 270);
+    q = placeFurniture(q, 'mystery', { x: 4, y: 3 }, 0);
+    q = placeMonster(q, 'orc', { x: 2, y: 3 });
+    q = cycleDoor(q, { x: 2, y: 2, orientation: 'horizontal' });
+    q = placeNote(q, { x: 3, y: 3 }, 'gold');
+    q = toggleStartTile(q, { x: 4, y: 1 });
 
     const view = toBoardView(b, q, catalog);
     expect(view.cols).toBe(4);
     expect(view.rows).toBe(3);
-    expect(view.furniture[0]).toEqual({ id: 'furniture-1', type: 'table', at: { x: 0, y: 0 }, width: 3, height: 2, rotation: 270, image: 'assets/table.png' });
+    expect(view.furniture[0]).toEqual({ id: 'furniture-1', type: 'table', at: { x: 1, y: 1 }, width: 3, height: 2, rotation: 270, image: 'assets/table.png' });
     expect(view.furniture[1]).toMatchObject({ type: 'mystery', width: 1, height: 1 });
-    expect(view.monsters[0]).toEqual({ id: 'monster-1', type: 'orc', at: { x: 1, y: 2 }, label: 'Orc', image: 'assets/orc.png' });
-    expect(view.doors[0]).toEqual({ id: 'door-1', edge: { x: 1, y: 1, orientation: 'horizontal' }, kind: 'normal', state: 'closed' });
-    expect(view.notes).toEqual([{ id: 'note-1', label: 'A', at: { x: 2, y: 2 } }]);
-    expect(view.startTiles).toEqual([{ x: 3, y: 0 }]);
+    expect(view.monsters[0]).toEqual({ id: 'monster-1', type: 'orc', at: { x: 2, y: 3 }, label: 'Orc', image: 'assets/orc.png' });
+    expect(view.doors[0]).toEqual({ id: 'door-1', edge: { x: 2, y: 2, orientation: 'horizontal' }, kind: 'normal', state: 'closed' });
+    expect(view.notes).toEqual([{ id: 'note-1', label: 'A', at: { x: 3, y: 3 } }]);
+    expect(view.startTiles).toEqual([{ x: 4, y: 1 }]);
   });
 
   test('works without a quest (board layer only)', () => {

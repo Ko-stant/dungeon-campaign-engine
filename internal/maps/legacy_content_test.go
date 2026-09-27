@@ -32,7 +32,7 @@ func TestLegacyQuestOneConvertsCleanly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	quest, err := QuestFromLegacy(questDef, board)
+	quest, err := QuestFromLegacy(questDef, board, catalog.FurnitureSize)
 	if err != nil {
 		t.Fatal(err)
 	}

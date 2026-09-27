@@ -28,9 +28,9 @@ func setupQuest(t *testing.T, srv interface{ URL() string }, callFn func(method,
 	_, data = callFn(http.MethodPost, "/api/boards/"+b.ID+"/quests", map[string]any{"name": "The Trial"})
 	q := decodeAny[QuestResponse](t, data)
 	quest := q.Quest
-	quest.Doors = []maps.Door{{ID: "door-1", Edge: maps.Edge{X: 2, Y: 0, Orientation: maps.Vertical}, Kind: maps.DoorNormal, State: maps.DoorClosed}}
-	quest.Monsters = []maps.Monster{{ID: "monster-1", Type: "orc", X: 3, Y: 1}}
-	quest.StartTiles = []maps.Tile{{X: 0, Y: 0}}
+	quest.Doors = []maps.Door{{ID: "door-1", Edge: maps.Edge{X: 3, Y: 2, Orientation: maps.Vertical}, Kind: maps.DoorNormal, State: maps.DoorClosed}}
+	quest.Monsters = []maps.Monster{{ID: "monster-1", Type: "orc", X: 4, Y: 1}}
+	quest.StartTiles = []maps.Tile{{X: 1, Y: 2}}
 	callFn(http.MethodPut, "/api/quests/"+q.ID, map[string]any{"name": "The Trial", "quest": quest})
 	return q.ID
 }

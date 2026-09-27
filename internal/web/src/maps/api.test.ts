@@ -31,10 +31,10 @@ describe('api client', () => {
   test('PUTs a JSON body when saving', async () => {
     const calls: Call[] = [];
     const api = createApi(fakeFetch(200, { id: 'q1' }, calls));
-    await api.saveQuest('q1', 'Rescue', { version: 1, boardChecksum: '', doors: [], blockedSquares: [], furniture: [], monsters: [], traps: [], notes: [], startTiles: [] });
+    await api.saveQuest('q1', 'Rescue', { version: 2, boardChecksum: '', doors: [], blockedSquares: [], furniture: [], monsters: [], traps: [], notes: [], startTiles: [] });
     expect(calls[0]?.method).toBe('PUT');
     expect(calls[0]?.url).toBe('/api/quests/q1');
-    expect(calls[0]?.body).toMatchObject({ name: 'Rescue', quest: { version: 1 } });
+    expect(calls[0]?.body).toMatchObject({ name: 'Rescue', quest: { version: 2 } });
   });
 
   test('encodes ids into the path', async () => {

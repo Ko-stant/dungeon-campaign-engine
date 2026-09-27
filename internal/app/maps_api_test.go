@@ -154,7 +154,7 @@ func TestQuestAPILifecycle(t *testing.T) {
 	for i := range board.Regions {
 		board.Regions[i] = maps.Corridor
 	}
-	board.Regions[0], board.Regions[4] = 1, 1
+	board.Regions[0], board.Regions[4] = 1, 1 // (1,1) and (1,2): the left column
 	board.Rooms = []maps.Room{{ID: 1, Name: "Cell"}}
 	call(t, srv, http.MethodPut, "/api/boards/"+b.ID, map[string]any{"name": "Board", "board": board})
 
@@ -168,8 +168,8 @@ func TestQuestAPILifecycle(t *testing.T) {
 	}
 
 	quest := q.Quest
-	quest.Doors = []maps.Door{{ID: "door-1", Edge: maps.Edge{X: 1, Y: 0, Orientation: maps.Vertical}, Kind: maps.DoorNormal, State: maps.DoorClosed}}
-	quest.Furniture = []maps.Furniture{{ID: "furniture-1", Type: "table", X: 3, Y: 1}} // 2 wide: runs off the board
+	quest.Doors = []maps.Door{{ID: "door-1", Edge: maps.Edge{X: 2, Y: 1, Orientation: maps.Vertical}, Kind: maps.DoorNormal, State: maps.DoorClosed}}
+	quest.Furniture = []maps.Furniture{{ID: "furniture-1", Type: "table", X: 4, Y: 1}} // 2 wide: runs off the board
 	code, data = call(t, srv, http.MethodPut, "/api/quests/"+q.ID, map[string]any{"name": "Rescue", "quest": quest})
 	if code != http.StatusOK {
 		t.Fatalf("update quest: %d %s", code, data)

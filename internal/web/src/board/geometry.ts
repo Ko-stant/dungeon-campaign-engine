@@ -3,9 +3,15 @@
  * function here is unit-testable.
  *
  * Coordinate conventions (shared with the Go server):
- * - Tiles are addressed by column x (0..cols-1) and row y (0..rows-1).
- * - A vertical edge (x, y) is the LEFT side of tile (x, y); x ranges 0..cols.
- * - A horizontal edge (x, y) is the TOP side of tile (x, y); y ranges 0..rows.
+ * - Squares count from (1, 1) at the BOTTOM-LEFT: column x runs 1..cols left
+ *   to right, row y runs 1..rows bottom to top.
+ * - A vertical edge (x, y) is the LEFT side of tile (x, y); x ranges 1..cols+1.
+ * - A horizontal edge (x, y) is the BOTTOM side of tile (x, y); y ranges 1..rows+1.
+ * - Blocks (furniture, blocked squares) are anchored at their bottom-left
+ *   square and extend right and up.
+ *
+ * Only the functions that take GridMetrics deal in screen pixels, where y grows
+ * downwards; they are the one place rows are flipped.
  */
 
 export interface TileCoord {
@@ -67,10 +73,27 @@ export function computeGridMetrics(viewWidth: number, viewHeight: number, cols: 
   };
 }
 
+/** Pixel x of the vertical grid line on the left side of column x. */
+function lineX(m: GridMetrics, x: number): number {
+  return m.originX + (x - 1) * m.tile;
+}
+
+/** Pixel y of the horizontal grid line on the top side of row y. */
+function topOfRow(m: GridMetrics, y: number): number {
+  return m.originY + (m.rows - y) * m.tile;
+}
+
 export function tileRect(m: GridMetrics, t: TileCoord): TileRect {
-  const x = m.originX + t.x * m.tile;
-  const y = m.originY + t.y * m.tile;
-  return { x, y, w: m.tile, h: m.tile, cx: x + m.tile / 2, cy: y + m.tile / 2 };
+  return footprintRect(m, t, 1, 1);
+}
+
+/** Pixel rectangle of a w x h block of squares anchored at its bottom-left square. */
+export function footprintRect(m: GridMetrics, at: TileCoord, w: number, h: number): TileRect {
+  const x = lineX(m, at.x);
+  const y = topOfRow(m, at.y + h - 1);
+  const pw = w * m.tile;
+  const ph = h * m.tile;
+  return { x, y, w: pw, h: ph, cx: x + pw / 2, cy: y + ph / 2 };
 }
 
 /** The tile under a pixel, or null outside the grid (right/bottom edges exclusive). */
@@ -80,7 +103,7 @@ export function pixelToTile(m: GridMetrics, px: number, py: number): TileCoord |
   if (gx < 0 || gy < 0 || gx >= m.cols || gy >= m.rows) {
     return null;
   }
-  return { x: Math.floor(gx), y: Math.floor(gy) };
+  return { x: Math.floor(gx) + 1, y: m.rows - Math.floor(gy) };
 }
 
 /**
@@ -94,25 +117,39 @@ export function pixelToEdge(m: GridMetrics, px: number, py: number, hitFraction 
     return null;
   }
 
-  const lineX = Math.round(gx);
-  const lineY = Math.round(gy);
-  const distX = Math.abs(gx - lineX);
-  const distY = Math.abs(gy - lineY);
+  // Nearest grid lines, counted in screen order from the top-left corner.
+  const nearCol = Math.round(gx);
+  const nearRow = Math.round(gy);
+  const distX = Math.abs(gx - nearCol);
+  const distY = Math.abs(gy - nearRow);
   if (Math.min(distX, distY) > hitFraction) {
     return null;
   }
 
   // Clamp the along-line coordinate so a point exactly on the far boundary
   // still maps to the last tile.
-  const col = Math.min(Math.floor(gx), m.cols - 1);
-  const row = Math.min(Math.floor(gy), m.rows - 1);
+  const col = Math.min(Math.floor(gx), m.cols - 1) + 1;
+  const row = m.rows - Math.min(Math.floor(gy), m.rows - 1);
   if (distX <= distY) {
-    return { x: lineX, y: row, orientation: 'vertical' };
+    return { x: nearCol + 1, y: row, orientation: 'vertical' };
   }
-  return { x: col, y: lineY, orientation: 'horizontal' };
+  // Screen line k (from the top) is the bottom side of row rows - k + 1.
+  return { x: col, y: m.rows - nearRow + 1, orientation: 'horizontal' };
 }
 
-/** The two tiles an edge separates: [left or up, right or down]. May be off-board. */
+/** Pixel end points of the grid line under an edge (top-to-bottom or left-to-right). */
+export function edgeSegment(m: GridMetrics, e: Edge): { x1: number; y1: number; x2: number; y2: number } {
+  if (e.orientation === 'vertical') {
+    const x = lineX(m, e.x);
+    const y = topOfRow(m, e.y);
+    return { x1: x, y1: y, x2: x, y2: y + m.tile };
+  }
+  const x = lineX(m, e.x);
+  const y = topOfRow(m, e.y - 1);
+  return { x1: x, y1: y, x2: x + m.tile, y2: y };
+}
+
+/** The two tiles an edge separates: [left or below, right or above]. May be off-board. */
 export function edgeTiles(e: Edge): [TileCoord, TileCoord] {
   if (e.orientation === 'vertical') {
     return [{ x: e.x - 1, y: e.y }, { x: e.x, y: e.y }];
@@ -136,9 +173,9 @@ export function edgeBetween(a: TileCoord, b: TileCoord): Edge | null {
 /** True when the edge lies strictly inside a cols x rows board (both sides on-board). */
 export function isInteriorEdge(e: Edge, cols: number, rows: number): boolean {
   if (e.orientation === 'vertical') {
-    return e.x > 0 && e.x < cols && e.y >= 0 && e.y < rows;
+    return e.x > 1 && e.x <= cols && e.y >= 1 && e.y <= rows;
   }
-  return e.y > 0 && e.y < rows && e.x >= 0 && e.x < cols;
+  return e.y > 1 && e.y <= rows && e.x >= 1 && e.x <= cols;
 }
 
 function assertRotation(rotation: number): asserts rotation is Rotation {
@@ -153,7 +190,7 @@ export function rotatedFootprint(width: number, height: number, rotation: number
   return rotation === 90 || rotation === 270 ? { width: height, height: width } : { width, height };
 }
 
-/** Every tile covered by a piece anchored at its top-left tile, row by row. */
+/** Every tile covered by a piece anchored at its bottom-left tile, row by row upwards. */
 export function footprintTiles(origin: TileCoord, width: number, height: number, rotation: number): TileCoord[] {
   const size = rotatedFootprint(width, height, rotation);
   const tiles: TileCoord[] = [];
@@ -166,10 +203,10 @@ export function footprintTiles(origin: TileCoord, width: number, height: number,
 }
 
 export interface DrawBox {
-  /** Centre of the rotated footprint, in tile units. */
-  centerX: number;
-  centerY: number;
-  /** Unrotated size in tiles; draw at this size after rotating by `radians`. */
+  /** Pixel centre of the rotated footprint. */
+  cx: number;
+  cy: number;
+  /** Unrotated size in pixels; draw at this size after rotating by `radians` (clockwise on screen). */
   width: number;
   height: number;
   radians: number;
@@ -179,13 +216,14 @@ export interface DrawBox {
  * Where to draw a piece's artwork: rotate about the centre of its (rotated)
  * footprint and draw the unrotated image centred there.
  */
-export function furnitureDrawBox(at: TileCoord, width: number, height: number, rotation: number): DrawBox {
+export function furnitureDrawBox(m: GridMetrics, at: TileCoord, width: number, height: number, rotation: number): DrawBox {
   const size = rotatedFootprint(width, height, rotation);
+  const r = footprintRect(m, at, size.width, size.height);
   return {
-    centerX: at.x + size.width / 2,
-    centerY: at.y + size.height / 2,
-    width,
-    height,
+    cx: r.cx,
+    cy: r.cy,
+    width: width * m.tile,
+    height: height * m.tile,
     radians: (rotation * Math.PI) / 180,
   };
 }
@@ -199,10 +237,9 @@ export function doorRect(m: GridMetrics, e: Edge): { x: number; y: number; w: nu
   const thickness = m.tile * DOOR_THICKNESS;
   const inset = m.tile * DOOR_INSET;
   const length = m.tile - 2 * inset;
-  const lineX = m.originX + e.x * m.tile;
-  const lineY = m.originY + e.y * m.tile;
+  const s = edgeSegment(m, e);
   if (e.orientation === 'vertical') {
-    return { x: lineX - thickness / 2, y: lineY + inset, w: thickness, h: length };
+    return { x: s.x1 - thickness / 2, y: s.y1 + inset, w: thickness, h: length };
   }
-  return { x: lineX + inset, y: lineY - thickness / 2, w: length, h: thickness };
+  return { x: s.x1 + inset, y: s.y1 - thickness / 2, w: length, h: thickness };
 }

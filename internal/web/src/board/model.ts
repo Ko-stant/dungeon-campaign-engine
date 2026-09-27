@@ -1,7 +1,8 @@
 /**
  * The board model shared by the renderer, the map editor and the tracker.
  *
- * A board is a cols x rows grid. Each tile holds a region id (row-major):
+ * A board is a cols x rows grid counted from (1, 1) at the bottom-left. Each
+ * tile holds a region id (row-major, bottom row first):
  *   VOID (-1)      solid rock / outside the dungeon
  *   CORRIDOR (0)   open corridor
  *   1, 2, 3 ...    a room
@@ -24,7 +25,7 @@ export interface DoorView {
   state: DoorState;
 }
 
-/** A rectangle of impassable squares (rubble / blocked-square tiles). */
+/** A rectangle of impassable squares (rubble / blocked-square tiles), anchored bottom-left. */
 export interface BlockedSquareView {
   x: number;
   y: number;
@@ -35,7 +36,7 @@ export interface BlockedSquareView {
 export interface FurnitureView {
   id: string;
   type: string;
-  /** Top-left tile of the rotated footprint. */
+  /** Bottom-left tile of the rotated footprint. */
   at: TileCoord;
   /** Unrotated size in tiles, from the furniture catalog. */
   width: number;
@@ -70,7 +71,7 @@ export interface NoteView {
 export interface BoardView {
   cols: number;
   rows: number;
-  /** Row-major region ids, length cols * rows. */
+  /** Row-major region ids from the bottom row up, length cols * rows. */
   regions: readonly number[];
   doors: readonly DoorView[];
   blockedSquares: readonly BlockedSquareView[];
@@ -86,13 +87,23 @@ export interface BoardView {
   discovered?: ReadonlySet<number>;
 }
 
+/** Index into row-major regions of an on-board square. */
 export function tileIndex(cols: number, t: TileCoord): number {
-  return t.y * cols + t.x;
+  return (t.y - 1) * cols + (t.x - 1);
+}
+
+/** The square at a regions index (the inverse of tileIndex). */
+export function tileAt(cols: number, index: number): TileCoord {
+  return { x: (index % cols) + 1, y: Math.floor(index / cols) + 1 };
+}
+
+export function onBoard(cols: number, rows: number, t: TileCoord): boolean {
+  return t.x >= 1 && t.y >= 1 && t.x <= cols && t.y <= rows;
 }
 
 /** Region id of a tile; anything off the board is VOID. */
 export function regionAt(cols: number, rows: number, regions: readonly number[], t: TileCoord): number {
-  if (t.x < 0 || t.y < 0 || t.x >= cols || t.y >= rows) {
+  if (!onBoard(cols, rows, t)) {
     return VOID;
   }
   return regions[tileIndex(cols, t)] ?? VOID;
@@ -117,15 +128,15 @@ export function deriveWalls(cols: number, rows: number, regions: readonly number
   const walls: Edge[] = [];
   const at = (x: number, y: number): number => regionAt(cols, rows, regions, { x, y });
 
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x <= cols; x++) {
+  for (let y = 1; y <= rows; y++) {
+    for (let x = 1; x <= cols + 1; x++) {
       if (at(x - 1, y) !== at(x, y)) {
         walls.push({ x, y, orientation: 'vertical' });
       }
     }
   }
-  for (let y = 0; y <= rows; y++) {
-    for (let x = 0; x < cols; x++) {
+  for (let y = 1; y <= rows + 1; y++) {
+    for (let x = 1; x <= cols; x++) {
       if (at(x, y - 1) !== at(x, y)) {
         walls.push({ x, y, orientation: 'horizontal' });
       }

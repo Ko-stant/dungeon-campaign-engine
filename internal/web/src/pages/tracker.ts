@@ -4,6 +4,7 @@
  * state and a readable event, then pushes both to every open tab.
  */
 import { pixelToEdge, pixelToTile } from '../board/geometry.ts';
+import { tileIndex } from '../board/model.ts';
 import { BoardRenderer } from '../board/renderer.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
@@ -153,7 +154,7 @@ async function main(): Promise<void> {
       hoverInfo.textContent = '';
       return;
     }
-    const region = state.board.regions[t.y * state.board.width + t.x] ?? -1;
+    const region = state.board.regions[tileIndex(state.board.width, t)] ?? -1;
     const room = state.board.rooms.find((r) => r.id === region)?.name;
     hoverInfo.textContent = `(${t.x}, ${t.y}) ${room ?? (region === 0 ? 'corridor' : region === -1 ? 'solid rock' : '')}`;
   });

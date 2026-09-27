@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/legacy"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/seed"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
@@ -39,6 +40,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Furniture sizes place each piece by its bottom-left square.
+	catalog, err := content.Load(os.DirFS(*contentDir))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if err := store.Migrate(ctx, *dbURL); err != nil {
 		log.Fatal(err)
 	}
@@ -48,7 +55,7 @@ func main() {
 	}
 	defer st.Close()
 
-	res, err := seed.ImportLegacy(ctx, st, boardDef, questDef)
+	res, err := seed.ImportLegacy(ctx, st, boardDef, questDef, catalog.FurnitureSize)
 	if err != nil {
 		log.Fatal(err)
 	}

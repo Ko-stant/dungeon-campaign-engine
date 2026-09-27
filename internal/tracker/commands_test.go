@@ -40,9 +40,9 @@ func apply(t *testing.T, s *State, c Command) (*State, Event) {
 func TestApplyNeverMutatesItsInput(t *testing.T) {
 	s := newState(t)
 	before, _ := json.Marshal(s)
-	apply(t, s, cmd(t, "move", map[string]any{"id": "hero-1", "x": 3, "y": 3}))
+	apply(t, s, cmd(t, "move", map[string]any{"id": "hero-1", "x": 4, "y": 1}))
 	apply(t, s, cmd(t, "door.set", map[string]any{"id": "door-1", "state": "open"}))
-	apply(t, s, cmd(t, "tiles.reveal", map[string]any{"tiles": []map[string]int{{"x": 5, "y": 0}}}))
+	apply(t, s, cmd(t, "tiles.reveal", map[string]any{"tiles": []map[string]int{{"x": 6, "y": 4}}}))
 	after, _ := json.Marshal(s)
 	if string(before) != string(after) {
 		t.Fatal("Apply modified the input state")
@@ -51,16 +51,16 @@ func TestApplyNeverMutatesItsInput(t *testing.T) {
 
 func TestMoveHeroAndMonster(t *testing.T) {
 	s := newState(t)
-	s, ev := apply(t, s, cmd(t, "move", map[string]any{"id": "hero-1", "x": 3, "y": 2}))
-	if s.Heroes[0].X != 3 || s.Heroes[0].Y != 2 {
+	s, ev := apply(t, s, cmd(t, "move", map[string]any{"id": "hero-1", "x": 4, "y": 2}))
+	if s.Heroes[0].X != 4 || s.Heroes[0].Y != 2 {
 		t.Fatalf("hero at %d,%d", s.Heroes[0].X, s.Heroes[0].Y)
 	}
-	if ev.Kind != "move" || ev.Summary != "Moved Grom (Barbarian) from (0,0) to (3,2)" || ev.Round != 1 {
+	if ev.Kind != "move" || ev.Summary != "Moved Grom (Barbarian) from (1,4) to (4,2)" || ev.Round != 1 {
 		t.Fatalf("event: %+v", ev)
 	}
 
-	s, ev = apply(t, s, cmd(t, "move", map[string]any{"id": "monster-1", "x": 3, "y": 3}))
-	if s.Monsters[0].X != 3 || ev.Summary != "Moved Orc (monster-1) from (4,2) to (3,3)" {
+	s, ev = apply(t, s, cmd(t, "move", map[string]any{"id": "monster-1", "x": 4, "y": 1}))
+	if s.Monsters[0].X != 4 || ev.Summary != "Moved Orc (monster-1) from (5,2) to (4,1)" {
 		t.Fatalf("monster move: %+v %q", s.Monsters[0], ev.Summary)
 	}
 }
@@ -72,8 +72,8 @@ func TestPlacingAnUnplacedHero(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, ev := apply(t, s, cmd(t, "move", map[string]any{"id": "hero-2", "x": 1, "y": 1}))
-	if !s.Heroes[1].Placed || ev.Summary != "Placed Ilsa (Wizard) at (1,1)" {
+	s, ev := apply(t, s, cmd(t, "move", map[string]any{"id": "hero-2", "x": 2, "y": 3}))
+	if !s.Heroes[1].Placed || ev.Summary != "Placed Ilsa (Wizard) at (2,3)" {
 		t.Fatalf("%+v %q", s.Heroes[1], ev.Summary)
 	}
 }
@@ -99,9 +99,9 @@ func TestHeroUpdateDescribesEveryChange(t *testing.T) {
 
 func TestMonsterLifecycle(t *testing.T) {
 	s := newState(t)
-	s, ev := apply(t, s, cmd(t, "monster.add", map[string]any{"type": "orc", "x": 2, "y": 2}))
+	s, ev := apply(t, s, cmd(t, "monster.add", map[string]any{"type": "orc", "x": 3, "y": 2}))
 	added := s.Monsters[len(s.Monsters)-1]
-	if added.ID != "monster-3" || added.Body != 1 || added.Visibility != MonsterSeen || !added.Alive || ev.Summary != "Added Orc (monster-3) at (2,2)" {
+	if added.ID != "monster-3" || added.Body != 1 || added.Visibility != MonsterSeen || !added.Alive || ev.Summary != "Added Orc (monster-3) at (3,2)" {
 		t.Fatalf("added: %+v %q", added, ev.Summary)
 	}
 
@@ -155,17 +155,17 @@ func TestTrapsMoveBetweenAnyStates(t *testing.T) {
 
 func TestRevealAndHide(t *testing.T) {
 	s := newState(t)
-	s, ev := apply(t, s, cmd(t, "area.reveal", map[string]any{"x": 5, "y": 3}))
-	// Room 2 (Lair) = (4,2) (5,2) (4,3) (5,3) = 16 17 22 23, plus the start room 0 1 6 7.
-	if !reflect.DeepEqual(s.Discovered, []int{0, 1, 6, 7, 16, 17, 22, 23}) || ev.Summary != "Revealed Lair" {
+	s, ev := apply(t, s, cmd(t, "area.reveal", map[string]any{"x": 6, "y": 1}))
+	// Room 2 (Lair) = (5,1) (6,1) (5,2) (6,2) = 4 5 10 11, plus the start room 12 13 18 19.
+	if !reflect.DeepEqual(s.Discovered, []int{4, 5, 10, 11, 12, 13, 18, 19}) || ev.Summary != "Revealed Lair" {
 		t.Fatalf("discovered %v %q", s.Discovered, ev.Summary)
 	}
-	s, ev = apply(t, s, cmd(t, "tiles.reveal", map[string]any{"tiles": []map[string]int{{"x": 2, "y": 0}, {"x": 3, "y": 0}, {"x": 99, "y": 0}}}))
-	if !reflect.DeepEqual(s.Discovered, []int{0, 1, 2, 3, 6, 7, 16, 17, 22, 23}) || ev.Summary != "Revealed 2 squares" {
+	s, ev = apply(t, s, cmd(t, "tiles.reveal", map[string]any{"tiles": []map[string]int{{"x": 3, "y": 4}, {"x": 4, "y": 4}, {"x": 99, "y": 4}, {"x": 0, "y": 4}}}))
+	if !reflect.DeepEqual(s.Discovered, []int{4, 5, 10, 11, 12, 13, 18, 19, 20, 21}) || ev.Summary != "Revealed 2 squares" {
 		t.Fatalf("tiles %v %q", s.Discovered, ev.Summary)
 	}
-	s, ev = apply(t, s, cmd(t, "tiles.hide", map[string]any{"tiles": []map[string]int{{"x": 2, "y": 0}}}))
-	if slices.Contains(s.Discovered, 2) || ev.Summary != "Hid 1 square" {
+	s, ev = apply(t, s, cmd(t, "tiles.hide", map[string]any{"tiles": []map[string]int{{"x": 3, "y": 4}}}))
+	if slices.Contains(s.Discovered, 20) || ev.Summary != "Hid 1 square" {
 		t.Fatalf("hide %v %q", s.Discovered, ev.Summary)
 	}
 }
@@ -217,7 +217,9 @@ func TestApplyRejectsMalformedCommands(t *testing.T) {
 	bad := []Command{
 		{Type: "teleport", Payload: json.RawMessage(`{}`)},
 		cmd(t, "move", map[string]any{"id": "nobody", "x": 1, "y": 1}),
-		cmd(t, "move", map[string]any{"id": "hero-1", "x": 6, "y": 0}),
+		cmd(t, "move", map[string]any{"id": "hero-1", "x": 7, "y": 4}),
+		cmd(t, "move", map[string]any{"id": "hero-1", "x": 0, "y": 1}),
+		cmd(t, "move", map[string]any{"id": "hero-1", "x": 1, "y": 0}),
 		cmd(t, "hero.update", map[string]any{"id": "hero-1", "body": -1}),
 		cmd(t, "hero.update", map[string]any{"id": "hero-1", "status": "sleepy"}),
 		cmd(t, "monster.add", map[string]any{"type": "dragon", "x": 1, "y": 1}),
@@ -233,5 +235,14 @@ func TestApplyRejectsMalformedCommands(t *testing.T) {
 		if _, _, err := Apply(s, c, cat); err == nil {
 			t.Errorf("%s %s: expected an error", c.Type, c.Payload)
 		}
+	}
+}
+
+func TestApplyRefusesTopLeftStates(t *testing.T) {
+	s := newState(t)
+	s.Version = 1 // saved before squares counted from the bottom-left
+	_, _, cat := fixture()
+	if _, _, err := Apply(s, cmd(t, "round.advance", nil), cat); err == nil {
+		t.Fatal("expected an error for a version 1 state")
 	}
 }
