@@ -52,7 +52,7 @@ Commits (oldest first):
 | 1fbaa07 | gates, locked doors, purple secret doors |
 | 31e81ac | hidden-door blocked squares, removable in play |
 | dd336c6 | custom monster library |
-| (next commit) | corridor doors no longer warned; teleport squares and traps |
+| 392a444 | corridor doors no longer warned; teleport squares and traps |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
