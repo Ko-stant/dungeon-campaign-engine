@@ -32,7 +32,7 @@ endef
 .PHONY: all tools dev build run test test-race cover lint fmt tidy clean \
         test-db test-js test-all \
         db-up db-up-all db-down db-destroy db-logs db-psql \
-        db-migrate-new db-migrate-up db-migrate-down db-backup db-restore
+        db-migrate-new db-migrate-up db-migrate-down db-backup db-restore import-content
 
 all: build
 
@@ -133,6 +133,13 @@ db-migrate-up:
 
 db-migrate-down:
 	$(TOOLS_DIRECTORY)/goose down
+
+# --- Content import ---
+# Loads content/board.json + a quest into the database (idempotent).
+# Override the quest with: make import-content QUEST=base/quests/quest-02.json
+QUEST ?= base/quests/quest-01.json
+import-content:
+	@set -a; [ -f .env ] && . ./.env; set +a; $(GO) run ./cmd/import-content -quest $(QUEST)
 
 # --- Tailwind commands ---
 tailwind-build:

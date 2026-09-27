@@ -1,70 +1,19 @@
-package store
+package store_test
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"net/url"
-	"os"
 	"reflect"
 	"testing"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/store/storetest"
 )
 
-// testStore returns a Store bound to a fresh, migrated schema that is dropped
-// when the test ends. It skips unless TEST_DATABASE_URL (or DATABASE_URL) is set,
-// e.g. via `make test-db`.
-func testStore(t *testing.T) *Store {
+func testStore(t *testing.T) *store.Store {
 	t.Helper()
-	base := os.Getenv("TEST_DATABASE_URL")
-	if base == "" {
-		base = os.Getenv("DATABASE_URL")
-	}
-	if base == "" {
-		t.Skip("set TEST_DATABASE_URL (or run make test-db) to run database tests")
-	}
-	ctx := context.Background()
-
-	suffix := make([]byte, 6)
-	if _, err := rand.Read(suffix); err != nil {
-		t.Fatal(err)
-	}
-	schema := "test_" + hex.EncodeToString(suffix)
-
-	admin, err := pgx.Connect(ctx, base)
-	if err != nil {
-		t.Fatalf("connect: %v", err)
-	}
-	if _, err := admin.Exec(ctx, "CREATE SCHEMA "+schema); err != nil {
-		t.Fatalf("create schema: %v", err)
-	}
-	t.Cleanup(func() {
-		if _, err := admin.Exec(context.Background(), "DROP SCHEMA "+schema+" CASCADE"); err != nil {
-			t.Errorf("drop schema: %v", err)
-		}
-		_ = admin.Close(context.Background())
-	})
-
-	u, err := url.Parse(base)
-	if err != nil {
-		t.Fatal(err)
-	}
-	q := u.Query()
-	q.Set("search_path", schema)
-	u.RawQuery = q.Encode()
-	schemaURL := u.String()
-
-	if err := Migrate(ctx, schemaURL); err != nil {
-		t.Fatalf("migrate: %v", err)
-	}
-	s, err := Open(ctx, schemaURL)
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
-	t.Cleanup(s.Close)
+	s, _ := storetest.New(t)
 	return s
 }
 
@@ -84,8 +33,8 @@ func jsonEqual(t *testing.T, got, want json.RawMessage) {
 }
 
 func TestMigrateIsIdempotent(t *testing.T) {
-	s := testStore(t)
-	if err := Migrate(context.Background(), s.url); err != nil {
+	_, url := storetest.New(t)
+	if err := store.Migrate(context.Background(), url); err != nil {
 		t.Fatalf("second migrate: %v", err)
 	}
 }
@@ -130,8 +79,8 @@ func TestBoardLifecycle(t *testing.T) {
 	if err := s.DeleteBoard(ctx, created.ID); err != nil {
 		t.Fatalf("delete: %v", err)
 	}
-	if _, err := s.GetBoard(ctx, created.ID); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("get after delete: err = %v, want ErrNotFound", err)
+	if _, err := s.GetBoard(ctx, created.ID); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("get after delete: err = %v, want store.ErrNotFound", err)
 	}
 }
 
@@ -139,14 +88,14 @@ func TestMissingAndMalformedIDsAreNotFound(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
 	for _, id := range []string{"01900000-0000-7000-8000-000000000000", "not-a-uuid", ""} {
-		if _, err := s.GetBoard(ctx, id); !errors.Is(err, ErrNotFound) {
-			t.Errorf("GetBoard(%q): err = %v, want ErrNotFound", id, err)
+		if _, err := s.GetBoard(ctx, id); !errors.Is(err, store.ErrNotFound) {
+			t.Errorf("GetBoard(%q): err = %v, want store.ErrNotFound", id, err)
 		}
-		if _, err := s.UpdateBoard(ctx, id, "x", 1, 1, json.RawMessage(`{}`)); !errors.Is(err, ErrNotFound) {
-			t.Errorf("UpdateBoard(%q): err = %v, want ErrNotFound", id, err)
+		if _, err := s.UpdateBoard(ctx, id, "x", 1, 1, json.RawMessage(`{}`)); !errors.Is(err, store.ErrNotFound) {
+			t.Errorf("UpdateBoard(%q): err = %v, want store.ErrNotFound", id, err)
 		}
-		if err := s.DeleteBoard(ctx, id); !errors.Is(err, ErrNotFound) {
-			t.Errorf("DeleteBoard(%q): err = %v, want ErrNotFound", id, err)
+		if err := s.DeleteBoard(ctx, id); !errors.Is(err, store.ErrNotFound) {
+			t.Errorf("DeleteBoard(%q): err = %v, want store.ErrNotFound", id, err)
 		}
 	}
 }
@@ -170,8 +119,8 @@ func TestBoardInUseCannotBeDeleted(t *testing.T) {
 	if _, err := s.CreateQuest(ctx, b.ID, "Quest", json.RawMessage(`{}`)); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.DeleteBoard(ctx, b.ID); !errors.Is(err, ErrInUse) {
-		t.Fatalf("delete board with quest: err = %v, want ErrInUse", err)
+	if err := s.DeleteBoard(ctx, b.ID); !errors.Is(err, store.ErrInUse) {
+		t.Fatalf("delete board with quest: err = %v, want store.ErrInUse", err)
 	}
 }
 
@@ -189,8 +138,8 @@ func TestQuestLifecycle(t *testing.T) {
 	if _, err := s.CreateQuest(ctx, b2.ID, "Other", json.RawMessage(`{}`)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.CreateQuest(ctx, "01900000-0000-7000-8000-000000000000", "Orphan", json.RawMessage(`{}`)); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("create quest on missing board: err = %v, want ErrNotFound", err)
+	if _, err := s.CreateQuest(ctx, "01900000-0000-7000-8000-000000000000", "Orphan", json.RawMessage(`{}`)); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("create quest on missing board: err = %v, want store.ErrNotFound", err)
 	}
 
 	got, err := s.GetQuest(ctx, q1.ID)
@@ -216,7 +165,7 @@ func TestQuestLifecycle(t *testing.T) {
 	if err := s.DeleteQuest(ctx, q1.ID); err != nil {
 		t.Fatalf("delete: %v", err)
 	}
-	if _, err := s.GetQuest(ctx, q1.ID); !errors.Is(err, ErrNotFound) {
+	if _, err := s.GetQuest(ctx, q1.ID); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("get after delete: %v", err)
 	}
 }
@@ -259,17 +208,17 @@ func TestSessionEventsUpdateStateInOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create session: %v", err)
 	}
-	if sess.Status != StatusActive || sess.EventSeq != 0 || sess.QuestID == nil || *sess.QuestID != q.ID {
+	if sess.Status != store.StatusActive || sess.EventSeq != 0 || sess.QuestID == nil || *sess.QuestID != q.ID {
 		t.Fatalf("unexpected session: %+v", sess)
 	}
 
 	steps := []struct {
 		state string
-		ev    NewEvent
+		ev    store.NewEvent
 	}{
-		{`{"round":1,"door":"open"}`, NewEvent{Round: 1, Kind: "door.state", Summary: "Opened door-1", Payload: json.RawMessage(`{"door":"door-1","to":"open"}`)}},
-		{`{"round":1,"door":"closed"}`, NewEvent{Round: 1, Kind: "door.state", Summary: "Closed door-1", Payload: json.RawMessage(`{"door":"door-1","to":"closed"}`)}},
-		{`{"round":2,"door":"closed"}`, NewEvent{Round: 2, Kind: "round.advance", Summary: "Round 2 begins"}},
+		{`{"round":1,"door":"open"}`, store.NewEvent{Round: 1, Kind: "door.state", Summary: "Opened door-1", Payload: json.RawMessage(`{"door":"door-1","to":"open"}`)}},
+		{`{"round":1,"door":"closed"}`, store.NewEvent{Round: 1, Kind: "door.state", Summary: "Closed door-1", Payload: json.RawMessage(`{"door":"door-1","to":"closed"}`)}},
+		{`{"round":2,"door":"closed"}`, store.NewEvent{Round: 2, Kind: "round.advance", Summary: "Round 2 begins"}},
 	}
 	for i, step := range steps {
 		ev, err := s.RecordEvent(ctx, sess.ID, json.RawMessage(step.state), step.ev)
@@ -312,7 +261,7 @@ func TestRecordEventIsAtomic(t *testing.T) {
 	sess, _ := s.CreateSession(ctx, c.ID, "", "Night", json.RawMessage(`{"v":1}`))
 
 	// A malformed payload fails the event insert, which must roll back the state update too.
-	_, err := s.RecordEvent(ctx, sess.ID, json.RawMessage(`{"v":2}`), NewEvent{Round: 1, Kind: "x", Summary: "x", Payload: json.RawMessage(`{broken`)})
+	_, err := s.RecordEvent(ctx, sess.ID, json.RawMessage(`{"v":2}`), store.NewEvent{Round: 1, Kind: "x", Summary: "x", Payload: json.RawMessage(`{broken`)})
 	if err == nil {
 		t.Fatal("expected an error for a malformed payload")
 	}
@@ -323,8 +272,8 @@ func TestRecordEventIsAtomic(t *testing.T) {
 	}
 	jsonEqual(t, got.State, json.RawMessage(`{"v":1}`))
 
-	if _, err := s.RecordEvent(ctx, "01900000-0000-7000-8000-000000000000", json.RawMessage(`{}`), NewEvent{Kind: "x", Summary: "x"}); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("record on missing session: err = %v, want ErrNotFound", err)
+	if _, err := s.RecordEvent(ctx, "01900000-0000-7000-8000-000000000000", json.RawMessage(`{}`), store.NewEvent{Kind: "x", Summary: "x"}); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("record on missing session: err = %v, want store.ErrNotFound", err)
 	}
 }
 
@@ -337,11 +286,11 @@ func TestSessionStatus(t *testing.T) {
 		t.Fatalf("QuestID = %v, want nil when no quest given", *sess.QuestID)
 	}
 
-	if err := s.SetSessionStatus(ctx, sess.ID, StatusCompleted); err != nil {
+	if err := s.SetSessionStatus(ctx, sess.ID, store.StatusCompleted); err != nil {
 		t.Fatal(err)
 	}
 	got, _ := s.GetSession(ctx, sess.ID)
-	if got.Status != StatusCompleted {
+	if got.Status != store.StatusCompleted {
 		t.Fatalf("status = %q", got.Status)
 	}
 	if err := s.SetSessionStatus(ctx, sess.ID, "paused"); err == nil {

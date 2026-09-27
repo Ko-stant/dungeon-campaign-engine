@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-27 13:30 EDT
+**Last Updated**: 2026-09-27 13:45 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -213,10 +213,54 @@ same 19, no new failures.
 - [x] Documented the test-first convention and new commands in `CLAUDE.md` and
       `docs/IMPORTANT.md`.
 
-## Phase 5 - Postgres persistence
+## Phase 5 - Postgres persistence [DONE 2026-09-27]
+
+- [x] `docker-compose.yml`: postgres:16 -> **18.6** on a **new** volume `pgdata18`, mounted at
+      `/var/lib/postgresql` as the 18 image expects. The old Postgres 16 volume
+      `dungeon-campaign-engine_pgdata` is **left untouched**; delete it by hand if unwanted.
+      The host port moved to **5433** (`.env`: POSTGRES_PORT, DATABASE_URL, GOOSE_DBSTRING)
+      because another project's Postgres 17 container holds 5432. The missing `./db/init`
+      mount was removed.
+- [x] Migrations: the never-used `00001`/`00002` were replaced by `00001_init.sql` with
+      tables `board`, `quest`, `campaign`, `game_session` (current state as jsonb +
+      event_seq) and `session_event` (append-only, unique per session+seq), keyed by
+      `uuidv7()`. `db.Migrations` embeds them; `store.Migrate` runs goose as a library.
+- [x] `internal/store` (pgx/v5): board/quest/campaign/session CRUD. `RecordEvent`
+      atomically replaces session state and appends the event (rollback tested).
+      Malformed ids return ErrNotFound; deleting a board still used by a quest returns
+      ErrInUse. The ON DELETE RESTRICT violation is SQLSTATE 23001, not 23503.
+- [x] `internal/store/storetest`: each DB test gets a throwaway migrated schema in the dev
+      database. `make test-db` runs `./internal/...` with the DB. Tests skip without a URL.
+- [x] Importer: `internal/seed.ImportLegacy` (idempotent, DB-tested) plus
+      `cmd/import-content` / `make import-content [QUEST=...]`. The base board and
+      "The Trial" are imported into the dev database.
+
 ## Phase 6 - Map creator
-- [ ] Unify the edge convention in `internal/geometry` (`BuildRegionMap`, dev layouts)
-      and unskip `TestRegionsAcrossDoor`.
+- [x] 6a documents (Go, test-first) in `internal/maps`:
+  - `Board`: version, width, height (1..200), row-major regions (-1 void, 0 corridor,
+    >0 room) and rooms. Walls are derived with the same rule as the TS client.
+    `Checksum()` covers the layout only (not room names).
+  - `Quest`: board checksum, doors (edge, normal/secret, open/closed), blocked-square
+    rects, furniture (catalog type, quarter-turn rotation), monsters (optional body/mind
+    overrides), traps (hidden/revealed/triggered/disarmed, optional furniture), lettered
+    notes, start tiles, wandering monster.
+  - `Validate()` rejects malformed data. `Check(board, sizes)` returns **advisory**
+    issues only (door into rock, piece on void, board edited since the quest was
+    saved, ...); it never blocks saving.
+  - `BoardFromLegacy` / `QuestFromLegacy` convert the old JSON: blocking walls become
+    rects, notes are sorted by letter, and start tiles are the tiles of the starting
+    room. The real base board + quest-01 convert with **zero issues** (content-gated
+    test).
+- [x] `internal/content`: hero/monster/furniture catalogs from any `fs.FS` (tests use
+      in-memory synthetic files). Monster stats come from `content/monsters/*.json`.
+      Real content: 12 furniture, 8 monsters, 9 heroes.
+- [x] Edge convention unified: deleted the unused `BuildRegionMap`, `DevSegment` and
+      `CorridorsAndRooms*` (the only code using the right/bottom convention) and rewrote
+      `TestRegionsAcrossDoor` against the real convention. It runs now instead of
+      being skipped.
+- [ ] 6b editor UI: `/maps` list, `/maps/{id}/edit` canvas editor, `src/editor/model.ts`
+      (test-first), board + quest JSON API, JSON export/import.
+
 ## Phase 7 - Companion tracker
 ## Phase 8 - Remove multiplayer, docs cleanup
 

@@ -1,6 +1,6 @@
-content/
-assets/
-packs/
+/content/
+/assets/
+/packs/
 .bin/
 .env
 db/backups/
