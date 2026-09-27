@@ -30,7 +30,7 @@ bash -lc 'set -a; [ -f .env ] && source ./.env; set +a; $$1'
 endef
 
 .PHONY: all tools dev build run test test-race cover lint fmt tidy clean \
-        test-js test-all \
+        test-db test-js test-all \
         db-up db-up-all db-down db-destroy db-logs db-psql \
         db-migrate-new db-migrate-up db-migrate-down db-backup db-restore
 
@@ -68,6 +68,13 @@ test-race:
 cover:
 	@$(TOOLS_DIRECTORY)/gotestsum --format testname -- -coverprofile=coverage.out -covermode=atomic $(GO_PACKAGES)
 	@$(GO) tool cover -func=coverage.out | tail -n 1
+
+# Runs the internal packages including database tests. Each test uses its own
+# throwaway schema in the dev database (make db-up), so dev data is untouched.
+test-db:
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	TEST_DATABASE_URL="$${TEST_DATABASE_URL:-$$DATABASE_URL}" \
+	$(TOOLS_DIRECTORY)/gotestsum --format testname -- -count=1 -timeout $(GO_TEST_TIMEOUT) ./internal/... ./db/...
 
 test-js:
 	@echo "==> Running JavaScript tests..."

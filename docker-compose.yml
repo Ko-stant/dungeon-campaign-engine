@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16
+    image: postgres:18
     container_name: hq_postgres
     restart: unless-stopped
     environment:
@@ -10,8 +10,10 @@ services:
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d
+      # Postgres 18 images keep data under /var/lib/postgresql/<major>/, so the
+      # volume mounts the parent directory. pgdata18 is a fresh volume; the old
+      # Postgres 16 volume (pgdata) is left untouched.
+      - pgdata18:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -28,4 +30,4 @@ services:
       - postgres
 
 volumes:
-  pgdata:
+  pgdata18:
