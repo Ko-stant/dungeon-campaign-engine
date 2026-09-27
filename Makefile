@@ -71,7 +71,7 @@ cover:
 
 test-js:
 	@echo "==> Running JavaScript tests..."
-	@bun run test:js
+	@bun run test
 
 test-all: test test-js
 	@echo "==> All tests completed"
