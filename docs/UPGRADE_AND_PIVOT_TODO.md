@@ -47,7 +47,7 @@ Commits (oldest first):
 | 5c17cbe | 8 multiplayer removed, docs rewritten |
 | 450cbad | docs: resume summary |
 | 7a85e91 | post-plan: (1,1) at the bottom-left, columns × rows labels |
-| (next commit) | post-plan: drawn walls on the board layer |
+| 7bbd2e0 | post-plan: drawn walls on the board layer |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
