@@ -535,11 +535,11 @@ type SessionSummary struct {
 	// VisitedQuestIDs lists every quest (map) the session has played, when it
 	// travelled between maps; empty for single-map sessions.
 	VisitedQuestIDs []string
-	Name       string
-	Status     string
-	EventSeq   int64
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	Name            string
+	Status          string
+	EventSeq        int64
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 const sessionColumns = `id::text, campaign_id::text, quest_id::text, name, status, state, event_seq, created_at, updated_at`
