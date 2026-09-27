@@ -93,7 +93,7 @@ type Quest struct {
 	Notes            []Note      `json:"notes"`
 	StartTiles       []Tile      `json:"startTiles"`
 	// ExitTiles mark where the heroes leave the dungeon.
-	ExitTiles []Tile `json:"exitTiles,omitempty"`
+	ExitTiles []Tile `json:"exitTiles"`
 }
 
 // NewQuest returns an empty quest bound to the board's current layout.

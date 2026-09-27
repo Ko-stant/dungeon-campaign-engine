@@ -91,8 +91,8 @@ export interface QuestDoc {
   traps: TrapDoc[];
   notes: NoteDoc[];
   startTiles: TileCoord[];
-  /** Where the heroes leave the dungeon. Omitted when empty. */
-  exitTiles?: TileCoord[];
+  /** Where the heroes leave the dungeon. Missing or null on quests saved before exits existed. */
+  exitTiles?: TileCoord[] | null;
 }
 
 export interface Issue {
