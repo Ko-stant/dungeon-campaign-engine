@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-27 14:25 EDT
+**Last Updated**: 2026-09-27 14:35 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -14,6 +14,67 @@ Goals, in order:
 5. Single-GM companion tracker with a readable event log and resumable sessions.
 6. Delete the multiplayer code.
 
+## Resume here (current state)
+
+**Status: all 8 phases are complete and committed on `dce-table-only`.** Nothing is
+pushed or merged into `main`. The next work is in `docs/ROADMAP.md`.
+
+What the app is now: a single-GM companion for in-person HeroQuest.
+- `/maps` is the map creator. `/campaigns` lists campaigns and heroes and starts
+  quests. `/play/{id}` is the live tracker. `/` redirects to `/campaigns`.
+- The multiplayer engine (lobby, turns, rules, dice, legacy JS client) is deleted.
+- Architecture, commands and conventions are in `CLAUDE.md`; working rules are in
+  `docs/IMPORTANT.md`.
+
+Commits (oldest first):
+
+| Commit | Step |
+|---|---|
+| b5c9192 | Phase 0 baseline |
+| cf26831 / 7f6cd0c | 2a go 1.27 / 2b go fix |
+| 848fe30 / 1748aba | 2c modules / templ regen |
+| cee5551 | 2d tools + golangci-lint v2 |
+| a79a3af / 2c47285 | 3a Bun / 3b ESLint 10 |
+| 11967ff | alternate preview config (later trimmed) |
+| a12d824 | 3c Tailwind v4 |
+| a816967 | 4 TS foundation |
+| c5c8a33 | 5 Postgres 18 + store |
+| 3eede05 | 6a map documents, catalogs, importer |
+| 6fec549 | 6b map editor |
+| 2fb7d7d | 7 tracker |
+| 5c17cbe | 8 multiplayer removed, docs rewritten |
+
+Test status at 5c17cbe:
+- `make test`: 97 Go tests, 0 failures (DB tests skip without a URL).
+- `make test-db`: all packages pass against Postgres.
+- `bun test`: 95 tests pass.
+- `make lint` (golangci-lint + ESLint + tsc): clean.
+
+Local environment:
+- Go 1.27.1 at `/usr/local/go`, Bun 1.4.2 (Homebrew), Postgres 18 in Docker.
+- The container is `hq_postgres` on **port 5433**, volume `pgdata18`. Start it with
+  `make db-up`.
+- `.env` (gitignored) holds DATABASE_URL etc. and was changed from port 5432 to
+  5433; the server loads it itself.
+- `.claude/launch.json` config `dce-binary` runs `./build/dungeon-campaign-engine` on
+  :8080, for the Claude preview browser. Run `make build` first.
+
+Dev database contents (from manual testing; safe to delete):
+- Boards: "HeroQuest Base Game Board" 26x19 (imported via `make import-content`) with
+  quest "The Trial", and "Test Board 24x30" with quest "Test Quest".
+- Campaign "Test Campaign" with heroes Grom (Barbarian) and Ilsa (Wizard), and an
+  active session "Game night 1" on The Trial (round 2, 7 events).
+
+Browser-testing tips:
+- Native `confirm()` dialogs are suppressed in the Claude browser (they return false).
+  Stub them with `window.confirm = () => true` before clicking Complete quest or
+  shrinking a board.
+- Static files are served with `Cache-Control: no-cache`, so a plain reload picks up
+  rebuilt CSS/JS.
+
+Superseded notes below: Phases 0-4 describe the legacy code at the time. Later
+phases replaced or removed parts of it; those spots are marked **(later: ...)**.
+
 ---
 
 ## Phase 0 - Branch and baseline [DONE 2026-09-27]
@@ -23,16 +84,18 @@ Goals, in order:
       `~/dce-backups/dce-content-assets-20260927-1250.tgz` (168 MB).
 - [x] Baseline recorded with the pre-upgrade toolchain (`GOTOOLCHAIN=go1.25.0`).
       Raw outputs are in `docs/baseline/` (gitignored).
-- [x] Golden regression test `cmd/server/baseline_golden_test.go` with
+- [x] **(later: deleted in Phase 8 with the legacy code.)** Golden regression test
+      `cmd/server/baseline_golden_test.go` with
       `cmd/server/testdata/golden/quest01_core.json`. Covers board walls, region map,
       doors, blocked tiles, furniture, and line-of-sight grids (hero start, plus six
       corridor vantage points with every door open). Regenerate only on purpose:
       `go test ./cmd/server -run TestBaselineGolden -update`.
 - [x] `cmd/server/main_test.go` TestMain skips the package when `content/` is absent,
-      so a fresh clone does not panic.
-- [ ] Synthetic `testdata/` content fixture: deferred to Phase 5/6, where the surviving
-      `internal/content` loaders and the importer are written test-first. The
-      `cmd/server` tests are multiplayer code that Phase 8 deletes.
+      so a fresh clone does not panic. **(later: replaced in Phase 8 by routing tests.)**
+- [x] Content-independent tests. This was done differently from planned: the new
+      packages use in-code synthetic fixtures (`fstest.MapFS` in `internal/content`,
+      synthetic legacy defs in `internal/maps` and `internal/seed`). Tests that
+      read the real `content/` skip when it is absent.
 
 ### Baseline results (Go 1.25.0, before any upgrade)
 
@@ -64,7 +127,7 @@ TestInstantActions_Trading_RequiresAdjacency  TestTurnTransition_CompleteGameCyc
 TestInstantActions_PassTurn_EndsTurn
 ```
 
-### Browser smoke checklist (run via the Claude built-in browser)
+### Browser smoke checklist (legacy app; historical, the lobby no longer exists)
 
 Setup: `.claude/launch.json` config `dce-binary` runs `./build/dungeon-campaign-engine`.
 - Use `localhost:8080` for the GM and `127.0.0.1:8080` for the hero. The `playerID`
@@ -127,13 +190,16 @@ same 19, no new failures.
       (compared order-insensitively, since Go map order is random).
 - [x] 2d dev tools pinned in the Makefile: air v1.67.4, gotestsum v1.13.0, goose
       v3.28.0, golangci-lint v2.14.0 (the `/v2` module path). Added `.golangci.yml`
-      (`version: "2"`) that excludes `cmd/server/` until Phase 8; `internal/` and all
+      (`version: "2"`) that excludes `cmd/server/` until Phase 8 **(later: exclusion
+      removed in Phase 8; the config is now just `version: "2"`)**; `internal/` and all
       new code are linted. Result: 0 issues. The v2 defaults found 8 issues, all in
       doomed `cmd/server` files; the 4 DEFERRED_BUGS warnings are also there.
 - [x] Renamed `internal/geometry/adjacent_text.go` to `adjacent_test.go`. The test had
       never run, and it now surfaces a real bug: `BuildRegionMap` uses a right/bottom
       edge convention while `RegionsAcrossDoor` and the production board loader use
-      left/top. It is skipped with an explanation and gets fixed in Phase 6.
+      left/top. It is skipped with an explanation and gets fixed in Phase 6
+      **(later: fixed in Phase 6a, and the package moved to `internal/legacy` in
+      Phase 8)**.
       `BuildRegionMap`, `DevSegment` and `CorridorsAndRooms*` are not used by
       production code.
 
@@ -149,7 +215,9 @@ same 19, no new failures.
       `no-useless-assignment` rule). The home-made JS test framework and its 16
       geometry tests were deleted. `bun test --pass-with-no-tests` passes until
       Phase 4 adds tests.
-- [x] 3c Tailwind v3.4.17 -> v4.3.3 via `@tailwindcss/cli` (no PostCSS/autoprefixer).
+- [x] 3c Tailwind v3.4.17 -> v4.3.3 via `@tailwindcss/cli`, with no PostCSS/autoprefixer
+      (a12d824). **(later: in Phase 8 the legacy JS and `@source` globs were removed;
+      Tailwind scans `internal/web/views/**/*.templ` and `internal/web/src/**/*.ts`.)**
   - Ran the official `@tailwindcss/upgrade` through npx; bunx could not load its
     native engine. It renamed classes in templ and JS: `rounded`->`rounded-sm`,
     `backdrop-blur-sm`->`backdrop-blur-xs`, `outline-none`->`outline-hidden`,
@@ -182,7 +250,7 @@ same 19, no new failures.
       they are now transparent instead of the browser's gray;
     - the canvas board renders the same.
 
-## Phase 4 - Fresh TS client foundation (test-first) [DONE 2026-09-27]
+## Phase 4 - Fresh TS client foundation (test-first) [DONE 2026-09-27, a816967]
 
 - [x] Tooling: TypeScript 6.0.3 (pinned; typescript-eslint 8.70 needs <6.1), typescript-eslint
       with `strictTypeChecked` + `stylisticTypeChecked`, `@types/bun`. `tsconfig.json` is
@@ -205,15 +273,15 @@ same 19, no new failures.
   - `src/board/renderer.ts` (canvas, checked visually): draws a `BoardView` passed in,
     with no global state, so the editor, tracker and future TV view share it.
 - [x] New `components.Page(title, entry)` templ shell for TS-driven pages.
-- [x] Throwaway `/dev/board` + `/dev/board.json` (`cmd/server/dev_board.go`, deleted in
-      Phase 8). It renders board.json + quest-01 through the new renderer. Verified:
+- [x] Throwaway `/dev/board` + `/dev/board.json` (`cmd/server/dev_board.go`) **(later:
+      deleted in Phase 8)**. It renders board.json + quest-01 through the new renderer. Verified:
       rooms, walls, doors, rotated furniture, monsters and blocked squares all in the
       right places; hover hit-testing reports `door-1` as `edge horizontal (3,18)` and
       tile (2,16) as region 20 (the starting room).
 - [x] Documented the test-first convention and new commands in `CLAUDE.md` and
       `docs/IMPORTANT.md`.
 
-## Phase 5 - Postgres persistence [DONE 2026-09-27]
+## Phase 5 - Postgres persistence [DONE 2026-09-27, c5c8a33]
 
 - [x] `docker-compose.yml`: postgres:16 -> **18.6** on a **new** volume `pgdata18`, mounted at
       `/var/lib/postgresql` as the 18 image expects. The old Postgres 16 volume
@@ -230,12 +298,13 @@ same 19, no new failures.
       Malformed ids return ErrNotFound; deleting a board still used by a quest returns
       ErrInUse. The ON DELETE RESTRICT violation is SQLSTATE 23001, not 23503.
 - [x] `internal/store/storetest`: each DB test gets a throwaway migrated schema in the dev
-      database. `make test-db` runs `./internal/...` with the DB. Tests skip without a URL.
+      database. `make test-db` runs the tests with the DB **(later: all packages, via
+      `$(GO_PACKAGES)`)**. Tests skip without a URL.
 - [x] Importer: `internal/seed.ImportLegacy` (idempotent, DB-tested) plus
       `cmd/import-content` / `make import-content [QUEST=...]`. The base board and
       "The Trial" are imported into the dev database.
 
-## Phase 6 - Map creator
+## Phase 6 - Map creator [DONE 2026-09-27, 6a 3eede05, 6b 6fec549]
 - [x] 6a documents (Go, test-first) in `internal/maps`:
   - `Board`: version, width, height (1..200), row-major regions (-1 void, 0 corridor,
     >0 room) and rooms. Walls are derived with the same rule as the TS client.
@@ -305,7 +374,7 @@ same 19, no new failures.
   - Deferred polish: JSON export/import download, tracing image, friendlier issue
     wording (names instead of ids), monster stat overrides in the selection panel.
 
-## Phase 7 - Companion tracker [MVP DONE 2026-09-27]
+## Phase 7 - Companion tracker [MVP DONE 2026-09-27, 2fb7d7d]
 
 - [x] 7a `internal/tracker` (Go, test-first):
   - `State` holds frozen board + quest copies, round, heroes (position/placed,
@@ -363,7 +432,7 @@ same 19, no new failures.
   with both 20rem panels), drag-to-move, line-of-sight reveal suggestions, event
   log filters, monster stat panel, player TV view.
 
-## Phase 8 - Remove multiplayer, docs cleanup [DONE 2026-09-27]
+## Phase 8 - Remove multiplayer, docs cleanup [DONE 2026-09-27, 5c17cbe]
 
 - [x] Deleted the legacy multiplayer server:
   - `cmd/server` except the new `main.go` + `app_mount.go`: lobby, turn/election
@@ -388,6 +457,7 @@ same 19, no new failures.
       sources.
 - [x] `make test` has zero failures (the 19 legacy failures went with the legacy
       code). `make test-db` covers all packages.
+- [x] `.claude/launch.json` was trimmed to the single `dce-binary` config.
 - [x] Docs:
   - `CLAUDE.md` and `README.md` are rewritten for the companion app.
   - New `docs/ROADMAP.md`, with the still-relevant ideas from the old roadmap
