@@ -59,7 +59,7 @@ Commits (oldest first):
 | 72fea7e | trap removal, movable boulder, triggers, reveal with monsters, pick squares |
 | a5205c9 | dice expressions, custom hero classes (`/classes`), Three Plagues campaign docs |
 | bc106db | hero inventory (gold, items), ability use, mana and cooldowns in the tracker |
-| (next commit) | Three Plagues story bible and read-aloud script |
+| bd2fe57 | Three Plagues story bible and read-aloud script |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
