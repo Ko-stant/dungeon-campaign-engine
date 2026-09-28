@@ -15,7 +15,8 @@ import { clickCommand, paintPending, revealSquaresCommand, type ClickTarget, typ
 import type { Command, CommandResponse, Hero, LiveTrapState, Monster, SessionEvent, SessionState } from '../tracker/types.ts';
 import { trackerView } from '../tracker/view.ts';
 import { lineTiles } from '../editor/tools.ts';
-import { h, replaceChildren } from '../ui/dom.ts';
+import { h, preserveFocus, replaceChildren } from '../ui/dom.ts';
+import { abilitySection, inventorySection, type SectionContext } from '../ui/heroSections.ts';
 
 const TRAP_STATES: readonly LiveTrapState[] = ['hidden', 'revealed', 'triggered', 'disarmed', 'removed'];
 const btn = 'rounded-md border border-border/60 px-2 py-1 text-sm hover:border-amber-500 disabled:opacity-40';
@@ -61,6 +62,8 @@ async function main(): Promise<void> {
   let busy = false;
   let message = '';
   let live = false;
+  // Hero card sections the GM has collapsed ("hero-1:inventory").
+  const closedSections = new Set<string>();
 
   // --- Layout ---
   const canvas = h('canvas', { class: 'block h-full w-full' });
@@ -397,6 +400,22 @@ async function main(): Promise<void> {
       h('button', { type: 'button', class: smallBtn, 'aria-label': `Increase ${label}`, onclick: () => { onChange(value + 1); } }, '+'));
   }
 
+  const sections: SectionContext = {
+    send: (c) => { void send(c); },
+    warn: (text) => {
+      message = text;
+      refresh();
+    },
+    isOpen: (key) => !closedSections.has(key),
+    setOpen: (key, open) => {
+      if (open) {
+        closedSections.delete(key);
+      } else {
+        closedSections.add(key);
+      }
+    },
+  };
+
   function renderHeroes(): void {
     const cards = state.heroes.map((hero) => {
       const cls = catalog.heroes.find((c) => c.id === hero.class)?.name ?? hero.class;
@@ -415,12 +434,12 @@ async function main(): Promise<void> {
           h('span', { class: 'text-xs opacity-60' }, hero.placed ? `(${hero.x}, ${hero.y})` : 'not on board')),
         statControl('Body', hero.body, hero.maxBody, (v) => { heroCmd(hero, { body: v }); }),
         statControl('Mind', hero.mind, hero.maxMind, (v) => { heroCmd(hero, { mind: v }); }),
-        h('div', { class: 'flex items-center gap-2 text-sm' },
-          h('label', { class: 'flex items-center gap-1' }, h('span', { class: 'opacity-70' }, 'Gold'),
-            h('input', { type: 'number', min: 0, class: `${field} w-20`, value: hero.gold, onchange: (e: Event) => { heroCmd(hero, { gold: Number((e.target as HTMLInputElement).value) }); } })),
-          h('select', { class: field, 'aria-label': `${hero.name} status`, onchange: (e: Event) => { heroCmd(hero, { status: (e.target as HTMLSelectElement).value }); } },
-            ...(['active', 'dead', 'escaped'] as const).map((s) => h('option', { value: s, selected: hero.status === s }, s)))),
-        h('textarea', { class: `${field} h-14 w-full`, placeholder: 'Equipment', onchange: (e: Event) => { heroCmd(hero, { equipment: (e.target as HTMLTextAreaElement).value }); } }, hero.equipment ?? ''),
+        (hero.maxMana ?? 0) > 0 ? statControl('Mana', hero.mana ?? 0, hero.maxMana ?? 0, (v) => { heroCmd(hero, { mana: v }); }) : null,
+        h('select', { class: field, 'aria-label': `${hero.name} status`, onchange: (e: Event) => { heroCmd(hero, { status: (e.target as HTMLSelectElement).value }); } },
+          ...(['active', 'dead', 'escaped'] as const).map((s) => h('option', { value: s, selected: hero.status === s }, s))),
+        abilitySection(hero, state.round, sections),
+        inventorySection(hero, state.heroes, sections),
+        hero.equipment ? h('textarea', { class: `${field} h-14 w-full`, placeholder: 'Equipment', title: 'Equipment notes (items are tracked in the inventory)', onchange: (e: Event) => { heroCmd(hero, { equipment: (e.target as HTMLTextAreaElement).value }); } }, hero.equipment) : null,
         h('textarea', { class: `${field} h-14 w-full`, placeholder: 'Notes', onchange: (e: Event) => { heroCmd(hero, { notes: (e.target as HTMLTextAreaElement).value }); } }, hero.notes ?? ''),
         selected ? h('p', { class: 'text-xs text-amber-400' }, hero.placed ? 'Click a square to move this hero.' : 'Click a square to place this hero.') : null,
       );
@@ -583,10 +602,12 @@ async function main(): Promise<void> {
   }
 
   function refresh(): void {
+    const restoreFocus = preserveFocus(document.body);
     renderHeader();
     renderModeBar();
     renderHeroes();
     renderRight();
+    restoreFocus();
     requestDraw();
   }
 

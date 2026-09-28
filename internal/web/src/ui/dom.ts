@@ -41,3 +41,47 @@ export function replaceChildren(parent: Element, ...children: Child[]): void {
   parent.replaceChildren();
   append(parent, children);
 }
+
+/**
+ * Remembers the focused text field under root (by aria-label or placeholder)
+ * and returns a function that puts its value, caret and focus back on the
+ * matching field after the panels are rebuilt, so a live update never wipes
+ * what the GM is typing.
+ */
+export function preserveFocus(root: Element): () => void {
+  const el = document.activeElement;
+  if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) || !root.contains(el)) {
+    return () => undefined;
+  }
+  const key = (e: Element): string | null => e.getAttribute('aria-label') ?? e.getAttribute('placeholder');
+  const label = key(el);
+  const { value, selectionStart, selectionEnd } = el;
+  return () => {
+    if (!label || el.isConnected) {
+      return;
+    }
+    const next = [...root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea')].find((e) => key(e) === label);
+    if (!next) {
+      return;
+    }
+    const rendered = next.value;
+    next.value = value;
+    next.focus();
+    if (value !== rendered) {
+      // A programmatic value never fires "change" on blur; fire it once so a
+      // restored edit is still saved, unless the browser already did.
+      let changed = false;
+      next.addEventListener('change', () => { changed = true; }, { once: true });
+      next.addEventListener('blur', () => {
+        if (!changed && next.value !== rendered) {
+          next.dispatchEvent(new Event('change'));
+        }
+      }, { once: true });
+    }
+    try {
+      next.setSelectionRange(selectionStart, selectionEnd);
+    } catch {
+      // number inputs have no caret position
+    }
+  };
+}

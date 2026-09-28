@@ -53,6 +53,11 @@ Tailwind CSS v4, canvas rendering.
     class exclusives and abilities (cooldown in rounds and/or mana cost). Merged into the
     catalog's `heroes` as `custom-<uuid>` by `catalogFor` too; look classes up there.
   - Tracker: `/campaigns`, `/campaigns/{id}`, `/play/{id}`, `/api/campaigns...`, `/api/sessions/{id}/(commands|travel|events|complete|reopen|stream)`
+  - Inventory: campaign heroes carry gold and `items` (name, quantity, notes) between quests;
+    `/campaigns/{id}/heroes/{heroId}/(gold|items...)` forms, `item.*` tracker commands.
+    Shared pure helpers in `internal/tracker/inventory.go`.
+  - Abilities in play: session heroes copy mana and abilities from their class;
+    `ability.use` / `ability.reset` track cooldowns (`cooldowns`: ability id -> ready round).
   - Campaign chapters (table `campaign_chapter`): ordered quests, each on its own board;
     `/campaigns/{id}/chapters...` and `/campaigns/{id}/maps` forms, `GET /api/campaigns/{id}/chapters`.
   - Multi-map sessions: the `State` top-level fields are the active map; `OtherMaps` keeps maps

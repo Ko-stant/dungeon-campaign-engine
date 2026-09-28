@@ -40,6 +40,8 @@ type CampaignHero struct {
 	Gold      int    `json:"gold"`
 	Equipment string `json:"equipment,omitempty"`
 	Notes     string `json:"notes,omitempty"`
+	// Items is the hero's inventory, carried between quests.
+	Items []Item `json:"items,omitempty"`
 }
 
 // Hero is a hero during a session.
@@ -59,6 +61,15 @@ type Hero struct {
 	Equipment string `json:"equipment,omitempty"`
 	Notes     string `json:"notes,omitempty"`
 	Status    string `json:"status"`
+	Items     []Item `json:"items"`
+	// Mana and abilities come from the hero's class when the session starts;
+	// the session keeps its own copy so later class edits never change a game.
+	Mana      int               `json:"mana,omitempty"`
+	MaxMana   int               `json:"maxMana,omitempty"`
+	Abilities []content.Ability `json:"abilities,omitempty"`
+	// Cooldowns maps an ability id to the round it is ready again, for
+	// abilities still cooling down.
+	Cooldowns map[string]int `json:"cooldowns,omitempty"`
 }
 
 // Monster is a monster during a session.
@@ -154,6 +165,10 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 			ID: ch.ID, Name: ch.Name, Player: ch.Player, Class: ch.Class,
 			Body: class.Body, MaxBody: class.Body, Mind: class.Mind, MaxMind: class.Mind,
 			Gold: ch.Gold, Equipment: ch.Equipment, Notes: ch.Notes, Status: HeroActive,
+			Items: slices.Clone(ch.Items), Mana: class.Mana, MaxMana: class.Mana, Abilities: slices.Clone(class.Abilities),
+		}
+		if h.Items == nil {
+			h.Items = []Item{}
 		}
 		if i < len(quest.StartTiles) {
 			h.X, h.Y, h.Placed = quest.StartTiles[i].X, quest.StartTiles[i].Y, true
@@ -233,7 +248,7 @@ func sortedKeys(m map[int]bool) []int {
 }
 
 // CarryOver returns the campaign's heroes updated with what they carry out of
-// this session: gold, equipment and notes. Heroes not in the session are
+// this session: gold, items, equipment and notes. Heroes not in the session are
 // returned unchanged. Body and mind are not carried; heroes heal between quests.
 func (s *State) CarryOver(campaign []CampaignHero) []CampaignHero {
 	out := slices.Clone(campaign)
@@ -243,6 +258,7 @@ func (s *State) CarryOver(campaign []CampaignHero) []CampaignHero {
 				out[i].Gold = h.Gold
 				out[i].Equipment = h.Equipment
 				out[i].Notes = h.Notes
+				out[i].Items = slices.Clone(h.Items)
 			}
 		}
 	}

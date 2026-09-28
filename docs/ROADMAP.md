@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last Updated**: 2026-09-28 19:02 EDT
+**Last Updated**: 2026-09-28 19:24 EDT
 
 The engine is a single-GM companion for in-person HeroQuest: build maps, run a
 quest at the table, and keep a resumable record of what happened. It never
@@ -38,6 +38,8 @@ enforces rules; the GM decides, and the app remembers.
 - Custom hero classes (`/classes`): dice stats, accuracy, mana, class exclusives and
   abilities with cooldowns and mana costs. Next steps for the "Three Plagues" campaign are
   tracked in `NARRATIVE_AND_CLASSES_TODO.md`.
+- Hero inventory (gold and items) on the campaign page and in the tracker; ability use,
+  mana and cooldowns in the tracker.
 
 ## Next
 ### Table polish

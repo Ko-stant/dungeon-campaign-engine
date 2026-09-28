@@ -1,7 +1,7 @@
 /** Session state and API shapes, mirroring internal/tracker and internal/app (Go). */
 import type { TileCoord } from '../board/geometry.ts';
 import type { DoorState, TrapState } from '../board/model.ts';
-import type { BoardDoc, QuestDoc } from '../maps/types.ts';
+import type { Ability, BoardDoc, QuestDoc } from '../maps/types.ts';
 
 export type HeroStatus = 'active' | 'dead' | 'escaped';
 export type Visibility = 'hidden' | 'seen';
@@ -22,6 +22,22 @@ export interface Hero {
   equipment?: string;
   notes?: string;
   status: HeroStatus;
+  /** Inventory; null or missing on sessions started before items existed. */
+  items?: Item[] | null;
+  /** Mana and abilities copied from the hero's class when the session started. */
+  mana?: number;
+  maxMana?: number;
+  abilities?: Ability[] | null;
+  /** Ability id -> round it is ready again, for abilities still cooling down. */
+  cooldowns?: Record<string, number> | null;
+}
+
+/** Something a hero carries; nothing is equipped and there are no limits. */
+export interface Item {
+  id: string;
+  name: string;
+  quantity: number;
+  notes?: string;
 }
 
 export interface Monster {

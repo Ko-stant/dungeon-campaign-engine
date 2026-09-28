@@ -79,8 +79,8 @@ func TestNewSessionSetsUpFromQuest(t *testing.T) {
 	}
 
 	wantHeroes := []Hero{
-		{ID: "hero-1", Name: "Grom", Player: "Sam", Class: "barbarian", X: 1, Y: 4, Placed: true, Body: 8, MaxBody: 8, Mind: 2, MaxMind: 2, Gold: 30, Equipment: "Broadsword", Status: HeroActive},
-		{ID: "hero-2", Name: "Ilsa", Player: "Jo", Class: "wizard", X: 2, Y: 4, Placed: true, Body: 4, MaxBody: 4, Mind: 6, MaxMind: 6, Status: HeroActive},
+		{ID: "hero-1", Name: "Grom", Player: "Sam", Class: "barbarian", X: 1, Y: 4, Placed: true, Body: 8, MaxBody: 8, Mind: 2, MaxMind: 2, Gold: 30, Equipment: "Broadsword", Status: HeroActive, Items: []Item{}},
+		{ID: "hero-2", Name: "Ilsa", Player: "Jo", Class: "wizard", X: 2, Y: 4, Placed: true, Body: 4, MaxBody: 4, Mind: 6, MaxMind: 6, Status: HeroActive, Items: []Item{}},
 	}
 	if !reflect.DeepEqual(s.Heroes, wantHeroes) {
 		t.Fatalf("heroes:\n got  %+v\n want %+v", s.Heroes, wantHeroes)

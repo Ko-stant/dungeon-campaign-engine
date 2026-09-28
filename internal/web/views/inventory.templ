@@ -1,0 +1,88 @@
+package views
+
+import (
+	"fmt"
+	"strconv"
+)
+
+// ItemRow is one item a campaign hero carries.
+type ItemRow struct {
+	ID       string
+	Name     string
+	Quantity int
+	Notes    string
+}
+
+// InQuest reports whether a quest is running for the campaign: its session
+// holds the heroes' inventory until it is completed.
+func (d CampaignPageData) InQuest() bool {
+	for _, s := range d.Sessions {
+		if s.Status == "active" {
+			return true
+		}
+	}
+	return false
+}
+
+// inlineInputClass is smallInputClass without w-full, for inputs sized in a row.
+const inlineInputClass = "rounded-md border border-border/60 bg-surface px-2 py-1"
+
+func heroURL(d CampaignPageData, h HeroRow, rest string) templ.SafeURL {
+	return templ.SafeURL("/campaigns/" + d.ID + "/heroes/" + h.ID + rest)
+}
+
+// campaignInventory is each hero's gold and items between quests.
+templ campaignInventory(d CampaignPageData) {
+	<section id="inventory" class={ cardClass + " space-y-4" }>
+		<div>
+			<h2 class="text-lg font-semibold">Inventory</h2>
+			<p class="text-xs opacity-60">Gold and items each hero carries. No limits and nothing to equip; the items do what you say they do.</p>
+		</div>
+		if d.InQuest() {
+			<p class="rounded-md border border-warning/60 bg-warning/10 px-3 py-2 text-sm">
+				The heroes are in a quest. Change their gold and items in the tracker; changes made here are replaced by the quest's inventory when it is completed.
+			</p>
+		}
+		for _, h := range d.Heroes {
+			<div class="space-y-3 rounded-lg border border-border/60 p-4">
+				<div class="flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<span class="font-semibold">{ h.Name }</span>
+						<span class="ml-1 text-xs opacity-60">{ h.Class }</span>
+					</div>
+					<form method="post" action={ heroURL(d, h, "/gold") } class="flex items-center gap-2 text-sm">
+						<span class="opacity-70">Gold</span>
+						<span class="font-mono font-semibold text-amber-400">{ strconv.Itoa(h.Gold) }</span>
+						<input name="gold" required maxlength="12" placeholder="+25, -10 or 40" aria-label={ "Change " + h.Name + "'s gold" } class={ inlineInputClass + " w-32" }/>
+						<button type="submit" class={ linkButton }>Update</button>
+					</form>
+				</div>
+				if len(h.Items) == 0 {
+					<p class="text-sm opacity-60">No items.</p>
+				}
+				for _, it := range h.Items {
+					<div class="flex flex-wrap items-center gap-2 text-sm">
+						<form method="post" action={ heroURL(d, h, "/items/"+it.ID) } class="flex flex-1 flex-wrap items-center gap-2">
+							<input name="name" required maxlength="120" value={ it.Name } aria-label="Item name" class={ inlineInputClass + " w-48 flex-none font-semibold" }/>
+							<input name="quantity" type="number" min="1" max="9999" required value={ strconv.Itoa(it.Quantity) } aria-label={ it.Name + " quantity" } class={ inlineInputClass + " w-20 flex-none" }/>
+							<input name="notes" maxlength="500" value={ it.Notes } placeholder="Notes" aria-label={ it.Name + " notes" } class={ inlineInputClass + " min-w-40 flex-1" }/>
+							<button type="submit" class={ linkButton }>Save</button>
+						</form>
+						<form method="post" action={ heroURL(d, h, "/items/"+it.ID+"/delete") }>
+							<button type="submit" class="text-xs text-danger hover:underline" aria-label={ fmt.Sprintf("Remove %s from %s", it.Name, h.Name) }>Remove</button>
+						</form>
+					</div>
+				}
+				<form method="post" action={ heroURL(d, h, "/items") } class="flex flex-wrap items-center gap-2 border-t border-border/40 pt-3 text-sm">
+					<input name="name" required maxlength="120" placeholder="Add an item, e.g. Healing Potion" aria-label={ "New item for " + h.Name } class={ inlineInputClass + " w-64 flex-none" }/>
+					<input name="quantity" type="number" min="1" max="9999" value="1" aria-label="Quantity" class={ inlineInputClass + " w-20 flex-none" }/>
+					<input name="notes" maxlength="500" placeholder="Notes" aria-label="Notes" class={ inlineInputClass + " min-w-40 flex-1" }/>
+					<button type="submit" class={ linkButton }>Add</button>
+				</form>
+			</div>
+		}
+		if len(d.Heroes) == 0 {
+			<p class="text-sm opacity-70">Add heroes to track their gold and items.</p>
+		}
+	</section>
+}

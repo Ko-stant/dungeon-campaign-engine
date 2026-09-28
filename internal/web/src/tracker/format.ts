@@ -14,6 +14,8 @@ const CATEGORIES: Record<string, string> = {
   door: 'door',
   trap: 'trap',
   hero: 'hero',
+  ability: 'hero',
+  item: 'hero',
   monster: 'monster',
   area: 'reveal',
   tiles: 'reveal',

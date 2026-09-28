@@ -33,6 +33,7 @@ type HeroRow struct {
 	Gold      int
 	Equipment string
 	Notes     string
+	Items     []ItemRow
 }
 
 // QuestOption is a quest to start, labelled with its board.
@@ -208,6 +209,7 @@ templ CampaignPage(d CampaignPageData) {
 					<button type="submit" class={ buttonClass }>Add hero</button>
 				</form>
 			</section>
+			@campaignInventory(d)
 			<section class={ cardClass }>
 				<h2 class="mb-1 text-lg font-semibold">Chapters</h2>
 				<p class="mb-4 text-xs opacity-60">The campaign's quests in play order. Each chapter is a quest on its own map.</p>

@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-09-28 18:37 EDT
+**Last Updated**: 2026-09-28 19:24 EDT
 **Branch**: `dce-table-only`
 
 Goal: run the "Three Plagues" campaign from the app. Story text:
@@ -45,24 +45,44 @@ How: `internal/store/hero_classes.go`, `internal/app/classes.go`,
 `internal/app/classes_test.go` (form validation, ids across edits, campaign + session use,
 delete protection).
 
-## 3. Special items
-- [ ] Custom item library: name, text, class it suits (advice only), optional counter
-      ("every 3rd shot") and stat reminders (+1 Accuracy).
-- [ ] Assign items to campaign heroes; carried between quests.
+## 3. Inventory and special items
+- [x] Hero inventory (done 2026-09-28): gold plus items (name, quantity, notes). No size
+      limit, nothing equipped; the GM decides what items do. Carried between quests.
+- [x] Campaign page "Inventory" section: gold (`+25`, `-10` or `40`), add / edit / remove
+      items. Warns that a running quest's inventory replaces these edits when completed.
+- [x] Tracker: gold box, item +/-, remove, give one to another hero, add item. Commands
+      `item.add` (merges by name), `item.update`, `item.remove`, `item.give`; gold via
+      `hero.update`.
+- [ ] Special item library (optional): reusable item definitions with text and counters
+      ("every 3rd shot"). Starting gear and the secret vendor stay in the GM's hands.
+
+How: pure `tracker.AddItem/RemoveItem/UpdateItem/NormalizeItems/GoldChange`
+(`internal/tracker/inventory.go`, shared by the tracker commands and the campaign forms in
+`internal/app/inventory.go`), view `internal/web/views/inventory.templ`, TS
+`goldChange` in `src/tracker/abilities.ts`, hero card sections in `src/ui/heroSections.ts`.
+Tests: `internal/tracker/inventory_test.go`, `internal/app/inventory_test.go`,
+`src/tracker/abilities.test.ts`.
 
 ## 4. Tracker: abilities, mana, effects
-- [ ] Hero state: mana / max mana; per-ability `readyRound`; item counters.
-- [ ] Commands (one event each, readable summaries):
-  - `ability.use` - spends mana, starts the cooldown (ready round = current round +
-    cooldown; "Ranger used Multi-Shot, ready in round 7"). The panel shows cycles left
-    (ready round - current round).
-  - `ability.reset` - ends one or all cooldowns of a hero (Divine Blessing, GM fix).
-  - `mana.set` / `mana.adjust`; `counter.adjust`.
-  - `effect.add` / `effect.remove` on a hero or monster, with an optional end round
-    (Holy Blessing, Turn Evil, Vanished, Raging, Aimed Shot slowed, cannot defend).
-- [ ] `round.advance` lists effects that just ended and abilities that became ready.
-- [ ] Hero panel: ability buttons with ready / cooldown / mana state; passives as reminders.
-- [ ] Monster panel and board: effect badges.
+- [x] Hero state (done 2026-09-28): mana / max mana and abilities copied from the class at
+      session start; `cooldowns` maps ability id -> ready round (ready round = round used +
+      cooldown; the card shows rounds left).
+- [x] `ability.use`: spends mana (stops at 0), starts the cooldown; using it early or short
+      of mana is recorded with a note, never refused. Spells say "cast".
+- [x] `ability.reset`: one ability or all (Divine Blessing, GM fix).
+- [x] Mana via `hero.update` (`mana`, `maxMana`).
+- [x] `round.advance` / `round.set` name abilities that became ready.
+- [x] Hero card: Mana control, collapsible Abilities (ready / rounds left, Use / Cast,
+      Ready, Make all ready; passives as reminders) and Inventory sections.
+- [x] Live updates no longer wipe what the GM is typing (`preserveFocus` in `ui/dom.ts`).
+- [ ] Effects: `effect.add` / `effect.remove` on a hero or monster, with an optional end
+      round (Holy Blessing, Turn Evil, Vanished, Raging, Aimed Shot slowed, cannot defend);
+      `round.advance` lists effects that ended; monster panel and board badges.
+- [ ] Item counters (Aggamand's Quiver "every 3rd shot").
+
+How: `internal/tracker/abilities.go` (+ `abilities_test.go`); TS `abilityRows`,
+`abilityLimit` in `src/tracker/abilities.ts`. Sessions started before this have no
+abilities or mana on their heroes; start a new session to get them.
 
 ## 5. Stronger monsters
 - [ ] Custom monsters: dice expressions for attack and defense, accuracy, larger Body.

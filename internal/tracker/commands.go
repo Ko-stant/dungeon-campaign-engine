@@ -69,10 +69,21 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 	case "note.consume":
 		summary, err = a.noteConsume(c.Payload)
 	case "round.advance":
-		next.Round++
-		summary = fmt.Sprintf("Round %d begins", next.Round)
+		summary = a.roundAdvance()
 	case "round.set":
 		summary, err = a.roundSet(c.Payload)
+	case "ability.use":
+		summary, err = a.abilityUse(c.Payload)
+	case "ability.reset":
+		summary, err = a.abilityReset(c.Payload)
+	case "item.add":
+		summary, err = a.itemAdd(c.Payload)
+	case "item.update":
+		summary, err = a.itemUpdate(c.Payload)
+	case "item.remove":
+		summary, err = a.itemRemove(c.Payload)
+	case "item.give":
+		summary, err = a.itemGive(c.Payload)
 	case "log.note":
 		summary, err = a.logNote(c.Payload)
 	default:
@@ -252,6 +263,8 @@ func (a *applier) heroUpdate(payload json.RawMessage) (string, error) {
 		MaxBody   *int    `json:"maxBody"`
 		Mind      *int    `json:"mind"`
 		MaxMind   *int    `json:"maxMind"`
+		Mana      *int    `json:"mana"`
+		MaxMana   *int    `json:"maxMana"`
 		Gold      *int    `json:"gold"`
 		Equipment *string `json:"equipment"`
 		Notes     *string `json:"notes"`
@@ -264,7 +277,7 @@ func (a *applier) heroUpdate(payload json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for name, v := range map[string]*int{"body": p.Body, "maxBody": p.MaxBody, "mind": p.Mind, "maxMind": p.MaxMind, "gold": p.Gold} {
+	for name, v := range map[string]*int{"body": p.Body, "maxBody": p.MaxBody, "mind": p.Mind, "maxMind": p.MaxMind, "mana": p.Mana, "maxMana": p.MaxMana, "gold": p.Gold} {
 		if err := nonNegative(name, v); err != nil {
 			return "", err
 		}
@@ -284,6 +297,8 @@ func (a *applier) heroUpdate(payload json.RawMessage) (string, error) {
 	setInt("max body", &h.MaxBody, p.MaxBody)
 	setInt("mind", &h.Mind, p.Mind)
 	setInt("max mind", &h.MaxMind, p.MaxMind)
+	setInt("mana", &h.Mana, p.Mana)
+	setInt("max mana", &h.MaxMana, p.MaxMana)
 	setInt("gold", &h.Gold, p.Gold)
 	if p.Equipment != nil && *p.Equipment != h.Equipment {
 		h.Equipment = *p.Equipment
@@ -677,7 +692,11 @@ func (a *applier) roundSet(payload json.RawMessage) (string, error) {
 		return "", errors.New("round must be at least 1")
 	}
 	a.s.Round = p.Round
-	return fmt.Sprintf("Round set to %d", p.Round), nil
+	summary := fmt.Sprintf("Round set to %d", p.Round)
+	if ready := a.readyAgain(); len(ready) > 0 {
+		summary += "; ready again: " + strings.Join(ready, ", ")
+	}
+	return summary, nil
 }
 
 func (a *applier) logNote(payload json.RawMessage) (string, error) {

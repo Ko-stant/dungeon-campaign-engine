@@ -104,7 +104,11 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 		if def, ok := cat.Hero(h.Class); ok {
 			class = def.Name
 		}
-		d.Heroes = append(d.Heroes, views.HeroRow{ID: h.ID, Name: h.Name, Player: h.Player, Class: class, Gold: h.Gold, Equipment: h.Equipment, Notes: h.Notes})
+		row := views.HeroRow{ID: h.ID, Name: h.Name, Player: h.Player, Class: class, Gold: h.Gold, Equipment: h.Equipment, Notes: h.Notes}
+		for _, it := range h.Items {
+			row.Items = append(row.Items, views.ItemRow{ID: it.ID, Name: it.Name, Quantity: it.Quantity, Notes: it.Notes})
+		}
+		d.Heroes = append(d.Heroes, row)
 	}
 	for _, def := range cat.Heroes {
 		d.Classes = append(d.Classes, views.ClassOption{ID: def.ID, Name: def.Name})

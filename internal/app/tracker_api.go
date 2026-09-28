@@ -182,6 +182,11 @@ func normalizeHeroes(cat *content.Catalog, heroes []tracker.CampaignHero) ([]tra
 		if h.Gold < 0 {
 			return nil, fmt.Errorf("hero %q: gold must not be negative", h.Name)
 		}
+		items, err := tracker.NormalizeItems(h.Items)
+		if err != nil {
+			return nil, fmt.Errorf("hero %q: %w", h.Name, err)
+		}
+		h.Items = items
 		if h.ID == "" || used[h.ID] {
 			highest++
 			h.ID = fmt.Sprintf("hero-%d", highest)
@@ -491,7 +496,7 @@ func (s *Server) completeSession(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	resp, err := s.record(r.Context(), id, state, store.NewEvent{Round: state.Round, Kind: "session.complete", Summary: "Quest completed; gold, equipment and notes saved to the campaign"})
+	resp, err := s.record(r.Context(), id, state, store.NewEvent{Round: state.Round, Kind: "session.complete", Summary: "Quest completed; gold, items, equipment and notes saved to the campaign"})
 	if err != nil {
 		writeStoreError(w, err)
 		return
