@@ -136,7 +136,7 @@ func TestQuestFromLegacy(t *testing.T) {
 	if err := q.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	if issues := q.Check(board, sizes); len(issues) != 0 {
+	if issues := q.Check(board, sizes, trapSizes); len(issues) != 0 {
 		t.Fatalf("converted quest has placement issues: %+v", issues)
 	}
 }

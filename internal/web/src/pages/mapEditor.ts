@@ -22,6 +22,7 @@ import {
   setNoteText,
   toBoardView,
   toggleDoorState,
+  trapKindOptions,
   updateDoor,
 } from '../editor/model.ts';
 import { applyClick, applyDrag, isDragTool, lineTiles, type ClickTarget, type EditorDoc, type Tool } from '../editor/tools.ts';
@@ -29,7 +30,6 @@ import { ApiError, createApi } from '../maps/api.ts';
 import { monsterOptionLabel, type Issue, type QuestSummary } from '../maps/types.ts';
 import { h, replaceChildren } from '../ui/dom.ts';
 
-const TRAP_KINDS = ['pit', 'spear', 'falling_block', 'chest', 'teleport', 'other'] as const;
 
 type Layer = 'board' | 'quest';
 type BoardBrush = 'corridor' | 'void' | 'room' | 'wall';
@@ -41,7 +41,7 @@ const QUEST_TOOLS: { kind: QuestToolKind; label: string; hint: string }[] = [
   { kind: 'blocked', label: 'Blocked squares', hint: 'Drag to cover impassable squares.' },
   { kind: 'furniture', label: 'Furniture', hint: 'Click the bottom-left square. R rotates the selection.' },
   { kind: 'monster', label: 'Monster', hint: 'Click a square to place.' },
-  { kind: 'trap', label: 'Trap', hint: 'Click a square to place (starts hidden).' },
+  { kind: 'trap', label: 'Trap', hint: 'Click the bottom-left square to place (starts hidden). R rotates the selection.' },
   { kind: 'note', label: 'Note', hint: 'Click a square, then type the note text.' },
   { kind: 'start', label: 'Start square', hint: 'Click to toggle a hero start square (green).' },
   { kind: 'exit', label: 'Exit square', hint: 'Click to toggle an exit square (magenta).' },
@@ -87,7 +87,9 @@ async function main(): Promise<void> {
   let furnitureType = catalog.furniture[0]?.id ?? '';
   let furnitureRotation: Rotation = 0;
   let monsterType = catalog.monsters[0]?.id ?? '';
-  let trapKind: string = TRAP_KINDS[0];
+  const trapKinds = trapKindOptions(catalog);
+  let trapKind: string = trapKinds[0]?.[0] ?? 'other';
+  let trapRotation: Rotation = 0;
   let doorKind: DoorKind = 'normal';
   let doorLocked = false;
   let blockHidesDoor = false;
@@ -201,7 +203,7 @@ async function main(): Promise<void> {
       case 'monster':
         return { kind: 'monster', type: monsterType };
       case 'trap':
-        return { kind: 'trap', trapKind };
+        return { kind: 'trap', trapKind, rotation: trapRotation };
       case 'door':
         return { kind: 'door', doorKind, locked: doorLocked };
       case 'blocked':
@@ -378,10 +380,13 @@ async function main(): Promise<void> {
 
   function rotateSelected(): void {
     const q = doc().quest;
-    if (q && selectedId && q.furniture.some((f) => f.id === selectedId)) {
+    if (q && selectedId && (q.furniture.some((f) => f.id === selectedId) || q.traps.some((t) => t.id === selectedId))) {
       commit({ ...doc(), quest: rotateItem(q, selectedId) });
     } else if (layer === 'quest' && questTool === 'furniture') {
       furnitureRotation = ((furnitureRotation + 90) % 360) as Rotation;
+      refresh();
+    } else if (layer === 'quest' && questTool === 'trap') {
+      trapRotation = ((trapRotation + 90) % 360) as Rotation;
       refresh();
     }
   }
@@ -649,7 +654,10 @@ async function main(): Promise<void> {
       } else if (questTool === 'monster') {
         options.push(select('Monster', catalog.monsters.map((m) => [m.id, monsterOptionLabel(m)]), monsterType, (v) => { monsterType = v; }));
       } else if (questTool === 'trap') {
-        options.push(select('Trap', TRAP_KINDS.map((k) => [k, k.replaceAll('_', ' ')]), trapKind, (v) => { trapKind = v; }));
+        options.push(
+          select('Trap', trapKinds, trapKind, (v) => { trapKind = v; }),
+          select('Rotation', [['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']], String(trapRotation), (v) => { trapRotation = Number(v) as Rotation; }),
+        );
       } else if (questTool === 'blocked') {
         options.push(checkbox('Hides a secret door', blockHidesDoor, (v) => { blockHidesDoor = v; refresh(); }));
       } else if (questTool === 'door') {
@@ -780,7 +788,11 @@ async function main(): Promise<void> {
         }
       }
     } else if (trap) {
-      rows.push(h('p', { class: 'text-sm' }, `${trap.kind.replaceAll('_', ' ')} trap at (${trap.x}, ${trap.y})`));
+      const def = catalog.traps.find((t) => t.id === trap.kind);
+      rows.push(h('p', { class: 'text-sm' }, `${def?.name ?? `${trap.kind.replaceAll('_', ' ')} trap`} at (${trap.x}, ${trap.y})${def ? `, ${def.width}×${def.height}, ${trap.rotation ?? 0}°` : ''}`));
+      if (def && (def.width > 1 || def.height > 1)) {
+        rows.push(h('button', { type: 'button', class: btn, onclick: rotateSelected }, 'Rotate (R)'));
+      }
     } else if (note && q) {
       rows.push(
         h('p', { class: 'text-sm' }, `Note ${note.label} at (${note.x}, ${note.y})`),

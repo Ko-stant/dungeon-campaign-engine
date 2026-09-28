@@ -8,6 +8,7 @@ const catalog: Catalog = {
   furniture: [{ id: 'chest', name: 'Chest', width: 1, height: 1, blocksMovement: true, blocksLineOfSight: false }],
   monsters: [{ id: 'orc', name: 'Orc', body: 1, mind: 2, attack: 3, defense: 2, movement: 8 }],
   heroes: [],
+  traps: [{ id: 'long_pit', name: 'Long Pit Trap', width: 1, height: 2 }],
 };
 
 function doc(withQuest = true): EditorDoc {
@@ -59,7 +60,7 @@ describe('applyClick (quest tools)', () => {
     const tools: Tool[] = [
       { kind: 'furniture', type: 'chest', rotation: 90 },
       { kind: 'monster', type: 'orc' },
-      { kind: 'trap', trapKind: 'pit' },
+      { kind: 'trap', trapKind: 'long_pit', rotation: 90 },
       { kind: 'note' },
       { kind: 'start' },
       { kind: 'exit' },
@@ -71,7 +72,7 @@ describe('applyClick (quest tools)', () => {
     }
     expect(d.quest?.furniture).toEqual([{ id: 'furniture-1', type: 'chest', x: 2, y: 1, rotation: 90 }]);
     expect(d.quest?.monsters).toHaveLength(1);
-    expect(d.quest?.traps).toHaveLength(1);
+    expect(d.quest?.traps).toEqual([{ id: 'trap-1', kind: 'long_pit', x: 2, y: 1, state: 'hidden', rotation: 90 }]);
     expect(d.quest?.notes[0]?.label).toBe('A');
     expect(d.quest?.startTiles).toEqual([{ x: 2, y: 1 }]);
     expect(d.quest?.exitTiles).toEqual([{ x: 2, y: 1 }]);

@@ -4,8 +4,8 @@
  * is just a stack of snapshots.
  */
 import { edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
-import { VOID, covers, withShape, onBoard as squareOnBoard, regionAt, tileIndex, type BlockedSquareView, type BoardView, type DoorKind, type FurnitureView, type PieceView } from '../board/model.ts';
-import { DOC_VERSION, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type RectDoc, type Room, type TeleportDoc } from '../maps/types.ts';
+import { VOID, covers, withShape, onBoard as squareOnBoard, regionAt, tileIndex, type BlockedSquareView, type BoardView, type DoorKind, type FurnitureView, type PieceView, type TrapState, type TrapView } from '../board/model.ts';
+import { DOC_VERSION, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type RectDoc, type Room, type TeleportDoc, type TrapDoc } from '../maps/types.ts';
 
 export const MAX_BOARD_SIZE = 200;
 
@@ -197,8 +197,47 @@ export function placeMonster(q: QuestDoc, type: string, at: TileCoord): QuestDoc
   return { ...q, monsters: [...q.monsters, { id: nextId(q, 'monster'), type, x: at.x, y: at.y }] };
 }
 
-export function placeTrap(q: QuestDoc, kind: string, at: TileCoord): QuestDoc {
-  return { ...q, traps: [...q.traps, { id: nextId(q, 'trap'), kind, x: at.x, y: at.y, state: 'hidden' }] };
+export function placeTrap(q: QuestDoc, kind: string, at: TileCoord, rotation: Rotation = 0): QuestDoc {
+  const trap: TrapDoc = { id: nextId(q, 'trap'), kind, x: at.x, y: at.y, state: 'hidden' };
+  if (rotation !== 0) {
+    trap.rotation = rotation;
+  }
+  return { ...q, traps: [...q.traps, trap] };
+}
+
+/** Trap kinds without catalog artwork, offered after the catalog's traps. */
+export const MARKER_TRAP_KINDS = ['chest', 'teleport', 'other'] as const;
+
+/** Picker options for the trap tool: catalog traps (by id), then marker kinds not in the catalog. */
+export function trapKindOptions(catalog: Catalog): [string, string][] {
+  const options: [string, string][] = catalog.traps.map((t) => [t.id, t.width > 1 || t.height > 1 ? `${t.name} (${t.width}×${t.height})` : t.name]);
+  for (const kind of MARKER_TRAP_KINDS) {
+    if (!catalog.traps.some((t) => t.id === kind)) {
+      options.push([kind, kind.replaceAll('_', ' ')]);
+    }
+  }
+  return options;
+}
+
+/** The squares a quest trap covers: its rotated catalog footprint, or its own square. */
+export function trapTiles(catalog: Catalog, t: Pick<TrapDoc, 'kind' | 'x' | 'y' | 'rotation'>): TileCoord[] {
+  const def = catalog.traps.find((d) => d.id === t.kind);
+  return def ? footprintTiles({ x: t.x, y: t.y }, def.width, def.height, t.rotation ?? 0) : [{ x: t.x, y: t.y }];
+}
+
+/** The renderer's view of a quest trap in a given state, with catalog artwork and footprint. */
+export function trapView(catalog: Catalog, t: TrapDoc, state: TrapState): TrapView {
+  const view: TrapView = { id: t.id, kind: t.kind, at: { x: t.x, y: t.y }, state };
+  const def = catalog.traps.find((d) => d.id === t.kind);
+  if (def) {
+    view.width = def.width;
+    view.height = def.height;
+    view.rotation = t.rotation ?? 0;
+    if (def.image) {
+      view.image = def.image;
+    }
+  }
+  return view;
 }
 
 export function addBlockedSquare(q: QuestDoc, rect: { x: number; y: number; w: number; h: number; hiddenDoor?: boolean }): QuestDoc {
@@ -295,9 +334,11 @@ export function toggleExitTile(q: QuestDoc, at: TileCoord): QuestDoc {
 }
 
 export function rotateItem(q: QuestDoc, id: string): QuestDoc {
+  const turn = (r: Rotation | undefined): Rotation => (((r ?? 0) + 90) % 360) as Rotation;
   return {
     ...q,
-    furniture: q.furniture.map((f) => (f.id === id ? { ...f, rotation: ((f.rotation + 90) % 360) as Rotation } : f)),
+    furniture: q.furniture.map((f) => (f.id === id ? { ...f, rotation: turn(f.rotation) } : f)),
+    traps: q.traps.map((t) => (t.id === id ? { ...t, rotation: turn(t.rotation) } : t)),
   };
 }
 
@@ -314,7 +355,7 @@ export function itemsAt(q: QuestDoc, catalog: Catalog, t: TileCoord): string[] {
     const def = catalog.monsters.find((d) => d.id === m.type);
     return covers(m.x, m.y, def?.width, def?.height, t);
   }).map((m) => m.id));
-  ids.push(...q.traps.filter((tr) => hit(tr.x, tr.y)).map((tr) => tr.id));
+  ids.push(...q.traps.filter((tr) => trapTiles(catalog, tr).some((tt) => hit(tt.x, tt.y))).map((tr) => tr.id));
   ids.push(...q.notes.filter((n) => hit(n.x, n.y)).map((n) => n.id));
   ids.push(...(q.teleports ?? []).filter((tp) => hit(tp.x, tp.y)).map((tp) => tp.id));
   for (const f of q.furniture) {
@@ -400,7 +441,7 @@ export function toBoardView(b: BoardDoc, q: QuestDoc | null, catalog: Catalog): 
     furniture,
     monsters,
     heroes: [],
-    traps: (q?.traps ?? []).map((t) => ({ id: t.id, kind: t.kind, at: { x: t.x, y: t.y }, state: t.state })),
+    traps: (q?.traps ?? []).map((t) => trapView(catalog, t, t.state)),
     notes: (q?.notes ?? []).map((n) => ({ id: n.id, label: n.label, at: { x: n.x, y: n.y } })),
     startTiles: (q?.startTiles ?? []).map((t) => ({ x: t.x, y: t.y })),
     exitTiles: (q?.exitTiles ?? []).map((t) => ({ x: t.x, y: t.y })),

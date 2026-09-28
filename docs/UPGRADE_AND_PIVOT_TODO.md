@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-27 14:41 EDT
+**Last Updated**: 2026-09-28 15:18 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -55,6 +55,7 @@ Commits (oldest first):
 | 392a444 | corridor doors no longer warned; teleport squares and traps |
 | 786b0fd | campaign chapters, maps grouped by campaign |
 | e79243b | mid-game travel between maps |
+| (next commit) | trap catalog, multi-square catalog monsters, quest-book tiles |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
@@ -627,6 +628,39 @@ organize maps by campaign.
 - Verified in the browser on :8090 with the test campaign: chapters and statuses,
   travel from The Trial to Test Quest and back (positions, monsters and log restored),
   the maps page grouping, and Edit map opening the chapter's quest.
+
+---
+
+## Post-plan: quest-book tiles, monster sizes, trap catalog [DONE 2026-09-28]
+Asked for: crop the monster/furniture/trap symbols out of five quest-book scans (Jungles of
+Delthrak, Mage of the Mirror, Rise of the Dread Moon, The Ogre Horde, Kellar's Keep), clean
+them and add them to the content catalog. Decisions (asked): new monsters get 0 stats for now
+(the scans only show symbols); traps get a real catalog with images and multi-square sizes.
+
+- [x] Crop + clean 44 tiles into `assets/tiles_cleaned/` (157 px per square). Script and crop
+      list live with the scans in `assets/quest_book_scans/` (gitignored): `extract.py`,
+      `crops.json` (per-tile `tune` for cream-on-paper icons), `overview.png`.
+- [x] Catalog monsters read `gridSize` (2x1 Giant Ape, Giant Wolf, Ogre Lord, ...); pickers
+      label multi-square monsters with their size (`monsterOptionLabel`).
+- [x] 31 monster + 8 furniture files in `content/` (monster stats 0 = not entered yet).
+      `TestRealContentLoads` loads the real catalog and checks every image path.
+- [x] Trap catalog: `content/traps/*.json` (id, name, gridSize, rendering), `TrapDef`,
+      `Catalog.Traps`, `TrapSize`/`TrapByID`, `/api/catalog` `traps`. Entries for the existing
+      pit/spear/falling_block kinds too, so traps already in quests get artwork.
+      `asset_schemas/trap_schema_template.json`.
+- [x] Quest traps: optional `rotation` (validated like furniture); `Quest.Check(board,
+      furnitureSizes, trapSizes)` checks a catalog trap's rotated footprint (`piece-*` codes);
+      kinds without an entry stay free-text single-square markers.
+- [x] Client: `trapKindOptions` (catalog traps, then chest/teleport/other markers), trap tool
+      rotation + R key, `trapTiles`/`trapView` for footprints and artwork (editor `itemsAt`,
+      `toBoardView`, tracker view, tracker clicks via `clickCommand(..., catalog)`), catalog
+      trap names in the editor/tracker panels. Renderer: artwork over the footprint (faded
+      when hidden/disarmed), state-colored frame (dashed when hidden), small state triangle.
+- [x] Verified on :8090 with a throwaway board (deleted afterwards): artwork for every trap
+      state, rotated long pit, off-board footprint check, picker, place turned, select by
+      the second square, R rotation. The tracker was not opened in the browser (starting a
+      session creates campaign/session rows that cannot be deleted); its trap view and
+      footprint clicks are covered by bun tests.
 
 ---
 

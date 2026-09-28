@@ -1,4 +1,4 @@
-// Package content loads the reference catalogs (heroes, monsters, furniture)
+// Package content loads the reference catalogs (heroes, monsters, furniture, traps)
 // from the content directory. The files are gitignored, so everything here
 // takes an fs.FS: os.DirFS("content") in the server, fstest.MapFS in tests.
 package content
@@ -24,6 +24,16 @@ type FurnitureDef struct {
 	Image             string `json:"image,omitempty"`
 }
 
+// TrapDef is a trap catalog entry: a trap kind with its artwork and footprint.
+// Quest traps whose kind has no entry are drawn as single-square markers.
+type TrapDef struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Image  string `json:"image,omitempty"`
+}
+
 // MonsterDef is a monster catalog entry with its base stats.
 type MonsterDef struct {
 	ID       string `json:"id"`
@@ -34,8 +44,9 @@ type MonsterDef struct {
 	Defense  int    `json:"defense"`
 	Movement int    `json:"movement"`
 	Image    string `json:"image,omitempty"`
-	// Custom monsters (made by the GM) have a color instead of artwork and may
-	// cover several squares. Width and Height of 0 mean 1.
+	// Monsters may cover several squares (gridSize in the catalog file, or the
+	// size chosen for a custom monster). Width and Height of 0 mean 1. Custom
+	// monsters (made by the GM) have a color instead of artwork.
 	Width  int    `json:"width,omitempty"`
 	Height int    `json:"height,omitempty"`
 	Color  string `json:"color,omitempty"`
@@ -65,6 +76,7 @@ type Catalog struct {
 	Furniture []FurnitureDef `json:"furniture"`
 	Monsters  []MonsterDef   `json:"monsters"`
 	Heroes    []HeroDef      `json:"heroes"`
+	Traps     []TrapDef      `json:"traps"`
 }
 
 type rendering struct {
@@ -91,6 +103,16 @@ type furnitureFile struct {
 	Rendering rendering `json:"rendering"`
 }
 
+type trapFile struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	GridSize struct {
+		Width  int `json:"width"`
+		Height int `json:"height"`
+	} `json:"gridSize"`
+	Rendering rendering `json:"rendering"`
+}
+
 type monsterFile struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
@@ -101,6 +123,10 @@ type monsterFile struct {
 		BodyPoints      int `json:"bodyPoints"`
 		MindPoints      int `json:"mindPoints"`
 	} `json:"stats"`
+	GridSize struct {
+		Width  int `json:"width"`
+		Height int `json:"height"`
+	} `json:"gridSize"`
 	Rendering rendering `json:"rendering"`
 }
 
@@ -117,7 +143,7 @@ type heroFile struct {
 	} `json:"stats"`
 }
 
-// Load reads furniture/, monsters/ and heroes/ from fsys. A missing directory
+// Load reads furniture/, monsters/, heroes/ and traps/ from fsys. A missing directory
 // yields an empty list.
 func Load(fsys fs.FS) (*Catalog, error) {
 	c := &Catalog{}
@@ -140,7 +166,7 @@ func Load(fsys fs.FS) (*Catalog, error) {
 		return MonsterDef{
 			ID: f.ID, Name: f.Name, Body: f.Stats.BodyPoints, Mind: f.Stats.MindPoints,
 			Attack: f.Stats.AttackDice, Defense: f.Stats.DefendDice, Movement: f.Stats.MovementSquares,
-			Image: f.Rendering.image(),
+			Image: f.Rendering.image(), Width: f.GridSize.Width, Height: f.GridSize.Height,
 		}, nil
 	})
 	if err != nil {
@@ -156,11 +182,21 @@ func Load(fsys fs.FS) (*Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	c.Traps, err = loadDir(fsys, "traps", func(f trapFile) (TrapDef, error) {
+		if f.GridSize.Width < 1 || f.GridSize.Height < 1 {
+			return TrapDef{}, fmt.Errorf("gridSize must be at least 1x1, got %dx%d", f.GridSize.Width, f.GridSize.Height)
+		}
+		return TrapDef{ID: f.ID, Name: f.Name, Width: f.GridSize.Width, Height: f.GridSize.Height, Image: f.Rendering.image()}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
 	return c, nil
 }
 
 type identified interface {
-	FurnitureDef | MonsterDef | HeroDef
+	FurnitureDef | MonsterDef | HeroDef | TrapDef
 }
 
 func idOf[T identified](v T) string {
@@ -170,6 +206,8 @@ func idOf[T identified](v T) string {
 	case MonsterDef:
 		return d.ID
 	case HeroDef:
+		return d.ID
+	case TrapDef:
 		return d.ID
 	}
 	return ""
@@ -225,6 +263,25 @@ func (c *Catalog) FurnitureSize(furnitureType string) (int, int, bool) {
 		}
 	}
 	return 0, 0, false
+}
+
+// TrapSize returns a trap kind's unrotated size (a maps.SizeLookup). Kinds
+// without a catalog entry are not found.
+func (c *Catalog) TrapSize(kind string) (int, int, bool) {
+	if t, ok := c.TrapByID(kind); ok {
+		return t.Width, t.Height, true
+	}
+	return 0, 0, false
+}
+
+// TrapByID looks up a trap entry.
+func (c *Catalog) TrapByID(id string) (TrapDef, bool) {
+	for _, t := range c.Traps {
+		if t.ID == id {
+			return t, true
+		}
+	}
+	return TrapDef{}, false
 }
 
 // FurnitureByID looks up a furniture entry.

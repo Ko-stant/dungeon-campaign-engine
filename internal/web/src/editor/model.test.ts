@@ -31,6 +31,7 @@ import {
   toggleDoorState,
   toggleStartTile,
   toggleWall,
+  trapKindOptions,
   updateDoor,
 } from './model.ts';
 
@@ -48,6 +49,10 @@ const catalog: Catalog = {
     { id: 'custom-ogre', name: 'Cave Ogre', body: 6, mind: 1, attack: 4, defense: 3, movement: 6, width: 2, height: 2, color: '#aa3300', custom: true },
   ],
   heroes: [],
+  traps: [
+    { id: 'long_pit', name: 'Long Pit Trap', width: 1, height: 2, image: 'assets/long_pit.png' },
+    { id: 'pit', name: 'Pit Trap', width: 1, height: 1 },
+  ],
 };
 
 describe('board painting', () => {
@@ -233,6 +238,16 @@ describe('quest items', () => {
     expect(rotateItem(q, 'furniture-1').furniture[0]?.rotation).toBe(90);
   });
 
+  test('traps can be placed turned and rotate a quarter at a time', () => {
+    let q = placeTrap(emptyQuest(), 'long_pit', { x: 2, y: 2 }, 90);
+    expect(q.traps).toEqual([{ id: 'trap-1', kind: 'long_pit', x: 2, y: 2, state: 'hidden', rotation: 90 }]);
+    q = placeTrap(q, 'pit', { x: 5, y: 5 });
+    q = rotateItem(q, 'trap-2'); // saved without a rotation: counts as 0
+    expect(q.traps[1]?.rotation).toBe(90);
+    q = rotateItem(rotateItem(rotateItem(q, 'trap-1'), 'trap-1'), 'trap-1');
+    expect(q.traps[0]?.rotation).toBe(0);
+  });
+
   test('notes get sequential letters', () => {
     let q = placeNote(emptyQuest(), { x: 1, y: 1 }, 'first');
     q = placeNote(q, { x: 2, y: 1 }, 'second');
@@ -274,6 +289,30 @@ describe('quest items', () => {
     expect(itemsAt(q, catalog, { x: 6, y: 1 })).toEqual(['blocked-1']);
   });
 
+  test('itemsAt covers a catalog trap footprint; marker traps cover one square', () => {
+    let q = placeTrap(emptyQuest(), 'long_pit', { x: 2, y: 2 }, 0); // 1x2: (2,2) and (2,3)
+    q = placeTrap(q, 'long_pit', { x: 5, y: 5 }, 90); // turned 2x1: (5,5) and (6,5)
+    q = placeTrap(q, 'chest', { x: 8, y: 1 });
+    expect(itemsAt(q, catalog, { x: 2, y: 3 })).toEqual(['trap-1']);
+    expect(itemsAt(q, catalog, { x: 3, y: 2 })).toEqual([]);
+    expect(itemsAt(q, catalog, { x: 6, y: 5 })).toEqual(['trap-2']);
+    expect(itemsAt(q, catalog, { x: 5, y: 6 })).toEqual([]);
+    expect(itemsAt(q, catalog, { x: 8, y: 1 })).toEqual(['trap-3']);
+    expect(itemsAt(q, catalog, { x: 8, y: 2 })).toEqual([]);
+  });
+
+  test('trap kind options list the catalog, then marker kinds without artwork', () => {
+    expect(trapKindOptions(catalog)).toEqual([
+      ['long_pit', 'Long Pit Trap (1×2)'],
+      ['pit', 'Pit Trap'],
+      ['chest', 'chest'],
+      ['teleport', 'teleport'],
+      ['other', 'other'],
+    ]);
+    const withChest: Catalog = { ...catalog, traps: [{ id: 'chest', name: 'Chest Trap', width: 1, height: 1 }] };
+    expect(trapKindOptions(withChest)).toEqual([['chest', 'Chest Trap'], ['teleport', 'teleport'], ['other', 'other']]);
+  });
+
   test('a blocked square can be marked as hiding a secret door', () => {
     let q = addBlockedSquare(emptyQuest(), { x: 4, y: 15, w: 1, h: 1, hiddenDoor: true });
     expect(q.blockedSquares[0]).toEqual({ id: 'blocked-1', x: 4, y: 15, w: 1, h: 1, hiddenDoor: true });
@@ -305,6 +344,17 @@ describe('quest items', () => {
     expect(itemsAt(q, catalog, { x: 4, y: 4 })).toEqual(['monster-1']);
     expect(itemsAt(q, catalog, { x: 5, y: 4 })).toEqual([]);
     expect(toBoardView(board(6, 6), q, catalog).monsters[0]).toEqual({ id: 'monster-1', type: 'custom-ogre', at: { x: 3, y: 3 }, label: 'Cave Ogre', width: 2, height: 2, color: '#aa3300' });
+  });
+
+  test('catalog traps carry their artwork, size and rotation into the view; markers do not', () => {
+    let q = placeTrap(emptyQuest(), 'long_pit', { x: 2, y: 2 }, 90);
+    q = placeTrap(q, 'pit', { x: 4, y: 4 });
+    q = placeTrap(q, 'chest', { x: 5, y: 5 });
+    expect(toBoardView(board(6, 6), q, catalog).traps).toEqual([
+      { id: 'trap-1', kind: 'long_pit', at: { x: 2, y: 2 }, state: 'hidden', width: 1, height: 2, rotation: 90, image: 'assets/long_pit.png' },
+      { id: 'trap-2', kind: 'pit', at: { x: 4, y: 4 }, state: 'hidden', width: 1, height: 1, rotation: 0 },
+      { id: 'trap-3', kind: 'chest', at: { x: 5, y: 5 }, state: 'hidden' },
+    ]);
   });
 
   test('moveItem and removeItem work for every layer', () => {

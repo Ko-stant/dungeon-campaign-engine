@@ -39,12 +39,12 @@ func mountApp(mux *http.ServeMux, contentDir string) func() {
 	catalog, err := content.Load(os.DirFS(contentDir))
 	if err != nil {
 		log.Printf("app: load content catalog: %v; continuing with an empty catalog", err)
-		catalog = &content.Catalog{Furniture: []content.FurnitureDef{}, Monsters: []content.MonsterDef{}, Heroes: []content.HeroDef{}}
+		catalog = &content.Catalog{Furniture: []content.FurnitureDef{}, Monsters: []content.MonsterDef{}, Heroes: []content.HeroDef{}, Traps: []content.TrapDef{}}
 	}
 
 	app.New(st, catalog).Register(mux)
-	log.Printf("app: ready (%d furniture, %d monsters, %d heroes in catalog)",
-		len(catalog.Furniture), len(catalog.Monsters), len(catalog.Heroes))
+	log.Printf("app: ready (%d furniture, %d monsters, %d heroes, %d traps in catalog)",
+		len(catalog.Furniture), len(catalog.Monsters), len(catalog.Heroes), len(catalog.Traps))
 	return st.Close
 }
 

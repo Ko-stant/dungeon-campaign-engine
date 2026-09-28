@@ -72,6 +72,9 @@ type Trap struct {
 	Y           int    `json:"y"`
 	FurnitureID string `json:"furnitureId,omitempty"`
 	State       string `json:"state"`
+	// Rotation turns a multi-square trap's catalog footprint (0, 90, 180, 270);
+	// the anchor is the bottom-left square of the rotated footprint.
+	Rotation int `json:"rotation,omitempty"`
 }
 
 // Note is a lettered quest note marker ("A", "B", ...) with its text.
@@ -203,6 +206,9 @@ func (q *Quest) Validate() error {
 		default:
 			errs = append(errs, fmt.Errorf("trap %q: invalid state %q", tr.ID, tr.State))
 		}
+		if _, _, err := RotatedSize(1, 1, tr.Rotation); err != nil {
+			errs = append(errs, fmt.Errorf("trap %q: %w", tr.ID, err))
+		}
 	}
 	for _, n := range q.Notes {
 		id("note", n.ID)
@@ -224,11 +230,13 @@ type Issue struct {
 	Message string `json:"message"`
 }
 
-// SizeLookup returns a furniture type's unrotated size from the catalog.
-type SizeLookup func(furnitureType string) (width, height int, ok bool)
+// SizeLookup returns a furniture type's or trap kind's unrotated size from the catalog.
+type SizeLookup func(kind string) (width, height int, ok bool)
 
-// Check reports placement issues against a board.
-func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
+// Check reports placement issues against a board. Furniture types must be in
+// the catalog; trap kinds may be free text, and those without an entry are
+// single-square markers.
+func (q *Quest) Check(b *Board, sizes, trapSizes SizeLookup) []Issue {
 	var issues []Issue
 	add := func(code, itemID, format string, args ...any) {
 		issues = append(issues, Issue{Code: code, ItemID: itemID, Message: fmt.Sprintf(format, args...)})
@@ -300,7 +308,21 @@ func (q *Quest) Check(b *Board, sizes SizeLookup) []Issue {
 		piece(m.ID, m.X, m.Y)
 	}
 	for _, tr := range q.Traps {
-		piece(tr.ID, tr.X, tr.Y)
+		w, h, ok := 0, 0, false
+		if trapSizes != nil {
+			w, h, ok = trapSizes(tr.Kind)
+		}
+		if !ok {
+			piece(tr.ID, tr.X, tr.Y)
+			continue
+		}
+		rw, rh, err := RotatedSize(w, h, tr.Rotation)
+		if err != nil {
+			continue // reported by Validate
+		}
+		if code := b.areaIssue(tr.X, tr.Y, rw, rh); code != "" {
+			add("piece-"+code, tr.ID, "%s is %s", tr.ID, issueText(code))
+		}
 	}
 	for _, n := range q.Notes {
 		piece(n.ID, n.X, n.Y)

@@ -1,0 +1,19 @@
+{
+  "id": "trap_kind",
+  "name": "Display Name",
+  "description": "Optional description, e.g. which quest pack it comes from",
+  "gridSize": {
+    "width": 1,
+    "height": 1,
+    "comment": "Footprint in squares (columns x rows) before rotation; quests may rotate it 0/90/180/270"
+  },
+  "rendering": {
+    "tileImage": "assets/tiles/traps/trap_name.jpg",
+    "tileImageCleaned": "assets/tiles_cleaned/traps/trap_name.png",
+    "pixelDimensions": {
+      "width": 157,
+      "height": 157,
+      "comment": "Actual pixel dimensions of the tile image (157 px per square)"
+    }
+  }
+}

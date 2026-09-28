@@ -22,6 +22,7 @@ func testServer(t *testing.T) *httptest.Server {
 		"furniture/table.json": {Data: []byte(`{"id":"table","name":"Table","gridSize":{"width":2,"height":1}}`)},
 		"monsters/orc.json":    {Data: []byte(`{"id":"orc","name":"Orc","stats":{"bodyPoints":1,"mindPoints":2}}`)},
 		"heroes/elf.json":      {Data: []byte(`{"id":"elf","name":"Elf","stats":{"bodyPoints":6,"mindPoints":4}}`)},
+		"traps/long_pit.json":  {Data: []byte(`{"id":"long_pit","name":"Long Pit Trap","gridSize":{"width":1,"height":2}}`)},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -73,7 +74,8 @@ func TestCatalogAPI(t *testing.T) {
 		t.Fatalf("status %d: %s", code, data)
 	}
 	c := decode[content.Catalog](t, data)
-	if len(c.Furniture) != 1 || c.Furniture[0].Width != 2 || len(c.Monsters) != 1 || len(c.Heroes) != 1 {
+	if len(c.Furniture) != 1 || c.Furniture[0].Width != 2 || len(c.Monsters) != 1 || len(c.Heroes) != 1 ||
+		len(c.Traps) != 1 || c.Traps[0].Height != 2 {
 		t.Fatalf("catalog: %+v", c)
 	}
 }

@@ -37,7 +37,7 @@ export type Tool =
   | { kind: 'blocked'; hiddenDoor: boolean }
   | { kind: 'furniture'; type: string; rotation: Rotation }
   | { kind: 'monster'; type: string }
-  | { kind: 'trap'; trapKind: string }
+  | { kind: 'trap'; trapKind: string; rotation: Rotation }
   | { kind: 'note' }
   | { kind: 'start' }
   | { kind: 'exit' }
@@ -124,7 +124,7 @@ export function applyClick(d: EditorDoc, tool: Tool, target: ClickTarget, catalo
     case 'monster':
       return withQuest(d, placeMonster(q, tool.type, t));
     case 'trap':
-      return withQuest(d, placeTrap(q, tool.trapKind, t));
+      return withQuest(d, placeTrap(q, tool.trapKind, t, tool.rotation));
     case 'note':
       return withQuest(d, placeNote(q, t, ''));
     case 'start':

@@ -1,6 +1,6 @@
 /** Builds the renderer's view of a live session for the GM. */
 import { withShape, type BoardView, type PieceView } from '../board/model.ts';
-import { toBoardView } from '../editor/model.ts';
+import { toBoardView, trapView } from '../editor/model.ts';
 import type { Catalog } from '../maps/types.ts';
 import type { SessionState } from './types.ts';
 
@@ -44,7 +44,7 @@ export function trackerView(s: SessionState, catalog: Catalog, opts: ViewOptions
       const kind = hiddenSecret ? 'secret' : d.kind === 'gate' ? 'gate' : 'normal';
       return { id: d.id, edge: d.edge, kind, state: live?.state ?? d.state, locked: live?.locked ?? d.locked ?? false };
     }),
-    traps: s.quest.traps.map((t) => ({ id: t.id, kind: t.kind, at: { x: t.x, y: t.y }, state: liveTraps.get(t.id)?.state ?? t.state })),
+    traps: s.quest.traps.map((t) => trapView(catalog, t, liveTraps.get(t.id)?.state ?? t.state)),
     monsters,
     heroes,
   };

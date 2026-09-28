@@ -142,7 +142,7 @@ async function main(): Promise<void> {
   }
 
   canvas.addEventListener('click', (ev) => {
-    const result = clickCommand(state, mode, selectedId, targetAt(ev));
+    const result = clickCommand(state, mode, selectedId, targetAt(ev), catalog);
     if (!result) {
       return;
     }
@@ -395,7 +395,7 @@ async function main(): Promise<void> {
             : null),
       );
     } else if (trap) {
-      rows.push(h('p', { class: 'font-semibold' }, `${trap.kind.replaceAll('_', ' ')} trap ${trap.id}`), trapButtons(trap.id));
+      rows.push(h('p', { class: 'font-semibold' }, `${trapName(trap.kind)} ${trap.id}`), trapButtons(trap.id));
     } else if (block) {
       rows.push(
         h('p', { class: 'font-semibold' }, block.hiddenDoor ? 'Blocked square (hides a secret door) ' : 'Blocked squares ', h('span', { class: 'text-xs opacity-60' }, `${block.id} (${block.x}, ${block.y})`)),
@@ -411,6 +411,11 @@ async function main(): Promise<void> {
         h('h2', { class: 'text-sm font-semibold' }, 'Selected'),
         h('button', { type: 'button', class: 'text-xs opacity-60 hover:opacity-100', onclick: () => { selectedId = null; refresh(); } }, 'Clear')),
       ...rows);
+  }
+
+  /** A trap's catalog name, or its kind for markers ("chest trap"). */
+  function trapName(kind: string): string {
+    return catalog.traps.find((t) => t.id === kind)?.name ?? `${kind.replaceAll('_', ' ')} trap`;
   }
 
   function trapButtons(trapId: string): HTMLElement {
@@ -442,7 +447,7 @@ async function main(): Promise<void> {
           `${m.name} `, h('span', { class: 'text-xs opacity-60' }, `${m.id}${m.visibility === 'hidden' ? ' · hidden' : ''}`)),
         h('span', { class: 'font-mono text-xs' }, `${m.body}/${m.maxBody}`)));
     const traps = state.quest.traps.map((t) =>
-      h('li', { class: 'space-y-1 text-sm' }, h('span', {}, `${t.kind.replaceAll('_', ' ')} `, h('span', { class: 'text-xs opacity-60' }, `${t.id} (${t.x}, ${t.y})`)), trapButtons(t.id)));
+      h('li', { class: 'space-y-1 text-sm' }, h('span', {}, `${trapName(t.kind)} `, h('span', { class: 'text-xs opacity-60' }, `${t.id} (${t.x}, ${t.y})`)), trapButtons(t.id)));
     // Blocks worth listing: ones hiding a secret door, and any already removed (to put back).
     const removedBlocks = new Set(state.removedBlocks ?? []);
     const blocks = state.quest.blockedSquares.filter((r) => (r.hiddenDoor ?? false) || removedBlocks.has(r.id)).map((r) =>

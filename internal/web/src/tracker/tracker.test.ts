@@ -9,7 +9,16 @@ const catalog: Catalog = {
   furniture: [{ id: 'table', name: 'Table', width: 2, height: 1, blocksMovement: true, blocksLineOfSight: false, image: 'assets/table.png' }],
   monsters: [{ id: 'orc', name: 'Orc', body: 1, mind: 2, attack: 3, defense: 2, movement: 8, image: 'assets/orc.png' }],
   heroes: [{ id: 'elf', name: 'Elf', body: 6, mind: 4, attack: 2, defense: 2, movementDice: 2 }],
+  traps: [{ id: 'long_pit', name: 'Long Pit Trap', width: 1, height: 2, image: 'assets/long_pit.png' }],
 };
+
+/** state() plus a 1x2 long pit standing on (4,1) and (4,2), under note A. */
+function withLongPit(): SessionState {
+  const s = state();
+  s.quest.traps.push({ id: 'trap-2', kind: 'long_pit', x: 4, y: 1, state: 'hidden' });
+  s.traps.push({ id: 'trap-2', state: 'revealed' });
+  return s;
+}
 
 /**
  * 4x2 corridor board (squares (1,1) bottom-left to (4,2) top-right): one door,
@@ -58,6 +67,11 @@ function state(): SessionState {
 }
 
 describe('trackerView', () => {
+  test('catalog traps carry their artwork and footprint with the live state', () => {
+    const view = trackerView(withLongPit(), catalog, { fog: false });
+    expect(view.traps[1]).toEqual({ id: 'trap-2', kind: 'long_pit', at: { x: 4, y: 1 }, state: 'revealed', width: 1, height: 2, rotation: 0, image: 'assets/long_pit.png' });
+  });
+
   test('uses live door, trap and piece state on top of the frozen quest', () => {
     const view = trackerView(state(), catalog, { fog: false });
     expect(view.cols).toBe(4);
@@ -176,6 +190,12 @@ describe('interaction', () => {
 
   test('select mode: clicking a blocked square selects it', () => {
     expect(clickCommand(state(), select, null, { tile: { x: 3, y: 2 }, edge: null })).toEqual({ command: null, select: 'blocked-2' });
+  });
+
+  test('select mode: any square of a catalog trap selects it (traps before notes)', () => {
+    expect(clickCommand(withLongPit(), select, null, { tile: { x: 4, y: 2 }, edge: null }, catalog)).toEqual({ command: null, select: 'trap-2' });
+    // Without the catalog a trap is one square, so the note on (4,2) is found.
+    expect(clickCommand(withLongPit(), select, null, { tile: { x: 4, y: 2 }, edge: null })).toEqual({ command: null, select: 'note-A' });
   });
 
   test('select mode: clicking a trap or note square selects it when no piece is there', () => {

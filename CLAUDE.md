@@ -57,7 +57,9 @@ Tailwind CSS v4, canvas rendering.
 - `internal/maps` - Board and quest documents (Go), validation, advisory `Check`, legacy converters.
 - `internal/tracker` - Session `State`, `NewSession`, `Apply(state, command)` -> new state + readable event, `CarryOver`.
 - `internal/store` - Postgres (pgx) persistence; `RecordEvent` atomically saves state + event. `storetest` gives tests a throwaway schema.
-- `internal/content` - Hero/monster/furniture catalogs from `content/` (any `fs.FS`).
+- `internal/content` - Hero/monster/furniture/trap catalogs from `content/` (any `fs.FS`).
+  Monsters and traps may cover several squares (`gridSize`). A quest trap whose kind has no
+  `content/traps/` entry is a single-square marker (e.g. `chest`, `teleport`, `other`).
 - `internal/legacy` - Readers for the original board/quest JSON formats (import only).
 - `internal/seed` - Idempotent legacy import. `internal/dotenv` - `.env` loader. `internal/web` - `NoCache` helper, templ views, static assets, TS sources.
 - `db/migrations` - goose SQL, embedded via `db.Migrations`.
@@ -75,7 +77,8 @@ Tailwind CSS v4, canvas rendering.
 - Regions are row-major from the bottom row up (index `(y-1)*width + (x-1)`): `-1` void
   (solid rock), `0` corridor, `>0` room id.
 - A vertical edge (x,y) is the left side of tile (x,y); a horizontal edge is its bottom side.
-- Furniture and blocked squares are anchored at their bottom-left square and extend right and up.
+- Furniture, catalog traps, monsters and blocked squares are anchored at their bottom-left square
+  and extend right and up. Furniture and traps may be rotated (0/90/180/270); monsters are not.
 - Only `board/geometry.ts` functions that take `GridMetrics` deal in screen pixels (y down);
   they are the one place rows are flipped. Legacy `content/` files are top-left, 0-based and
   are converted in `internal/maps/legacy.go`.

@@ -73,6 +73,8 @@ export interface TrapDoc {
   y: number;
   furnitureId?: string;
   state: TrapState;
+  /** Turns a catalog trap's footprint; absent means 0. */
+  rotation?: Rotation;
 }
 
 /** A teleport square; the optional short label pairs squares up. */
@@ -125,6 +127,15 @@ export interface FurnitureDef {
   image?: string;
 }
 
+/** A trap kind with artwork; quest traps whose kind has no entry are single-square markers. */
+export interface TrapDef {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  image?: string;
+}
+
 export interface MonsterDef {
   id: string;
   name: string;
@@ -142,9 +153,14 @@ export interface MonsterDef {
   custom?: boolean;
 }
 
-/** A monster's name for pickers; custom monsters show their size. */
+/** A monster's name for pickers; custom and multi-square monsters show their size. */
 export function monsterOptionLabel(m: MonsterDef): string {
-  return m.custom ? `${m.name} (custom ${m.width ?? 1}×${m.height ?? 1})` : m.name;
+  const w = m.width ?? 1;
+  const h = m.height ?? 1;
+  if (m.custom) {
+    return `${m.name} (custom ${w}×${h})`;
+  }
+  return w > 1 || h > 1 ? `${m.name} (${w}×${h})` : m.name;
 }
 
 export interface HeroDef {
@@ -162,6 +178,7 @@ export interface Catalog {
   furniture: FurnitureDef[];
   monsters: MonsterDef[];
   heroes: HeroDef[];
+  traps: TrapDef[];
 }
 
 export interface BoardResponse {

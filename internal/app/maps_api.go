@@ -228,7 +228,7 @@ func (s *Server) createQuest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) questResponse(rec store.Quest, quest *maps.Quest, board *maps.Board) QuestResponse {
-	issues := quest.Check(board, s.catalog.FurnitureSize)
+	issues := quest.Check(board, s.catalog.FurnitureSize, s.catalog.TrapSize)
 	if issues == nil {
 		issues = []maps.Issue{}
 	}

@@ -39,7 +39,7 @@ func TestLegacyQuestOneConvertsCleanly(t *testing.T) {
 	if board.Width != 26 || board.Height != 19 || len(board.Rooms) != 22 {
 		t.Fatalf("board: %dx%d with %d rooms", board.Width, board.Height, len(board.Rooms))
 	}
-	if issues := quest.Check(board, catalog.FurnitureSize); len(issues) != 0 {
+	if issues := quest.Check(board, catalog.FurnitureSize, catalog.TrapSize); len(issues) != 0 {
 		t.Fatalf("unexpected issues: %+v", issues)
 	}
 	for _, m := range quest.Monsters {

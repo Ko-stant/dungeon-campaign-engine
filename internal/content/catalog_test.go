@@ -26,6 +26,14 @@ func fixture() fstest.MapFS {
 			"stats": {"bodyPoints": 8, "mindPoints": 2, "attackDice": 3, "defenseDice": 2, "movementDice": 2}
 		}`)},
 		"heroes/README.md": {Data: []byte("not a card")},
+		"traps/pit.json": {Data: []byte(`{
+			"id": "pit", "name": "Pit Trap", "gridSize": {"width": 1, "height": 1},
+			"rendering": {"tileImage": "assets/tiles/traps/trap_pit.jpg", "tileImageCleaned": "assets/tiles_cleaned/traps/trap_pit.png"}
+		}`)},
+		"traps/long_pit.json": {Data: []byte(`{
+			"id": "long_pit", "name": "Long Pit Trap", "gridSize": {"width": 1, "height": 2},
+			"rendering": {"tileImageCleaned": "assets/tiles_cleaned/traps/trap_long_pit.png"}
+		}`)},
 	}
 }
 
@@ -60,6 +68,50 @@ func TestLoadReadsAllCatalogs(t *testing.T) {
 	}
 }
 
+func TestLoadReadsMonsterGridSize(t *testing.T) {
+	fsys := fixture()
+	fsys["monsters/giant_wolf.json"] = &fstest.MapFile{Data: []byte(`{
+		"id": "giant_wolf", "name": "Giant Wolf", "gridSize": {"width": 2, "height": 1},
+		"rendering": {"tileImageCleaned": "assets/tiles_cleaned/monsters/monster_giant_wolf.png"}
+	}`)}
+	c, err := Load(fsys)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wolf, _ := c.Monster("giant_wolf")
+	if w, h := wolf.Size(); w != 2 || h != 1 {
+		t.Fatalf("giant_wolf size = %dx%d, want 2x1", w, h)
+	}
+	orc, _ := c.Monster("orc")
+	if w, h := orc.Size(); w != 1 || h != 1 {
+		t.Fatalf("a monster without gridSize should be 1x1, got %dx%d", w, h)
+	}
+}
+
+func TestLoadReadsTraps(t *testing.T) {
+	c, err := Load(fixture())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Traps) != 2 || c.Traps[0].ID != "long_pit" || c.Traps[1].ID != "pit" {
+		t.Fatalf("traps should be sorted by id: %+v", c.Traps)
+	}
+	long := c.Traps[0]
+	if long.Name != "Long Pit Trap" || long.Width != 1 || long.Height != 2 || long.Image != "assets/tiles_cleaned/traps/trap_long_pit.png" {
+		t.Fatalf("long_pit: %+v", long)
+	}
+	if w, h, ok := c.TrapSize("long_pit"); !ok || w != 1 || h != 2 {
+		t.Fatalf("TrapSize(long_pit) = %d, %d, %v", w, h, ok)
+	}
+	if _, _, ok := c.TrapSize("chest"); ok {
+		t.Fatal("a kind without a catalog entry should not be found")
+	}
+	if def, ok := c.TrapByID("pit"); !ok || def.Name != "Pit Trap" {
+		t.Fatalf("TrapByID(pit) = %+v, %v", def, ok)
+	}
+}
+
 func TestFurnitureSizeMatchesMapsLookup(t *testing.T) {
 	c, _ := Load(fixture())
 	if w, h, ok := c.FurnitureSize("table"); !ok || w != 3 || h != 2 {
@@ -75,7 +127,7 @@ func TestLoadToleratesMissingDirectories(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Furniture)+len(c.Monsters)+len(c.Heroes) != 0 {
+	if len(c.Furniture)+len(c.Monsters)+len(c.Heroes)+len(c.Traps) != 0 || c.Traps == nil {
 		t.Fatalf("expected an empty catalog: %+v", c)
 	}
 }
@@ -89,6 +141,7 @@ func TestLoadRejectsBadFiles(t *testing.T) {
 			"heroes/b.json": {Data: []byte(`{"id": "elf", "name": "Elf again"}`)},
 		},
 		"zero furniture size": {"furniture/x.json": {Data: []byte(`{"id": "x", "gridSize": {"width": 0, "height": 1}}`)}},
+		"zero trap size":      {"traps/x.json": {Data: []byte(`{"id": "x", "gridSize": {"width": 1, "height": 0}}`)}},
 	}
 	for name, fsys := range cases {
 		t.Run(name, func(t *testing.T) {

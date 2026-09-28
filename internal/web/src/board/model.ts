@@ -90,6 +90,11 @@ export interface TrapView {
   kind: string;
   at: TileCoord;
   state: TrapState;
+  /** Catalog traps only: unrotated footprint, rotation and artwork. Markers are one square. */
+  width?: number;
+  height?: number;
+  rotation?: Rotation;
+  image?: string;
 }
 
 export interface TeleportView {

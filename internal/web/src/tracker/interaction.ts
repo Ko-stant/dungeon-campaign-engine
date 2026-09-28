@@ -1,6 +1,8 @@
 /** What a click on the tracker board means in each mode. */
 import type { Edge, TileCoord } from '../board/geometry.ts';
 import { covers } from '../board/model.ts';
+import { trapTiles } from '../editor/model.ts';
+import type { Catalog } from '../maps/types.ts';
 import type { Command, SessionState } from './types.ts';
 
 export type Mode = { kind: 'select' } | { kind: 'reveal' } | { kind: 'hide' } | { kind: 'addMonster'; monsterType: string };
@@ -35,7 +37,8 @@ function isMovable(s: SessionState, id: string | null): id is string {
   return id !== null && (s.heroes.some((h) => h.id === id) || s.monsters.some((m) => m.id === id));
 }
 
-export function clickCommand(s: SessionState, mode: Mode, selectedId: string | null, target: ClickTarget): ClickResult | null {
+/** The catalog (optional) gives multi-square traps their footprint; without it every trap is one square. */
+export function clickCommand(s: SessionState, mode: Mode, selectedId: string | null, target: ClickTarget, catalog?: Catalog): ClickResult | null {
   if (mode.kind === 'select' && target.edge) {
     const doorId = doorAt(s, target.edge);
     if (doorId) {
@@ -62,7 +65,7 @@ export function clickCommand(s: SessionState, mode: Mode, selectedId: string | n
       if (isMovable(s, selectedId)) {
         return { command: { type: 'move', payload: { id: selectedId, x: t.x, y: t.y } }, select: selectedId };
       }
-      const trap = s.quest.traps.find((tr) => at(tr.x, tr.y, t));
+      const trap = s.quest.traps.find((tr) => (catalog ? trapTiles(catalog, tr).some((tt) => at(tt.x, tt.y, t)) : at(tr.x, tr.y, t)));
       const note = s.quest.notes.find((n) => at(n.x, n.y, t) && !s.consumedNotes.includes(n.id));
       const removed = new Set(s.removedBlocks ?? []);
       const block = s.quest.blockedSquares.find((r) => !removed.has(r.id) && t.x >= r.x && t.x < r.x + r.w && t.y >= r.y && t.y < r.y + r.h);

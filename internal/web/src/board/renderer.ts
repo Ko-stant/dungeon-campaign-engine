@@ -412,12 +412,34 @@ export class BoardRenderer {
   #drawTraps(view: BoardView, m: GridMetrics): void {
     const ctx = this.#ctx;
     for (const trap of view.traps) {
-      const r = tileRect(m, trap.at);
-      const s = m.tile * 0.3;
+      const rotation = trap.rotation ?? 0;
+      const size = rotatedFootprint(trap.width ?? 1, trap.height ?? 1, rotation);
+      const r = footprintRect(m, trap.at, size.width, size.height);
+      const img = trap.image ? this.#images.get(trap.image) : undefined;
       ctx.save();
       ctx.strokeStyle = this.#theme.trap[trap.state];
       ctx.fillStyle = this.#theme.trap[trap.state];
       ctx.lineWidth = 2;
+      if (img) {
+        // Catalog artwork over its footprint (faded while hidden or disarmed),
+        // framed in the state color with a small state triangle in the corner.
+        const box = furnitureDrawBox(m, trap.at, trap.width ?? 1, trap.height ?? 1, rotation);
+        ctx.save();
+        ctx.globalAlpha = trap.state === 'hidden' ? 0.5 : trap.state === 'disarmed' ? 0.4 : 1;
+        ctx.translate(box.cx, box.cy);
+        ctx.rotate(box.radians);
+        ctx.drawImage(img, -box.width / 2, -box.height / 2, box.width, box.height);
+        ctx.restore();
+        if (trap.state === 'hidden') {
+          ctx.setLineDash([3, 3]);
+        }
+        ctx.strokeRect(r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3);
+        ctx.setLineDash([]);
+        const s = m.tile * 0.14;
+        this.#trapTriangle(r.x + s * 1.6, r.y + s * 1.6, s, trap.state === 'triggered');
+        ctx.restore();
+        continue;
+      }
       if (trap.state === 'hidden') {
         ctx.setLineDash([3, 3]);
       }
@@ -434,17 +456,27 @@ export class BoardRenderer {
         ctx.restore();
         continue;
       }
-      ctx.beginPath();
-      ctx.moveTo(r.cx, r.cy - s);
-      ctx.lineTo(r.cx + s, r.cy + s * 0.8);
-      ctx.lineTo(r.cx - s, r.cy + s * 0.8);
-      ctx.closePath();
-      if (trap.state === 'triggered') {
-        ctx.fill();
-      } else {
-        ctx.stroke();
+      if (size.width > 1 || size.height > 1) {
+        // A catalog trap whose artwork is missing or still loading: outline its footprint.
+        ctx.strokeRect(r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3);
       }
+      this.#trapTriangle(r.cx, r.cy, m.tile * 0.3, trap.state === 'triggered');
       ctx.restore();
+    }
+  }
+
+  /** The trap marker: a triangle centred on (cx, cy), filled once triggered. Uses the current colors. */
+  #trapTriangle(cx: number, cy: number, s: number, filled: boolean): void {
+    const ctx = this.#ctx;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s);
+    ctx.lineTo(cx + s, cy + s * 0.8);
+    ctx.lineTo(cx - s, cy + s * 0.8);
+    ctx.closePath();
+    if (filled) {
+      ctx.fill();
+    } else {
+      ctx.stroke();
     }
   }
 
