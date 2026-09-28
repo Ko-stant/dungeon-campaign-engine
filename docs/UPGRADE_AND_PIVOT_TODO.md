@@ -55,7 +55,7 @@ Commits (oldest first):
 | 392a444 | corridor doors no longer warned; teleport squares and traps |
 | 786b0fd | campaign chapters, maps grouped by campaign |
 | e79243b | mid-game travel between maps |
-| (next commit) | trap catalog, multi-square catalog monsters, quest-book tiles |
+| dfef6ee | trap catalog, multi-square catalog monsters, quest-book tiles |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
