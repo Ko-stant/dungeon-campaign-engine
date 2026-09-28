@@ -56,7 +56,7 @@ Commits (oldest first):
 | 786b0fd | campaign chapters, maps grouped by campaign |
 | e79243b | mid-game travel between maps |
 | dfef6ee | trap catalog, multi-square catalog monsters, quest-book tiles |
-| (next commit) | trap removal, movable boulder, triggers, reveal with monsters, pick squares |
+| 72fea7e | trap removal, movable boulder, triggers, reveal with monsters, pick squares |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
