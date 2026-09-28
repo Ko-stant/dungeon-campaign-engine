@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last Updated**: 2026-09-28 15:52 EDT
+**Last Updated**: 2026-09-28 19:02 EDT
 
 The engine is a single-GM companion for in-person HeroQuest: build maps, run a
 quest at the table, and keep a resumable record of what happened. It never
@@ -34,6 +34,10 @@ enforces rules; the GM decides, and the app remembers.
 - Reveal a room with its monsters (everything but traps); pick squares and reveal them
   (and the monsters on them) in one step.
 - [ ] Enter stats for the new monsters (their files say 0 = not entered yet).
+- Dice expressions (`2d6+1`, d4..d20) in Go and TypeScript.
+- Custom hero classes (`/classes`): dice stats, accuracy, mana, class exclusives and
+  abilities with cooldowns and mana costs. Next steps for the "Three Plagues" campaign are
+  tracked in `NARRATIVE_AND_CLASSES_TODO.md`.
 
 ## Next
 ### Table polish

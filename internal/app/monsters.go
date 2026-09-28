@@ -16,9 +16,9 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views"
 )
 
-// customMonsterPrefix marks custom monster ids in the catalog, keeping them
-// apart from the content catalog's ids.
-const customMonsterPrefix = "custom-"
+// customPrefix marks custom monster and hero class ids in the catalog,
+// keeping them apart from the content catalog's ids.
+const customPrefix = "custom-"
 
 // maxMonsterSize bounds a custom monster's footprint in squares.
 const maxMonsterSize = 4
@@ -49,19 +49,25 @@ func customMonsterDef(rec store.CustomMonster) (content.MonsterDef, error) {
 		return content.MonsterDef{}, fmt.Errorf("custom monster %s: %w", rec.ID, err)
 	}
 	return content.MonsterDef{
-		ID: customMonsterPrefix + rec.ID, Name: rec.Name,
+		ID: customPrefix + rec.ID, Name: rec.Name,
 		Body: doc.Body, Mind: doc.Mind, Attack: doc.Attack, Defense: doc.Defense, Movement: doc.Movement,
 		Width: doc.Width, Height: doc.Height, Color: doc.Color, Notes: doc.Notes, Custom: true,
 	}, nil
 }
 
-// catalogFor returns the content catalog plus the GM's custom monsters.
+// catalogFor returns the content catalog plus the GM's custom monsters and
+// hero classes.
 func (s *Server) catalogFor(ctx context.Context) (*content.Catalog, error) {
 	recs, err := s.store.ListCustomMonsters(ctx)
 	if err != nil {
 		return nil, err
 	}
+	classes, err := s.customClasses(ctx)
+	if err != nil {
+		return nil, err
+	}
 	out := *s.catalog
+	out.Heroes = append(slices.Clone(s.catalog.Heroes), classes...)
 	out.Monsters = slices.Clone(s.catalog.Monsters)
 	for _, rec := range recs {
 		def, err := customMonsterDef(rec)

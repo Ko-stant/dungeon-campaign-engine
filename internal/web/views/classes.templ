@@ -1,0 +1,295 @@
+package views
+
+import (
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
+	"slices"
+	"strconv"
+	"strings"
+)
+
+// AbilityRow is one ability row of the class form, as typed.
+type AbilityRow struct {
+	ID       string
+	Name     string
+	Kind     string
+	Mana     string
+	Cooldown string
+	Text     string
+}
+
+// ClassForm holds a custom hero class form's values as typed.
+type ClassForm struct {
+	Name        string
+	Color       string
+	Description string
+	Body        string
+	Mind        string
+	Attack      string
+	Defense     string
+	Movement    string
+	Accuracy    string
+	Mana        string
+	Exclusives  []string
+	Abilities   []AbilityRow
+}
+
+// ClassItem is one custom class on the /classes list.
+type ClassItem struct {
+	ID    string
+	Class content.HeroDef
+}
+
+// blankAbilityRows is how many empty ability rows the form offers.
+const blankAbilityRows = 3
+
+// DefaultClassForm is the empty create form.
+func DefaultClassForm() ClassForm {
+	return ClassForm{Color: "#1d4ed8", Body: "20", Mind: "3", Attack: "1d6", Defense: "1d6", Movement: "2d6", Accuracy: "0", Mana: "0"}
+}
+
+func formNumber(n int) string {
+	if n == 0 {
+		return ""
+	}
+	return strconv.Itoa(n)
+}
+
+// ClassFormFromDef fills a form from a stored custom class.
+func ClassFormFromDef(h content.HeroDef) ClassForm {
+	f := ClassForm{
+		Name: h.Name, Color: h.Color, Description: h.Description,
+		Body: strconv.Itoa(h.Body), Mind: strconv.Itoa(h.Mind),
+		Attack: h.AttackDice, Defense: h.DefenseDice, Movement: h.Movement,
+		Accuracy: strconv.Itoa(h.Accuracy), Mana: strconv.Itoa(h.Mana),
+		Exclusives: h.Exclusives,
+	}
+	for _, a := range h.Abilities {
+		f.Abilities = append(f.Abilities, AbilityRow{
+			ID: a.ID, Name: a.Name, Kind: a.Kind, Mana: formNumber(a.ManaCost), Cooldown: formNumber(a.Cooldown), Text: a.Text,
+		})
+	}
+	return f
+}
+
+func abilityRows(f ClassForm) []AbilityRow {
+	rows := slices.Clone(f.Abilities)
+	for range blankAbilityRows {
+		rows = append(rows, AbilityRow{Kind: content.AbilityActive})
+	}
+	return rows
+}
+
+func exclusiveLabel(tag string) string {
+	switch tag {
+	case content.ExclusiveTwoHanded:
+		return "Two-handed weapons"
+	case content.ExclusiveRanged:
+		return "Ranged weapons"
+	case content.ExclusiveSpells:
+		return "Casting spells"
+	case content.ExclusiveDisarm:
+		return "Disarming traps"
+	}
+	return tag
+}
+
+func abilityKindLabel(kind string) string {
+	if kind == "" {
+		return ""
+	}
+	return strings.ToUpper(kind[:1]) + kind[1:]
+}
+
+// AbilityLimit describes an ability's cost and cooldown, e.g. "2 mana, every 10 rounds".
+func AbilityLimit(a content.Ability) string {
+	var parts []string
+	if a.ManaCost > 0 {
+		parts = append(parts, strconv.Itoa(a.ManaCost)+" mana")
+	}
+	switch {
+	case a.Cooldown == 1:
+		parts = append(parts, "every round")
+	case a.Cooldown > 1:
+		parts = append(parts, "every "+strconv.Itoa(a.Cooldown)+" rounds")
+	}
+	return strings.Join(parts, ", ")
+}
+
+// ClassStats is a one-line stat summary for a custom class.
+func ClassStats(h content.HeroDef) string {
+	parts := []string{
+		"Body " + strconv.Itoa(h.Body), "Mind " + strconv.Itoa(h.Mind),
+		"Attack " + h.AttackDice, "Defend " + h.DefenseDice, "Move " + h.Movement,
+		"Accuracy " + strconv.Itoa(h.Accuracy),
+	}
+	if h.Mana > 0 {
+		parts = append(parts, "Mana "+strconv.Itoa(h.Mana))
+	}
+	return strings.Join(parts, " · ")
+}
+
+templ classText(label, name, value, placeholder string, maxLen int) {
+	<label class="block text-xs">
+		<span class="mb-1 block opacity-70">{ label }</span>
+		<input name={ name } required maxlength={ strconv.Itoa(maxLen) } value={ value } placeholder={ placeholder } class={ smallInputClass }/>
+	</label>
+}
+
+templ classFields(f ClassForm) {
+	<div class="grid grid-cols-[1fr_4rem] gap-3">
+		@classText("Name", "name", f.Name, "e.g. Ranger", 120)
+		<label class="block text-xs">
+			<span class="mb-1 block opacity-70">Color</span>
+			<input name="color" type="color" value={ f.Color } class="h-8 w-full cursor-pointer rounded-md border border-border/60 bg-surface"/>
+		</label>
+	</div>
+	<label class="block text-xs">
+		<span class="mb-1 block opacity-70">Description</span>
+		<textarea name="description" maxlength="2000" rows="2" class={ smallInputClass }>{ f.Description }</textarea>
+	</label>
+	<fieldset class="space-y-2">
+		<legend class="mb-1 text-sm font-semibold">Stats</legend>
+		<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+			@monsterNumber("Body", "body", f.Body, 1, 999)
+			@monsterNumber("Mind", "mind", f.Mind, 0, 999)
+			@monsterNumber("Accuracy", "accuracy", f.Accuracy, 0, 99)
+			@monsterNumber("Mana", "mana", f.Mana, 0, 999)
+		</div>
+		<div class="grid grid-cols-3 gap-3">
+			@classText("Attack dice", "attack", f.Attack, "e.g. 1d8+1", 40)
+			@classText("Defend dice", "defense", f.Defense, "e.g. 1d6", 40)
+			@classText("Movement", "movement", f.Movement, "e.g. 2d6 or 6", 40)
+		</div>
+		<p class="text-xs opacity-60">Dice: d4, d6, d8, d10, d12, d20, e.g. <code>2d6+1</code> or <code>1d8+1d4</code>. A plain number is a fixed value. Mana 0 means the class has none.</p>
+	</fieldset>
+	<fieldset>
+		<legend class="mb-1 text-sm font-semibold">Only this class can use</legend>
+		<div class="flex flex-wrap gap-4 text-sm">
+			for _, tag := range content.Exclusives {
+				<label class="flex items-center gap-2">
+					<input type="checkbox" name="exclusives" value={ tag } checked?={ slices.Contains(f.Exclusives, tag) }/>
+					{ exclusiveLabel(tag) }
+				</label>
+			}
+		</div>
+		<p class="mt-1 text-xs opacity-60">A reminder for the table; the app never stops the GM.</p>
+	</fieldset>
+	<fieldset class="space-y-3">
+		<legend class="mb-1 text-sm font-semibold">Abilities</legend>
+		<p class="text-xs opacity-60">Cooldown counts rounds: an ability with cooldown 3 used in round 4 is ready again in round 7. Leave cooldown and mana empty for none. Clear a name to remove an ability; save to get more empty rows.</p>
+		for _, a := range abilityRows(f) {
+			<div class="space-y-2 rounded-md border border-border/60 p-3">
+				<input type="hidden" name="ability_id" value={ a.ID }/>
+				<div class="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_8rem_5rem_5rem]">
+					<label class="col-span-2 block text-xs sm:col-span-1">
+						<span class="mb-1 block opacity-70">Ability</span>
+						<input name="ability_name" maxlength="80" value={ a.Name } placeholder="e.g. Multi-Shot" class={ smallInputClass }/>
+					</label>
+					<label class="block text-xs">
+						<span class="mb-1 block opacity-70">Kind</span>
+						<select name="ability_kind" class={ smallInputClass }>
+							for _, k := range content.AbilityKinds {
+								<option value={ k } selected?={ a.Kind == k }>{ abilityKindLabel(k) }</option>
+							}
+						</select>
+					</label>
+					<label class="block text-xs">
+						<span class="mb-1 block opacity-70">Mana cost</span>
+						<input name="ability_mana" type="number" min="0" max="999" value={ a.Mana } class={ smallInputClass }/>
+					</label>
+					<label class="block text-xs">
+						<span class="mb-1 block opacity-70">Cooldown</span>
+						<input name="ability_cooldown" type="number" min="0" max="99" value={ a.Cooldown } class={ smallInputClass }/>
+					</label>
+				</div>
+				<label class="block text-xs">
+					<span class="mb-1 block opacity-70">What it does</span>
+					<textarea name="ability_text" maxlength="1000" rows="2" class={ smallInputClass }>{ a.Text }</textarea>
+				</label>
+			</div>
+		}
+	</fieldset>
+}
+
+templ classesHeader(subtitle string) {
+	<header class="flex items-baseline justify-between">
+		<div>
+			<h1 class="text-2xl font-bold text-amber-400">Classes</h1>
+			<span class="text-sm opacity-70">{ subtitle }</span>
+		</div>
+		@appNav("classes")
+	</header>
+}
+
+// ClassesPage lists the GM's custom hero classes.
+templ ClassesPage(items []ClassItem, pageError string) {
+	@components.Page("Classes", "") {
+		<main class="mx-auto max-w-4xl space-y-8 p-6">
+			@classesHeader("Your own hero classes, with dice stats and abilities")
+			if pageError != "" {
+				<p class="rounded-md border border-danger/60 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{ pageError }</p>
+			}
+			<a href="/classes/new" class={ buttonClass + " inline-block" }>New class</a>
+			<section class="space-y-3">
+				if len(items) == 0 {
+					<p class="opacity-70">No custom classes yet. Heroes can still use the standard classes.</p>
+				}
+				for _, it := range items {
+					<div class="rounded-lg border border-border/60 p-4">
+						<div class="flex items-center gap-2">
+							<span class="inline-block h-4 w-4 rounded-sm border border-border/60" style={ "background-color: " + it.Class.Color }></span>
+							<a href={ templ.SafeURL("/classes/" + it.ID) } class="font-semibold hover:text-amber-400">{ it.Class.Name }</a>
+							<form method="post" action={ templ.SafeURL("/classes/" + it.ID + "/delete") } class="ml-auto">
+								<button type="submit" class="rounded-md border border-danger/60 px-3 py-1 text-sm text-danger hover:bg-danger/10" onclick="return confirm('Delete this class?')">Delete</button>
+							</form>
+						</div>
+						<p class="mt-1 text-xs opacity-70">{ ClassStats(it.Class) }</p>
+						if len(it.Class.Abilities) > 0 {
+							<ul class="mt-2 space-y-1 text-sm">
+								for _, a := range it.Class.Abilities {
+									<li>
+										<span class="font-semibold">{ a.Name }</span>
+										<span class="text-xs opacity-60">{ abilityKindLabel(a.Kind) }</span>
+										if l := AbilityLimit(a); l != "" {
+											<span class="text-xs opacity-60">· { l }</span>
+										}
+									</li>
+								}
+							</ul>
+						}
+					</div>
+				}
+			</section>
+		</main>
+	}
+}
+
+// ClassEditPage creates (id empty) or edits a custom hero class.
+templ ClassEditPage(id string, form ClassForm, formError string) {
+	@components.Page("Classes", "") {
+		<main class="mx-auto max-w-4xl space-y-6 p-6">
+			if id == "" {
+				@classesHeader("New class")
+			} else {
+				@classesHeader("Edit " + form.Name)
+			}
+			if formError != "" {
+				<p class="rounded-md border border-danger/60 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{ formError }</p>
+			}
+			<form method="post" action={ templ.SafeURL(strings.TrimSuffix("/classes/"+id, "/")) } class={ cardClass + " space-y-4" }>
+				@classFields(form)
+				<div class="flex items-center gap-3">
+					<button type="submit" class={ buttonClass }>
+						if id == "" {
+							Create
+						} else {
+							Save
+						}
+					</button>
+					<a href="/classes" class="text-sm opacity-70 hover:text-amber-400">Cancel</a>
+				</div>
+			</form>
+		</main>
+	}
+}

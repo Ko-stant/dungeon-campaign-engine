@@ -53,6 +53,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	s.registerPages(mux)
 	s.registerTrackerPages(mux)
 	s.registerMonsterPages(mux)
+	s.registerClassPages(mux)
 	s.registerChapterPages(mux)
 }
 

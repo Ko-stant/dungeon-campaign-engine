@@ -71,6 +71,52 @@ type HeroDef struct {
 	Attack       int    `json:"attack"`
 	Defense      int    `json:"defense"`
 	MovementDice int    `json:"movementDice"`
+
+	// Custom classes (made on the Classes page) roll dice expressions
+	// ("2d6+1") instead of combat dice, and may have accuracy, mana,
+	// class-only equipment and abilities.
+	Custom      bool      `json:"custom,omitempty"`
+	Color       string    `json:"color,omitempty"`
+	AttackDice  string    `json:"attackDice,omitempty"`
+	DefenseDice string    `json:"defenseDice,omitempty"`
+	Movement    string    `json:"movement,omitempty"`
+	Accuracy    int       `json:"accuracy,omitempty"`
+	Mana        int       `json:"mana,omitempty"`
+	Exclusives  []string  `json:"exclusives,omitempty"`
+	Abilities   []Ability `json:"abilities,omitempty"`
+}
+
+// Ability kinds.
+const (
+	AbilityActive   = "active"
+	AbilityPassive  = "passive"
+	AbilityReaction = "reaction"
+	AbilitySpell    = "spell"
+)
+
+// AbilityKinds lists the ability kinds in display order.
+var AbilityKinds = []string{AbilityActive, AbilityPassive, AbilityReaction, AbilitySpell}
+
+// Class exclusives: things only a class with the tag may do. Advice only.
+const (
+	ExclusiveTwoHanded = "two-handed"
+	ExclusiveRanged    = "ranged"
+	ExclusiveSpells    = "spells"
+	ExclusiveDisarm    = "disarm"
+)
+
+// Exclusives lists the class exclusives in display order.
+var Exclusives = []string{ExclusiveTwoHanded, ExclusiveRanged, ExclusiveSpells, ExclusiveDisarm}
+
+// Ability is a hero class ability. Cooldown counts rounds: used in round R,
+// it is ready again in round R+Cooldown. Mana and cooldown may both apply.
+type Ability struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Kind     string `json:"kind"`
+	ManaCost int    `json:"manaCost,omitempty"`
+	Cooldown int    `json:"cooldown,omitempty"`
+	Text     string `json:"text,omitempty"`
 }
 
 // Catalog holds every entry, each list sorted by id.

@@ -14,6 +14,7 @@ import (
 
 	"github.com/coder/websocket"
 
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/tracker"
@@ -158,8 +159,9 @@ func (s *Server) getCampaign(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// normalizeHeroes validates heroes against the catalog and assigns ids.
-func (s *Server) normalizeHeroes(heroes []tracker.CampaignHero) ([]tracker.CampaignHero, error) {
+// normalizeHeroes validates heroes against the catalog (with custom
+// classes, see catalogFor) and assigns ids.
+func normalizeHeroes(cat *content.Catalog, heroes []tracker.CampaignHero) ([]tracker.CampaignHero, error) {
 	out := make([]tracker.CampaignHero, 0, len(heroes))
 	used := map[string]bool{}
 	highest := 0
@@ -174,7 +176,7 @@ func (s *Server) normalizeHeroes(heroes []tracker.CampaignHero) ([]tracker.Campa
 		if h.Name == "" {
 			return nil, errors.New("every hero needs a name")
 		}
-		if _, ok := s.catalog.Hero(h.Class); !ok {
+		if _, ok := cat.Hero(h.Class); !ok {
 			return nil, fmt.Errorf("hero %q has unknown class %q", h.Name, h.Class)
 		}
 		if h.Gold < 0 {
@@ -211,7 +213,12 @@ func (s *Server) updateCampaign(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "%v", err)
 		return
 	}
-	heroes, err := s.normalizeHeroes(req.Heroes)
+	cat, err := s.catalogFor(r.Context())
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	heroes, err := normalizeHeroes(cat, req.Heroes)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "%v", err)
 		return

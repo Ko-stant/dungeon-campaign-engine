@@ -169,6 +169,18 @@ export function monsterOptionLabel(m: MonsterDef): string {
   return w > 1 || h > 1 ? `${m.name} (${w}×${h})` : m.name;
 }
 
+export type AbilityKind = 'active' | 'passive' | 'reaction' | 'spell';
+
+/** A hero class ability. Cooldown counts rounds: used in round R, ready again in round R + cooldown. */
+export interface Ability {
+  id: string;
+  name: string;
+  kind: AbilityKind;
+  manaCost?: number;
+  cooldown?: number;
+  text?: string;
+}
+
 export interface HeroDef {
   id: string;
   name: string;
@@ -178,6 +190,16 @@ export interface HeroDef {
   attack: number;
   defense: number;
   movementDice: number;
+  /** Custom classes (made on the Classes page): dice expressions, accuracy, mana, exclusives, abilities. */
+  custom?: boolean;
+  color?: string;
+  attackDice?: string;
+  defenseDice?: string;
+  movement?: string;
+  accuracy?: number;
+  mana?: number;
+  exclusives?: string[];
+  abilities?: Ability[];
 }
 
 export interface Catalog {

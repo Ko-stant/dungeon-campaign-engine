@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-28 15:52 EDT
+**Last Updated**: 2026-09-28 19:02 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -57,6 +57,7 @@ Commits (oldest first):
 | e79243b | mid-game travel between maps |
 | dfef6ee | trap catalog, multi-square catalog monsters, quest-book tiles |
 | 72fea7e | trap removal, movable boulder, triggers, reveal with monsters, pick squares |
+| (next commit) | dice expressions, custom hero classes (`/classes`), Three Plagues campaign docs |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).

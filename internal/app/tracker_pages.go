@@ -94,15 +94,19 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 	if err != nil {
 		return views.CampaignPageData{}, err
 	}
+	cat, err := s.catalogFor(ctx)
+	if err != nil {
+		return views.CampaignPageData{}, err
+	}
 	d := views.CampaignPageData{ID: c.ID, Name: c.Name}
 	for _, h := range heroes {
 		class := h.Class
-		if def, ok := s.catalog.Hero(h.Class); ok {
+		if def, ok := cat.Hero(h.Class); ok {
 			class = def.Name
 		}
 		d.Heroes = append(d.Heroes, views.HeroRow{ID: h.ID, Name: h.Name, Player: h.Player, Class: class, Gold: h.Gold, Equipment: h.Equipment, Notes: h.Notes})
 	}
-	for _, def := range s.catalog.Heroes {
+	for _, def := range cat.Heroes {
 		d.Classes = append(d.Classes, views.ClassOption{ID: def.ID, Name: def.Name})
 	}
 
@@ -146,7 +150,12 @@ func (s *Server) addHeroForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	heroes = append(heroes, tracker.CampaignHero{Name: r.PostFormValue("name"), Player: r.PostFormValue("player"), Class: r.PostFormValue("class")})
-	heroes, err = s.normalizeHeroes(heroes)
+	cat, err := s.catalogFor(r.Context())
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	heroes, err = normalizeHeroes(cat, heroes)
 	if err != nil {
 		s.renderCampaignPage(w, r, http.StatusBadRequest, id, err.Error())
 		return
