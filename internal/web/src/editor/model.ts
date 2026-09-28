@@ -5,7 +5,7 @@
  */
 import { edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
 import { VOID, covers, withShape, onBoard as squareOnBoard, regionAt, tileIndex, type BlockedSquareView, type BoardView, type DoorKind, type FurnitureView, type PieceView, type TrapState, type TrapView } from '../board/model.ts';
-import { DOC_VERSION, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type RectDoc, type Room, type TeleportDoc, type TrapDoc } from '../maps/types.ts';
+import { DOC_VERSION, MAX_TRAP_LABEL, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type RectDoc, type Room, type TeleportDoc, type TrapDoc } from '../maps/types.ts';
 
 export const MAX_BOARD_SIZE = 200;
 
@@ -205,8 +205,11 @@ export function placeTrap(q: QuestDoc, kind: string, at: TileCoord, rotation: Ro
   return { ...q, traps: [...q.traps, trap] };
 }
 
-/** Trap kinds without catalog artwork, offered after the catalog's traps. */
-export const MARKER_TRAP_KINDS = ['chest', 'teleport', 'other'] as const;
+/**
+ * Trap kinds without catalog artwork, offered after the catalog's traps. A
+ * "trigger" is the GM's own marker for setting off other effects.
+ */
+export const MARKER_TRAP_KINDS = ['trigger', 'chest', 'teleport', 'other'] as const;
 
 /** Picker options for the trap tool: catalog traps (by id), then marker kinds not in the catalog. */
 export function trapKindOptions(catalog: Catalog): [string, string][] {
@@ -225,9 +228,33 @@ export function trapTiles(catalog: Catalog, t: Pick<TrapDoc, 'kind' | 'x' | 'y' 
   return def ? footprintTiles({ x: t.x, y: t.y }, def.width, def.height, t.rotation ?? 0) : [{ x: t.x, y: t.y }];
 }
 
-/** The renderer's view of a quest trap in a given state, with catalog artwork and footprint. */
-export function trapView(catalog: Catalog, t: TrapDoc, state: TrapState): TrapView {
-  const view: TrapView = { id: t.id, kind: t.kind, at: { x: t.x, y: t.y }, state };
+export function setTrapLabel(q: QuestDoc, id: string, label: string): QuestDoc {
+  const trimmed = label.trim().slice(0, MAX_TRAP_LABEL).trim();
+  return {
+    ...q,
+    traps: q.traps.map((t) => {
+      if (t.id !== id) {
+        return t;
+      }
+      const next: TrapDoc = { ...t };
+      delete next.label;
+      if (trimmed) {
+        next.label = trimmed;
+      }
+      return next;
+    }),
+  };
+}
+
+/**
+ * The renderer's view of a quest trap in a given state, with catalog artwork
+ * and footprint. `at` overrides the quest position (a trap moved during play).
+ */
+export function trapView(catalog: Catalog, t: TrapDoc, state: TrapState, at?: TileCoord): TrapView {
+  const view: TrapView = { id: t.id, kind: t.kind, at: at ? { x: at.x, y: at.y } : { x: t.x, y: t.y }, state };
+  if (t.label) {
+    view.label = t.label;
+  }
   const def = catalog.traps.find((d) => d.id === t.kind);
   if (def) {
     view.width = def.width;

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { DOC_VERSION, type Catalog } from '../maps/types.ts';
 import { formatEvent } from './format.ts';
-import { clickCommand, doorAt, pieceAt, type Mode } from './interaction.ts';
+import { clickCommand, doorAt, paintPending, pieceAt, revealSquaresCommand, type Mode } from './interaction.ts';
 import type { SessionState } from './types.ts';
 import { trackerView } from './view.ts';
 
@@ -9,8 +9,19 @@ const catalog: Catalog = {
   furniture: [{ id: 'table', name: 'Table', width: 2, height: 1, blocksMovement: true, blocksLineOfSight: false, image: 'assets/table.png' }],
   monsters: [{ id: 'orc', name: 'Orc', body: 1, mind: 2, attack: 3, defense: 2, movement: 8, image: 'assets/orc.png' }],
   heroes: [{ id: 'elf', name: 'Elf', body: 6, mind: 4, attack: 2, defense: 2, movementDice: 2 }],
-  traps: [{ id: 'long_pit', name: 'Long Pit Trap', width: 1, height: 2, image: 'assets/long_pit.png' }],
+  traps: [
+    { id: 'long_pit', name: 'Long Pit Trap', width: 1, height: 2, image: 'assets/long_pit.png' },
+    { id: 'boulder', name: 'Boulder', width: 1, height: 1, image: 'assets/boulder.png', movable: true },
+  ],
 };
+
+/** state() plus a boulder on (2,1), which the GM can move. */
+function withBoulder(): SessionState {
+  const s = state();
+  s.quest.traps.push({ id: 'trap-3', kind: 'boulder', x: 2, y: 1, state: 'hidden' });
+  s.traps.push({ id: 'trap-3', state: 'triggered' });
+  return s;
+}
 
 /** state() plus a 1x2 long pit standing on (4,1) and (4,2), under note A. */
 function withLongPit(): SessionState {
@@ -67,6 +78,13 @@ function state(): SessionState {
 }
 
 describe('trackerView', () => {
+  test('removed traps are not drawn; moved traps are drawn where they are now', () => {
+    const s = withBoulder();
+    s.traps = [{ id: 'trap-1', state: 'removed' }, { id: 'trap-3', state: 'triggered', at: { x: 4, y: 2 } }];
+    const view = trackerView(s, catalog, { fog: false });
+    expect(view.traps.map((t) => [t.id, t.at])).toEqual([['trap-3', { x: 4, y: 2 }]]);
+  });
+
   test('catalog traps carry their artwork and footprint with the live state', () => {
     const view = trackerView(withLongPit(), catalog, { fog: false });
     expect(view.traps[1]).toEqual({ id: 'trap-2', kind: 'long_pit', at: { x: 4, y: 1 }, state: 'revealed', width: 1, height: 2, rotation: 0, image: 'assets/long_pit.png' });
@@ -196,6 +214,41 @@ describe('interaction', () => {
     expect(clickCommand(withLongPit(), select, null, { tile: { x: 4, y: 2 }, edge: null }, catalog)).toEqual({ command: null, select: 'trap-2' });
     // Without the catalog a trap is one square, so the note on (4,2) is found.
     expect(clickCommand(withLongPit(), select, null, { tile: { x: 4, y: 2 }, edge: null })).toEqual({ command: null, select: 'note-A' });
+  });
+
+  test('select mode: a selected movable trap moves to the next clicked square; other traps do not', () => {
+    expect(clickCommand(withBoulder(), select, null, { tile: { x: 2, y: 1 }, edge: null }, catalog)).toEqual({ command: null, select: 'trap-3' });
+    expect(clickCommand(withBoulder(), select, 'trap-3', { tile: { x: 4, y: 1 }, edge: null }, catalog)).toEqual({
+      command: { type: 'move', payload: { id: 'trap-3', x: 4, y: 1 } },
+      select: 'trap-3',
+    });
+    expect(clickCommand(withBoulder(), select, 'trap-1', { tile: { x: 4, y: 1 }, edge: null }, catalog)).toEqual({ command: null, select: null });
+  });
+
+  test('select mode: removed traps cannot be clicked; moved traps are found where they are now', () => {
+    const s = withBoulder();
+    s.traps = [{ id: 'trap-1', state: 'removed' }, { id: 'trap-3', state: 'triggered', at: { x: 4, y: 1 } }];
+    expect(clickCommand(s, select, null, { tile: { x: 2, y: 2 }, edge: null }, catalog)).toEqual({ command: null, select: null });
+    expect(clickCommand(s, select, null, { tile: { x: 2, y: 1 }, edge: null }, catalog)).toEqual({ command: null, select: null });
+    expect(clickCommand(s, select, null, { tile: { x: 4, y: 1 }, edge: null }, catalog)).toEqual({ command: null, select: 'trap-3' });
+  });
+
+  test('reveal mode can also show the monsters in the area', () => {
+    expect(clickCommand(state(), { kind: 'reveal', seen: true }, null, { tile: { x: 4, y: 1 }, edge: null })?.command).toEqual({
+      type: 'area.reveal',
+      payload: { x: 4, y: 1, seen: true },
+    });
+  });
+
+  test('picked squares: painting adds or removes, and one command reveals them all', () => {
+    let pending = paintPending([], { x: 1, y: 1 }, true);
+    pending = paintPending(pending, { x: 2, y: 1 }, true);
+    pending = paintPending(pending, { x: 2, y: 1 }, true); // already there
+    expect(pending).toEqual([{ x: 1, y: 1 }, { x: 2, y: 1 }]);
+    expect(paintPending(pending, { x: 1, y: 1 }, false)).toEqual([{ x: 2, y: 1 }]);
+    expect(revealSquaresCommand([], true)).toBeNull();
+    expect(revealSquaresCommand(pending, true)).toEqual({ type: 'tiles.reveal', payload: { tiles: [{ x: 1, y: 1 }, { x: 2, y: 1 }], seen: true } });
+    expect(revealSquaresCommand(pending, false)).toEqual({ type: 'tiles.reveal', payload: { tiles: [{ x: 1, y: 1 }, { x: 2, y: 1 }] } });
   });
 
   test('select mode: clicking a trap or note square selects it when no piece is there', () => {

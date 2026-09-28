@@ -89,6 +89,9 @@ Tailwind CSS v4, canvas rendering.
   both kinds count.
 - A session stores frozen copies of its board and quest, so map edits never change a game in progress.
 - Every tracker change is one command -> one event row; corrections are just more events.
+- Trap state "removed" is live-only (taken off the board during play). Kind "trigger" is a
+  built-in marker the GM uses for their own effects; catalog traps with `movable` (the
+  boulder) can be moved during play.
 
 ## Development Rules
 - **Test-first**: write the failing Go test / `bun:test` before the implementation. Keep pure logic

@@ -26,12 +26,14 @@ type FurnitureDef struct {
 
 // TrapDef is a trap catalog entry: a trap kind with its artwork and footprint.
 // Quest traps whose kind has no entry are drawn as single-square markers.
+// Movable traps (a rolling boulder) can be moved on the board during play.
 type TrapDef struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
-	Image  string `json:"image,omitempty"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Width   int    `json:"width"`
+	Height  int    `json:"height"`
+	Image   string `json:"image,omitempty"`
+	Movable bool   `json:"movable,omitempty"`
 }
 
 // MonsterDef is a monster catalog entry with its base stats.
@@ -106,6 +108,7 @@ type furnitureFile struct {
 type trapFile struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
+	Movable  bool   `json:"movable"`
 	GridSize struct {
 		Width  int `json:"width"`
 		Height int `json:"height"`
@@ -187,7 +190,10 @@ func Load(fsys fs.FS) (*Catalog, error) {
 		if f.GridSize.Width < 1 || f.GridSize.Height < 1 {
 			return TrapDef{}, fmt.Errorf("gridSize must be at least 1x1, got %dx%d", f.GridSize.Width, f.GridSize.Height)
 		}
-		return TrapDef{ID: f.ID, Name: f.Name, Width: f.GridSize.Width, Height: f.GridSize.Height, Image: f.Rendering.image()}, nil
+		return TrapDef{
+			ID: f.ID, Name: f.Name, Width: f.GridSize.Width, Height: f.GridSize.Height,
+			Image: f.Rendering.image(), Movable: f.Movable,
+		}, nil
 	})
 	if err != nil {
 		return nil, err

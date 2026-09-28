@@ -90,10 +90,13 @@ type DoorState struct {
 	Locked bool `json:"locked"`
 }
 
-// TrapState is the live state of a quest trap.
+// TrapState is the live state of a quest trap. At is set once the trap has
+// been moved during play (a rolling boulder); until then it is where the quest
+// put it.
 type TrapState struct {
-	ID    string `json:"id"`
-	State string `json:"state"`
+	ID    string     `json:"id"`
+	State string     `json:"state"`
+	At    *maps.Tile `json:"at,omitempty"`
 }
 
 // State is everything needed to resume a session. Board and Quest are frozen

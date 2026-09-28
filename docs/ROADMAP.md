@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last Updated**: 2026-09-28 15:18 EDT
+**Last Updated**: 2026-09-28 15:52 EDT
 
 The engine is a single-GM companion for in-person HeroQuest: build maps, run a
 quest at the table, and keep a resumable record of what happened. It never
@@ -29,9 +29,11 @@ enforces rules; the GM decides, and the app remembers.
   (Jungles of Delthrak, Mage of the Mirror, Rise of the Dread Moon, The Ogre Horde,
   Kellar's Keep). Catalog monsters read `gridSize` (2x1 Giant Ape, Ogre Lord, ...).
 - Trap catalog (`content/traps/`): trap artwork, multi-square and rotatable traps.
+- Traps can be removed during play, the boulder moves, trap labels, and a "trigger"
+  marker for the GM's own effects.
+- Reveal a room with its monsters (everything but traps); pick squares and reveal them
+  (and the monsters on them) in one step.
 - [ ] Enter stats for the new monsters (their files say 0 = not entered yet).
-- [ ] `Check` still treats monsters as one square; flag multi-square monsters that
-      reach off the board or onto rock, as it does for furniture and traps.
 
 ## Next
 ### Table polish

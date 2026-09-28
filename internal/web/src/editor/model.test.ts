@@ -26,6 +26,7 @@ import {
   setNoteText,
   setRoomColor,
   setTeleportLabel,
+  setTrapLabel,
   toBoardView,
   toggleExitTile,
   toggleDoorState,
@@ -305,12 +306,22 @@ describe('quest items', () => {
     expect(trapKindOptions(catalog)).toEqual([
       ['long_pit', 'Long Pit Trap (1×2)'],
       ['pit', 'Pit Trap'],
+      ['trigger', 'trigger'],
       ['chest', 'chest'],
       ['teleport', 'teleport'],
       ['other', 'other'],
     ]);
     const withChest: Catalog = { ...catalog, traps: [{ id: 'chest', name: 'Chest Trap', width: 1, height: 1 }] };
-    expect(trapKindOptions(withChest)).toEqual([['chest', 'Chest Trap'], ['teleport', 'teleport'], ['other', 'other']]);
+    expect(trapKindOptions(withChest)).toEqual([['chest', 'Chest Trap'], ['trigger', 'trigger'], ['teleport', 'teleport'], ['other', 'other']]);
+  });
+
+  test('traps take a short trimmed label, shown in the view; an empty one clears it', () => {
+    let q = placeTrap(emptyQuest(), 'trigger', { x: 3, y: 3 });
+    q = setTrapLabel(q, 'trap-1', '  1 ');
+    expect(q.traps[0]).toEqual({ id: 'trap-1', kind: 'trigger', x: 3, y: 3, state: 'hidden', label: '1' });
+    expect(toBoardView(board(4, 4), q, catalog).traps[0]).toEqual({ id: 'trap-1', kind: 'trigger', at: { x: 3, y: 3 }, state: 'hidden', label: '1' });
+    expect(setTrapLabel(q, 'trap-1', ' ').traps[0]).toEqual({ id: 'trap-1', kind: 'trigger', x: 3, y: 3, state: 'hidden' });
+    expect(setTrapLabel(q, 'trap-1', 'far too long a label').traps[0]?.label).toBe('far too');
   });
 
   test('a blocked square can be marked as hiding a secret door', () => {

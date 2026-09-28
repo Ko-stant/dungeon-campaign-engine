@@ -7,6 +7,8 @@
     "height": 1,
     "comment": "Footprint in squares (columns x rows) before rotation; quests may rotate it 0/90/180/270"
   },
+  "movable": false,
+  "movableComment": "true for traps the GM can move during play (a rolling boulder)",
   "rendering": {
     "tileImage": "assets/tiles/traps/trap_name.jpg",
     "tileImageCleaned": "assets/tiles_cleaned/traps/trap_name.png",

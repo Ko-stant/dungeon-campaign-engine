@@ -1,4 +1,5 @@
 /** Session state and API shapes, mirroring internal/tracker and internal/app (Go). */
+import type { TileCoord } from '../board/geometry.ts';
 import type { DoorState, TrapState } from '../board/model.ts';
 import type { BoardDoc, QuestDoc } from '../maps/types.ts';
 
@@ -48,9 +49,14 @@ export interface LiveDoor {
   locked: boolean;
 }
 
+/** A trap's live state: a quest state, or removed from the board during play. */
+export type LiveTrapState = TrapState | 'removed';
+
 export interface LiveTrap {
   id: string;
-  state: TrapState;
+  state: LiveTrapState;
+  /** Where the trap is now, once moved during play (a rolling boulder). */
+  at?: TileCoord;
 }
 
 /** A map the session has left (the tracker only needs to name it). */

@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-28 15:18 EDT
+**Last Updated**: 2026-09-28 15:52 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -56,6 +56,7 @@ Commits (oldest first):
 | 786b0fd | campaign chapters, maps grouped by campaign |
 | e79243b | mid-game travel between maps |
 | dfef6ee | trap catalog, multi-square catalog monsters, quest-book tiles |
+| (next commit) | trap removal, movable boulder, triggers, reveal with monsters, pick squares |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
@@ -661,6 +662,36 @@ them and add them to the content catalog. Decisions (asked): new monsters get 0 
       the second square, R rotation. The tracker was not opened in the browser (starting a
       session creates campaign/session rows that cannot be deleted); its trap view and
       footprint clicks are covered by bun tests.
+
+## Post-plan: trap removal, movable boulder, triggers, faster reveals [DONE 2026-09-28]
+Asked for: remove disarmed traps during play; move the boulder once triggered; a custom
+trigger marker (hidden/triggered/removed) the GM uses for their own effects; reveal a room
+with everything but its traps; reveal many chosen squares at once. Decisions (asked):
+removed traps vanish from the board (still listed in the sidebar); only catalog traps with
+`"movable": true` (the boulder) can be moved; traps get an optional short label.
+
+- [x] Go: `maps.TrapRemoved` ("removed") is accepted by `trap.set` but not as a quest's
+      starting state; `TrapState.At` holds a trap's position once `move` has moved it (the
+      `move` command now takes hero, monster or trap ids); `Trap.Label` (<= `MaxTrapLabel`
+      = 8); `maps.TrapTrigger` = "trigger"; catalog `TrapDef.Movable`. Trap log lines use the
+      catalog name, "Trigger" for triggers, plus the label. `area.reveal` and `tiles.reveal`
+      take `seen: true` to mark living, hidden monsters with any square revealed as seen
+      ("Revealed Crypt (2 monsters seen)"); traps are never touched by a reveal.
+- [x] Client: `LiveTrapState` adds "removed"; `trackerView` drops removed traps and draws
+      moved ones where they are; tracker clicks find traps at their live position (removed
+      ones cannot be clicked) and move a selected trap only if its catalog entry is movable.
+      Tracker page: "remove" state button, trap names with labels and live positions, Reveal
+      mode options "Show monsters too" (default on) and "Pick squares" (press/drag to paint
+      a pending set shown with the tile highlight, gaps filled with `lineTiles`, then one
+      "Reveal N squares" = one `tiles.reveal` event). Editor: "trigger" marker kind in the
+      trap picker, label input for any trap (`setTrapLabel`). Renderer: trigger diamond
+      (filled once triggered), trap labels in the footprint's bottom-right corner.
+- [x] Content: `content/traps/boulder.json` has `"movable": true`; schema template updated.
+- [x] Verified on :8091 against a throwaway database (`dce_claude_scratch`, dropped after):
+      room reveal with monsters, pick-squares drag + reveal (one event, wolf seen), boulder
+      select/trigger/move/remove, trigger labelled "1" triggered, removed trap listed in the
+      sidebar, trigger label in the editor. A test drag skipped squares between mouse
+      events and missed the release square; both fixed (`lineTiles` fill, paint on mouseup).
 
 ---
 

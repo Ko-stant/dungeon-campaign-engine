@@ -30,6 +30,9 @@ func fixture() fstest.MapFS {
 			"id": "pit", "name": "Pit Trap", "gridSize": {"width": 1, "height": 1},
 			"rendering": {"tileImage": "assets/tiles/traps/trap_pit.jpg", "tileImageCleaned": "assets/tiles_cleaned/traps/trap_pit.png"}
 		}`)},
+		"traps/boulder.json": {Data: []byte(`{
+			"id": "boulder", "name": "Boulder", "gridSize": {"width": 1, "height": 1}, "movable": true
+		}`)},
 		"traps/long_pit.json": {Data: []byte(`{
 			"id": "long_pit", "name": "Long Pit Trap", "gridSize": {"width": 1, "height": 2},
 			"rendering": {"tileImageCleaned": "assets/tiles_cleaned/traps/trap_long_pit.png"}
@@ -94,10 +97,13 @@ func TestLoadReadsTraps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Traps) != 2 || c.Traps[0].ID != "long_pit" || c.Traps[1].ID != "pit" {
+	if len(c.Traps) != 3 || c.Traps[0].ID != "boulder" || c.Traps[1].ID != "long_pit" || c.Traps[2].ID != "pit" {
 		t.Fatalf("traps should be sorted by id: %+v", c.Traps)
 	}
-	long := c.Traps[0]
+	if !c.Traps[0].Movable || c.Traps[1].Movable {
+		t.Fatalf("only the boulder is movable: %+v", c.Traps)
+	}
+	long := c.Traps[1]
 	if long.Name != "Long Pit Trap" || long.Width != 1 || long.Height != 2 || long.Image != "assets/tiles_cleaned/traps/trap_long_pit.png" {
 		t.Fatalf("long_pit: %+v", long)
 	}

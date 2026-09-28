@@ -160,6 +160,50 @@ func monsterLabel(m *Monster) string {
 	return fmt.Sprintf("%s (%s)", m.Name, m.ID)
 }
 
+// trap finds a trap's live state and its quest entry.
+func (a *applier) trap(id string) (*TrapState, maps.Trap, error) {
+	for i := range a.s.Traps {
+		if a.s.Traps[i].ID != id {
+			continue
+		}
+		for _, qt := range a.s.Quest.Traps {
+			if qt.ID == id {
+				return &a.s.Traps[i], qt, nil
+			}
+		}
+		return &a.s.Traps[i], maps.Trap{ID: id}, nil
+	}
+	return nil, maps.Trap{}, fmt.Errorf("no trap %q", id)
+}
+
+// trapKindLabel names a trap for the log: its catalog name (or kind), plus its label.
+func (a *applier) trapKindLabel(qt maps.Trap) string {
+	name := strings.ReplaceAll(qt.Kind, "_", " ")
+	if qt.Kind == maps.TrapTrigger {
+		name = "Trigger"
+	}
+	if a.catalog != nil {
+		if def, ok := a.catalog.TrapByID(qt.Kind); ok {
+			name = def.Name
+		}
+	}
+	if name == "" {
+		name = "trap"
+	}
+	if qt.Label != "" {
+		name += " " + qt.Label
+	}
+	return name
+}
+
+// trapAt is where a trap is now: moved during play, or where the quest put it.
+func trapAt(t *TrapState, qt maps.Trap) maps.Tile {
+	if t.At != nil {
+		return *t.At
+	}
+	return maps.Tile{X: qt.X, Y: qt.Y}
+}
+
 func (a *applier) move(payload json.RawMessage) (string, error) {
 	p, err := decode[struct {
 		ID string `json:"id"`
@@ -180,13 +224,18 @@ func (a *applier) move(payload json.RawMessage) (string, error) {
 		}
 		return fmt.Sprintf("Moved %s from (%d,%d) to (%d,%d)", a.heroLabel(h), fromX, fromY, p.X, p.Y), nil
 	}
-	m, _, err := a.monster(p.ID)
-	if err != nil {
-		return "", fmt.Errorf("no hero or monster %q", p.ID)
+	if m, _, err := a.monster(p.ID); err == nil {
+		fromX, fromY := m.X, m.Y
+		m.X, m.Y = p.X, p.Y
+		return fmt.Sprintf("Moved %s from (%d,%d) to (%d,%d)", monsterLabel(m), fromX, fromY, p.X, p.Y), nil
 	}
-	fromX, fromY := m.X, m.Y
-	m.X, m.Y = p.X, p.Y
-	return fmt.Sprintf("Moved %s from (%d,%d) to (%d,%d)", monsterLabel(m), fromX, fromY, p.X, p.Y), nil
+	t, qt, err := a.trap(p.ID)
+	if err != nil {
+		return "", fmt.Errorf("no hero, monster or trap %q", p.ID)
+	}
+	from := trapAt(t, qt)
+	t.At = &maps.Tile{X: p.X, Y: p.Y}
+	return fmt.Sprintf("Moved trap %s (%s) from (%d,%d) to (%d,%d)", t.ID, a.trapKindLabel(qt), from.X, from.Y, p.X, p.Y), nil
 }
 
 func nonNegative(name string, v *int) error {
@@ -467,26 +516,17 @@ func (a *applier) trapSet(payload json.RawMessage) (string, error) {
 		return "", err
 	}
 	switch p.State {
-	case maps.TrapHidden, maps.TrapRevealed, maps.TrapTriggered, maps.TrapDisarmed:
+	case maps.TrapHidden, maps.TrapRevealed, maps.TrapTriggered, maps.TrapDisarmed, maps.TrapRemoved:
 	default:
 		return "", fmt.Errorf("invalid trap state %q", p.State)
 	}
-	for i := range a.s.Traps {
-		t := &a.s.Traps[i]
-		if t.ID != p.ID {
-			continue
-		}
-		kind := "trap"
-		for _, qt := range a.s.Quest.Traps {
-			if qt.ID == t.ID {
-				kind = strings.ReplaceAll(qt.Kind, "_", " ")
-			}
-		}
-		from := t.State
-		t.State = p.State
-		return fmt.Sprintf("Trap %s (%s): %s → %s", t.ID, kind, from, p.State), nil
+	t, qt, err := a.trap(p.ID)
+	if err != nil {
+		return "", err
 	}
-	return "", fmt.Errorf("no trap %q", p.ID)
+	from := t.State
+	t.State = p.State
+	return fmt.Sprintf("Trap %s (%s): %s → %s", t.ID, a.trapKindLabel(qt), from, p.State), nil
 }
 
 func (a *applier) setDiscovered(indexes []int, discovered bool) {
@@ -511,10 +551,45 @@ func squares(n int) string {
 	return fmt.Sprintf("%d squares", n)
 }
 
+// showMonstersOn marks every living, hidden monster with a square among the
+// board indexes as seen, and describes how many there were (or "").
+func (a *applier) showMonstersOn(indexes []int) string {
+	on := make(map[int]bool, len(indexes))
+	for _, i := range indexes {
+		on[i] = true
+	}
+	n := 0
+	for i := range a.s.Monsters {
+		m := &a.s.Monsters[i]
+		if !m.Alive || m.Visibility == MonsterSeen {
+			continue
+		}
+		w, h := max(m.Width, 1), max(m.Height, 1)
+	footprint:
+		for y := m.Y; y < m.Y+h; y++ {
+			for x := m.X; x < m.X+w; x++ {
+				if a.s.Board.OnBoard(x, y) && on[a.s.Board.Index(x, y)] {
+					m.Visibility = MonsterSeen
+					n++
+					break footprint
+				}
+			}
+		}
+	}
+	switch n {
+	case 0:
+		return ""
+	case 1:
+		return " (1 monster seen)"
+	}
+	return fmt.Sprintf(" (%d monsters seen)", n)
+}
+
 func (a *applier) areaReveal(payload json.RawMessage) (string, error) {
 	p, err := decode[struct {
-		X int `json:"x"`
-		Y int `json:"y"`
+		X    int  `json:"x"`
+		Y    int  `json:"y"`
+		Seen bool `json:"seen"`
 	}](payload)
 	if err != nil {
 		return "", err
@@ -524,18 +599,23 @@ func (a *applier) areaReveal(payload json.RawMessage) (string, error) {
 	}
 	tiles := a.s.areaTiles(p.X, p.Y)
 	a.setDiscovered(tiles, true)
+	shown := ""
+	if p.Seen {
+		shown = a.showMonstersOn(tiles)
+	}
 	region := a.s.Board.RegionAt(p.X, p.Y)
 	for _, r := range a.s.Board.Rooms {
 		if r.ID == region {
-			return "Revealed " + r.Name, nil
+			return "Revealed " + r.Name + shown, nil
 		}
 	}
-	return "Revealed " + squares(len(tiles)), nil
+	return "Revealed " + squares(len(tiles)) + shown, nil
 }
 
 func (a *applier) tilesSet(payload json.RawMessage, discovered bool) (string, error) {
 	p, err := decode[struct {
 		Tiles []maps.Tile `json:"tiles"`
+		Seen  bool        `json:"seen"`
 	}](payload)
 	if err != nil {
 		return "", err
@@ -551,7 +631,11 @@ func (a *applier) tilesSet(payload json.RawMessage, discovered bool) (string, er
 	}
 	a.setDiscovered(indexes, discovered)
 	if discovered {
-		return "Revealed " + squares(len(indexes)), nil
+		shown := ""
+		if p.Seen {
+			shown = a.showMonstersOn(indexes)
+		}
+		return "Revealed " + squares(len(indexes)) + shown, nil
 	}
 	return "Hid " + squares(len(indexes)), nil
 }

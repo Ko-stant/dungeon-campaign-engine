@@ -2,10 +2,20 @@
 import type { Edge, TileCoord } from '../board/geometry.ts';
 import { covers } from '../board/model.ts';
 import { trapTiles } from '../editor/model.ts';
-import type { Catalog } from '../maps/types.ts';
+import type { Catalog, TrapDoc } from '../maps/types.ts';
 import type { Command, SessionState } from './types.ts';
 
-export type Mode = { kind: 'select' } | { kind: 'reveal' } | { kind: 'hide' } | { kind: 'addMonster'; monsterType: string };
+/**
+ * What board clicks do. Reveal (a room, or one corridor square) and picked
+ * squares can also mark the monsters there as seen. In 'pickSquares' the page
+ * collects squares (see paintPending) and reveals them with one command.
+ */
+export type Mode =
+  | { kind: 'select' }
+  | { kind: 'reveal'; seen?: boolean }
+  | { kind: 'pickSquares'; seen?: boolean }
+  | { kind: 'hide' }
+  | { kind: 'addMonster'; monsterType: string };
 
 export interface ClickTarget {
   tile: TileCoord | null;
@@ -33,8 +43,47 @@ export function doorAt(s: SessionState, e: Edge): string | null {
   return s.quest.doors.find((d) => d.edge.x === e.x && d.edge.y === e.y && d.edge.orientation === e.orientation)?.id ?? null;
 }
 
-function isMovable(s: SessionState, id: string | null): id is string {
-  return id !== null && (s.heroes.some((h) => h.id === id) || s.monsters.some((m) => m.id === id));
+/** Quest traps still on the board, where they are now (moved during play or as placed). */
+function boardTraps(s: SessionState): { doc: TrapDoc; at: TileCoord }[] {
+  const live = new Map(s.traps.map((t) => [t.id, t]));
+  return s.quest.traps.flatMap((doc) => {
+    const l = live.get(doc.id);
+    return l?.state === 'removed' ? [] : [{ doc, at: l?.at ?? { x: doc.x, y: doc.y } }];
+  });
+}
+
+/** The trap on a square: with the catalog, anywhere on a multi-square trap's footprint. */
+function trapAt(s: SessionState, t: TileCoord, catalog?: Catalog): string | null {
+  const hit = boardTraps(s).find(({ doc, at: pos }) =>
+    catalog ? trapTiles(catalog, { kind: doc.kind, x: pos.x, y: pos.y, rotation: doc.rotation ?? 0 }).some((tt) => at(tt.x, tt.y, t)) : at(pos.x, pos.y, t));
+  return hit?.doc.id ?? null;
+}
+
+function isMovable(s: SessionState, id: string | null, catalog?: Catalog): id is string {
+  if (id === null) {
+    return false;
+  }
+  if (s.heroes.some((h) => h.id === id) || s.monsters.some((m) => m.id === id)) {
+    return true;
+  }
+  // Traps move only when the catalog says so (a rolling boulder), so a stray click never drags a pit around.
+  const trap = boardTraps(s).find(({ doc }) => doc.id === id);
+  return trap !== undefined && (catalog?.traps.find((d) => d.id === trap.doc.kind)?.movable ?? false);
+}
+
+/** Adds (add=true) or removes a square from the picked set, without duplicates. */
+export function paintPending(pending: readonly TileCoord[], t: TileCoord, add: boolean): TileCoord[] {
+  const rest = pending.filter((p) => !at(p.x, p.y, t));
+  return add ? [...rest, { x: t.x, y: t.y }].sort((a, b) => a.y - b.y || a.x - b.x) : rest;
+}
+
+/** One command revealing every picked square (and, with seen, the monsters on them). */
+export function revealSquaresCommand(pending: readonly TileCoord[], seen: boolean): Command | null {
+  if (pending.length === 0) {
+    return null;
+  }
+  const tiles = pending.map((p) => ({ x: p.x, y: p.y }));
+  return { type: 'tiles.reveal', payload: seen ? { tiles, seen: true } : { tiles } };
 }
 
 /** The catalog (optional) gives multi-square traps their footprint; without it every trap is one square. */
@@ -52,7 +101,9 @@ export function clickCommand(s: SessionState, mode: Mode, selectedId: string | n
   }
   switch (mode.kind) {
     case 'reveal':
-      return { command: { type: 'area.reveal', payload: { x: t.x, y: t.y } }, select: selectedId };
+      return { command: { type: 'area.reveal', payload: mode.seen ? { x: t.x, y: t.y, seen: true } : { x: t.x, y: t.y } }, select: selectedId };
+    case 'pickSquares':
+      return null; // the page collects the squares
     case 'hide':
       return { command: { type: 'tiles.hide', payload: { tiles: [{ x: t.x, y: t.y }] } }, select: selectedId };
     case 'addMonster':
@@ -62,14 +113,14 @@ export function clickCommand(s: SessionState, mode: Mode, selectedId: string | n
       if (piece) {
         return { command: null, select: piece };
       }
-      if (isMovable(s, selectedId)) {
+      if (isMovable(s, selectedId, catalog)) {
         return { command: { type: 'move', payload: { id: selectedId, x: t.x, y: t.y } }, select: selectedId };
       }
-      const trap = s.quest.traps.find((tr) => (catalog ? trapTiles(catalog, tr).some((tt) => at(tt.x, tt.y, t)) : at(tr.x, tr.y, t)));
+      const trap = trapAt(s, t, catalog);
       const note = s.quest.notes.find((n) => at(n.x, n.y, t) && !s.consumedNotes.includes(n.id));
       const removed = new Set(s.removedBlocks ?? []);
       const block = s.quest.blockedSquares.find((r) => !removed.has(r.id) && t.x >= r.x && t.x < r.x + r.w && t.y >= r.y && t.y < r.y + r.h);
-      return { command: null, select: trap?.id ?? note?.id ?? block?.id ?? null };
+      return { command: null, select: trap ?? note?.id ?? block?.id ?? null };
     }
   }
 }

@@ -95,6 +95,8 @@ export interface TrapView {
   height?: number;
   rotation?: Rotation;
   image?: string;
+  /** Short GM label drawn on the trap, e.g. trigger "1". */
+  label?: string;
 }
 
 export interface TeleportView {

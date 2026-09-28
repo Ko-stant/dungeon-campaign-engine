@@ -14,13 +14,20 @@ const (
 	DoorClosed = "closed"
 )
 
-// Trap states. Any transition between them is allowed during play.
+// Trap states. Any transition between them is allowed during play. A quest
+// trap starts in one of the first four; TrapRemoved exists only during play
+// (the trap is gone from the board, e.g. after being disarmed).
 const (
 	TrapHidden    = "hidden"
 	TrapRevealed  = "revealed"
 	TrapTriggered = "triggered"
 	TrapDisarmed  = "disarmed"
+	TrapRemoved   = "removed"
 )
+
+// TrapTrigger is a built-in marker kind: a square the GM uses to set off their
+// own effects (open a secret door, release a boulder). It has no catalog entry.
+const TrapTrigger = "trigger"
 
 // Door sits on a tile edge. Locked is its starting lock; nothing enforces it.
 type Door struct {
@@ -75,6 +82,8 @@ type Trap struct {
 	// Rotation turns a multi-square trap's catalog footprint (0, 90, 180, 270);
 	// the anchor is the bottom-left square of the rotated footprint.
 	Rotation int `json:"rotation,omitempty"`
+	// Label (optional, short) tells traps apart on the board, e.g. trigger "1".
+	Label string `json:"label,omitempty"`
 }
 
 // Note is a lettered quest note marker ("A", "B", ...) with its text.
@@ -97,6 +106,9 @@ type Teleport struct {
 
 // MaxTeleportLabel bounds a teleport label's length in characters.
 const MaxTeleportLabel = 8
+
+// MaxTrapLabel bounds a trap label's length in characters.
+const MaxTrapLabel = 8
 
 // Quest is the set of layers placed on a board.
 type Quest struct {
@@ -208,6 +220,9 @@ func (q *Quest) Validate() error {
 		}
 		if _, _, err := RotatedSize(1, 1, tr.Rotation); err != nil {
 			errs = append(errs, fmt.Errorf("trap %q: %w", tr.ID, err))
+		}
+		if len([]rune(tr.Label)) > MaxTrapLabel {
+			errs = append(errs, fmt.Errorf("trap %q: label must be at most %d characters", tr.ID, MaxTrapLabel))
 		}
 	}
 	for _, n := range q.Notes {

@@ -416,6 +416,12 @@ export class BoardRenderer {
       const size = rotatedFootprint(trap.width ?? 1, trap.height ?? 1, rotation);
       const r = footprintRect(m, trap.at, size.width, size.height);
       const img = trap.image ? this.#images.get(trap.image) : undefined;
+      // The GM's label (e.g. trigger "1") sits in the footprint's bottom-right corner.
+      const drawLabel = (): void => {
+        if (trap.label) {
+          this.#label(trap.label, r.x + r.w - m.tile * 0.2, r.y + r.h - m.tile * 0.2, m.tile * 0.3, this.#theme.label, m.tile * 0.5);
+        }
+      };
       ctx.save();
       ctx.strokeStyle = this.#theme.trap[trap.state];
       ctx.fillStyle = this.#theme.trap[trap.state];
@@ -438,6 +444,7 @@ export class BoardRenderer {
         const s = m.tile * 0.14;
         this.#trapTriangle(r.x + s * 1.6, r.y + s * 1.6, s, trap.state === 'triggered');
         ctx.restore();
+        drawLabel();
         continue;
       }
       if (trap.state === 'hidden') {
@@ -454,6 +461,30 @@ export class BoardRenderer {
         }
         this.#swirl(r.cx, r.cy, m.tile * 0.36, Math.max(1.5, m.tile * 0.07));
         ctx.restore();
+        drawLabel();
+        continue;
+      }
+      if (trap.kind === 'trigger') {
+        // The GM's own trigger: a diamond with a centre dot, filled once triggered.
+        const d = m.tile * 0.32;
+        ctx.beginPath();
+        ctx.moveTo(r.cx, r.cy - d);
+        ctx.lineTo(r.cx + d, r.cy);
+        ctx.lineTo(r.cx, r.cy + d);
+        ctx.lineTo(r.cx - d, r.cy);
+        ctx.closePath();
+        if (trap.state === 'triggered') {
+          ctx.save();
+          ctx.globalAlpha = 0.35;
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(r.cx, r.cy, Math.max(1.5, m.tile * 0.06), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        drawLabel();
         continue;
       }
       if (size.width > 1 || size.height > 1) {
@@ -462,6 +493,7 @@ export class BoardRenderer {
       }
       this.#trapTriangle(r.cx, r.cy, m.tile * 0.3, trap.state === 'triggered');
       ctx.restore();
+      drawLabel();
     }
   }
 

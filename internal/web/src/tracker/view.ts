@@ -44,7 +44,11 @@ export function trackerView(s: SessionState, catalog: Catalog, opts: ViewOptions
       const kind = hiddenSecret ? 'secret' : d.kind === 'gate' ? 'gate' : 'normal';
       return { id: d.id, edge: d.edge, kind, state: live?.state ?? d.state, locked: live?.locked ?? d.locked ?? false };
     }),
-    traps: s.quest.traps.map((t) => trapView(catalog, t, liveTraps.get(t.id)?.state ?? t.state)),
+    traps: s.quest.traps.flatMap((t) => {
+      const live = liveTraps.get(t.id);
+      const state = live?.state ?? t.state;
+      return state === 'removed' ? [] : [trapView(catalog, t, state, live?.at)];
+    }),
     monsters,
     heroes,
   };

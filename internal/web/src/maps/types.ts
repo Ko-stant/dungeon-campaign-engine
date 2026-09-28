@@ -75,7 +75,11 @@ export interface TrapDoc {
   state: TrapState;
   /** Turns a catalog trap's footprint; absent means 0. */
   rotation?: Rotation;
+  /** Short label (at most MAX_TRAP_LABEL characters) to tell traps apart, e.g. trigger "1". */
+  label?: string;
 }
+
+export const MAX_TRAP_LABEL = 8;
 
 /** A teleport square; the optional short label pairs squares up. */
 export interface TeleportDoc {
@@ -134,6 +138,8 @@ export interface TrapDef {
   width: number;
   height: number;
   image?: string;
+  /** The GM can move it during play (a rolling boulder). */
+  movable?: boolean;
 }
 
 export interface MonsterDef {

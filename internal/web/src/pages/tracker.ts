@@ -3,20 +3,21 @@
  * table. Every change is a command sent to the server, which saves the new
  * state and a readable event, then pushes both to every open tab.
  */
-import { pixelToEdge, pixelToTile } from '../board/geometry.ts';
+import { pixelToEdge, pixelToTile, type TileCoord } from '../board/geometry.ts';
 import { tileIndex } from '../board/model.ts';
-import { monsterOptionLabel } from '../maps/types.ts';
+import { monsterOptionLabel, type TrapDoc } from '../maps/types.ts';
 import { BoardRenderer } from '../board/renderer.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
 import { formatEvent } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
-import { clickCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
-import type { Command, CommandResponse, Hero, Monster, SessionEvent, SessionState } from '../tracker/types.ts';
+import { clickCommand, paintPending, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
+import type { Command, CommandResponse, Hero, LiveTrapState, Monster, SessionEvent, SessionState } from '../tracker/types.ts';
 import { trackerView } from '../tracker/view.ts';
+import { lineTiles } from '../editor/tools.ts';
 import { h, replaceChildren } from '../ui/dom.ts';
 
-const TRAP_STATES = ['hidden', 'revealed', 'triggered', 'disarmed'] as const;
+const TRAP_STATES: readonly LiveTrapState[] = ['hidden', 'revealed', 'triggered', 'disarmed', 'removed'];
 const btn = 'rounded-md border border-border/60 px-2 py-1 text-sm hover:border-amber-500 disabled:opacity-40';
 const btnActive = 'rounded-md border border-amber-500 bg-amber-500/15 px-2 py-1 text-sm';
 const smallBtn = 'h-6 w-6 rounded border border-border/60 text-sm leading-none hover:border-amber-500 disabled:opacity-40';
@@ -53,6 +54,10 @@ async function main(): Promise<void> {
   let mode: Mode = { kind: 'select' };
   let monsterType = catalog.monsters[0]?.id ?? '';
   let fog = true;
+  // Reveal options: also mark monsters on revealed squares as seen; squares picked in 'pickSquares'.
+  let revealSeen = true;
+  let pending: TileCoord[] = [];
+  let painting: { add: boolean; last: TileCoord } | null = null;
   let busy = false;
   let message = '';
   let live = false;
@@ -78,7 +83,7 @@ async function main(): Promise<void> {
   const requestDraw = (): void => {
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
-      renderer.draw(trackerView(state, catalog, { fog }), { selectedId });
+      renderer.draw(trackerView(state, catalog, { fog }), { selectedId, tiles: mode.kind === 'pickSquares' ? pending : null });
     });
   };
   const renderer = new BoardRenderer(canvas, requestDraw);
@@ -154,8 +159,36 @@ async function main(): Promise<void> {
     }
   });
 
+  // Picking squares to reveal: press on a square to add it (or remove it if picked), drag to paint more.
+  canvas.addEventListener('mousedown', (ev) => {
+    const t = targetAt(ev).tile;
+    if (mode.kind !== 'pickSquares' || !t) {
+      return;
+    }
+    painting = { add: !pending.some((p) => p.x === t.x && p.y === t.y), last: t };
+    pending = paintPending(pending, t, painting.add);
+    refresh();
+  });
+  /** Paints every square from the last painted one to t, so a quick drag does not skip any. */
+  function paintTo(t: TileCoord | null): void {
+    if (!painting || !t || mode.kind !== 'pickSquares' || (t.x === painting.last.x && t.y === painting.last.y)) {
+      return;
+    }
+    const { add } = painting;
+    pending = lineTiles(painting.last, t).reduce((acc, tile) => paintPending(acc, tile, add), pending);
+    painting.last = t;
+    refresh();
+  }
+  window.addEventListener('mouseup', (ev) => {
+    if (ev.target === canvas) {
+      paintTo(targetAt(ev).tile);
+    }
+    painting = null;
+  });
+
   canvas.addEventListener('mousemove', (ev) => {
     const t = targetAt(ev).tile;
+    paintTo(t);
     if (!t) {
       hoverInfo.textContent = '';
       return;
@@ -176,6 +209,7 @@ async function main(): Promise<void> {
     if (ev.key === 'Escape') {
       selectedId = null;
       mode = { kind: 'select' };
+      pending = [];
       refresh();
     }
   });
@@ -282,36 +316,72 @@ async function main(): Promise<void> {
     );
   }
 
+  function setMode(m: Mode): void {
+    if (m.kind !== 'pickSquares') {
+      pending = [];
+    }
+    mode = m;
+    refresh();
+  }
+
+  async function revealPicked(): Promise<void> {
+    const command = revealSquaresCommand(pending, revealSeen);
+    if (command && (await send(command))) {
+      pending = [];
+      refresh();
+    }
+  }
+
   function renderModeBar(): void {
-    const modeBtn = (m: Mode, label: string, title: string): HTMLButtonElement =>
+    const revealing = mode.kind === 'reveal' || mode.kind === 'pickSquares';
+    const modeBtn = (m: Mode, label: string, title: string, active = mode.kind === m.kind): HTMLButtonElement =>
       h('button', {
         type: 'button',
         title,
-        class: mode.kind === m.kind ? btnActive : btn,
-        onclick: () => {
-          mode = m;
-          refresh();
-        },
+        class: active ? btnActive : btn,
+        onclick: () => { setMode(m); },
       }, label);
+    const checkbox = (label: string, checked: boolean, onChange: (v: boolean) => void): HTMLElement =>
+      h('label', { class: 'flex items-center gap-1 text-sm' },
+        h('input', { type: 'checkbox', checked, onchange: (e: Event) => { onChange((e.target as HTMLInputElement).checked); } }), label);
+    const revealOptions: (Node | null)[] = revealing
+      ? [
+          checkbox('Show monsters too', revealSeen, (v) => {
+            revealSeen = v;
+            setMode(mode.kind === 'pickSquares' ? { kind: 'pickSquares', seen: v } : { kind: 'reveal', seen: v });
+          }),
+          checkbox('Pick squares', mode.kind === 'pickSquares', (v) => { setMode(v ? { kind: 'pickSquares', seen: revealSeen } : { kind: 'reveal', seen: revealSeen }); }),
+          mode.kind === 'pickSquares'
+            ? h('button', { type: 'button', class: btnActive, disabled: pending.length === 0 || busy, onclick: () => { void revealPicked(); } },
+              pending.length === 0 ? 'Reveal squares' : pending.length === 1 ? 'Reveal 1 square' : `Reveal ${pending.length} squares`)
+            : null,
+          mode.kind === 'pickSquares' && pending.length > 0
+            ? h('button', { type: 'button', class: btn, onclick: () => { pending = []; refresh(); } }, 'Clear')
+            : null,
+        ]
+      : [];
     const monsterSelect = h('select', {
       class: field,
       'aria-label': 'Monster to add',
       onchange: (e: Event) => {
         monsterType = (e.target as HTMLSelectElement).value;
-        mode = { kind: 'addMonster', monsterType };
-        refresh();
+        setMode({ kind: 'addMonster', monsterType });
       },
     }, ...catalog.monsters.map((m) => h('option', { value: m.id, selected: m.id === monsterType }, monsterOptionLabel(m))));
     const hint: Record<Mode['kind'], string> = {
-      select: 'Click a hero or monster, then a square to move it. Click a door to open or close it.',
-      reveal: 'Click a room to reveal it (or a corridor square).',
+      select: 'Click a hero, monster or movable trap (boulder), then a square to move it. Click a door to open or close it.',
+      reveal: revealSeen
+        ? 'Click a room to reveal it and everything in it except traps (or a corridor square).'
+        : 'Click a room to reveal it (or a corridor square). Monsters stay hidden.',
+      pickSquares: 'Click or drag across squares to pick them, then reveal them all at once.',
       hide: 'Click a square to hide it again.',
       addMonster: 'Click a square to place the monster.',
     };
     replaceChildren(
       modeBar,
       modeBtn({ kind: 'select' }, 'Select / move', 'Select pieces, move them, open and close doors'),
-      modeBtn({ kind: 'reveal' }, 'Reveal', 'Mark areas the heroes have discovered'),
+      modeBtn({ kind: 'reveal', seen: revealSeen }, 'Reveal', 'Mark areas the heroes have discovered', revealing),
+      ...revealOptions,
       modeBtn({ kind: 'hide' }, 'Hide', 'Un-discover a square'),
       modeBtn({ kind: 'addMonster', monsterType }, 'Add monster', 'Place a new monster'),
       monsterSelect,
@@ -395,7 +465,13 @@ async function main(): Promise<void> {
             : null),
       );
     } else if (trap) {
-      rows.push(h('p', { class: 'font-semibold' }, `${trapName(trap.kind)} ${trap.id}`), trapButtons(trap.id));
+      const movable = catalog.traps.find((t) => t.id === trap.kind)?.movable ?? false;
+      const at = trapPosition(trap);
+      rows.push(
+        h('p', { class: 'font-semibold' }, `${trapName(trap)} `, h('span', { class: 'text-xs opacity-60' }, `${trap.id} (${at.x}, ${at.y})`)),
+        trapButtons(trap.id),
+        movable && trapLiveState(trap.id) !== 'removed' ? h('p', { class: 'text-xs opacity-70' }, 'Click a square to move it there.') : null,
+      );
     } else if (block) {
       rows.push(
         h('p', { class: 'font-semibold' }, block.hiddenDoor ? 'Blocked square (hides a secret door) ' : 'Blocked squares ', h('span', { class: 'text-xs opacity-60' }, `${block.id} (${block.x}, ${block.y})`)),
@@ -413,19 +489,30 @@ async function main(): Promise<void> {
       ...rows);
   }
 
-  /** A trap's catalog name, or its kind for markers ("chest trap"). */
-  function trapName(kind: string): string {
-    return catalog.traps.find((t) => t.id === kind)?.name ?? `${kind.replaceAll('_', ' ')} trap`;
+  /** A trap's catalog name (or "Trigger" / "chest trap" for markers), plus its label. */
+  function trapName(t: TrapDoc): string {
+    const name = catalog.traps.find((d) => d.id === t.kind)?.name ?? (t.kind === 'trigger' ? 'Trigger' : `${t.kind.replaceAll('_', ' ')} trap`);
+    return t.label ? `${name} ${t.label}` : name;
+  }
+
+  function trapLiveState(trapId: string): LiveTrapState | undefined {
+    return state.traps.find((t) => t.id === trapId)?.state;
+  }
+
+  /** Where a trap is now: moved during play, or where the quest put it. */
+  function trapPosition(t: TrapDoc): TileCoord {
+    return state.traps.find((l) => l.id === t.id)?.at ?? { x: t.x, y: t.y };
   }
 
   function trapButtons(trapId: string): HTMLElement {
-    const current = state.traps.find((t) => t.id === trapId)?.state;
+    const current = trapLiveState(trapId);
     return h('div', { class: 'flex flex-wrap gap-1' },
       ...TRAP_STATES.map((s) => h('button', {
         type: 'button',
-        class: current === s ? btnActive : btn,
+        title: s === 'removed' ? 'Take it off the board (pick another state to bring it back)' : `Set to ${s}`,
+        class: current === s ? btnActive : s === 'removed' ? `${btn} text-danger` : btn,
         onclick: () => { if (current !== s) { void send({ type: 'trap.set', payload: { id: trapId, state: s } }); } },
-      }, s)));
+      }, s === 'removed' ? 'remove' : s)));
   }
 
   function blockButton(blockId: string, hiddenDoor: boolean): HTMLElement {
@@ -446,8 +533,14 @@ async function main(): Promise<void> {
         h('button', { type: 'button', class: `text-left ${m.alive ? '' : 'line-through opacity-50'}`, onclick: () => { selectedId = m.id; refresh(); } },
           `${m.name} `, h('span', { class: 'text-xs opacity-60' }, `${m.id}${m.visibility === 'hidden' ? ' · hidden' : ''}`)),
         h('span', { class: 'font-mono text-xs' }, `${m.body}/${m.maxBody}`)));
-    const traps = state.quest.traps.map((t) =>
-      h('li', { class: 'space-y-1 text-sm' }, h('span', {}, `${trapName(t.kind)} `, h('span', { class: 'text-xs opacity-60' }, `${t.id} (${t.x}, ${t.y})`)), trapButtons(t.id)));
+    const traps = state.quest.traps.map((t) => {
+      const at = trapPosition(t);
+      const removed = trapLiveState(t.id) === 'removed';
+      return h('li', { class: 'space-y-1 text-sm' },
+        h('button', { type: 'button', class: `text-left ${removed ? 'line-through opacity-50' : ''}`, onclick: () => { selectedId = t.id; setMode({ kind: 'select' }); } },
+          `${trapName(t)} `, h('span', { class: 'text-xs opacity-60' }, `${t.id} (${at.x}, ${at.y})${removed ? ' · removed' : ''}`)),
+        trapButtons(t.id));
+    });
     // Blocks worth listing: ones hiding a secret door, and any already removed (to put back).
     const removedBlocks = new Set(state.removedBlocks ?? []);
     const blocks = state.quest.blockedSquares.filter((r) => (r.hiddenDoor ?? false) || removedBlocks.has(r.id)).map((r) =>

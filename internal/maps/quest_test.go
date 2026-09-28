@@ -103,6 +103,8 @@ func TestQuestValidateRejectsMalformedData(t *testing.T) {
 		"rotation":          func(q *Quest) { q.Furniture[0].Rotation = 45 },
 		"trap state":        func(q *Quest) { q.Traps[0].State = "armed" },
 		"trap rotation":     func(q *Quest) { q.Traps[0].Rotation = 45 },
+		"trap label":        func(q *Quest) { q.Traps[0].Label = "this label is far too long" },
+		"removed trap":      func(q *Quest) { q.Traps[0].State = TrapRemoved }, // removed is live-only
 		"empty blocked":     func(q *Quest) { q.BlockedSquares[0].W = 0 },
 		"duplicate id":      func(q *Quest) { q.Monsters[0].ID = "d1" },
 		"missing id":        func(q *Quest) { q.Notes[0].ID = "" },

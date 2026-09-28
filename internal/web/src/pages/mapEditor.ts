@@ -16,6 +16,7 @@ import {
   setBlockedHiddenDoor,
   setRoomColor,
   setTeleportLabel,
+  setTrapLabel,
   questFromSearch,
   resizeBoard,
   rotateItem,
@@ -27,7 +28,7 @@ import {
 } from '../editor/model.ts';
 import { applyClick, applyDrag, isDragTool, lineTiles, type ClickTarget, type EditorDoc, type Tool } from '../editor/tools.ts';
 import { ApiError, createApi } from '../maps/api.ts';
-import { monsterOptionLabel, type Issue, type QuestSummary } from '../maps/types.ts';
+import { MAX_TRAP_LABEL, monsterOptionLabel, type Issue, type QuestSummary } from '../maps/types.ts';
 import { h, replaceChildren } from '../ui/dom.ts';
 
 
@@ -41,7 +42,7 @@ const QUEST_TOOLS: { kind: QuestToolKind; label: string; hint: string }[] = [
   { kind: 'blocked', label: 'Blocked squares', hint: 'Drag to cover impassable squares.' },
   { kind: 'furniture', label: 'Furniture', hint: 'Click the bottom-left square. R rotates the selection.' },
   { kind: 'monster', label: 'Monster', hint: 'Click a square to place.' },
-  { kind: 'trap', label: 'Trap', hint: 'Click the bottom-left square to place (starts hidden). R rotates the selection.' },
+  { kind: 'trap', label: 'Trap', hint: 'Click the bottom-left square to place (starts hidden). R rotates the selection. A "trigger" marks a square that sets off your own effects; select it to label it.' },
   { kind: 'note', label: 'Note', hint: 'Click a square, then type the note text.' },
   { kind: 'start', label: 'Start square', hint: 'Click to toggle a hero start square (green).' },
   { kind: 'exit', label: 'Exit square', hint: 'Click to toggle an exit square (magenta).' },
@@ -787,12 +788,22 @@ async function main(): Promise<void> {
           rows.push(h('p', { class: 'text-xs opacity-70' }, `Custom monster, ${def.width ?? 1}×${def.height ?? 1} squares${def.notes ? ` · ${def.notes}` : ''}`));
         }
       }
-    } else if (trap) {
+    } else if (trap && q) {
       const def = catalog.traps.find((t) => t.id === trap.kind);
-      rows.push(h('p', { class: 'text-sm' }, `${def?.name ?? `${trap.kind.replaceAll('_', ' ')} trap`} at (${trap.x}, ${trap.y})${def ? `, ${def.width}×${def.height}, ${trap.rotation ?? 0}°` : ''}`));
+      const name = def?.name ?? (trap.kind === 'trigger' ? 'Trigger' : `${trap.kind.replaceAll('_', ' ')} trap`);
+      rows.push(h('p', { class: 'text-sm' }, `${name} at (${trap.x}, ${trap.y})${def ? `, ${def.width}×${def.height}, ${trap.rotation ?? 0}°` : ''}`));
       if (def && (def.width > 1 || def.height > 1)) {
         rows.push(h('button', { type: 'button', class: btn, onclick: rotateSelected }, 'Rotate (R)'));
       }
+      rows.push(h('label', { class: 'block space-y-1 text-sm' },
+        h('span', { class: 'opacity-80' }, trap.kind === 'trigger' ? 'Label (which trigger is which)' : 'Label (optional)'),
+        h('input', {
+          class: input,
+          value: trap.label ?? '',
+          maxlength: MAX_TRAP_LABEL,
+          placeholder: 'e.g. 1',
+          onchange: (e: Event) => { commit({ ...doc(), quest: setTrapLabel(q, trap.id, (e.target as HTMLInputElement).value) }); },
+        })));
     } else if (note && q) {
       rows.push(
         h('p', { class: 'text-sm' }, `Note ${note.label} at (${note.x}, ${note.y})`),

@@ -6,6 +6,9 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
 )
 
 func newState(t *testing.T) *State {
@@ -290,5 +293,92 @@ func TestApplyRefusesTopLeftStates(t *testing.T) {
 	_, _, cat := fixture()
 	if _, _, err := Apply(s, cmd(t, "round.advance", nil), cat); err == nil {
 		t.Fatal("expected an error for a version 1 state")
+	}
+}
+
+func TestTrapsCanBeRemovedAndBroughtBack(t *testing.T) {
+	s := newState(t)
+	s, ev := apply(t, s, cmd(t, "trap.set", map[string]any{"id": "trap-1", "state": "removed"}))
+	if s.Traps[0].State != "removed" || ev.Summary != "Trap trap-1 (pit): hidden → removed" {
+		t.Fatalf("remove: %q %+v", ev.Summary, s.Traps[0])
+	}
+	s, _ = apply(t, s, cmd(t, "trap.set", map[string]any{"id": "trap-1", "state": "disarmed"}))
+	if s.Traps[0].State != "disarmed" {
+		t.Fatal("a removed trap must come back with any other state")
+	}
+}
+
+func TestMoveMovesATrap(t *testing.T) {
+	s := newState(t)
+	s, ev := apply(t, s, cmd(t, "move", map[string]any{"id": "trap-1", "x": 2, "y": 2}))
+	if at := s.Traps[0].At; at == nil || *at != (maps.Tile{X: 2, Y: 2}) {
+		t.Fatalf("trap position: %+v", s.Traps[0])
+	}
+	if ev.Summary != "Moved trap trap-1 (pit) from (4,3) to (2,2)" {
+		t.Fatalf("summary: %q", ev.Summary)
+	}
+	_, ev = apply(t, s, cmd(t, "move", map[string]any{"id": "trap-1", "x": 3, "y": 2}))
+	if ev.Summary != "Moved trap trap-1 (pit) from (2,2) to (3,2)" {
+		t.Fatalf("second move starts from the live position: %q", ev.Summary)
+	}
+	if _, _, err := Apply(s, cmd(t, "move", map[string]any{"id": "trap-1", "x": 9, "y": 9}), nil); err == nil {
+		t.Fatal("moving a trap off the board should be an error")
+	}
+}
+
+func TestTrapSummariesUseCatalogNamesAndLabels(t *testing.T) {
+	b, q, cat := fixture()
+	q.Traps = append(q.Traps,
+		maps.Trap{ID: "trap-2", Kind: "boulder", X: 3, Y: 3, State: maps.TrapHidden},
+		maps.Trap{ID: "trap-3", Kind: "trigger", X: 3, Y: 2, State: maps.TrapHidden, Label: "1"},
+	)
+	cat.Traps = []content.TrapDef{{ID: "boulder", Name: "Boulder", Width: 1, Height: 1, Movable: true}}
+	s, err := NewSession(b, q, "The Test", party(), cat)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, ev, err := Apply(s, cmd(t, "trap.set", map[string]any{"id": "trap-2", "state": "triggered"}), cat)
+	if err != nil || ev.Summary != "Trap trap-2 (Boulder): hidden → triggered" {
+		t.Fatalf("catalog name: %q %v", ev.Summary, err)
+	}
+	_, ev, err = Apply(s, cmd(t, "trap.set", map[string]any{"id": "trap-3", "state": "triggered"}), cat)
+	if err != nil || ev.Summary != "Trap trap-3 (Trigger 1): hidden → triggered" {
+		t.Fatalf("label: %q %v", ev.Summary, err)
+	}
+}
+
+func TestRevealCanShowTheMonstersThere(t *testing.T) {
+	s := newState(t)
+	plain, ev := apply(t, s, cmd(t, "area.reveal", map[string]any{"x": 6, "y": 1}))
+	if plain.Monsters[0].Visibility != MonsterHidden || ev.Summary != "Revealed Lair" {
+		t.Fatalf("a plain reveal leaves monsters alone: %q %+v", ev.Summary, plain.Monsters[0])
+	}
+
+	seen, ev := apply(t, s, cmd(t, "area.reveal", map[string]any{"x": 6, "y": 1, "seen": true}))
+	if seen.Monsters[0].Visibility != MonsterSeen || seen.Monsters[1].Visibility != MonsterSeen {
+		t.Fatalf("both Lair monsters should be seen: %+v", seen.Monsters)
+	}
+	if ev.Summary != "Revealed Lair (2 monsters seen)" {
+		t.Fatalf("summary: %q", ev.Summary)
+	}
+	if seen.Traps[0].State != maps.TrapHidden {
+		t.Fatal("revealing never touches traps")
+	}
+}
+
+func TestRevealSquaresCanShowMonstersOnThem(t *testing.T) {
+	s := newState(t)
+	// A 2x2 custom monster on (3,1)-(4,2): revealing any one of its squares shows it.
+	s, _ = apply(t, s, cmd(t, "monster.add", map[string]any{"type": "custom-ogre", "x": 3, "y": 1, "visibility": "hidden"}))
+	s, ev := apply(t, s, cmd(t, "tiles.reveal", map[string]any{"tiles": []map[string]int{{"x": 5, "y": 2}, {"x": 4, "y": 2}}, "seen": true}))
+	byID := map[string]string{}
+	for _, m := range s.Monsters {
+		byID[m.ID] = m.Visibility
+	}
+	if byID["monster-1"] != MonsterSeen || byID["monster-2"] != MonsterHidden || byID["monster-3"] != MonsterSeen {
+		t.Fatalf("visibility: %+v", byID)
+	}
+	if ev.Summary != "Revealed 2 squares (2 monsters seen)" {
+		t.Fatalf("summary: %q", ev.Summary)
 	}
 }
