@@ -1,230 +1,136 @@
-# The Three Plagues - Campaign Narrative (draft)
+# The Three Plagues - Story Bible
 
-**Last Updated**: 2026-09-28 16:29 EDT
+**Last Updated**: 2026-09-28 19:33 EDT
 
-Working draft of the read-aloud text for a three-map campaign. Names marked *(placeholder)*
-are suggestions; change them with a find-and-replace.
+The world, cast and secrets of the campaign. Everything the players hear is in
+[SCRIPT.md](SCRIPT.md), written to be read aloud or turned into audio. Rules and classes
+are in [RULES_AND_CLASSES.md](RULES_AND_CLASSES.md).
 
-- **Campaign name** *(placeholder)*: **The Three Plagues**. Alternatives: *Soul Gems of
+Names marked *(working)* are suggestions; change them with a find-and-replace across
+this file and SCRIPT.md.
+
+## At a glance
+
+- **Campaign title** *(working)*: **The Three Plagues**. Alternatives: *Soul Gems of
   Haldmere*, *The Withering of Haldmere*, *Keys of the Elemental Chambers*.
-- **The lord** *(placeholder)*: **Lord Aldren Voss** of **Haldmere**.
-- **Chapters**:
-  1. **The Crumbling Halls** - 30x24. The way through the hill to the Fields. No Soul Gem.
-  2. **The Bloated Fields** - 48x30. First plague: the **Blightweaver** (custom). First Soul Gem.
-  3. **Third map (name TBD)** - 48x30. Second plague: an **Ogre Lord**. Third plague: an
-     **Ogre Lord** with an **Ogre Commander** and **Ogre Champion**. Then the portal and the
-     **Elemental Chambers** (the Dread Wraith). Name ideas: *Gorrak's Maw*, *The Ogre
-     Warrens*, *The Sundered Bastion*, *The Wardens' Rise*.
-- **Classes**: Barbarian, Cleric, Rogue, Ranger (custom, with their own abilities).
+- **Setting**: the vale of **Haldmere**, whose elemental power is failing.
+- **Heroes**: a Barbarian, a Cleric, a Rogue and a Ranger, hired by **Lord Aldren Voss**
+  *(working)*.
 
----
+| # | Quest | Map | Plague | Soul Gem |
+|---|---|---|---|---|
+| 1 | The Crumbling Halls | 30x24 | none (the way through the hill) | none |
+| 2 | The Bloated Fields | 48x30 | Pestilence: **the Blightweaver** | Gem of Pestilence |
+| 3 | The Wardens' Rise *(working)* | 48x30 | Famine: **Gorrak Hollowgut** (Ogre Lord); War: **Varnok Ironjaw** (Ogre Lord) with **Skarr** (Ogre Commander) and **Brugg the Unbroken** (Ogre Champion) | Gem of Famine, Gem of War |
+| - | The Elemental Chambers (behind the portal on the Rise) | part of map 3 | the fourth, unspoken: **the Dread Wraith** | - |
 
-## GM only - the truth (do not read aloud)
+Other names considered for quest 3: *Gorrak's Maw*, *The Ogre Warrens*, *The Sundered
+Bastion*.
 
-The three plagues are **Pestilence** (the Blightweaver), **Famine** (the first Ogre Lord,
-who devours the herds and stores of Haldmere) and **War** (the second Ogre Lord and his
-warband). The lord names only three. The fourth horseman, **Death**, waits behind the door.
+## Places
 
-Long ago the four Elemental Chambers - Stone, Tide, Gale and Hearth - were kept by an order
-of Wardens who fed their power out into the land. The last High Warden, **Morvaen**
-*(placeholder)*, would not share it. He sealed the Chambers from within and split his own
-soul into three gems so no one could ever open the door behind him. He cast the gems out
-into the world, where they found hosts that craved power: a spinner of rot in the fields,
-and two ogre chieftains. The gems swelled each of them into a plague.
+- **Haldmere** - a green vale gone grey. The market town is **Haldmere Cross**; the lord
+  lives in **Voss Keep** above it. Wells run low and taste of iron, mill sails hang still,
+  forges burn cold and the soil comes up grey.
+- **Tollen Hill** and **the Crumbling Halls** - the Wardens' old gatehouse, cut right
+  through the eastern hill. The East Road has always run through it. Its stone is failing
+  as the power of the Chamber of Stone fades: pillars lean, passages collapse, sealed
+  rooms crack open.
+- **The Bloated Fields** - once the **Eastmarch** farms, Haldmere's breadbasket. Crops
+  swell and split on the stalk, cattle bloat where they stand, and grey threads run from
+  hedge to barn to tree. The farming village of **Millbrook** stands empty. Every thread
+  leads to the old **tithe barn** at the heart of the fields, the Blightweaver's lair.
+- **The Wardens' Rise** - a Warden stronghold on the broken hills beyond the fields,
+  built to guard the way down to the Chambers. The ogres hold it now: camps in the
+  courtyards, Gorrak in the **old granaries**, Varnok in the **great hall**. The
+  **portal** stands at the summit, open to the sky.
+- **The Elemental Chambers** - four vaults beneath the Rise: **Stone** (mountain),
+  **Tide** (wave), **Gale** (feather) and **Hearth** (flame). The Wraith waits in the vault
+  of Stone.
 
-Sealed inside, Morvaen has been drinking the Chambers dry for generations, and as he fed he
-became the **Dread Wraith**. The land withers because he is feeding.
+## Cast
 
-The Soul Gems are exactly what the lord says they are: the keys to the portal. What no
-living person knows is *why* they are keys. When the heroes set the three gems in the portal
-they open the door, and they also return the Wraith's soul to him whole.
+Voices are described for recording or generating audio; see SCRIPT.md for who speaks where.
 
-Foreshadowing the GM can seed (a carved verse in the Crumbling Halls, a dying ogre's words,
-a line in a Warden's journal):
+| Name | Say it | Who they are | Voice |
+|---|---|---|---|
+| Narrator | - | Tells the story to the players | Warm, measured, a little weathered; never rushed |
+| Lord Aldren Voss | AL-dren VOSS | Lord of Haldmere; hires the heroes | Late fifties, deep, tired but proud; plain words, no speeches |
+| Maren Ashby | MAIR-en ASH-bee | Steward of Voss Keep; sees the heroes off at the Halls | Forties, brisk, practical, dry |
+| Brother Tobias Wren | toe-BYE-us REN | The lord's archivist; found the texts about the gems | Mentioned only; no lines yet |
+| Tam Fenwick | TAM FEN-ick | Farm boy hiding in Millbrook (optional encounter) | Twelve years old, scared, trying to be brave |
+| Ilsabet Crane | ILL-sa-bet CRANE | "The Hollow Merchant", the secret vendor on the Rise | Older woman, dry, amused, unhurried |
+| The Blightweaver | - | First plague, Pestilence; a bloated, many-legged horror | Does not speak |
+| Gorrak Hollowgut | GOR-rack HOLLOW-gut | First Ogre Lord, second plague, Famine | Thick, slow, wet; talks with his mouth full |
+| Varnok Ironjaw | VAR-nock IRON-jaw | Second Ogre Lord, third plague, War | Deep, clipped, clever; used to command |
+| Skarr | SCAR | Varnok's Ogre Commander | No lines (barks orders in the background) |
+| Brugg the Unbroken | BRUG | Varnok's Ogre Champion | Silent |
+| The Dread Wraith (Morvaen) | MOR-vain | Last High Warden of the Four Chambers | Cold whisper with an echo; patient, hungry |
 
-> *Three the plagues that bar the way,*
-> *three the stones that turn the key;*
-> *but the one who keeps the door*
-> *keeps it still, and waits for thee.*
+## The Soul Gems
 
----
+Each is the size of a hen's egg. What they do in play is the GM's call; these are the
+descriptions.
 
-## Campaign introduction - Lord Aldren Voss
+- **Gem of Pestilence** - pale, sickly green; warm, and for a moment it beats like a heart.
+- **Gem of Famine** - dull amber, cold as a winter well; holding it brings a sudden hunger.
+- **Gem of War** - blood red; it hums whenever a blade is drawn nearby.
 
-*Read aloud before the first quest.*
+## GM only - the truth (never read aloud)
 
-> Come in, and close the door behind you. I would rather my household did not hear this.
->
-> You have seen the road here, so you have seen what is happening to Haldmere. The wells
-> run low and taste of iron. The wind has not turned a mill sail in two seasons. The forges
-> in town burn cold no matter how much coal we feed them, and the soil comes up grey in the
-> plough. My grandfather called this the richest vale in the kingdom. My grandchildren will
-> call it a grave, if they are born at all.
->
-> The scholars tell me the cause, for what little that is worth. Beneath the hills of
-> Haldmere lie the Elemental Chambers: four vaults of Stone, Tide, Gale and Hearth, kept in
-> ages past by the Wardens, whose power once flowed out into every field and furnace of this
-> land. The Wardens are long gone, and the Chambers have been sealed for longer than anyone
-> can remember. Whatever strength leaks past that seal is all we have, and it is running
-> out.
->
-> The seal can be opened. The old texts speak of three Soul Gems, the keys to the portal
-> that guards the Chambers. And I know where they are, because they have made themselves
-> impossible to ignore.
->
-> Three plagues walk my lands. East of the hills, in what were our finest fields, something
-> has woven a blight so thick the crops burst and the cattle swell and rot where they
-> stand. My people call it the Blightweaver. Beyond the fields, an Ogre Lord has made himself
-> fat on our herds and granaries, and he is always hungry. And behind him stands a second
-> Ogre Lord, greater still, whose warband burns every village that will not feed the first.
-> Each of these beasts carries a Soul Gem. My scouts have seen them shine. It is the gems,
-> I think, that have made them what they are.
->
-> I cannot send my soldiers. I have too few left, and they are all that stands between the
-> ogres and our walls. So I am sending you.
->
-> The only road east runs through the Crumbling Halls, the old Warden gatehouse beneath the
-> hill. The halls are failing like everything else, so do not linger. Find your way through
-> to the Bloated Fields. Destroy the three plagues. Bring me their Soul Gems - or better,
-> carry them to the portal yourselves and open the Elemental Chambers, so their power flows
-> back into Haldmere.
->
-> Do this, and you will want for nothing for the rest of your days. Fail, and I fear there
-> will be no Haldmere left to remember you.
+The three plagues are **Pestilence** (the Blightweaver), **Famine** (Gorrak) and **War**
+(Varnok). The lord names only three. The fourth, **Death**, waits behind the door.
 
----
+Long ago the Wardens of the Four Chambers fed the Chambers' power out into the land. The
+last High Warden, **Morvaen**, would not share it. He sealed the Chambers from inside and
+split his own soul into three gems, so that no one could ever open the door behind him. He
+cast the gems out into the world, and his whisper guided them to hosts that craved power:
+a spinner of rot in the fields and two ogre chieftains. The gems swelled each host into a
+plague, and the whisper kept telling them to hold the gems close and far apart.
 
-## Quest 1 - The Crumbling Halls (30x24)
+Sealed inside, Morvaen has been drinking the Chambers dry for generations, and feeding
+turned him into the **Dread Wraith**. The land withers because he is feeding.
 
-*Read aloud when the quest begins.*
+The Soul Gems really are the keys to the portal. What no one alive knows is *why*: they
+are pieces of Morvaen. Setting all three in the portal opens the door and gives him back
+his soul, whole.
 
-> Beneath the eastern hill, the Wardens built a gatehouse as grand as any castle, and it is
-> dying. Every step you take shakes loose a trickle of dust. Pillars lean. Whole passages
-> have fallen in, and others that were sealed for centuries have cracked open. The stone
-> itself is weakening, as if the earth has forgotten how to hold its shape.
->
-> Whatever made its home here in the dark will not welcome you. Somewhere on the far side of
-> these halls lies the eastern gate, and beyond it, the Bloated Fields.
+The last loyal Warden saw what Morvaen did and carved a warning in the gatehouse before
+the Halls were abandoned:
 
-**Quest goals**
-- Find a way through the Crumbling Halls to the eastern gate and leave by it.
-- *(Optional)* Search for anything the Wardens left behind. Their records may tell you more
-  about the Elemental Chambers than the lord's scholars know.
+> Three the plagues that bar the way.
+> Three the stones that turn the key.
+> But the one who keeps the door
+> keeps it still, and waits for thee.
 
-**GM notes**
-- The eastern gate is the map's exit; travel on to The Bloated Fields from there.
-- A good place for the carved verse above, on a wall or a Warden's tomb.
+### Clues, in the order the players can find them
 
----
+1. **Intro** - Lord Voss mentions that Brother Tobias found a verse beside the gems, half
+   scraped from the page.
+2. **Crumbling Halls** - the whole verse, carved on a Warden's tomb (passage Q1-02).
+3. **Bloated Fields** - the Gem of Pestilence beats like a heartbeat: the gems are alive.
+4. **The Rise** - Ilsabet: "Every lock has a keeper."
+5. **The Rise** - Varnok: "The whisper said you would come." His dying words hint harder
+   (optional lines in Q3-06).
+6. **The portal** - a fifth mark above the four symbols, a Warden's sigil, savagely
+   scratched out.
 
-## Quest 2 - The Bloated Fields (48x30)
+### Ilsabet Crane - pick one secret, or none
 
-*Read aloud when the heroes step out of the eastern gate.*
+- **Just a trader.** She sells to ogres and heroes alike and is good at not being noticed.
+- **The last Warden's descendant.** She knows the verse by heart and came to the Rise to
+  watch the portal. She will not stop the heroes, but she will warn them once.
+- **A ghost.** She is the Warden who carved the verse. If the heroes come back to her
+  fire after the portal opens, it is cold ash and there is no one there.
 
-> You step out of the dark into a stink so thick you can taste it. The Bloated Fields
-> stretch before you under a low, yellow sky. The wheat has swollen and split open on the
-> stalk. Fat grey threads drift between the hedgerows, strung from fence to barn to tree,
-> and where they touch the ground the earth heaves and bubbles like something breathing.
-> Farmhouses stand empty, their doors webbed shut.
->
-> The threads all run in one direction, towards the heart of the fields. That is where the
-> Blightweaver waits, and with it the first Soul Gem.
+### Tam Fenwick (optional)
 
-**Quest goals**
-- Find the Blightweaver's lair and destroy it.
-- Claim the first Soul Gem.
-- Cross the fields and find the road onward to the Ogre Lords.
+Hidden in a cellar or grain store in Millbrook. He points the way to the tithe barn. His
+mother is one of the shapes in the web; whether she can be saved is the GM's call.
 
-**GM notes**
-- The Blightweaver is a custom monster (`/monsters`); give it a multi-square footprint.
-- After the fight, the webs across the fields could wither and fall, as a sign that the gems
-  really are the source of each plague's power.
+## Still to decide
 
----
-
-## Quest 3 - (name TBD) (48x30)
-
-*Read aloud when the quest begins.*
-
-> Past the fields the land climbs into broken hills, and the smell of rot gives way to
-> smoke. You have found the ogres. Their camps sprawl across the ruins of an old Warden
-> stronghold: cracked towers, gnawed bones, and burned-out wagons taken from the villages
-> of Haldmere.
->
-> Two Ogre Lords rule here. The first is Famine, bloated on the stolen harvest, guarding
-> his hoard of grain and cattle. The second is War. He keeps his Commander and his Champion
-> close, and his warband answers to him alone. Each carries a Soul Gem.
->
-> Somewhere at the top of the stronghold stands the portal to the Elemental Chambers. Its
-> three empty sockets are waiting for the gems.
-
-**Quest goals**
-- Defeat the first Ogre Lord and claim the second Soul Gem.
-- Defeat the second Ogre Lord, his Ogre Commander and his Ogre Champion, and claim the third
-  Soul Gem.
-- Set all three Soul Gems in the portal and open the Elemental Chambers.
-
-### When the gems are set (read aloud)
-
-*Read when the third gem is placed. This is the reveal.*
-
-> The third gem settles into its socket, and all three flare white. The portal groans open.
-> From beyond it comes a breath of cold air, then another, and another, as if something
-> vast inside has been waiting a very long time to breathe.
->
-> The light in the gems gutters, and one by one they go dark. Their glow does not fade. It
-> is *drawn* through the doorway, three streams of pale fire pouring into the Chambers
-> beyond.
->
-> In the vault of Stone, where the power of the land should burn, a shape rises from the
-> floor. It was a man once, robed like a Warden. Now it is a thing of shadow and cold, and
-> the light of your three Soul Gems burns in its chest.
->
-> "Three plagues I set to bar this door," it whispers, "and you have brought me back all
-> three. I have been hungry for so very long."
->
-> The Dread Wraith has been waiting for you.
-
-**Quest goal (new)**
-- Destroy the Dread Wraith and free the Elemental Chambers.
-
----
-
-## Campaign closing
-
-*Read aloud when the Dread Wraith is destroyed.*
-
-> The Dread Wraith comes apart with a scream that shakes the Chambers to their roots. The
-> three stolen lights tear free of it and burst outward, and the power of the Chambers,
-> held back for longer than any living memory, comes free with them.
->
-> The vault of Stone groans and settles, and the cracks in its walls knit shut. In the vault
-> of Tide, a dry basin fills with clear, cold water. A wind rises in the vault of Gale, with
-> nowhere to go but out and up, and in the vault of Hearth a fire that has been embers for
-> generations roars back into life. You feel it flow past you, up through the rock, out into
-> the land above.
->
-> By the time you climb back into daylight, the wind is turning the mill sails of Haldmere.
-
-*Then, in the lord's voice:*
-
-> You went out to kill three monsters, and you came back having killed a fourth that none
-> of us knew existed. I have spent my life thinking the Wardens simply left. It seems one of
-> them never did.
->
-> The wells are full. The forges are burning so hot the smiths are complaining about it.
-> The farmers say that for the first time in years the soil smells like soil. My scholars
-> want to know everything you saw in those Chambers, and I think this time I will let them
-> go and look.
->
-> Haldmere owes you its future. I cannot pay a debt like that, but I can make a start. Name
-> your reward. And if you have any sense, take a long rest before the next lord comes
-> knocking at your door.
-
-**Epilogue (optional)**
-
-> The Elemental Chambers stand open now, and the power of the old Wardens runs free across
-> Haldmere. Songs are sung about the heroes who broke the three plagues. Fewer are sung about
-> the fourth, because few who hear the story believe it. Those who were there know better.
-> Sometimes, on the coldest nights, they still see a pale light burning where no light
-> should be.
+- The lord's name (Aldren Voss is a placeholder) and the campaign title.
+- The name of quest 3.
+- Whether the Elemental Chambers stay part of map 3 or become a fourth map.
+- What each Soul Gem does in play, if anything, before it goes into the portal.
