@@ -1,11 +1,11 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-09-28 20:34 EDT
+**Last Updated**: 2026-09-29 13:29 EDT
 **Branch**: `dce-table-only`
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
 `docs/campaigns/three-plagues/NARRATIVE.md`; read-aloud passages with ids, speakers and
-voice notes: `docs/campaigns/three-plagues/SCRIPT.md`. House rules and classes:
+voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House rules and classes:
 `docs/campaigns/three-plagues/RULES_AND_CLASSES.md`.
 
 The app records and reminds; it never blocks the GM. Cooldowns, mana, class exclusives and
@@ -92,21 +92,27 @@ abilities or mana on their heroes; start a new session to get them.
 ## 6. Campaign and quest story
 - [ ] Campaign: intro, closing, GM secret notes.
 - [x] Read-aloud script and tracker panel (done 2026-09-28). The script is one Markdown
-      text per campaign (the SCRIPT.md format), pasted into the campaign page's Script box
+      text per campaign (the script folder's format), pasted into the campaign page's Script box
       and parsed on save (errors name the line; a bad script is not saved). The tracker's
       right panel lists it by section, opening the section for the current quest ("Quest N"
       = chapter N, else a title naming the quest). Clicking a passage opens a large-type
       reader with notes, speakers, goals, Previous/Next (and arrow keys); "Mark as read"
       sends `passage.read`, which logs "Read aloud: Q2-03 The tithe barn" and ticks it off
       (kept across maps in `readPassages`).
-      How: `internal/script` (parser + tests, including the real SCRIPT.md), migration
+      How: `internal/script` (parser + tests, including the real script), migration
       `00005_campaign_script.sql`, `internal/store/campaign_script.go`,
       `internal/app/script.go`, `views/script.templ`, `internal/tracker/passages.go`,
       TS `src/tracker/script.ts` and `src/ui/readAloud.ts`.
 - [ ] Campaign intro/closing and quest text live in the script; separate fields are not
       needed unless the script outgrows one text.
 - [x] Written script (2026-09-28): 26 passages with ids (`P0-01`, `Q2-03`, ...) in
-      SCRIPT.md, meant to become one audio clip each.
+      the script, meant to become one audio clip each.
+- [x] Script split into part files (done 2026-09-29): `script/01-prologue.md` ...
+      `06-the-end.md` plus a README (format guide, passage list). `script.Assemble` joins
+      the numbered files (dropping each file's header above its `##` heading) and
+      `script.Locate` turns a parse error's line into "file line N".
+      `make load-script CAMPAIGN="Three Plagues"` checks and saves it to the campaign
+      (`cmd/load-script`); `make print-script` prints the joined text for pasting.
 - [x] Audio clips (done 2026-09-28): files named after passage ids (`Q2-03.mp3`; `Q3-09a`
       is extra clip "a" of Q3-09) in `AUDIO_DIR/<campaign id>/` (default `./audio`,
       gitignored). Uploaded on the campaign page (all-or-nothing name check) or copied in by

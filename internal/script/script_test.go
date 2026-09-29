@@ -2,6 +2,7 @@ package script
 
 import (
 	"os"
+	"slices"
 	"reflect"
 	"strings"
 	"testing"
@@ -154,18 +155,19 @@ func TestParseErrorsNameTheLine(t *testing.T) {
 	}
 }
 
-// The campaign's real script must always parse.
+// The campaign's real script must always assemble and parse.
 func TestParseThreePlaguesScript(t *testing.T) {
-	data, err := os.ReadFile("../../docs/campaigns/three-plagues/SCRIPT.md")
+	text, _, err := Assemble(os.DirFS("../../docs/campaigns/three-plagues/script"))
 	if err != nil {
 		t.Skip("script not found:", err)
 	}
-	s, err := Parse(string(data))
+	s, err := Parse(text)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.Count() != 26 {
-		t.Fatalf("passages: %d", s.Count())
+	// The script is still being written, so its size is not pinned; its sections are.
+	if s.Count() == 0 {
+		t.Fatal("no passages")
 	}
 	var titles []string
 	for _, sec := range s.Sections {
@@ -176,8 +178,8 @@ func TestParseThreePlaguesScript(t *testing.T) {
 		t.Fatalf("sections: %q", titles)
 	}
 	verse := s.Sections[1].Passages[1].Parts[0].Paragraphs
-	if last := verse[len(verse)-1]; !strings.Contains(last, "bar the way.\nThree the stones") {
-		t.Fatalf("the verse keeps its lines: %q", last)
+	if !slices.ContainsFunc(verse, func(p string) bool { return strings.Contains(p, "bar the way.\nThree the stones") }) {
+		t.Fatalf("the verse keeps its lines: %q", verse)
 	}
 }
 

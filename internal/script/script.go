@@ -1,7 +1,8 @@
 // Package script parses a campaign's read-aloud script: Markdown written in
-// the format of docs/campaigns/three-plagues/SCRIPT.md. The GM pastes it on
-// the campaign page, and the tracker shows its passages to read (or play)
-// at the table.
+// the format of docs/campaigns/three-plagues/script/ (see Assemble for script
+// folders). The GM pastes it on the campaign page or loads it with
+// cmd/load-script, and the tracker shows its passages to read (or play) at
+// the table.
 //
 // The format, line by line:
 //

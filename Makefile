@@ -32,7 +32,8 @@ endef
 .PHONY: all tools dev build run test test-race cover lint fmt tidy clean \
         test-db test-js test-all \
         db-up db-up-all db-down db-destroy db-logs db-psql \
-        db-migrate-new db-migrate-up db-migrate-down db-backup db-restore import-content
+        db-migrate-new db-migrate-up db-migrate-down db-backup db-restore import-content \
+        load-script print-script
 
 all: build
 
@@ -140,6 +141,16 @@ db-migrate-down:
 QUEST ?= base/quests/quest-01.json
 import-content:
 	@set -a; [ -f .env ] && . ./.env; set +a; $(GO) run ./cmd/import-content -quest $(QUEST)
+
+# Read-aloud script: join a script folder's numbered files, check them and save them as a
+# campaign's script. make load-script CAMPAIGN="Three Plagues" [SCRIPT_DIR=...]
+SCRIPT_DIR ?= docs/campaigns/three-plagues/script
+load-script:
+	@set -a; [ -f .env ] && . ./.env; set +a; $(GO) run ./cmd/load-script -dir $(SCRIPT_DIR) -campaign "$(CAMPAIGN)"
+
+# Write the joined script to the terminal (for pasting into the campaign page).
+print-script:
+	@$(GO) run ./cmd/load-script -dir $(SCRIPT_DIR) -print
 
 # --- Tailwind commands ---
 tailwind-build:

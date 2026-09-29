@@ -97,7 +97,7 @@ func campaignScript(d CampaignPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><p class=\"text-xs opacity-60\">Paste the campaign's script (the format of <code>docs/campaigns/three-plagues/SCRIPT.md</code>): <code>## Section</code> headings, <code>### ID - Title</code> passages, <code>- **When:** ...</code> notes, <code>**Speaker**</code> lines and <code>&gt;</code> quoted text. The tracker's Read aloud panel shows it during play; a running quest picks up edits with the panel's Reload button.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><p class=\"text-xs opacity-60\">Paste the campaign's script (the format of <code>docs/campaigns/three-plagues/script/</code>, or load a script folder with <code>make load-script</code>): <code>## Section</code> headings, <code>### ID - Title</code> passages, <code>- **When:** ...</code> notes, <code>**Speaker**</code> lines and <code>&gt;</code> quoted text. The tracker's Read aloud panel shows it during play; a running quest picks up edits with the panel's Reload button.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
