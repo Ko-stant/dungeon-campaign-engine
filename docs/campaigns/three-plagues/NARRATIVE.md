@@ -1,31 +1,27 @@
 # The Three Plagues - Story Bible
 
-**Last Updated**: 2026-09-28 19:33 EDT
+**Last Updated**: 2026-09-28 20:01 EDT
 
 The world, cast and secrets of the campaign. Everything the players hear is in
 [SCRIPT.md](SCRIPT.md), written to be read aloud or turned into audio. Rules and classes
 are in [RULES_AND_CLASSES.md](RULES_AND_CLASSES.md).
 
-Names marked *(working)* are suggestions; change them with a find-and-replace across
-this file and SCRIPT.md.
+The campaign title is still a working title; everything else here is settled unless
+listed under "Still to decide".
 
 ## At a glance
 
 - **Campaign title** *(working)*: **The Three Plagues**. Alternatives: *Soul Gems of
   Haldmere*, *The Withering of Haldmere*, *Keys of the Elemental Chambers*.
 - **Setting**: the vale of **Haldmere**, whose elemental power is failing.
-- **Heroes**: a Barbarian, a Cleric, a Rogue and a Ranger, hired by **Lord Aldren Voss**
-  *(working)*.
+- **Heroes**: a Barbarian, a Cleric, a Rogue and a Ranger, hired by **Lord Aldren Voss**.
 
 | # | Quest | Map | Plague | Soul Gem |
 |---|---|---|---|---|
 | 1 | The Crumbling Halls | 30x24 | none (the way through the hill) | none |
 | 2 | The Bloated Fields | 48x30 | Pestilence: **the Blightweaver** | Gem of Pestilence |
-| 3 | The Wardens' Rise *(working)* | 48x30 | Famine: **Gorrak Hollowgut** (Ogre Lord); War: **Varnok Ironjaw** (Ogre Lord) with **Skarr** (Ogre Commander) and **Brugg the Unbroken** (Ogre Champion) | Gem of Famine, Gem of War |
-| - | The Elemental Chambers (behind the portal on the Rise) | part of map 3 | the fourth, unspoken: **the Dread Wraith** | - |
-
-Other names considered for quest 3: *Gorrak's Maw*, *The Ogre Warrens*, *The Sundered
-Bastion*.
+| 3 | The Wardens' Rise | 48x30 | Famine: **Gorrak Hollowgut** (Ogre Lord); War: **Varnok Ironjaw** (Ogre Lord) with **Skarr** (Ogre Commander) and **Brugg the Unbroken** (Ogre Champion) | Gem of Famine, Gem of War |
+| - | The Elemental Chambers | a sealed section of map 3, behind the portal | the fourth, unspoken: **the Dread Wraith** | - |
 
 ## Places
 
@@ -46,7 +42,8 @@ Bastion*.
   **portal** stands at the summit, open to the sky.
 - **The Elemental Chambers** - four vaults beneath the Rise: **Stone** (mountain),
   **Tide** (wave), **Gale** (feather) and **Hearth** (flame). The Wraith waits in the vault
-  of Stone.
+  of Stone. **On the map:** a whole section of map 3, sealed off behind the portal, which
+  is placed as a locked gate. It opens when all three Soul Gems are set (passage Q3-08).
 
 ## Cast
 
@@ -69,12 +66,23 @@ Voices are described for recording or generating audio; see SCRIPT.md for who sp
 
 ## The Soul Gems
 
-Each is the size of a hen's egg. What they do in play is the GM's call; these are the
-descriptions.
+**The gems are purely narrative.** They have no game effect. Their only job is to open
+the portal when all three are set in its sockets. Everything else about them is flavor
+for the table: the heroes can feel the power in them, and the soul trapped inside.
 
-- **Gem of Pestilence** - pale, sickly green; warm, and for a moment it beats like a heart.
-- **Gem of Famine** - dull amber, cold as a winter well; holding it brings a sudden hunger.
-- **Gem of War** - blood red; it hums whenever a blade is drawn nearby.
+Each is the size of a hen's egg, and each holds a piece of Morvaen's soul. Up close, the
+heroes can hear it: a faint wailing, too thin to be sure of, that stops when anyone
+listens hard.
+
+- **Gem of Pestilence** - pale, sickly green, and warm. For a moment it beats like a heart.
+  Held for long, it leaves the skin of the palm damp and faintly sour.
+- **Gem of Famine** - dull amber, and cold as a winter well. Holding it brings a sudden,
+  gnawing hunger, and food eaten near it tastes of ash.
+- **Gem of War** - blood red. It hums whenever a blade is drawn nearby, and the hum rises
+  to a thin, furious keening in a fight.
+- **Together** - carried side by side, the gems grow warmer and the wailing grows
+  clearer, and they tug, very gently, toward the Rise. At the portal they pull hard toward
+  their sockets. (Passages G-01 to G-03 in SCRIPT.md.)
 
 ## GM only - the truth (never read aloud)
 
@@ -130,7 +138,8 @@ mother is one of the shapes in the web; whether she can be saved is the GM's cal
 
 ## Still to decide
 
-- The lord's name (Aldren Voss is a placeholder) and the campaign title.
-- The name of quest 3.
-- Whether the Elemental Chambers stay part of map 3 or become a fourth map.
-- What each Soul Gem does in play, if anything, before it goes into the portal.
+- The campaign title (The Three Plagues is a working title).
+
+Settled on 2026-09-28: the lord is Lord Aldren Voss; quest 3 is The Wardens' Rise; the
+Elemental Chambers are a sealed section of map 3 behind a locked gate (the portal); the
+Soul Gems are purely narrative and only open the portal.

@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-09-28 19:33 EDT
+**Last Updated**: 2026-09-28 20:01 EDT
 **Branch**: `dce-table-only`
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -92,11 +92,11 @@ abilities or mana on their heroes; start a new session to get them.
 ## 6. Campaign and quest story
 - [ ] Campaign: intro, closing, GM secret notes.
 - [ ] Quest: read-aloud intro, goals, GM notes, named passages; "Read aloud" tracker panel.
-- [x] Written script (2026-09-28): 23 passages with ids (`P0-01`, `Q2-03`, ...) in
+- [x] Written script (2026-09-28): 26 passages with ids (`P0-01`, `Q2-03`, ...) in
       SCRIPT.md, meant to become one audio clip each.
 - [ ] Optional: attach an audio clip to each passage and play it from the tracker's
       "Read aloud" panel.
 
 ## Open questions
-- Is the Elemental Chambers part of the third map, or a fourth map?
+- Settled: the Elemental Chambers are a sealed section of map 3 behind a locked gate.
 - Rules questions: see the end of `RULES_AND_CLASSES.md`.

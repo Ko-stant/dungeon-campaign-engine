@@ -1,6 +1,6 @@
 # The Three Plagues - Read-Aloud Script
 
-**Last Updated**: 2026-09-28 19:33 EDT
+**Last Updated**: 2026-09-28 20:01 EDT
 
 Everything the players hear, in play order. Each passage is meant to become one audio
 clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
@@ -18,6 +18,8 @@ clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
 - **Pronunciation** of every name is in the cast table in NARRATIVE.md.
 - **Quest goals** are table text. Read them out or show them; they are not part of a clip.
 - **Sound** notes are optional background suggestions.
+- **The Soul Gems do nothing in play** except open the portal. The G passages are flavor
+  for quiet moments between fights.
 
 ## Passage list
 
@@ -42,6 +44,9 @@ clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
 | Q3-07 | The portal | Narrator |
 | Q3-08 | The gems are set | Narrator, Dread Wraith |
 | Q3-09 | The Wraith's taunts (optional) | Dread Wraith |
+| G-01 | The gem that wails (optional) | Narrator |
+| G-02 | Two gems together (optional) | Narrator |
+| G-03 | The pull of the Rise (optional) | Narrator |
 | E-01 | The Chambers restored | Narrator |
 | E-02 | The lord's thanks | Lord Voss |
 | E-03 | Epilogue (optional) | Narrator |
@@ -265,7 +270,8 @@ clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
 >
 > In the mess lies a gem the size of a hen's egg, glowing a pale and sickly green. The
 > Soul Gem of Pestilence. When you pick it up, it is warm. And for a moment it seems to
-> beat against your palm, slow and steady, like a heartbeat. Then it is still.
+> beat against your palm, slow and steady, like a heartbeat. Then it is still. Somewhere
+> deep inside it, so faint you cannot be sure, something is wailing.
 >
 > Outside, a sound like rain begins. It is the webs. All across the fields, the grey
 > threads are drying, snapping, and falling to the ground.
@@ -389,7 +395,8 @@ clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
 >
 > You cut the amber stone from its cord. The Soul Gem of Famine is dull and heavy, and cold
 > as a winter well. Holding it, you feel a sudden, gnawing hunger, though you ate not long
-> ago. You put it away quickly.
+> ago. And under the hunger, thin and far away, you hear it. A voice, wailing. You put the
+> gem away quickly.
 >
 > Two plagues broken. One to go.
 
@@ -440,13 +447,16 @@ clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
 >
 > The red gem in his sword pommel pulses once, then steadies. When you pry it loose, the
 > Soul Gem of War hums in your hand, and the hum grows louder whenever a blade is drawn
-> nearby.
+> nearby. Beneath the hum is something else. A thin, furious keening, like a voice that
+> has been screaming for a very long time.
 >
 > You hold all three Soul Gems now. The three plagues are broken.
 
 ### Q3-07 - The portal
 
-- **When:** the heroes reach the summit of the Rise. Clue 6.
+- **When:** the heroes reach the summit of the Rise. Clue 6. On the map, the portal is
+  the locked gate that seals off the Chambers section of map 3; it stays locked until
+  Q3-08.
 - **Speaker:** Narrator.
 - **Voice:** awe, with a chill on the last sentence.
 - **Sound:** high wind; a low hum from the stone.
@@ -459,6 +469,9 @@ clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
 >
 > And above them, at the very top of the ring, is a fifth mark. A Warden's sigil, scratched
 > away so savagely that you can barely tell what it once was.
+>
+> The Soul Gems you carry are pulling now. Not gently any more. They strain toward the
+> sockets, and the wailing inside them has become one voice.
 
 ### Q3-08 - The gems are set
 
@@ -513,6 +526,56 @@ clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
 > **d** (the Wraith is badly hurt) No. Not again. I will not be sealed away again.
 
 > **e** (a spell or blessing is used against it) Your little prayers. I wrote the prayers.
+
+---
+
+## Soul Gem moments (optional)
+
+Short flavor passages for a quiet moment: a rest, a search, or a hero asking to look at a
+gem. They have no game effect.
+
+### G-01 - The gem that wails
+
+- **When:** any time after Q2-04, when a hero holds or studies a gem.
+- **Speaker:** Narrator.
+- **Voice:** close and quiet, as if leaning in to listen.
+- **Sound:** silence, then a very faint, distant wail.
+
+> In the quiet, you take out the Soul Gem and turn it over in your hand.
+>
+> Its light moves, slowly, like something swimming just under the surface of dark water.
+> You feel the power in it, pressing against your skin, the way you can feel a fire with
+> your eyes closed.
+>
+> And there it is again. A wailing, very far away, as if it came from the bottom of a
+> well. The harder you listen, the quieter it gets, until you cannot tell if it was ever
+> there at all.
+
+### G-02 - Two gems together
+
+- **When:** the heroes carry two gems (after Q3-04 or Q3-06).
+- **Speaker:** Narrator.
+- **Voice:** uneasy.
+
+> The two Soul Gems do not like being apart. Carried in separate packs, they grow cold.
+> Carried together, they warm, and their light seems to lean toward each other.
+>
+> The wailing is clearer now. Two voices, you would swear, though the longer you listen,
+> the more they sound like one voice, answering itself.
+
+### G-03 - The pull of the Rise
+
+- **When:** the heroes carry all three gems and have not yet reached the portal.
+- **Speaker:** Narrator.
+- **Voice:** a slow, rising tension.
+
+> With all three Soul Gems together, there is no mistaking it. They pull. Gently, but
+> always in the same direction: up, toward the top of the Rise.
+>
+> Their power hums through your bones, and the wailing inside them has changed. It no
+> longer sounds like grief.
+>
+> It sounds like someone calling you home.
 
 ---
 

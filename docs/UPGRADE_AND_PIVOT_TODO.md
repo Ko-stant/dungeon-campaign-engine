@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-28 19:36 EDT
+**Last Updated**: 2026-09-28 20:03 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -60,6 +60,7 @@ Commits (oldest first):
 | a5205c9 | dice expressions, custom hero classes (`/classes`), Three Plagues campaign docs |
 | bc106db | hero inventory (gold, items), ability use, mana and cooldowns in the tracker |
 | bd2fe57 | Three Plagues story bible and read-aloud script |
+| (next commit) | story decisions: sealed Chambers on map 3, narrative-only Soul Gems |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
