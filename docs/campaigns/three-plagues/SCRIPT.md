@@ -1,14 +1,16 @@
 # The Three Plagues - Read-Aloud Script
 
-**Last Updated**: 2026-09-28 20:05 EDT
+**Last Updated**: 2026-09-28 20:34 EDT
 
 Everything the players hear, in play order. Each passage is meant to become one audio
 clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
 
 ## How this script is written for audio
 
-- **One passage, one clip.** Name each file after its ID (`P0-01.mp3`, `Q2-03.mp3`) so
-  clips are easy to find at the table, and so the tracker can play them later.
+- **One passage, one clip.** Name each file after its ID (`P0-01.mp3`, `Q2-03.mp3`) and
+  upload it on the campaign page (Audio clips); the tracker's reader plays it. Extra clips
+  for one passage add a letter: `Q3-09a.mp3` to `Q3-09e.mp3`. Formats: mp3, m4a, ogg,
+  opus, wav, webm, flac.
 - **The quoted text is exactly what is spoken.** Numbers are written as words and there
   are no stage directions inside the text. Delivery notes are in each passage's **Voice**
   line.

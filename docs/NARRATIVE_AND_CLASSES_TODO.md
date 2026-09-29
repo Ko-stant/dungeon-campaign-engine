@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-09-28 20:10 EDT
+**Last Updated**: 2026-09-28 20:34 EDT
 **Branch**: `dce-table-only`
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -107,8 +107,15 @@ abilities or mana on their heroes; start a new session to get them.
       needed unless the script outgrows one text.
 - [x] Written script (2026-09-28): 26 passages with ids (`P0-01`, `Q2-03`, ...) in
       SCRIPT.md, meant to become one audio clip each.
-- [ ] Optional: attach an audio clip to each passage and play it from the tracker's
-      "Read aloud" panel.
+- [x] Audio clips (done 2026-09-28): files named after passage ids (`Q2-03.mp3`; `Q3-09a`
+      is extra clip "a" of Q3-09) in `AUDIO_DIR/<campaign id>/` (default `./audio`,
+      gitignored). Uploaded on the campaign page (all-or-nothing name check) or copied in by
+      hand; listed with their passages and playable there. The reader loads the passage's
+      clip into one persistent player (playback survives live updates), shows lettered
+      clip buttons, optional Autoplay (remembered per browser) and Space to play/pause.
+      How: `internal/audio` (library + tests), `internal/app/audio.go` (+ tests), TS
+      `passageClips` in `src/tracker/script.ts`, player in `pages/tracker.ts` and
+      `ui/readAloud.ts`.
 
 ## Open questions
 - Settled: the Elemental Chambers are a sealed section of map 3 behind a locked gate.

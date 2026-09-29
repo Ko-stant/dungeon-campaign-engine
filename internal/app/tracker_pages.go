@@ -120,10 +120,19 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 		return views.CampaignPageData{}, err
 	}
 	d.ScriptText = text
+	titles := map[string]string{}
 	if sc, err := script.Parse(text); err != nil {
 		d.ScriptError = "The saved script no longer parses: " + err.Error()
 	} else {
 		d.ScriptSections, d.ScriptPassages = len(sc.Sections), sc.Count()
+		for _, sec := range sc.Sections {
+			for _, p := range sec.Passages {
+				titles[p.ID] = p.Title
+			}
+		}
+	}
+	if err := s.addAudioPageData(&d, titles); err != nil {
+		return views.CampaignPageData{}, err
 	}
 
 	sessions, err := s.store.ListSessions(ctx, c.ID)

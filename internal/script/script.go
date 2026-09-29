@@ -77,7 +77,7 @@ func (s Script) Count() int {
 var (
 	noteLine  = regexp.MustCompile(`^- \*\*(.+?):\*\*\s*(.*)$`)
 	boldLine  = regexp.MustCompile(`^\*\*(.+?)\*\*\s*(?:\((.+)\))?$`)
-	emphasis  = regexp.MustCompile(`\*+`)
+	emphasis  = regexp.MustCompile("[*`]+") // bold, italic and code marks
 	spaceRuns = regexp.MustCompile(`[ \t]+`)
 )
 

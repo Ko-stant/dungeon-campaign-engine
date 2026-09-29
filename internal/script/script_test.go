@@ -180,3 +180,13 @@ func TestParseThreePlaguesScript(t *testing.T) {
 		t.Fatalf("the verse keeps its lines: %q", last)
 	}
 }
+
+func TestNotesDropCodeMarks(t *testing.T) {
+	s, err := Parse("## A\n\n### P-1 - One\n\n- **Voice:** clips `P-1a` to `P-1e`.\n\n> Hi.\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := s.Sections[0].Passages[0].Notes[0].Text; got != "clips P-1a to P-1e." {
+		t.Fatalf("note: %q", got)
+	}
+}

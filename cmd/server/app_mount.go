@@ -42,7 +42,14 @@ func mountApp(mux *http.ServeMux, contentDir string) func() {
 		catalog = &content.Catalog{Furniture: []content.FurnitureDef{}, Monsters: []content.MonsterDef{}, Heroes: []content.HeroDef{}, Traps: []content.TrapDef{}}
 	}
 
-	app.New(st, catalog).Register(mux)
+	server := app.New(st, catalog)
+	audioDir := os.Getenv("AUDIO_DIR")
+	if audioDir == "" {
+		audioDir = "audio"
+	}
+	server.SetAudioDir(audioDir)
+	server.Register(mux)
+	log.Printf("app: read-aloud audio clips in %s", audioDir)
 	log.Printf("app: ready (%d furniture, %d monsters, %d heroes, %d traps in catalog)",
 		len(catalog.Furniture), len(catalog.Monsters), len(catalog.Heroes), len(catalog.Traps))
 	return st.Close

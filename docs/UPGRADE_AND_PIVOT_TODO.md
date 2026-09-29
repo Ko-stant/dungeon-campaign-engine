@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-28 20:10 EDT
+**Last Updated**: 2026-09-28 20:49 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -62,6 +62,7 @@ Commits (oldest first):
 | bd2fe57 | Three Plagues story bible and read-aloud script |
 | 92372ae | story decisions: sealed Chambers on map 3, narrative-only Soul Gems |
 | 5be59f4 | read-aloud script per campaign, Read aloud panel and reader in the tracker |
+| (next commit) | audio clip playback in the reader, clip uploads on the campaign page |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).

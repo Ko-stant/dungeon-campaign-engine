@@ -33,3 +33,26 @@ export function sectionProgress(section: ScriptSection, read: readonly string[] 
   const done = section.passages.filter((p) => read?.includes(p.id)).length;
   return `${String(done)}/${String(section.passages.length)} read`;
 }
+
+export interface Clip {
+  id: string;
+  /** "Clip" for the passage's own clip, else its letter ("a"). */
+  label: string;
+  url: string;
+}
+
+/** A passage's audio clips: the clip named after it, then its lettered clips ("Q3-09a") in order. */
+export function passageClips(passageId: string, clips: Readonly<Record<string, string>>): Clip[] {
+  const out: Clip[] = [];
+  const own = clips[passageId];
+  if (own) {
+    out.push({ id: passageId, label: 'Clip', url: own });
+  }
+  for (const [id, url] of Object.entries(clips).sort(([a], [b]) => a.localeCompare(b))) {
+    const rest = id.slice(passageId.length);
+    if (id.startsWith(passageId) && /^[a-z]$/.test(rest)) {
+      out.push({ id, label: rest, url });
+    }
+  }
+  return out;
+}

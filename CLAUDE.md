@@ -60,6 +60,9 @@ Tailwind CSS v4, canvas rendering.
     `docs/campaigns/three-plagues/SCRIPT.md`) parsed by `internal/script`; saved with
     `POST /campaigns/{id}/script`, served parsed by `GET /api/campaigns/{id}/script`; the
     tracker's Read aloud panel logs `passage.read`.
+  - Audio clips for the script: files named after passage ids in `AUDIO_DIR/<campaign id>/`
+    (default `./audio`, gitignored), `internal/audio`; `GET /api/campaigns/{id}/audio`,
+    `GET /audio/{campaign}/{file}`, upload/delete forms on the campaign page.
   - Abilities in play: session heroes copy mana and abilities from their class;
     `ability.use` / `ability.reset` track cooldowns (`cooldowns`: ability id -> ready round).
   - Campaign chapters (table `campaign_chapter`): ordered quests, each on its own board;

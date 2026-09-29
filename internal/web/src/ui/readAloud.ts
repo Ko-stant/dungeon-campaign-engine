@@ -3,7 +3,7 @@
  * reader (a full-screen view of one passage in large type, for reading at the
  * table). Marking a passage read sends one passage.read command.
  */
-import { passageNeighbours, sectionProgress } from '../tracker/script.ts';
+import { passageClips, passageNeighbours, sectionProgress } from '../tracker/script.ts';
 import type { Command, ScriptPassage, ScriptSection } from '../tracker/types.ts';
 import { h } from './dom.ts';
 
@@ -21,6 +21,13 @@ export interface ReadAloudContext {
   sectionOpen: (index: number) => boolean | undefined;
   setSectionOpen: (index: number, open: boolean) => void;
   reload: () => void;
+  /** Clip id -> URL. */
+  clips: Readonly<Record<string, string>>;
+  /** The one audio element, kept across re-renders so playback never stops on a live update. */
+  player: HTMLAudioElement;
+  playClip: (clipId: string) => void;
+  autoplay: boolean;
+  setAutoplay: (on: boolean) => void;
 }
 
 export function readAloudPanel(ctx: ReadAloudContext): HTMLElement {
@@ -80,6 +87,21 @@ export function readerOverlay(ctx: ReadAloudContext, id: string, editable: boole
   const { prev, next } = passageNeighbours(ctx.sections, id);
   const done = ctx.read.includes(id);
   const mark = (read: boolean): void => { ctx.send({ type: 'passage.read', payload: { id, title: passage.title, read } }); };
+  const clips = passageClips(id, ctx.clips);
+  const loaded = ctx.player.dataset.clip;
+  const audioBar = clips.length
+    ? h('div', { class: 'flex flex-wrap items-center gap-2 border-b border-border/60 px-6 py-3' },
+      ...clips.map((c) => h('button', {
+        type: 'button',
+        class: `${btn} ${c.id === loaded ? 'border-amber-500 bg-amber-500/15' : ''}`,
+        title: `Play ${c.id}`,
+        onclick: () => { ctx.playClip(c.id); },
+      }, `▶ ${c.label}`)),
+      h('div', { class: 'min-w-60 flex-1' }, ctx.player),
+      h('label', { class: 'flex items-center gap-1 text-xs opacity-80', title: 'Start the clip when a passage opens' },
+        h('input', { type: 'checkbox', checked: ctx.autoplay, onchange: (e: Event) => { ctx.setAutoplay((e.target as HTMLInputElement).checked); } }),
+        'Autoplay'))
+    : null;
 
   return h('div', {
     class: 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4',
@@ -98,6 +120,7 @@ export function readerOverlay(ctx: ReadAloudContext, id: string, editable: boole
           h('p', { class: 'text-xs uppercase tracking-wide opacity-60' }, `${section.title} · ${passage.id}`),
           h('h2', { class: 'text-2xl font-bold text-amber-400' }, passage.title)),
         h('button', { type: 'button', class: btn, 'aria-label': 'Close', onclick: () => { ctx.open(null); } }, 'Close')),
+      audioBar,
       h('div', { class: 'min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5' },
         passage.notes?.length
           ? h('dl', { class: 'grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-md border border-border/40 bg-surface-2 p-3 text-sm' },

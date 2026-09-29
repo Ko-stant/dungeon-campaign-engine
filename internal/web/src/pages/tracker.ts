@@ -18,7 +18,7 @@ import { lineTiles } from '../editor/tools.ts';
 import { h, preserveFocus, replaceChildren } from '../ui/dom.ts';
 import { abilitySection, inventorySection, type SectionContext } from '../ui/heroSections.ts';
 import { readAloudPanel, readerOverlay, type ReadAloudContext } from '../ui/readAloud.ts';
-import { currentSection } from '../tracker/script.ts';
+import { currentSection, passageClips } from '../tracker/script.ts';
 
 const TRAP_STATES: readonly LiveTrapState[] = ['hidden', 'revealed', 'triggered', 'disarmed', 'removed'];
 const btn = 'rounded-md border border-border/60 px-2 py-1 text-sm hover:border-amber-500 disabled:opacity-40';
@@ -51,6 +51,8 @@ async function main(): Promise<void> {
   // The campaign's read-aloud script (empty when it has none).
   const loadScript = (): Promise<ScriptSection[]> => api.script(session.campaignId).then((r) => r.sections).catch(() => []);
   let scriptSections = await loadScript();
+  const loadClips = (): Promise<Record<string, string>> => api.audio(session.campaignId).then((r) => r.clips).catch(() => ({}));
+  let clips = await loadClips();
 
   let state: SessionState = session.state;
   let status = session.status;
@@ -70,6 +72,15 @@ async function main(): Promise<void> {
   // The passage open in the reader, and script sections the GM opened or closed.
   let readerId: string | null = null;
   const scriptSectionOpen = new Map<number, boolean>();
+  // The reader's audio player: one element, moved into each re-rendered reader, so playback survives live updates.
+  const player = h('audio', { controls: true, preload: 'none', class: 'h-9 w-full' });
+  const AUTOPLAY_KEY = 'dce.readerAutoplay';
+  let autoplay = false;
+  try {
+    autoplay = localStorage.getItem(AUTOPLAY_KEY) === '1';
+  } catch {
+    // storage unavailable: autoplay stays off
+  }
   // Hero card sections the GM has collapsed ("hero-1:inventory").
   const closedSections = new Set<string>();
 
@@ -220,20 +231,24 @@ async function main(): Promise<void> {
       return;
     }
     if (readerId) {
-      const ctx = readAloudContext();
-      const ids = ctx.sections.flatMap((sec) => sec.passages.map((p) => p.id));
+      const ids = scriptSections.flatMap((sec) => sec.passages.map((p) => p.id));
       const i = ids.indexOf(readerId);
       if (ev.key === 'Escape') {
-        readerId = null;
+        openPassage(null);
       } else if (ev.key === 'ArrowLeft' && i > 0) {
-        readerId = ids[i - 1] ?? readerId;
+        openPassage(ids[i - 1] ?? null);
       } else if (ev.key === 'ArrowRight' && i >= 0 && i < ids.length - 1) {
-        readerId = ids[i + 1] ?? readerId;
+        openPassage(ids[i + 1] ?? null);
+      } else if (ev.key === ' ' && player.src) {
+        if (player.paused) {
+          void player.play().catch(() => undefined);
+        } else {
+          player.pause();
+        }
       } else {
         return;
       }
       ev.preventDefault();
-      refresh();
       return;
     }
     if (ev.key === 'Escape') {
@@ -572,6 +587,39 @@ async function main(): Promise<void> {
     return h('button', { type: 'button', class: btn, onclick: () => { void send({ type: 'note.consume', payload: { id: noteId, consumed: !used } }); } }, used ? 'Mark unused' : 'Mark used');
   }
 
+  /** Loads a clip into the player and plays it. */
+  function playClip(clipId: string): void {
+    const url = clips[clipId];
+    if (!url) {
+      return;
+    }
+    if (player.dataset.clip !== clipId) {
+      player.src = url;
+      player.dataset.clip = clipId;
+    }
+    void player.play().catch(() => undefined);
+    refresh();
+  }
+
+  /** Opens a passage in the reader (null closes it); its clip is loaded, and played with autoplay on. */
+  function openPassage(id: string | null): void {
+    readerId = id;
+    player.pause();
+    const first = id ? passageClips(id, clips)[0] : undefined;
+    if (first) {
+      player.src = first.url;
+      player.dataset.clip = first.id;
+      if (autoplay) {
+        void player.play().catch(() => undefined);
+      }
+    } else {
+      player.removeAttribute('src');
+      delete player.dataset.clip;
+      player.load();
+    }
+    refresh();
+  }
+
   function readAloudContext(): ReadAloudContext {
     return {
       sections: scriptSections,
@@ -579,26 +627,37 @@ async function main(): Promise<void> {
       read: state.readPassages ?? [],
       campaignId: session.campaignId,
       send: (c) => { void send(c); },
-      open: (id) => {
-        readerId = id;
-        refresh();
-      },
+      open: openPassage,
       sectionOpen: (i) => scriptSectionOpen.get(i),
       setSectionOpen: (i, open) => { scriptSectionOpen.set(i, open); },
       reload: () => {
-        void loadScript().then((sections) => {
+        void Promise.all([loadScript(), loadClips()]).then(([sections, loadedClips]) => {
           scriptSections = sections;
+          clips = loadedClips;
           scriptSectionOpen.clear();
           refresh();
         });
+      },
+      clips,
+      player,
+      playClip,
+      autoplay,
+      setAutoplay: (on) => {
+        autoplay = on;
+        try {
+          localStorage.setItem(AUTOPLAY_KEY, on ? '1' : '0');
+        } catch {
+          // storage unavailable: the choice lasts until the page reloads
+        }
       },
     };
   }
 
   function renderReader(): void {
     const overlay = readerId ? readerOverlay(readAloudContext(), readerId, status === 'active') : null;
-    if (!overlay) {
+    if (!overlay && readerId) {
       readerId = null;
+      player.pause();
     }
     replaceChildren(readerHost, overlay);
   }

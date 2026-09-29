@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last Updated**: 2026-09-28 20:10 EDT
+**Last Updated**: 2026-09-28 20:34 EDT
 
 The engine is a single-GM companion for in-person HeroQuest: build maps, run a
 quest at the table, and keep a resumable record of what happened. It never
@@ -41,7 +41,7 @@ enforces rules; the GM decides, and the app remembers.
 - Hero inventory (gold and items) on the campaign page and in the tracker; ability use,
   mana and cooldowns in the tracker.
 - Read-aloud script per campaign and a Read aloud panel with a large-type reader in the
-  tracker. Next: play an audio clip per passage.
+  tracker, with audio clip playback per passage (files named after passage ids).
 
 ## Next
 ### Table polish

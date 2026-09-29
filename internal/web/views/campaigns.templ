@@ -86,6 +86,11 @@ type CampaignPageData struct {
 	ScriptError    string
 	ScriptSections int
 	ScriptPassages int
+	// Audio clips for the script; AudioEnabled is false without an audio folder.
+	AudioEnabled bool
+	AudioDir     string
+	AudioClips   []AudioClipRow
+	AudioError   string
 }
 
 func chapterStatusClass(status string) string {

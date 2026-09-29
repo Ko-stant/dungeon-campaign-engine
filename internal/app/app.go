@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/audio"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 )
@@ -25,6 +26,7 @@ type Server struct {
 	store        *store.Store
 	catalog      *content.Catalog
 	sessionLocks sync.Map // session id -> *sync.Mutex
+	audio        *audio.Library
 	streams      streams
 }
 
@@ -56,6 +58,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	s.registerClassPages(mux)
 	s.registerInventoryPages(mux)
 	s.registerScript(mux)
+	s.registerAudio(mux)
 	s.registerChapterPages(mux)
 }
 

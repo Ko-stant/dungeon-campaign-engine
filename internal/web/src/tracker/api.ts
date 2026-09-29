@@ -17,6 +17,8 @@ export function createTrackerApi(fetchFn: typeof fetch = fetch.bind(globalThis))
     chapters: (campaignId: string) => request<Chapter[]>('GET', `/api/campaigns/${id(campaignId)}/chapters`),
     /** The campaign's read-aloud script (empty sections when it has none). */
     script: (campaignId: string) => request<{ sections: ScriptSection[] }>('GET', `/api/campaigns/${id(campaignId)}/script`),
+    /** The campaign's audio clips: clip id ("Q2-03", "Q3-09a") -> URL. */
+    audio: (campaignId: string) => request<{ clips: Record<string, string> }>('GET', `/api/campaigns/${id(campaignId)}/audio`),
     /** WebSocket URL for live updates, matching the page's scheme. */
     streamUrl: (sessionId: string, loc: { protocol: string; host: string } = window.location) =>
       `${loc.protocol === 'https:' ? 'wss' : 'ws'}://${loc.host}/api/sessions/${id(sessionId)}/stream`,

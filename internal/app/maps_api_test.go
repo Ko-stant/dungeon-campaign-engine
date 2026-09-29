@@ -17,6 +17,12 @@ import (
 
 func testServer(t *testing.T) *httptest.Server {
 	t.Helper()
+	return testServerWith(t, nil)
+}
+
+// testServerWith is testServer with a hook to configure the app server.
+func testServerWith(t *testing.T, configure func(*Server)) *httptest.Server {
+	t.Helper()
 	st, _ := storetest.New(t)
 	catalog, err := content.Load(fstest.MapFS{
 		"furniture/table.json": {Data: []byte(`{"id":"table","name":"Table","gridSize":{"width":2,"height":1}}`)},
@@ -28,7 +34,11 @@ func testServer(t *testing.T) *httptest.Server {
 		t.Fatal(err)
 	}
 	mux := http.NewServeMux()
-	New(st, catalog).Register(mux)
+	app := New(st, catalog)
+	if configure != nil {
+		configure(app)
+	}
+	app.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 	return srv
