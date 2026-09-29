@@ -15,6 +15,7 @@ describe('tracker api client', () => {
     await api.complete('s1');
     await api.travel('s1', 'q2');
     await api.chapters('c1');
+    await api.script('c1');
 
     expect(calls).toEqual([
       { url: '/api/sessions/s1/commands', method: 'POST', body: { type: 'round.advance', payload: {} } },
@@ -22,6 +23,7 @@ describe('tracker api client', () => {
       { url: '/api/sessions/s1/complete', method: 'POST', body: undefined },
       { url: '/api/sessions/s1/travel', method: 'POST', body: { questId: 'q2' } },
       { url: '/api/campaigns/c1/chapters', method: 'GET', body: undefined },
+      { url: '/api/campaigns/c1/script', method: 'GET', body: undefined },
     ]);
   });
 

@@ -1,6 +1,6 @@
 # The Three Plagues - Read-Aloud Script
 
-**Last Updated**: 2026-09-28 20:01 EDT
+**Last Updated**: 2026-09-28 20:05 EDT
 
 Everything the players hear, in play order. Each passage is meant to become one audio
 clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
@@ -18,6 +18,9 @@ clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
 - **Pronunciation** of every name is in the cast table in NARRATIVE.md.
 - **Quest goals** are table text. Read them out or show them; they are not part of a clip.
 - **Sound** notes are optional background suggestions.
+- **The tracker reads this file.** Paste it into the campaign page's Script box. Keep the
+  format: `### ID - Title` headings, `- **Label:**` notes, `**Speaker**` lines and `>`
+  quotes. A `\` at the end of a quoted line keeps the line break (used in the verse).
 - **The Soul Gems do nothing in play** except open the portal. The G passages are flavor
   for quiet moments between fights.
 
@@ -168,9 +171,9 @@ clip. World, cast and secrets are in [NARRATIVE.md](NARRATIVE.md).
 > Beneath them runs a verse, cut deep and careful, as if whoever carved it wanted it never
 > to be forgotten.
 >
-> Three the plagues that bar the way.
-> Three the stones that turn the key.
-> But the one who keeps the door
+> Three the plagues that bar the way.\
+> Three the stones that turn the key.\
+> But the one who keeps the door\
 > keeps it still, and waits for thee.
 
 ### Q1-03 - The eastern gate

@@ -1,0 +1,40 @@
+package views
+
+import "fmt"
+
+func scriptSize(d CampaignPageData) string {
+	plural := func(n int, word string) string {
+		if n == 1 {
+			return "1 " + word
+		}
+		return fmt.Sprintf("%d %ss", n, word)
+	}
+	return plural(d.ScriptPassages, "passage") + " in " + plural(d.ScriptSections, "section")
+}
+
+// campaignScript is the campaign's read-aloud script: the GM pastes it here
+// and the tracker's Read aloud panel shows it during play.
+templ campaignScript(d CampaignPageData) {
+	<section id="script" class={ cardClass + " space-y-3" }>
+		<div class="flex flex-wrap items-baseline justify-between gap-2">
+			<h2 class="text-lg font-semibold">Read-aloud script</h2>
+			if d.ScriptPassages > 0 {
+				<span class="text-sm opacity-70">{ scriptSize(d) }</span>
+			} else {
+				<span class="text-sm opacity-70">No script yet</span>
+			}
+		</div>
+		<p class="text-xs opacity-60">
+			Paste the campaign's script (the format of <code>docs/campaigns/three-plagues/SCRIPT.md</code>): <code>## Section</code> headings,
+			<code>### ID - Title</code> passages, <code>- **When:** ...</code> notes, <code>**Speaker**</code> lines and <code>&gt;</code> quoted text.
+			The tracker's Read aloud panel shows it during play. Edits apply to running quests straight away.
+		</p>
+		if d.ScriptError != "" {
+			<p class="rounded-md border border-danger/60 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{ d.ScriptError }</p>
+		}
+		<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/script") } class="space-y-2">
+			<textarea name="script" rows="14" spellcheck="true" aria-label="Read-aloud script" class={ inputClass + " font-mono text-xs" }>{ d.ScriptText }</textarea>
+			<button type="submit" class={ buttonClass }>Save script</button>
+		</form>
+	</section>
+}

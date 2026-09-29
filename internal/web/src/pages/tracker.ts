@@ -12,11 +12,13 @@ import { createTrackerApi } from '../tracker/api.ts';
 import { formatEvent } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
 import { clickCommand, paintPending, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
-import type { Command, CommandResponse, Hero, LiveTrapState, Monster, SessionEvent, SessionState } from '../tracker/types.ts';
+import type { Command, CommandResponse, Hero, LiveTrapState, Monster, ScriptSection, SessionEvent, SessionState } from '../tracker/types.ts';
 import { trackerView } from '../tracker/view.ts';
 import { lineTiles } from '../editor/tools.ts';
 import { h, preserveFocus, replaceChildren } from '../ui/dom.ts';
 import { abilitySection, inventorySection, type SectionContext } from '../ui/heroSections.ts';
+import { readAloudPanel, readerOverlay, type ReadAloudContext } from '../ui/readAloud.ts';
+import { currentSection } from '../tracker/script.ts';
 
 const TRAP_STATES: readonly LiveTrapState[] = ['hidden', 'revealed', 'triggered', 'disarmed', 'removed'];
 const btn = 'rounded-md border border-border/60 px-2 py-1 text-sm hover:border-amber-500 disabled:opacity-40';
@@ -46,6 +48,9 @@ async function main(): Promise<void> {
   const [session, catalog, initialEvents] = await Promise.all([api.session(sessionId), api.catalog(), api.events(sessionId)]);
   // The campaign's chapters, for travelling to another map mid-game.
   const chapters = await api.chapters(session.campaignId).catch(() => []);
+  // The campaign's read-aloud script (empty when it has none).
+  const loadScript = (): Promise<ScriptSection[]> => api.script(session.campaignId).then((r) => r.sections).catch(() => []);
+  let scriptSections = await loadScript();
 
   let state: SessionState = session.state;
   let status = session.status;
@@ -62,6 +67,9 @@ async function main(): Promise<void> {
   let busy = false;
   let message = '';
   let live = false;
+  // The passage open in the reader, and script sections the GM opened or closed.
+  let readerId: string | null = null;
+  const scriptSectionOpen = new Map<number, boolean>();
   // Hero card sections the GM has collapsed ("hero-1:inventory").
   const closedSections = new Set<string>();
 
@@ -71,6 +79,7 @@ async function main(): Promise<void> {
   const modeBar = h('div', { class: 'flex flex-wrap items-center gap-2 px-2 pb-2' });
   const leftPanel = h('aside', { class: 'w-80 shrink-0 space-y-3 overflow-y-auto border-r border-border/60 p-3' });
   const rightPanel = h('aside', { class: 'w-80 shrink-0 space-y-4 overflow-y-auto border-l border-border/60 p-3' });
+  const readerHost = h('div');
   const hoverInfo = h('span', { class: 'pointer-events-none absolute bottom-3 left-3 rounded bg-surface/80 px-2 py-0.5 font-mono text-xs opacity-80 empty:hidden' });
   replaceChildren(
     root,
@@ -79,6 +88,7 @@ async function main(): Promise<void> {
       leftPanel,
       h('main', { class: 'relative flex min-w-0 flex-1 flex-col p-2' }, modeBar, h('div', { class: 'min-h-0 flex-1' }, canvas), hoverInfo),
       rightPanel),
+    readerHost,
   );
 
   // --- Drawing ---
@@ -207,6 +217,23 @@ async function main(): Promise<void> {
   window.addEventListener('keydown', (ev) => {
     const typing = ev.target instanceof HTMLInputElement || ev.target instanceof HTMLTextAreaElement || ev.target instanceof HTMLSelectElement;
     if (typing) {
+      return;
+    }
+    if (readerId) {
+      const ctx = readAloudContext();
+      const ids = ctx.sections.flatMap((sec) => sec.passages.map((p) => p.id));
+      const i = ids.indexOf(readerId);
+      if (ev.key === 'Escape') {
+        readerId = null;
+      } else if (ev.key === 'ArrowLeft' && i > 0) {
+        readerId = ids[i - 1] ?? readerId;
+      } else if (ev.key === 'ArrowRight' && i >= 0 && i < ids.length - 1) {
+        readerId = ids[i + 1] ?? readerId;
+      } else {
+        return;
+      }
+      ev.preventDefault();
+      refresh();
       return;
     }
     if (ev.key === 'Escape') {
@@ -545,6 +572,37 @@ async function main(): Promise<void> {
     return h('button', { type: 'button', class: btn, onclick: () => { void send({ type: 'note.consume', payload: { id: noteId, consumed: !used } }); } }, used ? 'Mark unused' : 'Mark used');
   }
 
+  function readAloudContext(): ReadAloudContext {
+    return {
+      sections: scriptSections,
+      current: currentSection(scriptSections, state, chapters),
+      read: state.readPassages ?? [],
+      campaignId: session.campaignId,
+      send: (c) => { void send(c); },
+      open: (id) => {
+        readerId = id;
+        refresh();
+      },
+      sectionOpen: (i) => scriptSectionOpen.get(i),
+      setSectionOpen: (i, open) => { scriptSectionOpen.set(i, open); },
+      reload: () => {
+        void loadScript().then((sections) => {
+          scriptSections = sections;
+          scriptSectionOpen.clear();
+          refresh();
+        });
+      },
+    };
+  }
+
+  function renderReader(): void {
+    const overlay = readerId ? readerOverlay(readAloudContext(), readerId, status === 'active') : null;
+    if (!overlay) {
+      readerId = null;
+    }
+    replaceChildren(readerHost, overlay);
+  }
+
   function renderRight(): void {
     const logInput = h('textarea', { class: `${field} h-16 w-full`, placeholder: 'What happened? (a bargain, a rule bend, a story beat…)', maxlength: 2000 });
     const monsters = state.monsters.map((m) =>
@@ -580,6 +638,7 @@ async function main(): Promise<void> {
       rightPanel,
       status !== 'active' ? h('p', { class: 'rounded-md border border-purple-400/60 bg-purple-400/10 p-2 text-sm' }, 'This quest is completed. Reopen it to make changes.') : null,
       renderSelection(),
+      readAloudPanel(readAloudContext()),
       h('section', { class: 'space-y-2' },
         h('h2', { class: 'text-sm font-semibold' }, 'Log'),
         logInput,
@@ -607,6 +666,7 @@ async function main(): Promise<void> {
     renderModeBar();
     renderHeroes();
     renderRight();
+    renderReader();
     restoreFocus();
     requestDraw();
   }

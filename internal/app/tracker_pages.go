@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/script"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/tracker"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views"
@@ -112,6 +113,17 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 	}
 	for _, def := range cat.Heroes {
 		d.Classes = append(d.Classes, views.ClassOption{ID: def.ID, Name: def.Name})
+	}
+
+	text, err := s.store.GetCampaignScript(ctx, c.ID)
+	if err != nil {
+		return views.CampaignPageData{}, err
+	}
+	d.ScriptText = text
+	if sc, err := script.Parse(text); err != nil {
+		d.ScriptError = "The saved script no longer parses: " + err.Error()
+	} else {
+		d.ScriptSections, d.ScriptPassages = len(sc.Sections), sc.Count()
 	}
 
 	sessions, err := s.store.ListSessions(ctx, c.ID)

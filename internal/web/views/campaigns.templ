@@ -81,6 +81,11 @@ type CampaignPageData struct {
 	Chapters []ChapterRow
 	// OtherQuests are quests that are not chapters yet (for "add chapter").
 	OtherQuests []QuestOption
+	// The read-aloud script as typed, its size, and an error from saving it.
+	ScriptText     string
+	ScriptError    string
+	ScriptSections int
+	ScriptPassages int
 }
 
 func chapterStatusClass(status string) string {
@@ -293,6 +298,7 @@ templ CampaignPage(d CampaignPageData) {
 					<p class="mt-2 text-xs opacity-60">The quest and board are copied into the session, so later edits in the map creator won't change a game in progress.</p>
 				}
 			</section>
+			@campaignScript(d)
 			<section class="space-y-2">
 				<h2 class="text-lg font-semibold">Sessions</h2>
 				if len(d.Sessions) == 0 {

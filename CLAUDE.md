@@ -56,6 +56,10 @@ Tailwind CSS v4, canvas rendering.
   - Inventory: campaign heroes carry gold and `items` (name, quantity, notes) between quests;
     `/campaigns/{id}/heroes/{heroId}/(gold|items...)` forms, `item.*` tracker commands.
     Shared pure helpers in `internal/tracker/inventory.go`.
+  - Read-aloud script: one Markdown text per campaign (`campaign.script`, format of
+    `docs/campaigns/three-plagues/SCRIPT.md`) parsed by `internal/script`; saved with
+    `POST /campaigns/{id}/script`, served parsed by `GET /api/campaigns/{id}/script`; the
+    tracker's Read aloud panel logs `passage.read`.
   - Abilities in play: session heroes copy mana and abilities from their class;
     `ability.use` / `ability.reset` track cooldowns (`cooldowns`: ability id -> ready round).
   - Campaign chapters (table `campaign_chapter`): ordered quests, each on its own board;

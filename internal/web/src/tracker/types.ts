@@ -108,6 +108,35 @@ export interface SessionState {
   removedBlocks?: string[];
   consumedNotes: string[];
   discovered: number[];
+  /** Read-aloud passage ids already read at the table. */
+  readPassages?: string[] | null;
+}
+
+/** A campaign's read-aloud script, mirroring internal/script (Go). */
+export interface ScriptNote {
+  label: string;
+  text: string;
+}
+
+export interface ScriptPart {
+  speaker?: string;
+  aside?: string;
+  paragraphs: string[];
+}
+
+export interface ScriptPassage {
+  id: string;
+  title: string;
+  notes?: ScriptNote[];
+  parts: ScriptPart[];
+  goalsTitle?: string;
+  goals?: string[];
+}
+
+export interface ScriptSection {
+  title: string;
+  intro?: string;
+  passages: ScriptPassage[];
 }
 
 export interface Command {

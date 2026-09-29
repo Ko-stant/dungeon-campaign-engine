@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-09-28 20:01 EDT
+**Last Updated**: 2026-09-28 20:10 EDT
 **Branch**: `dce-table-only`
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -91,7 +91,20 @@ abilities or mana on their heroes; start a new session to get them.
 
 ## 6. Campaign and quest story
 - [ ] Campaign: intro, closing, GM secret notes.
-- [ ] Quest: read-aloud intro, goals, GM notes, named passages; "Read aloud" tracker panel.
+- [x] Read-aloud script and tracker panel (done 2026-09-28). The script is one Markdown
+      text per campaign (the SCRIPT.md format), pasted into the campaign page's Script box
+      and parsed on save (errors name the line; a bad script is not saved). The tracker's
+      right panel lists it by section, opening the section for the current quest ("Quest N"
+      = chapter N, else a title naming the quest). Clicking a passage opens a large-type
+      reader with notes, speakers, goals, Previous/Next (and arrow keys); "Mark as read"
+      sends `passage.read`, which logs "Read aloud: Q2-03 The tithe barn" and ticks it off
+      (kept across maps in `readPassages`).
+      How: `internal/script` (parser + tests, including the real SCRIPT.md), migration
+      `00005_campaign_script.sql`, `internal/store/campaign_script.go`,
+      `internal/app/script.go`, `views/script.templ`, `internal/tracker/passages.go`,
+      TS `src/tracker/script.ts` and `src/ui/readAloud.ts`.
+- [ ] Campaign intro/closing and quest text live in the script; separate fields are not
+      needed unless the script outgrows one text.
 - [x] Written script (2026-09-28): 26 passages with ids (`P0-01`, `Q2-03`, ...) in
       SCRIPT.md, meant to become one audio clip each.
 - [ ] Optional: attach an audio clip to each passage and play it from the tracker's

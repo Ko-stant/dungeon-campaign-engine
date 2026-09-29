@@ -84,6 +84,8 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.itemRemove(c.Payload)
 	case "item.give":
 		summary, err = a.itemGive(c.Payload)
+	case "passage.read":
+		summary, err = a.passageRead(c.Payload)
 	case "log.note":
 		summary, err = a.logNote(c.Payload)
 	default:

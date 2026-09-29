@@ -21,6 +21,7 @@ const CATEGORIES: Record<string, string> = {
   tiles: 'reveal',
   round: 'round',
   log: 'note',
+  passage: 'note',
   note: 'note',
   session: 'session',
 };
