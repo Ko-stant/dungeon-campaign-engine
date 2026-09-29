@@ -3,7 +3,7 @@
  * pure functions in editor/model.ts and editor/tools.ts and lands on the undo
  * history; the renderer draws toBoardView() of the current documents.
  */
-import { pixelToEdge, pixelToTile, type Rotation, type TileCoord } from '../board/geometry.ts';
+import { doorCovers, pixelToEdge, pixelToTile, type Rotation, type TileCoord } from '../board/geometry.ts';
 import { CORRIDOR, VOID, tileAt, tileIndex, type DoorKind } from '../board/model.ts';
 import { BoardRenderer, type Highlights } from '../board/renderer.ts';
 import { History } from '../editor/history.ts';
@@ -11,6 +11,8 @@ import {
   addRoom,
   itemsAt,
   moveItem,
+  notePreview,
+  notesInOrder,
   removeItem,
   renameRoom,
   setBlockedHiddenDoor,
@@ -28,8 +30,9 @@ import {
 } from '../editor/model.ts';
 import { applyClick, applyDrag, isDragTool, lineTiles, type ClickTarget, type EditorDoc, type Tool } from '../editor/tools.ts';
 import { ApiError, createApi } from '../maps/api.ts';
-import { MAX_TRAP_LABEL, monsterOptionLabel, type Issue, type QuestSummary } from '../maps/types.ts';
+import { MAX_TRAP_LABEL, monsterOptionLabel, type Issue, type QuestDoc, type QuestSummary } from '../maps/types.ts';
 import { h, replaceChildren } from '../ui/dom.ts';
+import { piecePreview } from '../ui/piecePreview.ts';
 
 
 type Layer = 'board' | 'quest';
@@ -50,7 +53,9 @@ const QUEST_TOOLS: { kind: QuestToolKind; label: string; hint: string }[] = [
   { kind: 'erase', label: 'Erase', hint: 'Click a piece or door to remove it.' },
 ];
 
-const DOOR_KINDS: [DoorKind, string][] = [['normal', 'Door'], ['secret', 'Secret door'], ['gate', 'Gate']];
+const DOOR_KINDS: [DoorKind, string][] = [['normal', 'Door'], ['secret', 'Secret door'], ['gate', 'Gate'], ['exit', 'Exit door']];
+/** Door widths: one wall edge, or two for double doors and gates (the second runs right, or up). */
+const DOOR_SPANS: string[][] = [['1', '1 square'], ['2', '2 squares (to the right / up)']];
 
 function doorKindLabel(kind: DoorKind): string {
   return DOOR_KINDS.find(([k]) => k === kind)?.[1] ?? 'Door';
@@ -93,6 +98,7 @@ async function main(): Promise<void> {
   let trapRotation: Rotation = 0;
   let doorKind: DoorKind = 'normal';
   let doorLocked = false;
+  let doorSpan = 1;
   let blockHidesDoor = false;
   let selectedId: string | null = null;
   let hover: ClickTarget = { tile: null, edge: null };
@@ -206,7 +212,7 @@ async function main(): Promise<void> {
       case 'trap':
         return { kind: 'trap', trapKind, rotation: trapRotation };
       case 'door':
-        return { kind: 'door', doorKind, locked: doorLocked };
+        return { kind: 'door', doorKind, locked: doorLocked, span: doorSpan };
       case 'blocked':
         return { kind: 'blocked', hiddenDoor: blockHidesDoor };
       default:
@@ -260,7 +266,7 @@ async function main(): Promise<void> {
         return;
       }
       const edge = target.edge;
-      const door = edge ? q.doors.find((d) => d.edge.x === edge.x && d.edge.y === edge.y && d.edge.orientation === edge.orientation) : undefined;
+      const door = edge ? q.doors.find((d) => doorCovers(d, edge)) : undefined;
       const top = target.tile ? itemsAt(q, catalog, target.tile)[0] : undefined;
       selectedId = top ?? door?.id ?? null;
       if (top && target.tile) {
@@ -652,19 +658,33 @@ async function main(): Promise<void> {
           select('Furniture', catalog.furniture.map((f) => [f.id, `${f.name} (${f.width}×${f.height})`]), furnitureType, (v) => { furnitureType = v; }),
           select('Rotation', [['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']], String(furnitureRotation), (v) => { furnitureRotation = Number(v) as Rotation; }),
         );
+        const f = catalog.furniture.find((d) => d.id === furnitureType);
+        if (f) {
+          options.push(piecePreview({ name: f.name, width: f.width, height: f.height, rotation: furnitureRotation, image: f.image }));
+        }
       } else if (questTool === 'monster') {
         options.push(select('Monster', catalog.monsters.map((m) => [m.id, monsterOptionLabel(m)]), monsterType, (v) => { monsterType = v; }));
+        const m = catalog.monsters.find((d) => d.id === monsterType);
+        if (m) {
+          options.push(piecePreview({ name: m.name, width: m.width ?? 1, height: m.height ?? 1, rotation: 0, image: m.image, color: m.color }));
+        }
       } else if (questTool === 'trap') {
         options.push(
           select('Trap', trapKinds, trapKind, (v) => { trapKind = v; }),
           select('Rotation', [['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']], String(trapRotation), (v) => { trapRotation = Number(v) as Rotation; }),
         );
+        const t = catalog.traps.find((d) => d.id === trapKind);
+        options.push(t
+          ? piecePreview({ name: t.name, width: t.width, height: t.height, rotation: trapRotation, image: t.image })
+          : h('p', { class: 'text-xs opacity-60' }, 'A single-square marker (no artwork, not rotated).'));
       } else if (questTool === 'blocked') {
         options.push(checkbox('Hides a secret door', blockHidesDoor, (v) => { blockHidesDoor = v; refresh(); }));
       } else if (questTool === 'door') {
         options.push(
           select('Kind', DOOR_KINDS.map(([k, label]) => [k, label]), doorKind, (v) => { doorKind = v as DoorKind; }),
+          select('Width', DOOR_SPANS, String(doorSpan), (v) => { doorSpan = Number(v); }),
           checkbox('Locked', doorLocked, (v) => { doorLocked = v; refresh(); }),
+          doorKind === 'exit' ? h('p', { class: 'text-xs opacity-60' }, 'Exit doors lead off the map: place them on the board\'s edge or against solid rock; the checks won\'t warn about that.') : null,
         );
       }
       children.push(
@@ -677,6 +697,9 @@ async function main(): Promise<void> {
       );
       if (!doc().quest) {
         children.push(h('p', { class: 'rounded-md border border-warning/50 bg-warning/10 p-2 text-xs' }, 'Open or create a quest in the right panel to place doors and pieces.'));
+      } else if (questTool === 'note' || doc().quest?.notes.some((n) => n.id === selectedId)) {
+        // The note list shows while placing notes, or while a note is selected.
+        children.push(notesList(doc().quest));
       }
     }
     replaceChildren(leftPanel, ...children);
@@ -755,6 +778,42 @@ async function main(): Promise<void> {
     replaceChildren(rightPanel, ...children);
   }
 
+  /** The quest's notes in letter order: click one to select it on the board, × to remove it (later letters move up). */
+  function notesList(q: QuestDoc | null): HTMLElement {
+    const notes = q ? notesInOrder(q) : [];
+    const rows = notes.map((n) => {
+      const selected = selectedId === n.id;
+      const select = (): void => {
+        selectedId = n.id;
+        questTool = 'select';
+        refresh();
+      };
+      return h('li', { class: `flex items-center gap-2 rounded-md p-1 ${selected ? 'bg-amber-500/15' : ''}` },
+        h('button', { type: 'button', class: selected ? btnActive : btn, title: `Select note ${n.label}`, onclick: select }, n.label),
+        h('button', { type: 'button', class: 'min-w-0 flex-1 truncate text-left text-sm hover:text-amber-400', title: n.text, onclick: select }, notePreview(n.text, 60)),
+        h('span', { class: 'shrink-0 font-mono text-xs opacity-60' }, `(${String(n.x)}, ${String(n.y)})`),
+        h('button', {
+          type: 'button',
+          class: 'shrink-0 px-1 text-sm text-danger hover:underline',
+          title: `Remove note ${n.label}; the notes after it move up a letter`,
+          'aria-label': `Remove note ${n.label}`,
+          onclick: () => {
+            const current = doc().quest;
+            if (current) {
+              commit({ ...doc(), quest: removeItem(current, n.id) });
+              if (selectedId === n.id) {
+                selectedId = null;
+              }
+              refresh();
+            }
+          },
+        }, '×'));
+    });
+    return h('section', { class: 'space-y-2' },
+      h('h2', { class: 'text-sm font-semibold' }, `Notes (${String(notes.length)})`),
+      notes.length ? h('ul', { class: 'space-y-1' }, ...rows) : h('p', { class: 'text-xs opacity-60' }, 'No notes yet. Use the Note tool to place one on the board.'));
+  }
+
   function renderSelection(id: string): HTMLElement {
     const q = doc().quest;
     const rows: (Node | null)[] = [];
@@ -768,8 +827,9 @@ async function main(): Promise<void> {
 
     if (door && q) {
       rows.push(
-        h('p', { class: 'text-sm' }, `${doorKindLabel(door.kind)} at (${door.edge.x}, ${door.edge.y}) ${door.edge.orientation}`),
+        h('p', { class: 'text-sm' }, `${doorKindLabel(door.kind)} at (${door.edge.x}, ${door.edge.y}) ${door.edge.orientation}${(door.span ?? 1) > 1 ? ', 2 squares wide' : ''}`),
         select('Kind', DOOR_KINDS.map(([k, label]) => [k, label]), door.kind, (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { kind: v as DoorKind }) }); }),
+        select('Width', DOOR_SPANS, String(door.span ?? 1), (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { span: Number(v) }) }); }),
         checkbox('Locked', door.locked ?? false, (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { locked: v }) }); }),
         h('button', { type: 'button', class: btn, onclick: () => { commit({ ...doc(), quest: toggleDoorState(q, door.id) }); } }, `Starts ${door.state} (toggle)`),
       );

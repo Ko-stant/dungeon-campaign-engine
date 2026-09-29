@@ -3,7 +3,7 @@
  * events into clicks (a tile and/or edge) or drags (the tiles visited) and
  * pushes the returned document onto the undo history.
  */
-import type { Edge, Rotation, TileCoord } from '../board/geometry.ts';
+import { doorCovers, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
 import type { DoorKind } from '../board/model.ts';
 import type { BoardDoc, Catalog, QuestDoc } from '../maps/types.ts';
 import {
@@ -33,7 +33,7 @@ export type Tool =
   | { kind: 'paint'; region: number }
   | { kind: 'fill'; region: number }
   | { kind: 'wall' }
-  | { kind: 'door'; doorKind: DoorKind; locked: boolean }
+  | { kind: 'door'; doorKind: DoorKind; locked: boolean; span?: number }
   | { kind: 'blocked'; hiddenDoor: boolean }
   | { kind: 'furniture'; type: string; rotation: Rotation }
   | { kind: 'monster'; type: string }
@@ -106,11 +106,11 @@ export function applyClick(d: EditorDoc, tool: Tool, target: ClickTarget, catalo
     return d;
   }
   if (tool.kind === 'door') {
-    return target.edge ? withQuest(d, placeDoor(q, target.edge, tool.doorKind, tool.locked)) : d;
+    return target.edge ? withQuest(d, placeDoor(q, target.edge, tool.doorKind, tool.locked, tool.span)) : d;
   }
   if (tool.kind === 'erase' && target.edge) {
     const e = target.edge;
-    const door = q.doors.find((dr) => dr.edge.x === e.x && dr.edge.y === e.y && dr.edge.orientation === e.orientation);
+    const door = q.doors.find((dr) => doorCovers(dr, e));
     return door ? withQuest(d, removeItem(q, door.id)) : d;
   }
 

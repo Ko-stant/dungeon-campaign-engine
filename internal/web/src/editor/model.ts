@@ -3,7 +3,7 @@
  * function returns a new document and never mutates its input, so undo/redo
  * is just a stack of snapshots.
  */
-import { edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
+import { doorCovers, doorEdges, edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
 import { VOID, covers, withShape, onBoard as squareOnBoard, regionAt, tileIndex, type BlockedSquareView, type BoardView, type DoorKind, type FurnitureView, type PieceView, type TrapState, type TrapView } from '../board/model.ts';
 import { DOC_VERSION, MAX_TRAP_LABEL, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type RectDoc, type Room, type TeleportDoc, type TrapDoc } from '../maps/types.ts';
 
@@ -149,8 +149,8 @@ function sameEdge(a: Edge, b: Edge): boolean {
   return a.x === b.x && a.y === b.y && a.orientation === b.orientation;
 }
 
-/** Sets a door's kind and lock; `locked: false` drops the flag. */
-export function updateDoor(q: QuestDoc, doorId: string, change: { kind?: DoorKind; locked?: boolean }): QuestDoc {
+/** Sets a door's kind, lock and width; `locked: false` drops the flag and span 1 drops the span. */
+export function updateDoor(q: QuestDoc, doorId: string, change: { kind?: DoorKind; locked?: boolean; span?: number }): QuestDoc {
   return {
     ...q,
     doors: q.doors.map((d) => {
@@ -161,28 +161,39 @@ export function updateDoor(q: QuestDoc, doorId: string, change: { kind?: DoorKin
       if (change.locked ?? d.locked) {
         next.locked = true;
       }
+      const span = change.span ?? d.span ?? 1;
+      if (span > 1) {
+        next.span = span;
+      }
       return next;
     }),
   };
 }
 
 /**
- * Puts a door of the given kind on an edge. An existing door there is switched
- * to that kind and lock; clicking again with the same choice removes it.
+ * Puts a door of the given kind and width (1 or 2 edges) on an edge. An
+ * existing door there (either half of a wide one) is switched to that kind,
+ * lock and width; clicking again with the same choice removes it. A new wide
+ * door replaces any door under its second half.
  */
-export function placeDoor(q: QuestDoc, edge: Edge, kind: DoorKind, locked: boolean): QuestDoc {
-  const existing = q.doors.find((d) => sameEdge(d.edge, edge));
+export function placeDoor(q: QuestDoc, edge: Edge, kind: DoorKind, locked: boolean, span = 1): QuestDoc {
+  const existing = q.doors.find((d) => doorCovers(d, edge));
   if (!existing) {
     const door: DoorDoc = { id: nextId(q, 'door'), edge: { x: edge.x, y: edge.y, orientation: edge.orientation }, kind, state: 'closed' };
     if (locked) {
       door.locked = true;
     }
-    return { ...q, doors: [...q.doors, door] };
+    if (span > 1) {
+      door.span = span;
+    }
+    const covered = doorEdges(door.edge, door.span);
+    const others = q.doors.filter((d) => !covered.some((e) => doorCovers(d, e)));
+    return { ...q, doors: [...others, door] };
   }
-  if (existing.kind === kind && (existing.locked ?? false) === locked) {
+  if (existing.kind === kind && (existing.locked ?? false) === locked && (existing.span ?? 1) === span) {
     return { ...q, doors: q.doors.filter((d) => d !== existing) };
   }
-  return updateDoor(q, existing.id, { kind, locked });
+  return updateDoor(q, existing.id, { kind, locked, span });
 }
 
 export function toggleDoorState(q: QuestDoc, doorId: string): QuestDoc {
@@ -317,6 +328,26 @@ export function nextNoteLabel(q: QuestDoc): string {
   return valueLabel(Math.max(0, ...q.notes.map((n) => labelValue(n.label))) + 1);
 }
 
+/** Notes in letter order: A, B, ... Z, AA, AB ... */
+export function notesInOrder(q: QuestDoc): QuestDoc['notes'] {
+  return [...q.notes].sort((a, b) => labelValue(a.label) - labelValue(b.label));
+}
+
+/** Gives notes the letters A, B, C ... in their current letter order, closing any gaps. */
+function relabelNotes(notes: QuestDoc['notes']): QuestDoc['notes'] {
+  const label = new Map(notesInOrder({ notes } as QuestDoc).map((n, i) => [n.id, valueLabel(i + 1)]));
+  return notes.map((n) => ({ ...n, label: label.get(n.id) ?? n.label }));
+}
+
+/** A note's first line for lists, cut to max characters. */
+export function notePreview(text: string, max: number): string {
+  const line = text.trim().split('\n')[0]?.trim() ?? '';
+  if (!line) {
+    return '(no text)';
+  }
+  return line.length > max ? `${line.slice(0, max - 1)}…` : line;
+}
+
 export function placeNote(q: QuestDoc, at: TileCoord, text: string): QuestDoc {
   return { ...q, notes: [...q.notes, { id: nextId(q, 'note'), label: nextNoteLabel(q), x: at.x, y: at.y, text }] };
 }
@@ -421,7 +452,8 @@ export function removeItem(q: QuestDoc, id: string): QuestDoc {
     furniture: q.furniture.filter((f) => f.id !== id),
     monsters: q.monsters.filter((m) => m.id !== id),
     traps: q.traps.filter((t) => t.id !== id),
-    notes: q.notes.filter((n) => n.id !== id),
+    // Removing a note moves the letters after it up, so they stay A, B, C ...
+    notes: q.notes.some((n) => n.id === id) ? relabelNotes(q.notes.filter((n) => n.id !== id)) : q.notes,
     teleports: (q.teleports ?? []).filter((t) => t.id !== id),
   };
 }
@@ -457,7 +489,7 @@ export function toBoardView(b: BoardDoc, q: QuestDoc | null, catalog: Catalog): 
     rows: b.height,
     regions: b.regions,
     drawnWalls: b.drawnWalls ?? [],
-    doors: (q?.doors ?? []).map((d) => ({ id: d.id, edge: d.edge, kind: d.kind, state: d.state, locked: d.locked ?? false })),
+    doors: (q?.doors ?? []).map((d) => ({ id: d.id, edge: d.edge, kind: d.kind, state: d.state, locked: d.locked ?? false, span: d.span })),
     blockedSquares: (q?.blockedSquares ?? []).map((r) => {
       const view: BlockedSquareView = { id: r.id, x: r.x, y: r.y, w: r.w, h: r.h };
       if (r.hiddenDoor) {

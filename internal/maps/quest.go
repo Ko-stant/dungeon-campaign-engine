@@ -6,10 +6,13 @@ import (
 )
 
 // Door kinds and states. A gate (portcullis) opens and closes like a door.
+// An exit door leads off the map, so it may sit on the board's edge or
+// against solid rock without a warning.
 const (
 	DoorNormal = "normal"
 	DoorSecret = "secret"
 	DoorGate   = "gate"
+	DoorExit   = "exit"
 	DoorOpen   = "open"
 	DoorClosed = "closed"
 )
@@ -29,13 +32,35 @@ const (
 // own effects (open a secret door, release a boulder). It has no catalog entry.
 const TrapTrigger = "trigger"
 
+// MaxDoorSpan is the widest door, in wall edges.
+const MaxDoorSpan = 2
+
 // Door sits on a tile edge. Locked is its starting lock; nothing enforces it.
+// Span 2 makes it two edges wide (for a double door or gate model): Edge is
+// the first, and the second continues along the wall, right for a horizontal
+// edge and up for a vertical one. Span 0 means 1.
 type Door struct {
 	ID     string `json:"id"`
 	Edge   Edge   `json:"edge"`
 	Kind   string `json:"kind"`
 	State  string `json:"state"`
 	Locked bool   `json:"locked,omitempty"`
+	Span   int    `json:"span,omitempty"`
+}
+
+// Edges lists the wall edges the door covers, first to last.
+func (d Door) Edges() []Edge {
+	out := []Edge{d.Edge}
+	for i := 1; i < d.Span; i++ {
+		e := d.Edge
+		if e.Orientation == Vertical {
+			e.Y += i
+		} else {
+			e.X += i
+		}
+		out = append(out, e)
+	}
+	return out
 }
 
 // Rect is a block of impassable squares (rubble / blocked-square tiles),
@@ -180,8 +205,11 @@ func (q *Quest) Validate() error {
 		if d.Edge.Orientation != Vertical && d.Edge.Orientation != Horizontal {
 			errs = append(errs, fmt.Errorf("door %q: invalid orientation %q", d.ID, d.Edge.Orientation))
 		}
-		if d.Kind != DoorNormal && d.Kind != DoorSecret && d.Kind != DoorGate {
+		if d.Kind != DoorNormal && d.Kind != DoorSecret && d.Kind != DoorGate && d.Kind != DoorExit {
 			errs = append(errs, fmt.Errorf("door %q: invalid kind %q", d.ID, d.Kind))
+		}
+		if d.Span < 0 || d.Span > MaxDoorSpan {
+			errs = append(errs, fmt.Errorf("door %q: span must be 1 or 2, got %d", d.ID, d.Span))
 		}
 		if d.State != DoorOpen && d.State != DoorClosed {
 			errs = append(errs, fmt.Errorf("door %q: invalid state %q", d.ID, d.State))
@@ -262,28 +290,12 @@ func (q *Quest) Check(b *Board, sizes, trapSizes SizeLookup) []Issue {
 	}
 
 	for _, d := range q.Doors {
-		e := d.Edge
-		var inRange, boundary bool
-		if e.Orientation == Vertical {
-			inRange = e.X >= 1 && e.X <= b.Width+1 && e.Y >= 1 && e.Y <= b.Height
-			boundary = e.X == 1 || e.X == b.Width+1
-		} else {
-			inRange = e.X >= 1 && e.X <= b.Width && e.Y >= 1 && e.Y <= b.Height+1
-			boundary = e.Y == 1 || e.Y == b.Height+1
-		}
-		ra, rb := b.EdgeRegions(e)
-		switch {
-		case !inRange:
-			add("door-off-board", d.ID, "door %s is off the board", d.ID)
-		case boundary:
-			add("door-on-board-edge", d.ID, "door %s is on the outer edge of the board", d.ID)
-		case ra == rb && ra > Corridor && !b.IsWall(e):
-			// A door in the open middle of a room is almost always a misclick.
-			// Doors and gates across a corridor are normal, so they are not flagged.
-			add("door-inside-room", d.ID, "door %s is inside %s at (%d,%d), not on a wall; move it onto the room's wall or draw a wall there",
-				d.ID, b.roomName(ra), e.X, e.Y)
-		case ra == Void || rb == Void:
-			add("door-into-void", d.ID, "door %s opens into solid rock", d.ID)
+		// One issue per door: the first edge with a problem.
+		for _, e := range d.Edges() {
+			if code, msg := b.doorEdgeIssue(e, d.Kind == DoorExit); code != "" {
+				add(code, d.ID, "door %s %s", d.ID, msg)
+				break
+			}
 		}
 	}
 
@@ -399,4 +411,31 @@ func issueText(code string) string {
 		return "partly off the board"
 	}
 	return "partly on solid rock"
+}
+
+// doorEdgeIssue checks one door edge. Exit doors may sit on the board's edge
+// or against solid rock, since they lead off the map.
+func (b *Board) doorEdgeIssue(e Edge, exit bool) (string, string) {
+	var inRange, boundary bool
+	if e.Orientation == Vertical {
+		inRange = e.X >= 1 && e.X <= b.Width+1 && e.Y >= 1 && e.Y <= b.Height
+		boundary = e.X == 1 || e.X == b.Width+1
+	} else {
+		inRange = e.X >= 1 && e.X <= b.Width && e.Y >= 1 && e.Y <= b.Height+1
+		boundary = e.Y == 1 || e.Y == b.Height+1
+	}
+	ra, rb := b.EdgeRegions(e)
+	switch {
+	case !inRange:
+		return "door-off-board", "is off the board"
+	case boundary && !exit:
+		return "door-on-board-edge", "is on the outer edge of the board"
+	case ra == rb && ra > Corridor && !b.IsWall(e):
+		// A door in the open middle of a room is almost always a misclick.
+		// Doors and gates across a corridor are normal, so they are not flagged.
+		return "door-inside-room", fmt.Sprintf("is inside %s at (%d,%d), not on a wall; move it onto the room's wall or draw a wall there", b.roomName(ra), e.X, e.Y)
+	case (ra == Void || rb == Void) && !exit:
+		return "door-into-void", "opens into solid rock"
+	}
+	return "", ""
 }

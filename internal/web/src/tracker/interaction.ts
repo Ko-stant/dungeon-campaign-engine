@@ -1,5 +1,5 @@
 /** What a click on the tracker board means in each mode. */
-import type { Edge, TileCoord } from '../board/geometry.ts';
+import { doorCovers, type Edge, type TileCoord } from '../board/geometry.ts';
 import { covers } from '../board/model.ts';
 import { trapTiles } from '../editor/model.ts';
 import type { Catalog, TrapDoc } from '../maps/types.ts';
@@ -40,7 +40,7 @@ export function pieceAt(s: SessionState, t: TileCoord): string | null {
 }
 
 export function doorAt(s: SessionState, e: Edge): string | null {
-  return s.quest.doors.find((d) => d.edge.x === e.x && d.edge.y === e.y && d.edge.orientation === e.orientation)?.id ?? null;
+  return s.quest.doors.find((d) => doorCovers(d, e))?.id ?? null;
 }
 
 /** Quest traps still on the board, where they are now (moved during play or as placed). */

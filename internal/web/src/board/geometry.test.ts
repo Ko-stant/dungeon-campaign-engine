@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import {
   computeGridMetrics,
+  doorCovers,
+  doorEdges,
   doorRect,
+  doorSpanRect,
   edgeBetween,
   edgeSegment,
   edgeTiles,
@@ -11,6 +14,7 @@ import {
   isInteriorEdge,
   pixelToEdge,
   pixelToTile,
+  piecePreviewLayout,
   rotatedFootprint,
   tileRect,
 } from './geometry.ts';
@@ -252,5 +256,52 @@ describe('doorRect', () => {
 
   test('a horizontal door is a thin bar across the bottom line of its square', () => {
     expect(doorRect(m, { x: 4, y: 18, orientation: 'horizontal' })).toEqual({ x: 104.5, y: 72, w: 21, h: 6 });
+  });
+
+  test('a two-wide door covers its edge and the next one along the wall, drawn as one bar', () => {
+    // Vertical doors run up the board (row 18 is above row 17 on screen).
+    expect(doorSpanRect(m, { x: 4, y: 17, orientation: 'vertical' }, 2)).toEqual({ x: 97, y: 49.5, w: 6, h: 51 });
+    // Horizontal doors run right.
+    expect(doorSpanRect(m, { x: 4, y: 18, orientation: 'horizontal' }, 2)).toEqual({ x: 104.5, y: 72, w: 51, h: 6 });
+    expect(doorSpanRect(m, { x: 4, y: 18, orientation: 'horizontal' }, undefined)).toEqual(doorRect(m, { x: 4, y: 18, orientation: 'horizontal' }));
+  });
+});
+
+describe('piecePreviewLayout', () => {
+  test('a 2x1 piece turned 90 degrees stands 1 wide and 2 tall, drawn unrotated then turned, like the board', () => {
+    const l = piecePreviewLayout(2, 1, 90, 120);
+    expect(l.tile).toBe(40);
+    expect(l.box).toEqual({ width: 40, height: 80 });
+    // The image keeps its unrotated size and is rotated about the box centre.
+    expect(l.image).toEqual({ width: 80, height: 40, degrees: 90 });
+    // The anchor (bottom-left square) sits at the bottom-left of the box on screen.
+    expect(l.anchor).toEqual({ x: 0, y: 40, size: 40 });
+  });
+
+  test('unrotated pieces keep their size; tiles shrink so big pieces fit', () => {
+    expect(piecePreviewLayout(1, 1, 0, 120)).toMatchObject({ tile: 40, box: { width: 40, height: 40 }, image: { width: 40, height: 40, degrees: 0 } });
+    const big = piecePreviewLayout(4, 3, 0, 120);
+    expect(big.tile).toBe(30);
+    expect(big.box).toEqual({ width: 120, height: 90 });
+    expect(big.anchor).toEqual({ x: 0, y: 60, size: 30 });
+    expect(piecePreviewLayout(3, 2, 270, 120).box).toEqual({ width: 80, height: 120 });
+  });
+});
+
+describe('doorEdges and doorCovers', () => {
+  test('a door covers its edge, and a two-wide door the next edge along the wall too', () => {
+    expect(doorEdges({ x: 3, y: 1, orientation: 'vertical' }, 2)).toEqual([
+      { x: 3, y: 1, orientation: 'vertical' },
+      { x: 3, y: 2, orientation: 'vertical' },
+    ]);
+    expect(doorEdges({ x: 1, y: 3, orientation: 'horizontal' }, 2)).toEqual([
+      { x: 1, y: 3, orientation: 'horizontal' },
+      { x: 2, y: 3, orientation: 'horizontal' },
+    ]);
+    expect(doorEdges({ x: 1, y: 3, orientation: 'horizontal' }, undefined)).toHaveLength(1);
+    const wide = { edge: { x: 3, y: 1, orientation: 'vertical' as const }, span: 2 };
+    expect(doorCovers(wide, { x: 3, y: 2, orientation: 'vertical' })).toBe(true);
+    expect(doorCovers(wide, { x: 3, y: 3, orientation: 'vertical' })).toBe(false);
+    expect(doorCovers(wide, { x: 3, y: 2, orientation: 'horizontal' })).toBe(false);
   });
 });

@@ -185,6 +185,14 @@ describe('interaction', () => {
     expect(doorAt(state(), { x: 3, y: 2, orientation: 'horizontal' })).toBeNull();
   });
 
+  test('doorAt matches either half of a two-wide door, and the view keeps its width and exit kind', () => {
+    const s = state();
+    s.quest.doors.push({ id: 'door-3', edge: { x: 1, y: 3, orientation: 'horizontal' }, kind: 'exit', state: 'closed', span: 2 });
+    expect(doorAt(s, { x: 2, y: 3, orientation: 'horizontal' })).toBe('door-3');
+    const view = trackerView(s, catalog, { fog: false }).doors.find((d) => d.id === 'door-3');
+    expect(view).toMatchObject({ kind: 'exit', span: 2 });
+  });
+
   const select: Mode = { kind: 'select' };
 
   test('select mode: a door edge toggles the door', () => {

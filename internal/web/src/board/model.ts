@@ -16,7 +16,8 @@ import type { Edge, Rotation, TileCoord } from './geometry.ts';
 export const VOID = -1;
 export const CORRIDOR = 0;
 
-export type DoorKind = 'normal' | 'secret' | 'gate';
+/** An exit door leads off the map; it may sit on the board's edge. */
+export type DoorKind = 'normal' | 'secret' | 'gate' | 'exit';
 export type DoorState = 'open' | 'closed';
 export type TrapState = 'hidden' | 'revealed' | 'triggered' | 'disarmed';
 
@@ -26,6 +27,8 @@ export interface DoorView {
   kind: DoorKind;
   state: DoorState;
   locked?: boolean;
+  /** 2 for a two-wide door (see doorEdges); missing means 1. */
+  span?: number | undefined;
 }
 
 /** A rectangle of impassable squares (rubble / blocked-square tiles), anchored bottom-left. */

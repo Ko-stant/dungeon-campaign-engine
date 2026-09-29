@@ -6,6 +6,7 @@
 import {
   computeGridMetrics,
   doorRect,
+  doorSpanRect,
   edgeSegment,
   footprintRect,
   furnitureDrawBox,
@@ -28,6 +29,7 @@ export interface BoardTheme {
   doorOpen: string;
   doorSecret: string;
   doorGate: string;
+  doorExit: string;
   lock: string;
   blocked: string;
   furniture: string;
@@ -62,6 +64,7 @@ export function readTheme(el: Element = document.documentElement): BoardTheme {
     doorOpen: rgb('positive', '74 222 128'),
     doorSecret: 'rgb(192 132 252)',
     doorGate: 'rgb(203 213 225)',
+    doorExit: 'rgb(217 70 239)',
     lock: rgb('warning', '250 204 21'),
     blocked: rgb('danger', '248 113 113', 0.5),
     furniture: rgb('border', '95 104 123', 0.6),
@@ -297,10 +300,11 @@ export class BoardRenderer {
   #drawDoors(view: BoardView, m: GridMetrics, selectedId: string | null): void {
     const ctx = this.#ctx;
     for (const door of view.doors) {
-      const r = doorRect(m, door.edge);
+      const r = doorSpanRect(m, door.edge, door.span);
       const color =
         door.kind === 'secret' ? this.#theme.doorSecret
           : door.kind === 'gate' ? this.#theme.doorGate
+            : door.kind === 'exit' ? this.#theme.doorExit
             : door.state === 'open' ? this.#theme.doorOpen : this.#theme.doorClosed;
       ctx.save();
       if (door.kind === 'gate' && door.state !== 'open') {
@@ -312,13 +316,14 @@ export class BoardRenderer {
         ctx.strokeRect(r.x, r.y, r.w, r.h);
         ctx.beginPath();
         const vertical = r.h > r.w;
-        for (let i = 1; i <= 3; i++) {
+        const bars = 4 * Math.max(1, door.span ?? 1);
+        for (let i = 1; i < bars; i++) {
           if (vertical) {
-            const y = r.y + (r.h * i) / 4;
+            const y = r.y + (r.h * i) / bars;
             ctx.moveTo(r.x - 2, y);
             ctx.lineTo(r.x + r.w + 2, y);
           } else {
-            const x = r.x + (r.w * i) / 4;
+            const x = r.x + (r.w * i) / bars;
             ctx.moveTo(x, r.y - 2);
             ctx.lineTo(x, r.y + r.h + 2);
           }

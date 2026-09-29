@@ -36,6 +36,8 @@ export interface DoorDoc {
   /** Starts locked. Omitted when false. Nothing enforces it. */
   locked?: boolean;
   state: DoorState;
+  /** 2 for a two-wide door or gate: the edge and the next one along the wall. Omitted when 1. */
+  span?: number;
 }
 
 export interface RectDoc {

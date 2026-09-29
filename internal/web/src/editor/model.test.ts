@@ -10,6 +10,8 @@ import {
   moveItem,
   nextId,
   nextNoteLabel,
+  notePreview,
+  notesInOrder,
   paintTiles,
   placeFurniture,
   placeMonster,
@@ -210,6 +212,24 @@ describe('quest items', () => {
     expect(q.doors).toEqual([]);
   });
 
+  test('placeDoor places two-wide doors; clicking either half switches or removes it', () => {
+    const edge = { x: 2, y: 1, orientation: 'vertical' as const };
+    const upper = { x: 2, y: 2, orientation: 'vertical' as const };
+    let q = placeDoor(emptyQuest(), edge, 'gate', false, 2);
+    expect(q.doors).toEqual([{ id: 'door-1', edge, kind: 'gate', state: 'closed', span: 2 }]);
+    // Same choice on the upper half removes the whole door.
+    expect(placeDoor(q, upper, 'gate', false, 2).doors).toEqual([]);
+    // A different width on either half resizes it; width 1 drops the span.
+    q = placeDoor(q, upper, 'gate', false, 1);
+    expect(q.doors).toEqual([{ id: 'door-1', edge, kind: 'gate', state: 'closed' }]);
+  });
+
+  test('a two-wide door replaces doors under its second half', () => {
+    let q = placeDoor(emptyQuest(), { x: 2, y: 2, orientation: 'vertical' }, 'normal', false);
+    q = placeDoor(q, { x: 2, y: 1, orientation: 'vertical' }, 'exit', false, 2);
+    expect(q.doors).toEqual([{ id: 'door-2', edge: { x: 2, y: 1, orientation: 'vertical' }, kind: 'exit', state: 'closed', span: 2 }]);
+  });
+
   test('updateDoor changes kind and lock of one door', () => {
     let q = placeDoor(emptyQuest(), { x: 2, y: 1, orientation: 'vertical' }, 'normal', false);
     q = updateDoor(q, 'door-1', { kind: 'gate', locked: true });
@@ -254,6 +274,43 @@ describe('quest items', () => {
     q = placeNote(q, { x: 2, y: 1 }, 'second');
     expect(q.notes.map((n) => n.label)).toEqual(['A', 'B']);
     expect(nextNoteLabel({ ...q, notes: [{ id: 'note-z', label: 'Z', x: 1, y: 1, text: '' }] })).toBe('AA');
+  });
+
+  test('removing a note relabels the notes after it so the letters stay in sequence', () => {
+    let q = emptyQuest();
+    for (const text of ['a', 'b', 'c', 'd']) {
+      q = placeNote(q, { x: 1, y: 1 }, text);
+    }
+    const removed = removeItem(q, 'note-2');
+    expect(removed.notes.map((n) => [n.id, n.label, n.text])).toEqual([['note-1', 'A', 'a'], ['note-3', 'B', 'c'], ['note-4', 'C', 'd']]);
+    expect(nextNoteLabel(removed)).toBe('D');
+    // Removing the last note changes no other label.
+    expect(removeItem(q, 'note-4').notes.map((n) => n.label)).toEqual(['A', 'B', 'C']);
+    // Gaps left by older documents close up too, keeping the letters' order.
+    const gappy: QuestDoc = { ...emptyQuest(), notes: [
+      { id: 'n-f', label: 'F', x: 1, y: 1, text: '' },
+      { id: 'n-a', label: 'A', x: 1, y: 1, text: '' },
+      { id: 'n-c', label: 'C', x: 1, y: 1, text: '' },
+    ] };
+    expect(notesInOrder(removeItem(gappy, 'n-c')).map((n) => [n.id, n.label])).toEqual([['n-a', 'A'], ['n-f', 'B']]);
+    // Removing something else leaves the notes alone.
+    expect(removeItem(gappy, 'monster-9').notes).toBe(gappy.notes);
+  });
+
+  test('notesInOrder lists notes by letter, AA after Z', () => {
+    const q: QuestDoc = { ...emptyQuest(), notes: [
+      { id: 'n1', label: 'AA', x: 1, y: 1, text: '' },
+      { id: 'n2', label: 'B', x: 1, y: 1, text: '' },
+      { id: 'n3', label: 'Z', x: 1, y: 1, text: '' },
+      { id: 'n4', label: 'A', x: 1, y: 1, text: '' },
+    ] };
+    expect(notesInOrder(q).map((n) => n.label)).toEqual(['A', 'B', 'Z', 'AA']);
+  });
+
+  test('notePreview shows the first line, shortened', () => {
+    expect(notePreview('Q1-N1 Tomas Reed: remains under the fall\nmore detail', 20)).toBe('Q1-N1 Tomas Reed: r…');
+    expect(notePreview('  The gate key  ', 20)).toBe('The gate key');
+    expect(notePreview('   ', 20)).toBe('(no text)');
   });
 
   test('setNoteText edits only the chosen note', () => {

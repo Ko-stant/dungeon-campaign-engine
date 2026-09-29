@@ -190,6 +190,34 @@ export function rotatedFootprint(width: number, height: number, rotation: number
   return rotation === 90 || rotation === 270 ? { width: height, height: width } : { width, height };
 }
 
+/** Pixel layout for previewing a piece before it is placed (see piecePreviewLayout). */
+export interface PiecePreviewLayout {
+  /** Pixels per square. */
+  tile: number;
+  /** The rotated footprint on screen. */
+  box: { width: number; height: number };
+  /** The image at its unrotated size, turned clockwise about the box centre, as on the board. */
+  image: { width: number; height: number; degrees: number };
+  /** The anchor square (the piece's bottom-left square once placed), in box pixels, y down. */
+  anchor: { x: number; y: number; size: number };
+}
+
+/**
+ * Lays out a piece preview the way the board draws it (furnitureDrawBox): the
+ * footprint turned by rotation, the image drawn unrotated and turned about the
+ * centre. Squares are at most 40px and shrink so the footprint fits maxPx.
+ */
+export function piecePreviewLayout(width: number, height: number, rotation: number, maxPx: number): PiecePreviewLayout {
+  const size = rotatedFootprint(width, height, rotation);
+  const tile = Math.min(40, Math.floor(maxPx / Math.max(size.width, size.height)));
+  return {
+    tile,
+    box: { width: size.width * tile, height: size.height * tile },
+    image: { width: width * tile, height: height * tile, degrees: rotation },
+    anchor: { x: 0, y: (size.height - 1) * tile, size: tile },
+  };
+}
+
 /** Every tile covered by a piece anchored at its bottom-left tile, row by row upwards. */
 export function footprintTiles(origin: TileCoord, width: number, height: number, rotation: number): TileCoord[] {
   const size = rotatedFootprint(width, height, rotation);
@@ -228,6 +256,23 @@ export function furnitureDrawBox(m: GridMetrics, at: TileCoord, width: number, h
   };
 }
 
+/**
+ * The edges a door covers: its own, then (for span 2) the next edge along the
+ * wall, to the right for a horizontal edge and upward for a vertical one.
+ */
+export function doorEdges(edge: Edge, span: number | undefined): Edge[] {
+  const out: Edge[] = [];
+  for (let i = 0; i < Math.max(1, span ?? 1); i++) {
+    out.push(edge.orientation === 'vertical' ? { x: edge.x, y: edge.y + i, orientation: edge.orientation } : { x: edge.x + i, y: edge.y, orientation: edge.orientation });
+  }
+  return out;
+}
+
+/** Whether a door (either half of a two-wide one) is on edge e. */
+export function doorCovers(door: { edge: Edge; span?: number | undefined }, e: Edge): boolean {
+  return doorEdges(door.edge, door.span).some((d) => d.x === e.x && d.y === e.y && d.orientation === e.orientation);
+}
+
 /** Fraction of a tile used for a door marker's thickness and its inset from tile corners. */
 const DOOR_THICKNESS = 0.2;
 const DOOR_INSET = 0.15;
@@ -242,4 +287,12 @@ export function doorRect(m: GridMetrics, e: Edge): { x: number; y: number; w: nu
     return { x: s.x1 - thickness / 2, y: s.y1 + inset, w: thickness, h: length };
   }
   return { x: s.x1 + inset, y: s.y1 - thickness / 2, w: length, h: thickness };
+}
+
+/** Pixel rectangle of a door marker across every edge it covers (one bar for a two-wide door). */
+export function doorSpanRect(m: GridMetrics, edge: Edge, span: number | undefined): { x: number; y: number; w: number; h: number } {
+  const rects = doorEdges(edge, span).map((e) => doorRect(m, e));
+  const x = Math.min(...rects.map((r) => r.x));
+  const y = Math.min(...rects.map((r) => r.y));
+  return { x, y, w: Math.max(...rects.map((r) => r.x + r.w)) - x, h: Math.max(...rects.map((r) => r.y + r.h)) - y };
 }

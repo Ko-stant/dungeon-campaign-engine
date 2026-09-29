@@ -468,6 +468,9 @@ func (a *applier) doorSet(payload json.RawMessage) (string, error) {
 		if qd.ID == door.ID && qd.Kind == maps.DoorGate {
 			label = "gate " + door.ID
 		}
+		if qd.ID == door.ID && qd.Kind == maps.DoorExit {
+			label = "exit door " + door.ID
+		}
 	}
 	var parts []string
 	if p.Found != nil {

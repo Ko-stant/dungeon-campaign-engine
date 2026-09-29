@@ -56,10 +56,13 @@ Tailwind CSS v4, canvas rendering.
   - Inventory: campaign heroes carry gold and `items` (name, quantity, notes) between quests;
     `/campaigns/{id}/heroes/{heroId}/(gold|items...)` forms, `item.*` tracker commands.
     Shared pure helpers in `internal/tracker/inventory.go`.
-  - Read-aloud script: one Markdown text per campaign (`campaign.script`, format of
-    `docs/campaigns/three-plagues/SCRIPT.md`) parsed by `internal/script`; saved with
-    `POST /campaigns/{id}/script`, served parsed by `GET /api/campaigns/{id}/script`; the
-    tracker's Read aloud panel logs `passage.read`.
+  - Read-aloud script: one Markdown text per campaign (`campaign.script`) parsed by
+    `internal/script`; saved with `POST /campaigns/{id}/script`, served parsed by
+    `GET /api/campaigns/{id}/script`; the tracker's Read aloud panel logs `passage.read`.
+    The Three Plagues script is a folder of numbered part files,
+    `docs/campaigns/three-plagues/script/` (`script.Assemble` joins them);
+    `make load-script CAMPAIGN="Three Plagues"` saves it to the campaign. Edit one part
+    file at a time rather than reading them all.
   - Audio clips for the script: files named after passage ids in `AUDIO_DIR/<campaign id>/`
     (default `./audio`, gitignored), `internal/audio`; `GET /api/campaigns/{id}/audio`,
     `GET /audio/{campaign}/{file}`, upload/delete forms on the campaign page.
@@ -93,6 +96,10 @@ Tailwind CSS v4, canvas rendering.
 - Regions are row-major from the bottom row up (index `(y-1)*width + (x-1)`): `-1` void
   (solid rock), `0` corridor, `>0` room id.
 - A vertical edge (x,y) is the left side of tile (x,y); a horizontal edge is its bottom side.
+- Doors may be two edges wide (`span: 2`): the stored edge plus the next one along the wall,
+  right for horizontal and up for vertical (`Door.Edges()` in Go, `doorEdges`/`doorCovers` in
+  TS; look doors up with `doorCovers`, not by exact edge). Kind `exit` leads off the map and
+  is not flagged on the board's edge or against solid rock.
 - Furniture, catalog traps, monsters and blocked squares are anchored at their bottom-left square
   and extend right and up. Furniture and traps may be rotated (0/90/180/270); monsters are not.
 - Only `board/geometry.ts` functions that take `GridMetrics` deal in screen pixels (y down);
