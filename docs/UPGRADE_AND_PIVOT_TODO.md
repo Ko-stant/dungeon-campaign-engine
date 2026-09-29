@@ -60,7 +60,7 @@ Commits (oldest first):
 | a5205c9 | dice expressions, custom hero classes (`/classes`), Three Plagues campaign docs |
 | bc106db | hero inventory (gold, items), ability use, mana and cooldowns in the tracker |
 | bd2fe57 | Three Plagues story bible and read-aloud script |
-| (next commit) | story decisions: sealed Chambers on map 3, narrative-only Soul Gems |
+| 92372ae | story decisions: sealed Chambers on map 3, narrative-only Soul Gems |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
