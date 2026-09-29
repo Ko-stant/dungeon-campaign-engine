@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-28 20:49 EDT
+**Last Updated**: 2026-09-29 16:27 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -63,6 +63,8 @@ Commits (oldest first):
 | 92372ae | story decisions: sealed Chambers on map 3, narrative-only Soul Gems |
 | 5be59f4 | read-aloud script per campaign, Read aloud panel and reader in the tracker |
 | c463d6d | audio clip playback in the reader, clip uploads on the campaign page |
+| f6edb82 | script split into part files, make load-script, new prologue and Quest 1 notes |
+| 4eb1f75 | map editor note list, placement previews, two-square doors, exit doors |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
