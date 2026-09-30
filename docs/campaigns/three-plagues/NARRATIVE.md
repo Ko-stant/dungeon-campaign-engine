@@ -1,6 +1,6 @@
 # The Three Plagues - Story Bible
 
-**Last Updated**: 2026-09-29 15:18 EDT
+**Last Updated**: 2026-09-29 16:39 EDT
 
 The world, cast and secrets of the campaign. Everything the players hear is in
 the [script/](script/README.md) folder (one file per part), written to be read aloud or turned into audio. Rules and classes
@@ -36,17 +36,20 @@ listed under "Still to decide".
   known of the Wardens.
 - **The Eastmarch** - the farmland east of Tollen Hill (the Bloated Fields are its heart).
   The grain carts stopped coming in spring; drovers who escaped blamed ogres. The blight
-  began years ago around Millbrook, at the heart of the fields (the Greyford Company saw it
-  six years ago), and has crept outward since; the outlying farms kept sending grain until
-  the ogres closed the roads this spring.
+  began years ago at the old tithe barn in the heart of the farmland (the Greyford Company
+  saw it six years ago, and the Chapel pilgrims three) and has crept outward since. The
+  outlying farms kept sending grain until the ogres closed the roads this spring, and the
+  blight reached Millbrook, on its edge, only this year.
 - **Tollen Hill** and **the Crumbling Halls** - the Wardens' old gatehouse, cut right
   through the eastern hill. The East Road has always run through it. Its stone is failing
   as the power of the Chamber of Stone fades: pillars lean, passages collapse, sealed
   rooms crack open.
-- **The Bloated Fields** - once the **Eastmarch** farms, Haldmere's breadbasket. Crops
-  swell and split on the stalk, cattle bloat where they stand, and grey threads run from
-  hedge to barn to tree. The farming village of **Millbrook** stands empty. Every thread
-  leads to the old **tithe barn** at the heart of the fields, the Blightweaver's lair.
+- **The Bloated Fields** - once the **Eastmarch** farms, Haldmere's breadbasket; the name
+  is Bram Greyford's (Q2-N1), not the lord's. Crops swell and split on the stalk, cattle
+  bloat where they stand, and grey threads run fence to barn, barn to tree. The farming
+  village of **Millbrook**, overrun this year, stands empty. Every thread leads to the old
+  **tithe barn** at the heart of the fields, the Blightweaver's lair. The villagers named
+  the Blightweaver; the heroes hear the name from Tam or his mother's note.
 - **The Wardens' Rise** - a Warden stronghold on the broken hills beyond the fields,
   built to guard the way down to the Chambers. The ogres hold it now: camps in the
   courtyards, Gorrak in the **old granaries**, Varnok in the **great hall**. The
@@ -71,6 +74,8 @@ Voices are described for recording or generating audio; see the script files for
 | Bram Greyford | BRAM GRAY-ford | Captain of the Greyford Company; his warning (Q1-N2) | Hard, older sellsword; angry and ashamed |
 | Sister Wenna | WEN-uh | Led the Chapel pilgrims; her chalk mark (Q1-N3) and later notes | Calm, warm, older; sure of her faith |
 | Tam Fenwick | TAM FEN-ick | Farm boy hiding in Millbrook (optional encounter) | Twelve years old, scared, trying to be brave |
+| Hesta Fenwick | HESS-tuh FEN-ick | Tam's mother, taken to the barn; her note to Tam (Q2-N3) | A farm woman, frightened but steady for her son |
+| Lark | LARK | Young scout of the Greyford Company; her journal page (Q2-N1) | Young, quick and nervous |
 | Ilsabet Crane | ILL-sa-bet CRANE | "The Hollow Merchant", the secret vendor on the Rise | Older woman, dry, amused, unhurried |
 | The Blightweaver | - | First plague, Pestilence; a bloated, many-legged horror | Does not speak |
 | Gorrak Hollowgut | GOR-rack HOLLOW-gut | First Ogre Lord, second plague, Famine | Thick, slow, wet; talks with his mouth full |
@@ -150,13 +155,18 @@ Note passages are numbered per quest (Q1-N1, Q2-N1, ...). Quest 1's are written;
 rest are still to do.
 
 - **The Greyford Company** (about six years ago) - six sellswords led by **Bram Greyford**.
-  They crossed the Halls and lost **Harl** (drawn into the tithe barn) and one other in
-  the Fields, then turned back. Bram left a warning pinned by the Halls' eastern gate
-  (Q1-N2). More of their traces can be found in the Fields.
+  They crossed the Halls and camped in a farmhouse in the Fields (Q2-N1, written by their
+  scout **Lark**). **Harl** followed a crying voice into the tithe barn and never came out;
+  **Dace** touched the threads and went grey to the wrist, and did not live to reach the
+  Halls again. Bram left his warning pinned by the Halls' eastern gate (Q1-N2) on the way
+  home.
 - **The Chapel pilgrims** (about three years ago) - **Sister Wenna** and eight of the
   faithful of the Chapel of the Four, seeking the Wardens' fortress on the Rise, "where the
   records say the way to the Chambers begins". They chalked the Chapel's sign and a safe
   path through the Halls (Q1-N3; the GM may let the chalk marks show a way around a trap).
+  They went around the Fields to the north; **Brother Ansel** went into the tithe barn in
+  the night and was lost. Wenna's page from the road (Q2-N2) is the first to link the green
+  light in the barn with "three stones that turn the key".
   They got furthest, onto the Rise, where they saw the ogres' gems and guessed they were
   keys. None came back; their notes are the main source on the Rise.
 - **The last Keep patrol** (last year) - five soldiers under **Corporal Brandt**. **Aldo**
@@ -166,14 +176,17 @@ rest are still to do.
 
 ### Clues, in the order the players can find them
 
-1. **Found notes** - the failed parties' notes, found along the way (still to be written).
+1. **Found notes** - the failed parties' notes, found along the way (Quests 1 and 2 written; the Rise still to do).
 2. **Crumbling Halls** - the verse on a Warden's tomb (passage Q1-02), its last two lines
    deliberately scratched out except "one" and "waits".
-3. **Bloated Fields** - the Gem of Pestilence beats like a heartbeat: the gems are alive.
-4. **The Rise** - Ilsabet: "Every lock has a keeper."
-5. **The Rise** - Varnok: "The whisper said you would come." His dying words hint harder
+3. **Bloated Fields** - Wenna's page (Q2-N2): the Chapel's oldest records speak of "three
+   stones that turn the key" to the Chambers, and she saw a green light in the barn.
+4. **Bloated Fields** - the green stone beats like a heartbeat and something inside it
+   wails (Q2-04): the stones are alive. Nobody calls it a Soul Gem yet.
+5. **The Rise** - Ilsabet: "Every lock has a keeper."
+6. **The Rise** - Varnok: "The whisper said you would come." His dying words hint harder
    (optional lines in Q3-06).
-6. **The portal** - a fifth mark above the four symbols, a Warden's sigil, savagely
+7. **The portal** - a fifth mark above the four symbols, a Warden's sigil, savagely
    scratched out.
 
 ### Ilsabet Crane - pick one secret, or none
@@ -186,8 +199,10 @@ rest are still to do.
 
 ### Tam Fenwick (optional)
 
-Hidden in a cellar or grain store in Millbrook. He points the way to the tithe barn. His
-mother is one of the shapes in the web; whether she can be saved is the GM's call.
+Hidden in the cellar of the Fenwick house (or another grain store) in Millbrook, as his
+mother told him in her note (Q2-N3). He names the Blightweaver and points the way to the
+tithe barn. His mother, Hesta, is one of the shapes in the web; whether she can be saved is
+the GM's call.
 
 ## Still to decide
 

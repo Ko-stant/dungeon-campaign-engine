@@ -66,7 +66,7 @@ Everything above the `##` heading is left out when the script is assembled.
 > opened. They're built to keep something in, or keep something out. The trick is knowing
 > which.
 
-**Ilsabet - farewell** (clue 4)
+**Ilsabet - farewell** (clue 5)
 
 > Off you go, then. Mind the gate on the east side, it sticks.
 >
@@ -113,7 +113,7 @@ Everything above the `##` heading is left out when the script is assembled.
 
 - **When:** the heroes first see Varnok's hall.
 - **Speakers:** Narrator, then Varnok Ironjaw.
-- **Voice (Varnok):** calm and cold; he is not impressed. Clue 5 is "The whisper said you
+- **Voice (Varnok):** calm and cold; he is not impressed. Clue 6 is "The whisper said you
   would come."
 - **Note:** written for Gorrak falling first. If the heroes reach Varnok first, drop "and
   the Glutton", and in Q3-04 say "The last plague is broken" instead of "One to go".
@@ -163,7 +163,7 @@ Everything above the `##` heading is left out when the script is assembled.
 
 ### Q3-07 - The portal
 
-- **When:** the heroes reach the summit of the Rise. Clue 6. On the map, the portal is
+- **When:** the heroes reach the summit of the Rise. Clue 7. On the map, the portal is
   the locked gate that seals off the Chambers section of map 3; it stays locked until
   Q3-08.
 - **Speaker:** Narrator.

@@ -1,6 +1,6 @@
 # The Three Plagues - Read-Aloud Script
 
-**Last Updated**: 2026-09-29 15:02 EDT
+**Last Updated**: 2026-09-29 16:39 EDT
 
 Everything the players hear, in play order, split into one file per part so each part can
 be edited on its own. Each passage is meant to become one audio clip. World, cast and
@@ -69,10 +69,13 @@ to the terminal instead, for pasting into the campaign page's Script box.
 | Q1-N2 | A warning in red (note) | Narrator, Bram Greyford |
 | Q1-N3 | The pilgrims' mark (note) | Narrator, Sister Wenna |
 | Q1-03 | The eastern gate | Narrator |
-| Q2-01 | The Bloated Fields | Narrator |
+| Q2-01 | The Eastmarch | Narrator |
 | Q2-02 | The boy in the cellar (optional) | Narrator, Tam |
+| Q2-N1 | The Greyford camp (note) | Narrator, Lark |
+| Q2-N2 | The pilgrims' road (note) | Narrator, Sister Wenna |
+| Q2-N3 | A note for Tam (note) | Narrator, Hesta Fenwick |
 | Q2-03 | The tithe barn | Narrator |
-| Q2-04 | The first Soul Gem | Narrator |
+| Q2-04 | The green stone | Narrator |
 | Q2-05 | Smoke on the hills | Narrator |
 | Q3-01 | The Wardens' Rise | Narrator |
 | Q3-02 | The Hollow Merchant (secret) | Narrator, Ilsabet |
