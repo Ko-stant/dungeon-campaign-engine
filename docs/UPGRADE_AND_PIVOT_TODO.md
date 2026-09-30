@@ -70,7 +70,7 @@ Commits (oldest first):
 | 4eb1f75 | map editor note list, placement previews, two-square doors, exit doors |
 | 52e77cd | Quest 2 revisions and notes |
 | 3ac0096 | map editor: N for a new room, a new room for each shape |
-| (next commit) | docs tidy: resume notes, map plans (MAPS.md), branch headers |
+| 35d9ece | docs tidy: resume notes, map plans (MAPS.md), branch headers |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
