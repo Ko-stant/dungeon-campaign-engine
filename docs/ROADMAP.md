@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last Updated**: 2026-09-29 16:27 EDT
+**Last Updated**: 2026-09-29 21:30 EDT
 
 The engine is a single-GM companion for in-person HeroQuest: build maps, run a
 quest at the table, and keep a resumable record of what happened. It never
@@ -42,7 +42,8 @@ enforces rules; the GM decides, and the app remembers.
   mana and cooldowns in the tracker.
 - Map creator: note list on the Quest tab (removing a note relabels the rest), previews of
   furniture, traps and monsters at the chosen rotation, two-square doors and gates, and an
-  exit door kind for the board's edge.
+  exit door kind for the board's edge; N for a new room and "New room for each shape"
+  (a shape started on a room extends it).
 - Read-aloud script per campaign and a Read aloud panel with a large-type reader in the
   tracker, with audio clip playback per passage (files named after passage ids).
 

@@ -1,10 +1,11 @@
 # The Three Plagues - Story Bible
 
-**Last Updated**: 2026-09-29 16:39 EDT
+**Last Updated**: 2026-09-29 21:30 EDT
 
 The world, cast and secrets of the campaign. Everything the players hear is in
 the [script/](script/README.md) folder (one file per part), written to be read aloud or turned into audio. Rules and classes
-are in [RULES_AND_CLASSES.md](RULES_AND_CLASSES.md).
+are in [RULES_AND_CLASSES.md](RULES_AND_CLASSES.md). What each quest's board must contain is in
+[MAPS.md](MAPS.md).
 
 The campaign title is still a working title; everything else here is settled unless
 listed under "Still to decide".

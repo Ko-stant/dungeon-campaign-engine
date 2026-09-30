@@ -1,12 +1,45 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-09-29 13:29 EDT
-**Branch**: `dce-table-only`
+**Last Updated**: 2026-09-29 21:30 EDT
+**Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
 `docs/campaigns/three-plagues/NARRATIVE.md`; read-aloud passages with ids, speakers and
 voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House rules and classes:
 `docs/campaigns/three-plagues/RULES_AND_CLASSES.md`.
+
+## Resume here (2026-09-29)
+
+**Where things stand**
+- App features for the campaign are built and committed: dice, custom classes, inventory,
+  abilities and cooldowns, the read-aloud script with a reader and audio clips, and map
+  editor aids (note list, placement previews, two-square and exit doors, room painting).
+- The four classes exist in the dev database with placeholder stats (tuning pass later).
+- The script is being revised part by part with the GM, towards a D&D-style campaign that
+  does not tell the heroes about Soul Gems, plagues or bosses up front. Done: the prologue
+  (P0-01 to P0-04), Quest 1 (with notes Q1-N1 to Q1-N3) and Quest 2 (with notes Q2-N1 to
+  Q2-N3). The heroes learn the rest from notes left by failed parties.
+- The campaign in the app still has the **old 26-passage script**. Load the revised one
+  only when the GM asks: `make load-script CAMPAIGN="Three Plagues"`.
+- Maps: Quest 1's board ("Adventurers' Herald", quest "Crumbling Halls") is built; Quest
+  2's board ("Eastmarch", 48x30) is started; Quest 3's is not. What each map must contain
+  is in `docs/campaigns/three-plagues/MAPS.md`.
+
+**Next**
+1. Maps for Quests 2 and 3, checked against `MAPS.md` and the script checklists (the GM
+   builds; keep the story and the maps in step).
+2. Script: Quest 3 (`04-quest-3-the-wardens-rise.md`): drop the up-front Ogre Lord names,
+   gems and sockets from Q3-01, stop counting plagues in Q3-04 and Q3-06, add the
+   pilgrims' notes from the Rise and a board checklist.
+3. Script: Soul Gem moments (`05-soul-gem-moments.md`) say "Soul Gem" before the heroes
+   know the name; the ending (`06-the-end.md`) has Voss say "three monsters".
+4. Then load the script into the campaign, and add Quests 2 and 3 as campaign chapters.
+
+**Working with the GM**
+- The GM reviews each part and gives line edits; apply them as written.
+- Keep `NARRATIVE.md` (story bible: cast, places, clues, failed parties) in step with
+  every script change, including clue numbers referenced in the script.
+- Edit one script part file at a time; `make print-script` checks the whole script parses.
 
 The app records and reminds; it never blocks the GM. Cooldowns, mana, class exclusives and
 effects are tracked and shown, and the GM can override any of them.
@@ -103,10 +136,9 @@ abilities or mana on their heroes; start a new session to get them.
       `00005_campaign_script.sql`, `internal/store/campaign_script.go`,
       `internal/app/script.go`, `views/script.templ`, `internal/tracker/passages.go`,
       TS `src/tracker/script.ts` and `src/ui/readAloud.ts`.
-- [ ] Campaign intro/closing and quest text live in the script; separate fields are not
-      needed unless the script outgrows one text.
-- [x] Written script (2026-09-28): 26 passages with ids (`P0-01`, `Q2-03`, ...) in
-      the script, meant to become one audio clip each.
+- [x] Campaign intro, closing and quest text live in the script; no separate fields.
+- [x] Written script (2026-09-28): passages with ids (`P0-01`, `Q2-N1`, ...), each meant to
+      become one audio clip. 34 passages as of 2026-09-29 (note passages are `Qn-Nm`).
 - [x] Script split into part files (done 2026-09-29): `script/01-prologue.md` ...
       `06-the-end.md` plus a README (format guide, passage list). `script.Assemble` joins
       the numbered files (dropping each file's header above its `##` heading) and

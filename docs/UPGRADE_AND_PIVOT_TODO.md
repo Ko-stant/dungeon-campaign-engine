@@ -1,7 +1,7 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-29 21:24 EDT
-**Branch**: `dce-table-only`
+**Last Updated**: 2026-09-29 21:30 EDT
+**Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
 so work can resume after an interruption.
@@ -16,10 +16,13 @@ Goals, in order:
 
 ## Resume here (current state)
 
-**Status: all 8 phases are complete and committed on `dce-table-only`,** plus one
-post-plan change: squares now count from (1,1) at the bottom-left and sizes read as
-columns × rows (see "Post-plan: bottom-left coordinates" near the end). Nothing is
-pushed or merged into `main`. The next work is in `docs/ROADMAP.md`.
+**Status: all 8 phases are complete,** plus many post-plan features (listed in the commit
+table below and in `docs/ROADMAP.md`). The branch `dce-table-only` was pushed and merged
+into `main` on 2026-09-28; work continues on `main`. The current focus is the Three
+Plagues campaign: see `docs/NARRATIVE_AND_CLASSES_TODO.md` ("Resume here").
+
+Commit convention: each change is one commit (or one per separate piece of work), followed
+by a "Docs: record the ... commit" commit that writes its hash into the table below.
 
 What the app is now: a single-GM companion for in-person HeroQuest.
 - `/maps` is the map creator. `/campaigns` lists campaigns and heroes and starts
@@ -67,6 +70,7 @@ Commits (oldest first):
 | 4eb1f75 | map editor note list, placement previews, two-square doors, exit doors |
 | 52e77cd | Quest 2 revisions and notes |
 | 3ac0096 | map editor: N for a new room, a new room for each shape |
+| (next commit) | docs tidy: resume notes, map plans (MAPS.md), branch headers |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).

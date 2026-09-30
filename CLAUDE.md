@@ -83,6 +83,16 @@ Tailwind CSS v4, canvas rendering.
 - `internal/seed` - Idempotent legacy import. `internal/dotenv` - `.env` loader. `internal/web` - `NoCache` helper, templ views, static assets, TS sources.
 - `db/migrations` - goose SQL, embedded via `db.Migrations`.
 
+### Campaign work in progress
+- The Three Plagues campaign (story, script, maps, rules) lives in
+  `docs/campaigns/three-plagues/`; progress and next steps are in
+  `docs/NARRATIVE_AND_CLASSES_TODO.md` ("Resume here").
+- The GM's boards, quests and campaigns in the dev database are theirs: don't edit them
+  unless asked. To check UI changes in the browser, use a throwaway database (create
+  `hq_preview` in the `hq_postgres` container, add a temporary `.claude/launch.json` entry
+  with `DATABASE_URL` pointing at it and `APP_PORT=8091`, then restore the file and drop
+  the database).
+
 ### Client (`internal/web/src`)
 - `board/` - geometry (metrics, hit-testing, footprints), `BoardView` model (derived walls), canvas renderer.
 - `maps/` - document types + API client. `editor/` - pure editing model, tools, undo history.
