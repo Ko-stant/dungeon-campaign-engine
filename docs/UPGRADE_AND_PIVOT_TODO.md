@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-29 16:27 EDT
+**Last Updated**: 2026-09-29 21:24 EDT
 **Branch**: `dce-table-only`
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -65,6 +65,8 @@ Commits (oldest first):
 | c463d6d | audio clip playback in the reader, clip uploads on the campaign page |
 | f6edb82 | script split into part files, make load-script, new prologue and Quest 1 notes |
 | 4eb1f75 | map editor note list, placement previews, two-square doors, exit doors |
+| 52e77cd | Quest 2 revisions and notes |
+| 3ac0096 | map editor: N for a new room, a new room for each shape |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
