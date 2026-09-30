@@ -33,6 +33,24 @@ export function paintTiles(b: BoardDoc, tiles: readonly TileCoord[], region: num
   return pruneRooms({ ...b, regions }, keepRoomId ?? (region > 0 ? region : undefined));
 }
 
+/**
+ * Which room a Room-brush stroke paints, or 'new' to start a room first.
+ * Without "each shape", it is the active room (a new one if none is active).
+ * With it: an empty active room (just made with N) is used as it is; a stroke
+ * starting on a room's square extends that room; any other stroke starts a
+ * new room.
+ */
+export function roomForStroke(b: BoardDoc, activeRoom: number | null, eachShape: boolean, start: TileCoord): number | 'new' {
+  if (!eachShape) {
+    return activeRoom ?? 'new';
+  }
+  if (activeRoom !== null && !b.regions.includes(activeRoom)) {
+    return activeRoom;
+  }
+  const under = regionAt(b.width, b.height, b.regions, start);
+  return under > 0 ? under : 'new';
+}
+
 /** Adds a room with the next free id. */
 export function addRoom(b: BoardDoc, name?: string): { board: BoardDoc; roomId: number } {
   const roomId = Math.max(0, ...b.rooms.map((r) => r.id), ...b.regions) + 1;

@@ -10,6 +10,7 @@ import {
   moveItem,
   nextId,
   nextNoteLabel,
+  roomForStroke,
   notePreview,
   notesInOrder,
   paintTiles,
@@ -490,3 +491,30 @@ describe('toBoardView', () => {
 
 // Keep QuestDoc imported for type-level coverage of the helpers above.
 export type _QuestDocCheck = QuestDoc;
+
+describe('roomForStroke', () => {
+  // Squares (1,1) (2,1) (3,1): room 1, corridor, corridor. Room 2 exists but is empty.
+  const painted: BoardDoc = { ...board(3, 1, CORRIDOR), regions: [1, 0, 0], rooms: [{ id: 1, name: 'Hall' }, { id: 2, name: 'Empty' }] };
+  const onRoom = { x: 1, y: 1 };
+  const onCorridor = { x: 2, y: 1 };
+
+  test('without "each shape", strokes paint the active room, or start one when none is active', () => {
+    expect(roomForStroke(painted, 1, false, onCorridor)).toBe(1);
+    expect(roomForStroke(painted, null, false, onCorridor)).toBe('new');
+  });
+
+  test('with "each shape", a stroke starting on a room extends that room', () => {
+    expect(roomForStroke(painted, null, true, onRoom)).toBe(1);
+    expect(roomForStroke(painted, 1, true, onRoom)).toBe(1);
+  });
+
+  test('with "each shape", a stroke starting on corridor or rock starts a new room', () => {
+    expect(roomForStroke(painted, 1, true, onCorridor)).toBe('new');
+    expect(roomForStroke(painted, null, true, onCorridor)).toBe('new');
+  });
+
+  test('an empty active room (just made with N) is painted wherever the stroke starts', () => {
+    expect(roomForStroke(painted, 2, true, onRoom)).toBe(2);
+    expect(roomForStroke(painted, 2, true, onCorridor)).toBe(2);
+  });
+});

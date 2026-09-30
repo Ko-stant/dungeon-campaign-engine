@@ -9,6 +9,7 @@ import { BoardRenderer, type Highlights } from '../board/renderer.ts';
 import { History } from '../editor/history.ts';
 import {
   addRoom,
+  roomForStroke,
   itemsAt,
   moveItem,
   notePreview,
@@ -89,6 +90,14 @@ async function main(): Promise<void> {
   let brush: BoardBrush = 'corridor';
   let rectMode = false;
   let activeRoom: number | null = null;
+  // Room brush: start a new room for every rectangle or stroke (remembered per browser).
+  const EACH_SHAPE_KEY = 'dce.newRoomEachShape';
+  let newRoomEachShape = false;
+  try {
+    newRoomEachShape = localStorage.getItem(EACH_SHAPE_KEY) === '1';
+  } catch {
+    // storage unavailable: the option starts off
+  }
   let questTool: QuestToolKind = 'select';
   let furnitureType = catalog.furniture[0]?.id ?? '';
   let furnitureRotation: Rotation = 0;
@@ -238,12 +247,28 @@ async function main(): Promise<void> {
     return { tile: pixelToTile(m, px, py), edge: pixelToEdge(m, px, py) };
   }
 
-  function ensureRoomForPainting(): void {
-    if (layer === 'board' && brush === 'room' && activeRoom === null) {
+  /** Picks the room a Room-brush stroke starting at start paints, making a new one if needed. */
+  function ensureRoomForPainting(start: TileCoord): void {
+    if (layer !== 'board' || brush !== 'room') {
+      return;
+    }
+    const room = roomForStroke(doc().board, activeRoom, newRoomEachShape, start);
+    if (room === 'new') {
       const added = addRoom(doc().board);
       history.push({ ...doc(), board: added.board });
       activeRoom = added.roomId;
+    } else {
+      activeRoom = room;
     }
+  }
+
+  /** Makes a new room and paints with it next (the + New room button and the N key). */
+  function startNewRoom(): void {
+    const added = addRoom(doc().board);
+    commit({ ...doc(), board: added.board });
+    activeRoom = added.roomId;
+    brush = 'room';
+    refresh();
   }
 
   canvas.addEventListener('pointerdown', (ev) => {
@@ -281,7 +306,7 @@ async function main(): Promise<void> {
       if (!target.tile) {
         return;
       }
-      ensureRoomForPainting();
+      ensureRoomForPainting(target.tile);
       drag = { points: [target.tile] };
       canvas.setPointerCapture(ev.pointerId);
       refresh();
@@ -530,6 +555,8 @@ async function main(): Promise<void> {
       deleteSelected();
     } else if (!typing && ev.key.toLowerCase() === 'r') {
       rotateSelected();
+    } else if (!typing && !mod && layer === 'board' && ev.key.toLowerCase() === 'n') {
+      startNewRoom();
     } else if (!typing && ev.key === 'Escape') {
       selectedId = null;
       refresh();
@@ -622,22 +649,29 @@ async function main(): Promise<void> {
               h('label', { class: 'flex items-center gap-2 text-sm' },
                 h('input', { type: 'checkbox', checked: rectMode, onchange: (e: Event) => { rectMode = (e.target as HTMLInputElement).checked; refresh(); } }),
                 'Rectangle fill (drag corner to corner)'),
+              brush === 'room'
+                ? h('label', { class: 'flex items-center gap-2 text-sm', title: 'A shape started on corridor or rock becomes a new room; a shape started on a room extends that room. N starts a new room to paint anywhere.' },
+                  h('input', {
+                    type: 'checkbox',
+                    checked: newRoomEachShape,
+                    onchange: (e: Event) => {
+                      newRoomEachShape = (e.target as HTMLInputElement).checked;
+                      try {
+                        localStorage.setItem(EACH_SHAPE_KEY, newRoomEachShape ? '1' : '0');
+                      } catch {
+                        // storage unavailable: the choice lasts until the page reloads
+                      }
+                      refresh();
+                    },
+                  }),
+                  'New room for each shape')
+                : null,
               h('p', { class: 'text-xs opacity-60' }, 'Drag on the board to paint. Walls appear automatically wherever areas meet; use Wall for any others.')),
         ),
         h('section', { class: 'space-y-2' },
           h('div', { class: 'flex items-center justify-between' },
             h('h2', { class: 'text-sm font-semibold' }, 'Rooms'),
-            h('button', {
-              type: 'button',
-              class: btn,
-              onclick: () => {
-                const added = addRoom(doc().board);
-                commit({ ...doc(), board: added.board });
-                activeRoom = added.roomId;
-                brush = 'room';
-                refresh();
-              },
-            }, '+ New room')),
+            h('button', { type: 'button', class: btn, title: 'Shortcut: N', onclick: startNewRoom }, '+ New room (N)')),
           b.rooms.length ? h('ul', { class: 'space-y-1' }, ...roomRows) : h('p', { class: 'text-xs opacity-60' }, 'No rooms yet.'),
         ),
       );
@@ -772,7 +806,7 @@ async function main(): Promise<void> {
       h('section', { class: 'space-y-1 text-xs opacity-60' },
         h('h2', { class: 'text-sm font-semibold opacity-100' }, 'Shortcuts'),
         h('p', {}, 'Ctrl/Cmd+S save · Ctrl/Cmd+Z undo · Shift+Ctrl/Cmd+Z redo'),
-        h('p', {}, 'R rotate · Delete remove · Esc deselect'),
+        h('p', {}, 'R rotate · Delete remove · Esc deselect · N new room (Board tab)'),
       ),
     );
     replaceChildren(rightPanel, ...children);
