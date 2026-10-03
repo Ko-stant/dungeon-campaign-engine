@@ -3,7 +3,7 @@
  * pure functions in editor/model.ts and editor/tools.ts and lands on the undo
  * history; the renderer draws toBoardView() of the current documents.
  */
-import { doorCovers, pixelToEdge, pixelToTile, type Rotation, type TileCoord } from '../board/geometry.ts';
+import { pixelToEdge, pixelToTile, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
 import { CORRIDOR, VOID, tileAt, tileIndex, type DoorKind } from '../board/model.ts';
 import { BoardRenderer, type Highlights } from '../board/renderer.ts';
 import { History } from '../editor/history.ts';
@@ -29,6 +29,7 @@ import {
   trapKindOptions,
   updateDoor,
 } from '../editor/model.ts';
+import { activeOnSquare, describeItem, squareStack } from '../editor/selection.ts';
 import { applyClick, applyDrag, isDragTool, lineTiles, type ClickTarget, type EditorDoc, type Tool } from '../editor/tools.ts';
 import { ApiError, createApi } from '../maps/api.ts';
 import { MAX_TRAP_LABEL, monsterOptionLabel, type Issue, type QuestDoc, type QuestSummary } from '../maps/types.ts';
@@ -41,7 +42,7 @@ type BoardBrush = 'corridor' | 'void' | 'room' | 'wall';
 type QuestToolKind = 'select' | 'door' | 'blocked' | 'furniture' | 'monster' | 'trap' | 'note' | 'start' | 'exit' | 'teleport' | 'erase';
 
 const QUEST_TOOLS: { kind: QuestToolKind; label: string; hint: string }[] = [
-  { kind: 'select', label: 'Select / move', hint: 'Click a piece or door to edit it; drag a piece to move it.' },
+  { kind: 'select', label: 'Select / move', hint: 'Click a piece or door to edit it; drag a piece to move it. Where several things share a square, the right panel lists them all: choose the one to move there, then drag it.' },
   { kind: 'door', label: 'Door', hint: 'Pick a kind below, then click a wall edge. Click again with the same choice to remove it.' },
   { kind: 'blocked', label: 'Blocked squares', hint: 'Drag to cover impassable squares.' },
   { kind: 'furniture', label: 'Furniture', hint: 'Click the bottom-left square. R rotates the selection.' },
@@ -110,6 +111,8 @@ async function main(): Promise<void> {
   let doorSpan = 1;
   let blockHidesDoor = false;
   let selectedId: string | null = null;
+  // The square last clicked with Select / move: the right panel lists everything on it.
+  let shown: { tile: TileCoord; edge: Edge | null } | null = null;
   let hover: ClickTarget = { tile: null, edge: null };
   let drag: { points: TileCoord[] } | null = null;
   let moving: { id: string; from: TileCoord; to: TileCoord } | null = null;
@@ -290,12 +293,13 @@ async function main(): Promise<void> {
       if (!q) {
         return;
       }
-      const edge = target.edge;
-      const door = edge ? q.doors.find((d) => doorCovers(d, edge)) : undefined;
-      const top = target.tile ? itemsAt(q, catalog, target.tile)[0] : undefined;
-      selectedId = top ?? door?.id ?? null;
-      if (top && target.tile) {
-        moving = { id: top, from: target.tile, to: target.tile };
+      const tile = target.tile;
+      const stack = squareStack(q, catalog, tile, target.edge);
+      selectedId = tile ? activeOnSquare(stack, tile, shown?.tile ?? null, selectedId) : (stack[0] ?? null);
+      shown = tile && stack.length ? { tile, edge: target.edge } : null;
+      // Doors stay put; anything else on the square can be dragged.
+      if (selectedId && tile && itemsAt(q, catalog, tile).includes(selectedId)) {
+        moving = { id: selectedId, from: tile, to: tile };
         canvas.setPointerCapture(ev.pointerId);
       }
       refresh();
@@ -333,7 +337,9 @@ async function main(): Promise<void> {
     hover = targetAt(ev);
     const tile = hover.tile;
     const b = doc().board;
-    hoverInfo.textContent = tile ? `(${tile.x}, ${tile.y}) ${regionName(b.regions[tileIndex(b.width, tile)] ?? VOID)}` : '';
+    const q = doc().quest;
+    const count = tile && layer === 'quest' && q ? itemsAt(q, catalog, tile).length : 0;
+    hoverInfo.textContent = tile ? `(${tile.x}, ${tile.y}) ${regionName(b.regions[tileIndex(b.width, tile)] ?? VOID)}${count > 1 ? ` · ${count} things` : ''}` : '';
     if (drag && tile) {
       const tool = currentTool();
       const last = drag.points[drag.points.length - 1];
@@ -366,6 +372,7 @@ async function main(): Promise<void> {
       const q = doc().quest;
       if (q && (m.to.x !== m.from.x || m.to.y !== m.from.y)) {
         commit({ ...doc(), quest: moveItem(q, m.id, m.to) });
+        shown = { tile: m.to, edge: null };
       }
     }
     refresh();
@@ -401,19 +408,34 @@ async function main(): Promise<void> {
     refresh();
   }
 
-  function deleteSelected(): void {
+  function deleteItem(id: string): void {
     const q = doc().quest;
-    if (q && selectedId) {
-      commit({ ...doc(), quest: removeItem(q, selectedId) });
-      selectedId = null;
+    if (q) {
+      commit({ ...doc(), quest: removeItem(q, id) });
+      if (selectedId === id) {
+        selectedId = null;
+      }
       refresh();
+    }
+  }
+
+  function deleteSelected(): void {
+    if (selectedId) {
+      deleteItem(selectedId);
+    }
+  }
+
+  function rotateById(id: string): void {
+    const q = doc().quest;
+    if (q) {
+      commit({ ...doc(), quest: rotateItem(q, id) });
     }
   }
 
   function rotateSelected(): void {
     const q = doc().quest;
     if (q && selectedId && (q.furniture.some((f) => f.id === selectedId) || q.traps.some((t) => t.id === selectedId))) {
-      commit({ ...doc(), quest: rotateItem(q, selectedId) });
+      rotateById(selectedId);
     } else if (layer === 'quest' && questTool === 'furniture') {
       furnitureRotation = ((furnitureRotation + 90) % 360) as Rotation;
       refresh();
@@ -559,6 +581,7 @@ async function main(): Promise<void> {
       startNewRoom();
     } else if (!typing && ev.key === 'Escape') {
       selectedId = null;
+      shown = null;
       refresh();
     }
   });
@@ -578,6 +601,7 @@ async function main(): Promise<void> {
         onclick: () => {
           layer = value;
           selectedId = null;
+          shown = null;
           refresh();
         },
       }, label);
@@ -628,7 +652,7 @@ async function main(): Promise<void> {
           h('input', {
             type: 'color',
             class: 'h-7 w-8 shrink-0 cursor-pointer rounded border border-border/60 bg-surface',
-            value: room.color ?? '#1a1d24',
+            value: room.color ?? '#8c8c96',
             title: 'Room color',
             'aria-label': `Color of room ${room.id}`,
             onchange: (e: Event) => { commit({ ...doc(), board: setRoomColor(doc().board, room.id, (e.target as HTMLInputElement).value) }); },
@@ -784,9 +808,12 @@ async function main(): Promise<void> {
       ),
     );
 
-    // Selection.
+    // Selection: everything on the clicked square when several things share it.
     const q = doc().quest;
-    if (q && selectedId) {
+    const stack = q && shown ? squareStack(q, catalog, shown.tile, shown.edge) : [];
+    if (shown && stack.length > 1 && (selectedId === null || stack.includes(selectedId))) {
+      children.push(renderStack(shown.tile, stack));
+    } else if (q && selectedId) {
       children.push(renderSelection(selectedId));
     }
 
@@ -848,7 +875,53 @@ async function main(): Promise<void> {
       notes.length ? h('ul', { class: 'space-y-1' }, ...rows) : h('p', { class: 'text-xs opacity-60' }, 'No notes yet. Use the Note tool to place one on the board.'));
   }
 
+  /** Everything on one square, each with its own options; the radio picks the one a drag moves. */
+  function renderStack(tile: TileCoord, ids: readonly string[]): HTMLElement {
+    const q = doc().quest;
+    const cards = ids.map((id) => {
+      const info = q ? describeItem(q, catalog, id) : null;
+      const active = id === selectedId;
+      return h('li', { class: `space-y-2 rounded-md border p-2 ${active ? 'border-amber-500 bg-amber-500/10' : 'border-border/60'}` },
+        h('div', { class: 'flex items-center justify-between gap-2' },
+          h('label', { class: 'flex min-w-0 cursor-pointer items-center gap-2 text-sm font-semibold', title: 'Select this one: a drag on the board moves it, R rotates it, Delete removes it' },
+            h('input', {
+              type: 'radio',
+              name: 'square-stack',
+              checked: active,
+              'aria-label': `Select ${info ? `${info.kind} ${info.name}` : id}`,
+              onchange: () => {
+                selectedId = id;
+                refresh();
+              },
+            }),
+            h('span', { class: 'truncate' }, info ? `${info.kind} · ${info.name}` : id)),
+          h('span', { class: 'shrink-0 font-mono text-xs opacity-50' }, id)),
+        ...(itemRows(id) ?? []),
+        h('button', { type: 'button', class: `${btn} text-danger`, onclick: () => { deleteItem(id); } }, 'Delete'));
+    });
+    return h('section', { class: 'space-y-2 rounded-md border border-amber-500/40 p-2' },
+      h('div', { class: 'flex items-center justify-between' },
+        h('h2', { class: 'text-sm font-semibold' }, `On (${tile.x}, ${tile.y})`),
+        h('span', { class: 'text-xs opacity-60' }, `${ids.length} things, top first`)),
+      h('p', { class: 'text-xs opacity-60' }, 'Choose the one to move, then drag it on the board. Clicking this square again keeps your choice.'),
+      h('ul', { class: 'max-h-[60vh] space-y-2 overflow-y-auto pr-1' }, ...cards));
+  }
+
   function renderSelection(id: string): HTMLElement {
+    const rows = itemRows(id);
+    if (!rows) {
+      return h('section', {});
+    }
+    return h('section', { class: 'space-y-2 rounded-md border border-amber-500/40 p-2' },
+      h('div', { class: 'flex items-center justify-between' },
+        h('h2', { class: 'text-sm font-semibold' }, 'Selected'),
+        h('span', { class: 'font-mono text-xs opacity-50' }, id)),
+      ...rows,
+      h('button', { type: 'button', class: `${btn} text-danger`, onclick: deleteSelected }, 'Delete'));
+  }
+
+  /** The edit controls for one item, or null if it no longer exists. */
+  function itemRows(id: string): (Node | null)[] | null {
     const q = doc().quest;
     const rows: (Node | null)[] = [];
     const door = q?.doors.find((d) => d.id === id);
@@ -871,7 +944,7 @@ async function main(): Promise<void> {
       const def = catalog.furniture.find((f) => f.id === furniture.type);
       rows.push(
         h('p', { class: 'text-sm' }, `${def?.name ?? furniture.type} at (${furniture.x}, ${furniture.y}), ${furniture.rotation}°`),
-        h('button', { type: 'button', class: btn, onclick: rotateSelected }, 'Rotate (R)'),
+        h('button', { type: 'button', class: btn, onclick: () => { rotateById(furniture.id); } }, 'Rotate (R)'),
       );
     } else if (monster) {
       const def = catalog.monsters.find((m) => m.id === monster.type);
@@ -887,7 +960,7 @@ async function main(): Promise<void> {
       const name = def?.name ?? (trap.kind === 'trigger' ? 'Trigger' : `${trap.kind.replaceAll('_', ' ')} trap`);
       rows.push(h('p', { class: 'text-sm' }, `${name} at (${trap.x}, ${trap.y})${def ? `, ${def.width}×${def.height}, ${trap.rotation ?? 0}°` : ''}`));
       if (def && (def.width > 1 || def.height > 1)) {
-        rows.push(h('button', { type: 'button', class: btn, onclick: rotateSelected }, 'Rotate (R)'));
+        rows.push(h('button', { type: 'button', class: btn, onclick: () => { rotateById(trap.id); } }, 'Rotate (R)'));
       }
       rows.push(h('label', { class: 'block space-y-1 text-sm' },
         h('span', { class: 'opacity-80' }, trap.kind === 'trigger' ? 'Label (which trigger is which)' : 'Label (optional)'),
@@ -902,7 +975,7 @@ async function main(): Promise<void> {
       rows.push(
         h('p', { class: 'text-sm' }, `Note ${note.label} at (${note.x}, ${note.y})`),
         h('textarea', {
-          id: 'note-text',
+          'data-note-text': note.id,
           class: `${input} h-28`,
           placeholder: 'What the heroes find here…',
           onchange: (e: Event) => {
@@ -932,15 +1005,9 @@ async function main(): Promise<void> {
         checkbox('Hides a secret door', blocked.hiddenDoor ?? false, (v) => { commit({ ...doc(), quest: setBlockedHiddenDoor(q, blocked.id, v) }); }),
       );
     } else {
-      return h('section', {});
+      return null;
     }
-
-    return h('section', { class: 'space-y-2 rounded-md border border-amber-500/40 p-2' },
-      h('div', { class: 'flex items-center justify-between' },
-        h('h2', { class: 'text-sm font-semibold' }, 'Selected'),
-        h('span', { class: 'font-mono text-xs opacity-50' }, id)),
-      ...rows,
-      h('button', { type: 'button', class: `${btn} text-danger`, onclick: deleteSelected }, 'Delete'));
+    return rows;
   }
 
   function refresh(): void {
@@ -960,7 +1027,7 @@ async function main(): Promise<void> {
     renderRight();
     if (focusNoteText) {
       focusNoteText = false;
-      document.querySelector<HTMLTextAreaElement>('#note-text')?.focus();
+      document.querySelector<HTMLTextAreaElement>(`[data-note-text="${selectedId ?? ''}"]`)?.focus();
     }
     requestDraw();
   }

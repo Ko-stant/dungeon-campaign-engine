@@ -56,7 +56,7 @@ export function readTheme(el: Element = document.documentElement): BoardTheme {
   return {
     background: rgb('surface', '20 22 28'),
     corridor: rgb('surface', '20 22 28'),
-    room: rgb('surface-2', '26 29 36'),
+    room: 'rgb(140 140 150)',
     rock: 'rgb(9 10 13)',
     grid: rgb('border', '95 104 123', 0.18),
     wall: rgb('brand', '130 166 255', 0.85),
