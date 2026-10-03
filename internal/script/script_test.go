@@ -117,7 +117,7 @@ func TestParseSample(t *testing.T) {
 		t.Fatalf("speaker parts: %+v", hall.Parts)
 	}
 	if hall.Notes[1] != (Note{Label: "Voice (Varnok)", Text: "calm and cold."}) {
-		t.Fatalf("labelled voice note: %+v", hall.Notes)
+		t.Fatalf("labeled voice note: %+v", hall.Notes)
 	}
 
 	taunts := q1.Passages[3].Parts[0].Paragraphs

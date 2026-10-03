@@ -29,7 +29,7 @@ func (s *Server) registerChapterPages(mux *http.ServeMux) {
 }
 
 // sessionQuests returns the quests a session has played: its starting quest
-// plus any maps it travelled to.
+// plus any maps it traveled to.
 func sessionQuests(ss store.SessionSummary) []string {
 	if len(ss.VisitedQuestIDs) > 0 {
 		return ss.VisitedQuestIDs

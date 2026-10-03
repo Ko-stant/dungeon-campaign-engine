@@ -143,7 +143,7 @@ export function applyClick(d: EditorDoc, tool: Tool, target: ClickTarget, catalo
 }
 
 /**
- * Tiles from a to b inclusive, stepping one orthogonal neighbour at a time so
+ * Tiles from a to b inclusive, stepping one orthogonal neighbor at a time so
  * a fast brush stroke leaves no gaps (including diagonal ones).
  */
 export function lineTiles(a: TileCoord, b: TileCoord): TileCoord[] {

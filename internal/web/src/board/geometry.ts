@@ -11,7 +11,7 @@
  *   square and extend right and up.
  *
  * Only the functions that take GridMetrics deal in screen pixels, where y grows
- * downwards; they are the one place rows are flipped.
+ * downward; they are the one place rows are flipped.
  */
 
 export interface TileCoord {
@@ -58,7 +58,7 @@ function assertBoardSize(cols: number, rows: number): void {
 }
 
 /**
- * Fits a cols x rows grid of square tiles into a view, centred, using whole-pixel
+ * Fits a cols x rows grid of square tiles into a view, centered, using whole-pixel
  * tile sizes so grid lines stay crisp.
  */
 export function computeGridMetrics(viewWidth: number, viewHeight: number, cols: number, rows: number): GridMetrics {
@@ -196,7 +196,7 @@ export interface PiecePreviewLayout {
   tile: number;
   /** The rotated footprint on screen. */
   box: { width: number; height: number };
-  /** The image at its unrotated size, turned clockwise about the box centre, as on the board. */
+  /** The image at its unrotated size, turned clockwise about the box center, as on the board. */
   image: { width: number; height: number; degrees: number };
   /** The anchor square (the piece's bottom-left square once placed), in box pixels, y down. */
   anchor: { x: number; y: number; size: number };
@@ -205,7 +205,7 @@ export interface PiecePreviewLayout {
 /**
  * Lays out a piece preview the way the board draws it (furnitureDrawBox): the
  * footprint turned by rotation, the image drawn unrotated and turned about the
- * centre. Squares are at most 40px and shrink so the footprint fits maxPx.
+ * center. Squares are at most 40px and shrink so the footprint fits maxPx.
  */
 export function piecePreviewLayout(width: number, height: number, rotation: number, maxPx: number): PiecePreviewLayout {
   const size = rotatedFootprint(width, height, rotation);
@@ -218,7 +218,7 @@ export function piecePreviewLayout(width: number, height: number, rotation: numb
   };
 }
 
-/** Every tile covered by a piece anchored at its bottom-left tile, row by row upwards. */
+/** Every tile covered by a piece anchored at its bottom-left tile, row by row upward. */
 export function footprintTiles(origin: TileCoord, width: number, height: number, rotation: number): TileCoord[] {
   const size = rotatedFootprint(width, height, rotation);
   const tiles: TileCoord[] = [];
@@ -231,7 +231,7 @@ export function footprintTiles(origin: TileCoord, width: number, height: number,
 }
 
 export interface DrawBox {
-  /** Pixel centre of the rotated footprint. */
+  /** Pixel center of the rotated footprint. */
   cx: number;
   cy: number;
   /** Unrotated size in pixels; draw at this size after rotating by `radians` (clockwise on screen). */
@@ -241,8 +241,8 @@ export interface DrawBox {
 }
 
 /**
- * Where to draw a piece's artwork: rotate about the centre of its (rotated)
- * footprint and draw the unrotated image centred there.
+ * Where to draw a piece's artwork: rotate about the center of its (rotated)
+ * footprint and draw the unrotated image centered there.
  */
 export function furnitureDrawBox(m: GridMetrics, at: TileCoord, width: number, height: number, rotation: number): DrawBox {
   const size = rotatedFootprint(width, height, rotation);

@@ -1,6 +1,6 @@
 # The Three Plagues - Maps
 
-**Last Updated**: 2026-09-29 21:30 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 
 What each quest's board has to contain for the story to work, so map building and the
 script stay in step. The story is in [NARRATIVE.md](NARRATIVE.md); the read-aloud text,
@@ -42,8 +42,8 @@ monsters comes later; this file is about layout.
 ## Quest 2 - The Bloated Fields
 
 - **Board**: "Eastmarch", 48x30 (started by the GM). Not yet a chapter of the campaign.
-- **Setting**: open farmland under a yellow sky, criss-crossed by grey threads that all run
-  to the tithe barn at the centre. Outdoors, so rooms are buildings and fields, corridors
+- **Setting**: open farmland under a yellow sky, criss-crossed by gray threads that all run
+  to the tithe barn at the center. Outdoors, so rooms are buildings and fields, corridors
   are lanes and tracks.
 - **Must contain** (see the checklist in `script/03-quest-2-the-bloated-fields.md`):
   - **Start** by the Crumbling Halls' eastern gate, on the side the party enters from.
@@ -56,7 +56,7 @@ monsters comes later; this file is about layout.
   - **A wayside shrine or roadside stone north of the barn**, on the pilgrims' route around
     the fields (Q2-N2).
   - **Exit** on the road toward the Rise, on the far side from the start (Q2-05).
-- **Suggested**: the threads' pull toward the barn read as lanes converging on the centre;
+- **Suggested**: the threads' pull toward the barn read as lanes converging on the center;
   the blight worse near the barn than at the edges (Millbrook only just reached).
 
 ## Quest 3 - The Wardens' Rise

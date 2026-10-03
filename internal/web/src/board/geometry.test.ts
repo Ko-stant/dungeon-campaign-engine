@@ -24,7 +24,7 @@ import {
 // bottom row (y=1) spans pixels 555..585 and the top row (y=19) spans 15..45.
 
 describe('computeGridMetrics', () => {
-  test('fits square tiles to the limiting dimension and centres the grid', () => {
+  test('fits square tiles to the limiting dimension and centers the grid', () => {
     // 26x19 board in an 800x600 view: width limits (800/26 = 30.7 -> 30).
     const m = computeGridMetrics(800, 600, 26, 19);
     expect(m.tile).toBe(30);
@@ -60,7 +60,7 @@ describe('tileRect', () => {
     expect(tileRect(m, { x: 1, y: 1 })).toEqual({ x: 10, y: 555, w: 30, h: 30, cx: 25, cy: 570 });
   });
 
-  test('rows count upwards and columns rightwards', () => {
+  test('rows count upward and columns rightward', () => {
     expect(tileRect(m, { x: 1, y: 19 })).toEqual({ x: 10, y: 15, w: 30, h: 30, cx: 25, cy: 30 });
     expect(tileRect(m, { x: 4, y: 17 })).toEqual({ x: 100, y: 75, w: 30, h: 30, cx: 115, cy: 90 });
     expect(tileRect(m, { x: 26, y: 1 })).toEqual({ x: 760, y: 555, w: 30, h: 30, cx: 775, cy: 570 });
@@ -155,7 +155,7 @@ describe('edges and tiles', () => {
     expect(edgeTiles({ x: 4, y: 18, orientation: 'horizontal' })).toEqual([{ x: 4, y: 17 }, { x: 4, y: 18 }]);
   });
 
-  test('edgeBetween finds the shared edge of orthogonal neighbours in either order', () => {
+  test('edgeBetween finds the shared edge of orthogonal neighbors in either order', () => {
     expect(edgeBetween({ x: 3, y: 17 }, { x: 4, y: 17 })).toEqual({ x: 4, y: 17, orientation: 'vertical' });
     expect(edgeBetween({ x: 4, y: 17 }, { x: 3, y: 17 })).toEqual({ x: 4, y: 17, orientation: 'vertical' });
     expect(edgeBetween({ x: 4, y: 17 }, { x: 4, y: 18 })).toEqual({ x: 4, y: 18, orientation: 'horizontal' });
@@ -209,7 +209,7 @@ describe('furniture footprints', () => {
     expect(() => rotatedFootprint(3, 2, 360)).toThrow(RangeError);
   });
 
-  test('footprintTiles lists every covered square from the bottom-left anchor, row by row upwards', () => {
+  test('footprintTiles lists every covered square from the bottom-left anchor, row by row upward', () => {
     expect(footprintTiles({ x: 5, y: 7 }, 3, 2, 0)).toEqual([
       { x: 5, y: 7 }, { x: 6, y: 7 }, { x: 7, y: 7 },
       { x: 5, y: 8 }, { x: 6, y: 8 }, { x: 7, y: 8 },
@@ -225,11 +225,11 @@ describe('furniture footprints', () => {
 describe('furnitureDrawBox', () => {
   const m = computeGridMetrics(800, 600, 26, 19);
 
-  test('unrotated pieces are centred on their footprint at natural size', () => {
+  test('unrotated pieces are centered on their footprint at natural size', () => {
     expect(furnitureDrawBox(m, { x: 7, y: 14 }, 3, 2, 0)).toEqual({ cx: 235, cy: 165, width: 90, height: 60, radians: 0 });
   });
 
-  test('quarter-turned pieces centre on the swapped footprint and keep their natural size', () => {
+  test('quarter-turned pieces center on the swapped footprint and keep their natural size', () => {
     // Alchemist's bench (3x2) at (6,3) rotated 270: footprint x 6..7, y 3..5.
     const box = furnitureDrawBox(m, { x: 6, y: 3 }, 3, 2, 270);
     expect(box.cx).toBe(190);
@@ -249,7 +249,7 @@ describe('furnitureDrawBox', () => {
 describe('doorRect', () => {
   const m = computeGridMetrics(800, 600, 26, 19);
 
-  test('a vertical door is a thin bar centred on the grid line, inset from the square corners', () => {
+  test('a vertical door is a thin bar centered on the grid line, inset from the square corners', () => {
     // Line at pixel 100, row 17 spans y 75..105. Thickness 30*0.2=6, inset 30*0.15=4.5.
     expect(doorRect(m, { x: 4, y: 17, orientation: 'vertical' })).toEqual({ x: 97, y: 79.5, w: 6, h: 21 });
   });
@@ -272,7 +272,7 @@ describe('piecePreviewLayout', () => {
     const l = piecePreviewLayout(2, 1, 90, 120);
     expect(l.tile).toBe(40);
     expect(l.box).toEqual({ width: 40, height: 80 });
-    // The image keeps its unrotated size and is rotated about the box centre.
+    // The image keeps its unrotated size and is rotated about the box center.
     expect(l.image).toEqual({ width: 80, height: 40, degrees: 90 });
     // The anchor (bottom-left square) sits at the bottom-left of the box on screen.
     expect(l.anchor).toEqual({ x: 0, y: 40, size: 40 });

@@ -1,6 +1,6 @@
 # The Three Plagues - Script: The End
 
-**Last Updated**: 2026-09-29 13:27 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 
 Part of the read-aloud script; see [README.md](README.md) for the format and how to load it.
 Everything above the `##` heading is left out when the script is assembled.
@@ -60,7 +60,7 @@ Everything above the `##` heading is left out when the script is assembled.
 > Songs are sung about the heroes who broke the three plagues. Fewer are sung about the
 > fourth, because few who hear the story believe it. Those who were there know better.
 >
-> And they say a woman in a grey cloak still sells salt up on the Rise, though there is no
+> And they say a woman in a gray cloak still sells salt up on the Rise, though there is no
 > one left there to buy it.
 
 ### X-01 - If the heroes fall

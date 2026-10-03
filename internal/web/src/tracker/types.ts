@@ -94,7 +94,7 @@ export interface SessionState {
   version: number;
   /** The active map's quest. Missing on sessions started before travel existed. */
   questId?: string;
-  /** Maps the party has left; travelling back restores them. */
+  /** Maps the party has left; traveling back restores them. */
   otherMaps?: OtherMap[];
   board: BoardDoc;
   quest: QuestDoc;

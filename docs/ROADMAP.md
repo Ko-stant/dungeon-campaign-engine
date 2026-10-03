@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last Updated**: 2026-09-29 21:30 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 
 The engine is a single-GM companion for in-person HeroQuest: build maps, run a
 quest at the table, and keep a resumable record of what happened. It never
@@ -81,7 +81,7 @@ enforces rules; the GM decides, and the app remembers.
       replaying a quest). (From the old roadmap's hero death section.)
 - [x] Campaign quest list and progress (which quests are done). (Chapters.)
 - [ ] Per-hero travel: today the whole party travels together; splitting the party
-      across maps is not modelled.
+      across maps is not modeled.
 
 ### Map creator
 - [ ] Export/import board + quests as a JSON bundle (backup and sharing).

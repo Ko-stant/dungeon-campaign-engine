@@ -1,6 +1,6 @@
 # The Three Plagues - Script: Quest 2 - The Bloated Fields
 
-**Last Updated**: 2026-09-29 16:37 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 
 Part of the read-aloud script; see [README.md](README.md) for the format and how to load it.
 Everything above the `##` heading is left out when the script is assembled.
@@ -40,12 +40,12 @@ Each find gets a quest note on its square, starting with the passage id.
 >
 > The farms of the Eastmarch stretch before you under a low, yellow sky. The wheat has
 > swollen and split open on the stalk. Cattle lie in the fields, bloated and still. Fat
-> grey threads drift between the hedgerows, strung fence to barn, barn to tree, and where
+> gray threads drift between the hedgerows, strung fence to barn, barn to tree, and where
 > they touch the ground, the earth heaves and bubbles like something breathing. The houses
 > of a small village stand empty nearby, their doors webbed shut.
 >
 > Bram Greyford was right. These fields are wrong. And every one of those threads runs the
-> same way, towards the heart of the farmland, and a great dark barn.
+> same way, toward the heart of the farmland, and a great dark barn.
 
 **Quest goals**
 - Find what is poisoning the Eastmarch, and end it.
@@ -105,7 +105,7 @@ Each find gets a quest note on its square, starting with the passage id.
 > screaming started, I saw light through the gaps in the boards. Green light. Like a lantern
 > inside something's belly.
 >
-> Dace touched the threads yesterday. His hand has gone grey to the wrist and he won't stop
+> Dace touched the threads yesterday. His hand has gone gray to the wrist and he won't stop
 > scratching it.
 >
 > Bram says we go back at first light. Nobody argued.
@@ -128,7 +128,7 @@ Each find gets a quest note on its square, starting with the passage id.
 
 **Sister Wenna**
 
-> Seventh day. We have gone around the fields rather than through them, north towards the
+> Seventh day. We have gone around the fields rather than through them, north toward the
 > Rise, as the records say. There is a sickness here, and I no longer believe it is a
 > natural one. It spreads from the great barn at the heart of the farmland, the way rot
 > spreads from a wound.
@@ -141,7 +141,7 @@ Each find gets a quest note on its square, starting with the passage id.
 > key to the Chambers. The Four forgive me, I have begun to wonder whether we have just seen
 > one of them, in the belly of that thing.
 >
-> We go on towards the Rise.
+> We go on toward the Rise.
 
 ### Q2-N3 - A note for Tam
 
@@ -179,7 +179,7 @@ Each find gets a quest note on its square, starting with the passage id.
 
 > Every thread in the fields ends here.
 >
-> The old tithe barn has split open like an overripe gourd, its beams furred with grey
+> The old tithe barn has split open like an overripe gourd, its beams furred with gray
 > silk. The web inside is thick enough to walk on, and it breathes. Shapes hang in it,
 > wrapped tight and very still.
 >
@@ -203,7 +203,7 @@ Each find gets a quest note on its square, starting with the passage id.
 > and steady, like a heartbeat. Then it is still. Somewhere deep inside it, so faint you
 > cannot be sure, something is wailing.
 >
-> Outside, a sound like rain begins. It is the webs. All across the fields, the grey
+> Outside, a sound like rain begins. It is the webs. All across the fields, the gray
 > threads are drying, snapping, and falling to the ground.
 >
 > The blight on the Eastmarch is broken.

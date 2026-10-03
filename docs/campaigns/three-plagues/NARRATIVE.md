@@ -1,6 +1,6 @@
 # The Three Plagues - Story Bible
 
-**Last Updated**: 2026-09-29 21:30 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 
 The world, cast and secrets of the campaign. Everything the players hear is in
 the [script/](script/README.md) folder (one file per part), written to be read aloud or turned into audio. Rules and classes
@@ -26,12 +26,12 @@ listed under "Still to decide".
 
 ## Places
 
-- **Haldmere** - a green vale gone grey. The market town is **Haldmere Cross**: a wide
+- **Haldmere** - a green vale gone gray. The market town is **Haldmere Cross**: a wide
   square with a rust-water well, a windmill whose sails never turn, cold smithies and an
   inn, **the Tollen Arms**. There is no wind at all; the air is still and gritty. The lord
   lives in **Voss Keep** above the town, a squat stone house whose garden has died around a
   dry fountain of four carved figures (crowned with stone, wave, feather and flame), cracked
-  through. Wells run low and taste of iron, forges lose their heat, the soil comes up grey.
+  through. Wells run low and taste of iron, forges lose their heat, the soil comes up gray.
 - **The Chapel of the Four** - Haldmere's old chapel to the four elements. Its undercroft
   holds records nobody had read in generations, where Brother Tobias found what little is
   known of the Wardens.
@@ -47,7 +47,7 @@ listed under "Still to decide".
   rooms crack open.
 - **The Bloated Fields** - once the **Eastmarch** farms, Haldmere's breadbasket; the name
   is Bram Greyford's (Q2-N1), not the lord's. Crops swell and split on the stalk, cattle
-  bloat where they stand, and grey threads run fence to barn, barn to tree. The farming
+  bloat where they stand, and gray threads run fence to barn, barn to tree. The farming
   village of **Millbrook**, overrun this year, stands empty. Every thread leads to the old
   **tithe barn** at the heart of the fields, the Blightweaver's lair. The villagers named
   the Blightweaver; the heroes hear the name from Tam or his mother's note.
@@ -158,7 +158,7 @@ rest are still to do.
 - **The Greyford Company** (about six years ago) - six sellswords led by **Bram Greyford**.
   They crossed the Halls and camped in a farmhouse in the Fields (Q2-N1, written by their
   scout **Lark**). **Harl** followed a crying voice into the tithe barn and never came out;
-  **Dace** touched the threads and went grey to the wrist, and did not live to reach the
+  **Dace** touched the threads and went gray to the wrist, and did not live to reach the
   Halls again. Bram left his warning pinned by the Halls' eastern gate (Q1-N2) on the way
   home.
 - **The Chapel pilgrims** (about three years ago) - **Sister Wenna** and eight of the

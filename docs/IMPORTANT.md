@@ -1,6 +1,6 @@
 ## Development Notes
 
-**Last Updated**: 2026-09-27 14:22 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 
 - Server runs on port 8080 by default (configurable via `APP_PORT` env var)
 - Static assets served from `internal/web/static/`
@@ -8,6 +8,7 @@
 - All Go tools installed to `./.bin/` directory
 - Uses Go modules with Go 1.27+ (templ is pinned as a go.mod tool: `go tool templ`)
 - Never use emojis in code, comments, or console logs. They are only appropriate for html visuals.
+- Use American English spelling everywhere (code, comments, UI text, docs, commit messages); `make lint` checks it (`scripts/spelling.ts`)
 - Follow Go best practices for error handling, logging, and concurrency
 - When using locks/mutexes, always double check to make sure the flow properly locks and unlocks. Pay attention to edge cases where something can remain locked.
 - When generating a compiled binary, never name the output "server"; always use "dungeon-campaign-engine" or similar, to avoid confusion with the cmd/server directory and the VSCode launch configuration named "Server" (gitignore issues, accidentally killing VSCode processes)

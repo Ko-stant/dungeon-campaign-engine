@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-09-29 21:30 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -15,7 +15,7 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   abilities and cooldowns, the read-aloud script with a reader and audio clips, and map
   editor aids (note list, placement previews, two-square and exit doors, room painting).
 - The four classes exist in the dev database with placeholder stats (tuning pass later).
-- The script is being revised part by part with the GM, towards a D&D-style campaign that
+- The script is being revised part by part with the GM, toward a D&D-style campaign that
   does not tell the heroes about Soul Gems, plagues or bosses up front. Done: the prologue
   (P0-01 to P0-04), Quest 1 (with notes Q1-N1 to Q1-N3) and Quest 2 (with notes Q2-N1 to
   Q2-N3). The heroes learn the rest from notes left by failed parties.
@@ -54,7 +54,7 @@ In the app a "turn cycle" is a round (`State.Round`, advanced by `round.advance`
       min/max, and a roller that takes the die function (for tests and a later UI).
 - [ ] On-screen roller in the tracker (physical dice stay the default).
 
-How: `internal/dice` (Go: `Parse`, `Expr.String/Min/Max/Roll`, text marshalling) and
+How: `internal/dice` (Go: `Parse`, `Expr.String/Min/Max/Roll`, text marshaling) and
 `internal/web/src/dice/dice.ts` (TS: `parseDice`, `formatDice`, `rollDice`) share the same
 rules and error wording; both were written test-first (`dice_test.go`, `dice.test.ts`).
 

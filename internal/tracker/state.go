@@ -132,7 +132,7 @@ type State struct {
 	ConsumedNotes []string `json:"consumedNotes"`
 	Discovered    []int    `json:"discovered"`
 	// OtherMaps holds every map the session has left, exactly as it was left,
-	// so travelling back restores it. The fields above are the active map.
+	// so traveling back restores it. The fields above are the active map.
 	OtherMaps []MapState `json:"otherMaps,omitempty"`
 	// ReadPassages lists the read-aloud passages (ids from the campaign's
 	// script) already read at the table, across every map of the session.

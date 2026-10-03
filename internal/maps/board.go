@@ -11,7 +11,7 @@
 //     1..Height+1.
 //   - Rectangles and furniture are anchored at their bottom-left square and
 //     extend right and up.
-//   - Walls are derived wherever neighbouring tiles belong to different
+//   - Walls are derived wherever neighboring tiles belong to different
 //     regions, with anything off the board treated as Void. The GM can also
 //     draw walls on interior edges (DrawnWalls), for example a wall between two
 //     stretches of corridor; drawn walls are the only walls stored.

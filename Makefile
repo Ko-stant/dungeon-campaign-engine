@@ -88,6 +88,7 @@ lint:
 	@$(TOOLS_DIRECTORY)/golangci-lint run
 	@bun run lint
 	@bun run typecheck
+	@bun run spelling
 
 fmt:
 	@$(GO) fmt $(GO_PACKAGES)

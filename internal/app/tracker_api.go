@@ -374,7 +374,7 @@ func eventResponse(e store.Event) EventResponse {
 	return EventResponse{Seq: e.Seq, Round: e.Round, Kind: e.Kind, Summary: e.Summary, Payload: e.Payload, CreatedAt: e.CreatedAt}
 }
 
-// lockSession serialises changes to one session.
+// lockSession serializes changes to one session.
 func (s *Server) lockSession(id string) func() {
 	v, _ := s.sessionLocks.LoadOrStore(id, &sync.Mutex{})
 	mu := v.(*sync.Mutex)

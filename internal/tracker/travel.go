@@ -50,7 +50,7 @@ func (s *State) Visited(questID string) bool {
 
 // Travel moves the whole party to another map mid-game. The heroes keep their
 // stats, gold, equipment and status, and the round carries on. The map being
-// left is saved as it stands, so travelling back restores it; a new map starts
+// left is saved as it stands, so traveling back restores it; a new map starts
 // fresh with the heroes on its start squares. Like Apply, it never modifies s.
 func Travel(s *State, dest Destination, catalog *content.Catalog) (*State, Event, error) {
 	if s.Version != StateVersion {
@@ -83,7 +83,7 @@ func Travel(s *State, dest Destination, catalog *content.Catalog) (*State, Event
 		next.Board, next.Quest = *dest.Board, *dest.Quest
 		next.setUpMap(catalog)
 		next.placeOnStartSquares()
-		summary = "Travelled to " + dest.QuestName
+		summary = "Traveled to " + dest.QuestName
 	}
 	next.OtherMaps = append(next.OtherMaps, left)
 

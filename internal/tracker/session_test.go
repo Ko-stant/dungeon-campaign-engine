@@ -177,7 +177,7 @@ func TestCarryOverCopiesProgressBackToTheCampaign(t *testing.T) {
 	}
 	s.Heroes[0].Gold = 150
 	s.Heroes[0].Equipment = "Broadsword, Helmet"
-	s.Heroes[1].Notes = "Owes the elf a favour"
+	s.Heroes[1].Notes = "Owes the elf a favor"
 	s.Heroes[1].Status = HeroDead
 	extra := CampaignHero{ID: "hero-9", Name: "Benched", Class: "elf", Gold: 5}
 
@@ -185,7 +185,7 @@ func TestCarryOverCopiesProgressBackToTheCampaign(t *testing.T) {
 	if out[0].Gold != 150 || out[0].Equipment != "Broadsword, Helmet" || out[0].Name != "Grom" {
 		t.Fatalf("hero-1: %+v", out[0])
 	}
-	if out[1].Notes != "Owes the elf a favour" {
+	if out[1].Notes != "Owes the elf a favor" {
 		t.Fatalf("hero-2: %+v", out[1])
 	}
 	if !reflect.DeepEqual(out[2], extra) {

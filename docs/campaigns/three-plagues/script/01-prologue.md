@@ -1,6 +1,6 @@
 # The Three Plagues - Script: Prologue
 
-**Last Updated**: 2026-09-29 14:39 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 
 Part of the read-aloud script; see [README.md](README.md) for the format and how to load it.
 Everything above the `##` heading is left out when the script is assembled.
@@ -31,8 +31,8 @@ for the heroes to discover.
 > and well paved, ringed with tall timber houses and the painted signs of a dozen trades.
 > But half the shutters are closed, and half the signs have faded past reading. At the well
 > in the middle of the square, a line of townsfolk waits with buckets, and the water that
-> comes up is the colour of rust. Beyond the rooftops, the sails of a windmill stand
-> perfectly still against a colourless sky. In the doorway of a smithy, a broad-shouldered
+> comes up is the color of rust. Beyond the rooftops, the sails of a windmill stand
+> perfectly still against a colorless sky. In the doorway of a smithy, a broad-shouldered
 > smith stares down at a bed of coals that should be glowing, and is not.
 >
 > One of you presses a few coins into the driver's hand. He takes them without a word,
@@ -42,7 +42,7 @@ for the heroes to discover.
 >
 > People are watching you. Not openly. From behind half-closed shutters, from the line at
 > the well, from the shadow of the smithy door. Then a man in a dented breastplate and a
-> faded blue surcoat crosses the square towards you, one hand raised in greeting. He is not
+> faded blue surcoat crosses the square toward you, one hand raised in greeting. He is not
 > young, and he looks as though he has not slept well in a very long time.
 
 **Sergeant Hale**
@@ -60,11 +60,11 @@ for the heroes to discover.
 
 - **When:** straight after P0-01.
 - **Speaker:** Narrator.
-- **Voice:** steady and a little sombre; slow down for the garden.
+- **Voice:** steady and a little somber; slow down for the garden.
 - **Sound:** footsteps on dry gravel, a crow, the scrape of iron bolts.
 
 > Your party nods, and follows Sergeant Hale out of the square and up the winding road
-> towards the hill where the lord's house stands.
+> toward the hill where the lord's house stands.
 >
 > Along the way, the town shows you more of itself. A baker's stall with three small loaves
 > on it, and a line of people waiting for them. A child tipping a rain barrel to reach the
@@ -72,7 +72,7 @@ for the heroes to discover.
 > quiet. Nobody calls out. Nobody asks who you are. They have watched strangers ride east
 > before, and they have learned not to hope.
 >
-> Voss Keep stands at the top of the road, a squat grey house of stone behind an old
+> Voss Keep stands at the top of the road, a squat gray house of stone behind an old
 > curtain wall. Two guards stand at its gate, spears held a little too tightly. Sergeant
 > Hale calls out to them, and they hurry to draw the bolts. As you pass between them,
 > neither one will meet your eyes.
@@ -80,7 +80,7 @@ for the heroes to discover.
 > Inside the wall there was a garden once, and a proud one. Rows of fruit trees. Trimmed
 > hedges. A fountain carved as four figures holding up a single basin: one crowned with
 > stone, one with a wave, one with a feather, one with a flame. The trees are bare now,
-> their leaves curled brown on the ground. The hedges have gone grey and brittle. The
+> their leaves curled brown on the ground. The hedges have gone gray and brittle. The
 > fountain is dry, and a crack runs through all four of the carved figures.
 >
 > Sergeant Hale keeps you moving. Across the courtyard, through a pair of heavy doors, along
@@ -103,10 +103,10 @@ for the heroes to discover.
 
 **Narrator**
 
-> The door clicks shut behind you. Lord Aldren Voss is a tall man gone thin, grey at the
+> The door clicks shut behind you. Lord Aldren Voss is a tall man gone thin, gray at the
 > temples, in a coat that was made for someone heavier. The chamber is lined with shelves of
 > ledgers and old maps, and a small fire burns in the grate. It gives light, but almost no
-> warmth. The lord gestures you towards the chairs by the fire, but he does not sit.
+> warmth. The lord gestures you toward the chairs by the fire, but he does not sit.
 
 **Lord Voss**
 
@@ -117,7 +117,7 @@ for the heroes to discover.
 > has not turned a mill sail in two seasons. The forges that made Haldmere Cross the finest
 > market in the east have gone cold. The smiths feed them every scrap of coal they have,
 > and still something draws the heat away, as if the fire itself were being drunk. And now
-> the soil in our fields comes up grey behind the plough.
+> the soil in our fields comes up gray behind the plow.
 >
 > My grandfather called this the richest vale in the kingdom. If nothing changes, my
 > grandchildren, if they live, will know it as a grave.

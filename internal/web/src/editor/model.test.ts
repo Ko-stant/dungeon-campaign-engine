@@ -390,7 +390,7 @@ describe('quest items', () => {
     expect(toBoardView(board(5, 20), setBlockedHiddenDoor(q, 'blocked-1', true), catalog).blockedSquares).toEqual([{ id: 'blocked-1', x: 4, y: 15, w: 1, h: 1, hiddenDoor: true }]);
   });
 
-  test('teleport squares can be placed, labelled, found, moved and removed', () => {
+  test('teleport squares can be placed, labeled, found, moved and removed', () => {
     let q = placeTeleport(emptyQuest(), { x: 2, y: 2 });
     q = placeTeleport(q, { x: 5, y: 5 });
     expect(q.teleports).toEqual([{ id: 'teleport-1', x: 2, y: 2 }, { id: 'teleport-2', x: 5, y: 5 }]);

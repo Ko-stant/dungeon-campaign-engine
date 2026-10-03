@@ -1,13 +1,13 @@
 # The Three Plagues - Script: Quest 1 - The Crumbling Halls
 
-**Last Updated**: 2026-09-29 15:30 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 
 Part of the read-aloud script; see [README.md](README.md) for the format and how to load it.
 Everything above the `##` heading is left out when the script is assembled.
 
 The heroes know only what Lord Voss told them. The notes in this quest (Q1-N1 to Q1-N3)
 are the first traces of the parties who came before: they show that people died here,
-that something worse waits in the Eastmarch, and that the Chapel pilgrims went on towards
+that something worse waits in the Eastmarch, and that the Chapel pilgrims went on toward
 a place called the Rise. The GM places each note in a room of their choice; the heroes find
 it when they search there.
 
@@ -86,7 +86,7 @@ Quest notes list (Mark used once found). Start the note text with the passage id
   soldier's remains. The note is tucked inside a dented Keep-guard helmet.
 - **Speakers:** Narrator, then Tomas Reed.
 - **Voice (Tomas):** a young soldier, hoarse and exhausted, trying to stay brave for
-  whoever reads it. He gets quieter towards the end.
+  whoever reads it. He gets quieter toward the end.
 - **Sound:** a slow drip; the creak of settling stone.
 
 **Narrator**
@@ -131,9 +131,9 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 > lord's gold. There were six of us. Now there are only four.
 >
 > The farms past this gate are wrong. The crops are swollen and split. The cattle lie in
-> the fields and swell until they burst. There are grey threads strung over everything,
+> the fields and swell until they burst. There are gray threads strung over everything,
 > fence to barn, barn to tree, and they move when nothing is touching them. Harl went into the
-> big barn at the centre after a sound he swore was a child crying. We heard him scream. We
+> big barn at the center after a sound he swore was a child crying. We heard him scream. We
 > did not go in after him. Whatever sits in that barn is patient, and it is not alone.
 >
 > We are going home. No coin is worth this. If you have any sense, you will go home too.
@@ -169,7 +169,7 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 - **Voice:** relief first, then unease.
 - **Sound:** heavy doors; warm, heavy air; flies.
 
-> Daylight. A thin grey line of it, spilling under a pair of iron-bound doors at the end of
+> Daylight. A thin gray line of it, spilling under a pair of iron-bound doors at the end of
 > the hall. The eastern gate.
 >
 > As you heave the doors open, a breath of warm air rolls in to meet you. It is heavy, and

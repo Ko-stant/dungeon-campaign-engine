@@ -1,6 +1,6 @@
 # The Three Plagues - Script: Quest 3 - The Wardens' Rise
 
-**Last Updated**: 2026-09-29 15:18 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 
 Part of the read-aloud script; see [README.md](README.md) for the format and how to load it.
 Everything above the `##` heading is left out when the script is assembled.
@@ -44,7 +44,7 @@ Everything above the `##` heading is left out when the script is assembled.
 **Narrator**
 
 > Tucked behind a collapsed wall, where no ogre would ever bother to look, a small fire is
-> burning. Beside it sits a woman wrapped in a patched grey cloak, her cart piled high with
+> burning. Beside it sits a woman wrapped in a patched gray cloak, her cart piled high with
 > sacks, bottles and oddments. She does not look surprised to see you.
 
 **Ilsabet - greeting**

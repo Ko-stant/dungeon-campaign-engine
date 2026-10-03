@@ -19,7 +19,7 @@ export function currentSection(sections: readonly ScriptSection[], state: { ques
 }
 
 /** The passages before and after id, in script order across sections. */
-export function passageNeighbours(sections: readonly ScriptSection[], id: string): { prev: string | null; next: string | null } {
+export function passageNeighbors(sections: readonly ScriptSection[], id: string): { prev: string | null; next: string | null } {
   const ids = sections.flatMap((s) => s.passages.map((p) => p.id));
   const i = ids.indexOf(id);
   if (i < 0) {

@@ -121,7 +121,7 @@ type Note struct {
 }
 
 // Teleport is a teleport square. Label (optional, short) lets the GM pair
-// squares up, e.g. two squares labelled "1". What it does is up to the GM.
+// squares up, e.g. two squares labeled "1". What it does is up to the GM.
 type Teleport struct {
 	ID    string `json:"id"`
 	X     int    `json:"x"`

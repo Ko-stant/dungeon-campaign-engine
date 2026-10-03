@@ -1,6 +1,6 @@
 /**
  * Canvas renderer for a BoardView. Holds no game state: callers pass the view
- * to draw() every time. The pure maths lives in geometry.ts and model.ts; this
+ * to draw() every time. The pure math lives in geometry.ts and model.ts; this
  * file only turns it into canvas calls, and is checked visually.
  */
 import {
@@ -470,7 +470,7 @@ export class BoardRenderer {
         continue;
       }
       if (trap.kind === 'trigger') {
-        // The GM's own trigger: a diamond with a centre dot, filled once triggered.
+        // The GM's own trigger: a diamond with a center dot, filled once triggered.
         const d = m.tile * 0.32;
         ctx.beginPath();
         ctx.moveTo(r.cx, r.cy - d);
@@ -502,7 +502,7 @@ export class BoardRenderer {
     }
   }
 
-  /** The trap marker: a triangle centred on (cx, cy), filled once triggered. Uses the current colors. */
+  /** The trap marker: a triangle centered on (cx, cy), filled once triggered. Uses the current colors. */
   #trapTriangle(cx: number, cy: number, s: number, filled: boolean): void {
     const ctx = this.#ctx;
     ctx.beginPath();

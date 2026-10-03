@@ -1,4 +1,4 @@
-/** Choices for travelling the party to another map mid-game. */
+/** Choices for traveling the party to another map mid-game. */
 import type { Chapter, OtherMap } from './types.ts';
 
 export interface TravelOption {
@@ -9,7 +9,7 @@ export interface TravelOption {
 /**
  * The maps the party can travel to: the campaign's other chapters in order,
  * then any other map the session has visited. Maps already visited are marked
- * "(return)" because travelling there restores them as they were left.
+ * "(return)" because traveling there restores them as they were left.
  */
 export function travelOptions(state: { questId?: string; otherMaps?: readonly OtherMap[] }, chapters: readonly Chapter[]): TravelOption[] {
   const visited = new Set((state.otherMaps ?? []).map((m) => m.questId));

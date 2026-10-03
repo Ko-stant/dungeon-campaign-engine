@@ -44,7 +44,7 @@ type HeroRow struct {
 	Items     []ItemRow
 }
 
-// QuestOption is a quest to start, labelled with its board.
+// QuestOption is a quest to start, labeled with its board.
 type QuestOption struct {
 	ID       string
 	Label    string

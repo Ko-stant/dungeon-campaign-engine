@@ -157,14 +157,14 @@ func TestTravelBetweenChapterMapsMidGame(t *testing.T) {
 	}
 	res := decodeAny[CommandResponse](t, data)
 	h := res.State.Heroes[0]
-	if res.State.QuestID != lower.ID || res.Event.Summary != "Travelled to Lower Vaults" || h.Body != 2 || h.X != 3 || h.Y != 2 || len(res.State.OtherMaps) != 1 {
+	if res.State.QuestID != lower.ID || res.Event.Summary != "Traveled to Lower Vaults" || h.Body != 2 || h.X != 3 || h.Y != 2 || len(res.State.OtherMaps) != 1 {
 		t.Fatalf("after travel: %+v / %q / hero %+v", res.State.QuestID, res.Event.Summary, h)
 	}
 
 	// Both chapters count as in progress for this session.
 	_, body := get(t, client, srv.URL+campaignURL)
 	if strings.Count(body, ">in progress<") != 2 {
-		t.Fatal("both maps of a travelling session should show as in progress")
+		t.Fatal("both maps of a traveling session should show as in progress")
 	}
 
 	code, data = c(http.MethodPost, "/api/sessions/"+sess.ID+"/travel", map[string]any{"questId": upperID})

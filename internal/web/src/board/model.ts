@@ -6,7 +6,7 @@
  *   VOID (-1)      solid rock / outside the dungeon
  *   CORRIDOR (0)   open corridor
  *   1, 2, 3 ...    a room
- * Walls are derived wherever two neighbouring tiles belong to different
+ * Walls are derived wherever two neighboring tiles belong to different
  * regions, treating anything off the board as VOID. The GM can also draw walls
  * on interior edges (e.g. between two stretches of corridor); those are the
  * only walls stored.

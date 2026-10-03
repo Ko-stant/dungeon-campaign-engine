@@ -28,7 +28,8 @@ Tailwind CSS v4, canvas rendering.
 - `make test-db` - Go tests including database tests (each uses a throwaway schema)
 - `make test-race` - Go tests with the race detector
 - `bun test` / `make test-js` - TypeScript unit tests (bun:test)
-- `make lint` - golangci-lint v2 + ESLint 10 (typescript-eslint) + `tsc`
+- `make lint` - golangci-lint v2 + ESLint 10 (typescript-eslint) + `tsc` + American-spelling check
+  (`bun run spelling`, word lists in `scripts/spelling.ts`)
 - `make fmt` - gofmt + go vet
 
 ### Frontend
@@ -116,7 +117,7 @@ Tailwind CSS v4, canvas rendering.
   they are the one place rows are flipped. Legacy `content/` files are top-left, 0-based and
   are converted in `internal/maps/legacy.go`.
 - Sizes are columns × rows (width × height); landscape boards have more columns than rows.
-- Walls are derived wherever neighbouring regions differ (off-board = void). The GM can also
+- Walls are derived wherever neighboring regions differ (off-board = void). The GM can also
   draw walls on interior edges (`drawnWalls` on the board, e.g. between two corridors that
   touch); those are the only stored walls. Use `Board.IsWall` / `deriveWalls(..., drawn)` so
   both kinds count.
@@ -132,4 +133,8 @@ Tailwind CSS v4, canvas rendering.
 - Never hand-edit `*_templ.go`; change the `.templ` file and run `go tool templ generate`.
 - `content/` and `assets/` are gitignored (copyrighted HeroQuest material). Tests must not require
   them (content-dependent tests skip without them).
-- GM-facing behaviour: never add a rule check that blocks the GM; at most show advice.
+- GM-facing behavior: never add a rule check that blocks the GM; at most show advice.
+- **American English** everywhere: code, identifiers, comments, UI text, docs, the campaign
+  script and commit messages (color, behavior, center, gray, traveled, organize, toward).
+  `make lint` fails on British spellings; mark a line `spelling:allow` only for outside data
+  that must keep its spelling. Proper nouns (e.g. Greyford) are left as named.

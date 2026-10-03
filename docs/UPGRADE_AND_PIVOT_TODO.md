@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-03 15:53 EDT
+**Last Updated**: 2026-10-03 16:01 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -8,7 +8,7 @@ so work can resume after an interruption.
 
 Goals, in order:
 1. Baseline the current project.
-2. Upgrade toolchains and packages, proving behaviour is unchanged at each step.
+2. Upgrade toolchains and packages, proving behavior is unchanged at each step.
 3. Fresh TypeScript client foundation (Bun, test-first). The old JS is reference only.
 4. Postgres persistence, map creator (any board size, board + quest layers).
 5. Single-GM companion tracker with a readable event log and resumable sessions.
@@ -71,7 +71,7 @@ Commits (oldest first):
 | 52e77cd | Quest 2 revisions and notes |
 | 3ac0096 | map editor: N for a new room, a new room for each shape |
 | 35d9ece | docs tidy: resume notes, map plans (MAPS.md), branch headers |
-| 6fc7af8 | map editor: everything on a square in the panel, choose which one to move; lighter room grey |
+| 6fc7af8 | map editor: everything on a square in the panel, choose which one to move; lighter room gray |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
@@ -301,7 +301,7 @@ same 19, no new failures.
     tile rects, pixel-to-tile and pixel-to-edge hit-testing, edge/tile relations,
     rotated furniture footprints, furniture draw box, door marker rects.
   - `src/board/model.ts`: `BoardView` types. Regions are `-1` void, `0` corridor,
-    `>0` room; walls are derived wherever neighbouring regions differ, with
+    `>0` room; walls are derived wherever neighboring regions differ, with
     off-board treated as void.
   - `src/board/renderer.ts` (canvas, checked visually): draws a `BoardView` passed in,
     with no global state, so the editor, tracker and future TV view share it.
@@ -635,10 +635,10 @@ organize maps by campaign.
   `State.OtherMaps []MapState` (board, quest, monsters, doors, traps, removed blocks,
   consumed notes, discovered, hero positions). `tracker.Travel(state, Destination,
   catalog)` saves the active map, restores a visited one or sets up a new one (heroes on
-  its start squares), keeps hero stats and the round, logs `map.travel` ("Travelled to
+  its start squares), keeps hero stats and the round, logs `map.travel` ("Traveled to
   X" / "Returned to X"). `POST /api/sessions/{id}/travel {questId}` loads the quest and
   board only for maps not yet visited. Session summaries report every visited quest
-  (`VisitedQuestIDs` via jsonb path), so chapter status counts travelling sessions.
+  (`VisitedQuestIDs` via jsonb path), so chapter status counts traveling sessions.
   Tracker header: a "Travel" picker (other chapters, then other visited maps, "(return)"
   for visited ones).
 - Verified in the browser on :8090 with the test campaign: chapters and statuses,
@@ -672,7 +672,7 @@ them and add them to the content catalog. Decisions (asked): new monsters get 0 
       `toBoardView`, tracker view, tracker clicks via `clickCommand(..., catalog)`), catalog
       trap names in the editor/tracker panels. Renderer: artwork over the footprint (faded
       when hidden/disarmed), state-colored frame (dashed when hidden), small state triangle.
-- [x] Verified on :8090 with a throwaway board (deleted afterwards): artwork for every trap
+- [x] Verified on :8090 with a throwaway board (deleted afterward): artwork for every trap
       state, rotated long pit, off-board footprint check, picker, place turned, select by
       the second square, R rotation. The tracker was not opened in the browser (starting a
       session creates campaign/session rows that cannot be deleted); its trap view and
@@ -704,7 +704,7 @@ removed traps vanish from the board (still listed in the sidebar); only catalog 
 - [x] Content: `content/traps/boulder.json` has `"movable": true`; schema template updated.
 - [x] Verified on :8091 against a throwaway database (`dce_claude_scratch`, dropped after):
       room reveal with monsters, pick-squares drag + reveal (one event, wolf seen), boulder
-      select/trigger/move/remove, trigger labelled "1" triggered, removed trap listed in the
+      select/trigger/move/remove, trigger labeled "1" triggered, removed trap listed in the
       sidebar, trigger label in the editor. A test drag skipped squares between mouse
       events and missed the release square; both fixed (`lineTiles` fill, paint on mouseup).
 

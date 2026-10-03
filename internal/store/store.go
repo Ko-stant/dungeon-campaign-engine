@@ -533,7 +533,7 @@ type SessionSummary struct {
 	CampaignID string
 	QuestID    *string
 	// VisitedQuestIDs lists every quest (map) the session has played, when it
-	// travelled between maps; empty for single-map sessions.
+	// traveled between maps; empty for single-map sessions.
 	VisitedQuestIDs []string
 	Name            string
 	Status          string

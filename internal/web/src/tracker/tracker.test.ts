@@ -296,7 +296,7 @@ describe('formatEvent', () => {
     expect(line.kind).toBe('door');
   });
 
-  test('categorises log notes and session events for styling', () => {
+  test('categorizes log notes and session events for styling', () => {
     expect(formatEvent({ seq: 1, round: 1, kind: 'log.note', summary: 'x', payload: {}, createdAt: '' }).kind).toBe('note');
     expect(formatEvent({ seq: 1, round: 1, kind: 'session.start', summary: 'x', payload: {}, createdAt: '' }).kind).toBe('session');
     expect(formatEvent({ seq: 1, round: 1, kind: 'weird', summary: 'x', payload: {}, createdAt: 'not a date' }).time).toBe('');

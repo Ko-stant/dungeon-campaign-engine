@@ -9,6 +9,7 @@
     "lint:fix": "eslint . --fix",
     "test": "bun test --pass-with-no-tests",
     "typecheck": "tsc -p .",
+    "spelling": "bun scripts/check-spelling.ts",
     "build:web": "bun scripts/build.ts --minify",
     "watch:web": "bun scripts/build.ts --watch"
   },

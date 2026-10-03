@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { currentSection, passageClips, passageNeighbours, sectionProgress } from './script.ts';
+import { currentSection, passageClips, passageNeighbors, sectionProgress } from './script.ts';
 import type { Chapter, ScriptSection } from './types.ts';
 
 const passage = (id: string) => ({ id, title: `Title ${id}`, parts: [{ paragraphs: ['Text.'] }] });
@@ -31,12 +31,12 @@ describe('currentSection', () => {
   });
 });
 
-describe('passageNeighbours', () => {
+describe('passageNeighbors', () => {
   test('steps through passages in script order, across sections', () => {
-    expect(passageNeighbours(sections, 'P0-02')).toEqual({ prev: 'P0-01', next: 'Q1-01' });
-    expect(passageNeighbours(sections, 'P0-01')).toEqual({ prev: null, next: 'P0-02' });
-    expect(passageNeighbours(sections, 'G-01')).toEqual({ prev: 'Q2-02', next: null });
-    expect(passageNeighbours(sections, 'nope')).toEqual({ prev: null, next: null });
+    expect(passageNeighbors(sections, 'P0-02')).toEqual({ prev: 'P0-01', next: 'Q1-01' });
+    expect(passageNeighbors(sections, 'P0-01')).toEqual({ prev: null, next: 'P0-02' });
+    expect(passageNeighbors(sections, 'G-01')).toEqual({ prev: 'Q2-02', next: null });
+    expect(passageNeighbors(sections, 'nope')).toEqual({ prev: null, next: null });
   });
 });
 

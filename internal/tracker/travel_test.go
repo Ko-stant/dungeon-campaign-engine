@@ -44,7 +44,7 @@ func TestTravelToANewMapKeepsTheHeroesAndSavesTheOldMap(t *testing.T) {
 		t.Fatal("Travel modified its input")
 	}
 
-	if ev.Kind != "map.travel" || ev.Summary != "Travelled to Lower Vaults" || ev.Round != 2 {
+	if ev.Kind != "map.travel" || ev.Summary != "Traveled to Lower Vaults" || ev.Round != 2 {
 		t.Fatalf("event: %+v", ev)
 	}
 	if next.QuestID != "quest-lower" || next.QuestName != "Lower Vaults" || next.Board.Width != 4 || next.Round != 2 {
@@ -118,7 +118,7 @@ func TestTravelErrors(t *testing.T) {
 	_, _, cat := fixture()
 	s := travelState(t)
 	if _, _, err := Travel(s, Destination{QuestID: "quest-upper"}, cat); err == nil {
-		t.Fatal("travelling to the current map should be an error")
+		t.Fatal("traveling to the current map should be an error")
 	}
 	if _, _, err := Travel(s, Destination{QuestID: "quest-new"}, cat); err == nil {
 		t.Fatal("a map not visited yet needs its board and quest")

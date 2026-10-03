@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   }
   const api = createTrackerApi();
   const [session, catalog, initialEvents] = await Promise.all([api.session(sessionId), api.catalog(), api.events(sessionId)]);
-  // The campaign's chapters, for travelling to another map mid-game.
+  // The campaign's chapters, for traveling to another map mid-game.
   const chapters = await api.chapters(session.campaignId).catch(() => []);
   // The campaign's read-aloud script (empty when it has none).
   const loadScript = (): Promise<ScriptSection[]> => api.script(session.campaignId).then((r) => r.sections).catch(() => []);

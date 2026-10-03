@@ -128,7 +128,7 @@ describe('lineTiles', () => {
       if (!a || !b) {
         throw new Error('unreachable');
       }
-      // Each step moves to an orthogonal neighbour, so a brush never leaves diagonal gaps.
+      // Each step moves to an orthogonal neighbor, so a brush never leaves diagonal gaps.
       expect(Math.abs(a.x - b.x) + Math.abs(a.y - b.y)).toBe(1);
     }
   });

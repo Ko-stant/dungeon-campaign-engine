@@ -3,7 +3,7 @@
  * reader (a full-screen view of one passage in large type, for reading at the
  * table). Marking a passage read sends one passage.read command.
  */
-import { passageClips, passageNeighbours, sectionProgress } from '../tracker/script.ts';
+import { passageClips, passageNeighbors, sectionProgress } from '../tracker/script.ts';
 import type { Command, ScriptPassage, ScriptSection } from '../tracker/types.ts';
 import { h } from './dom.ts';
 
@@ -84,7 +84,7 @@ export function readerOverlay(ctx: ReadAloudContext, id: string, editable: boole
     return null;
   }
   const { passage, section } = found;
-  const { prev, next } = passageNeighbours(ctx.sections, id);
+  const { prev, next } = passageNeighbors(ctx.sections, id);
   const done = ctx.read.includes(id);
   const mark = (read: boolean): void => { ctx.send({ type: 'passage.read', payload: { id, title: passage.title, read } }); };
   const clips = passageClips(id, ctx.clips);
