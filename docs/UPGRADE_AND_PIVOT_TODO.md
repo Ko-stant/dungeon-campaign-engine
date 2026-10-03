@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-09-29 21:30 EDT
+**Last Updated**: 2026-10-03 15:53 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -71,6 +71,7 @@ Commits (oldest first):
 | 52e77cd | Quest 2 revisions and notes |
 | 3ac0096 | map editor: N for a new room, a new room for each shape |
 | 35d9ece | docs tidy: resume notes, map plans (MAPS.md), branch headers |
+| 6fc7af8 | map editor: everything on a square in the panel, choose which one to move; lighter room grey |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
