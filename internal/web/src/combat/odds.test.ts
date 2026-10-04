@@ -2,13 +2,18 @@ import { describe, expect, test } from 'bun:test';
 import { parseDice, type DiceExpr } from '../dice/dice.ts';
 import {
   attacksToKill,
+  CAMPAIGN_RULES,
   chanceAtLeast,
   distribution,
   heroAttack,
   heroQuestDamage,
+  killOdds,
   monsterAttack,
   MONSTER_CRIT_CHANCE,
+  percentile,
+  sureHit,
   type HeroAttacker,
+  type KillRules,
 } from './odds.ts';
 
 function dice(s: string): DiceExpr {
@@ -142,5 +147,57 @@ describe('heroQuestDamage (original combat dice)', () => {
 
   test('a 2-dice hero needs about 6.4 attacks for a gargoyle (5 defend, 3 Body)', () => {
     expect(attacksToKill(heroQuestDamage(2, 5, 'monster'), 3)).toBeCloseTo(6.38, 2);
+  });
+});
+
+describe('sureHit (a target that cannot defend)', () => {
+  test('always hits; only the crit die is rolled', () => {
+    const o = sureHit(attacker('2d10', { critFrom: 15, damage: 5 }));
+    expect(o.hit).toBe(1);
+    expect(o.crit).toBeCloseTo(0.3, 10);
+    expect(o.criticalMiss).toBe(0);
+    expect(o.expectedDamage).toBeCloseTo(5 * 0.7 + 10 * 0.3, 10);
+  });
+});
+
+describe('killOdds', () => {
+  const plain: KillRules = { determinationStep: 0, determinationCap: 0, falterAt: 0, falterPenalty: 0 };
+
+  test('without Determination or Faltering it matches attacksToKill', () => {
+    const a = attacker('2d10', { accuracy: 2, critFrom: 15, damage: 5 });
+    const k = killOdds(a, 14, 20, plain);
+    expect(k.expected).toBeCloseTo(attacksToKill(heroAttack(a, 14).damage, 20), 6);
+    let total = 0;
+    for (const p of k.byAttack) {
+      total += p;
+    }
+    expect(total).toBeCloseTo(1, 9);
+  });
+
+  test('Determination adds Accuracy for each miss in a row, up to its cap', () => {
+    // d20 against 11: 50%, then 60% after one miss, then 70% from the second miss on.
+    const a = attacker('1d20', { critFrom: 20, critMultiplier: 1, nearMiss: 0 });
+    const k = killOdds(a, 11, 1, { determinationStep: 2, determinationCap: 4, falterAt: 0, falterPenalty: 0 });
+    expect(k.byAttack[0]).toBeCloseTo(0.5, 10);
+    expect(k.byAttack[1]).toBeCloseTo(0.5 * 0.6, 10);
+    expect(k.byAttack[2]).toBeCloseTo(0.5 * 0.4 * 0.7, 10);
+    expect(k.expected).toBeCloseTo(1 + 0.5 * (1 + 0.4 / 0.7), 8);
+  });
+
+  test('Faltering lowers Avoidance once the monster is down to falterAt Body', () => {
+    // 30% to hit at Avoidance 15; 50% once at 1 Body (Avoidance 11).
+    const a = attacker('1d20', { critFrom: 20, critMultiplier: 1, nearMiss: 0 });
+    const k = killOdds(a, 15, 3, { determinationStep: 0, determinationCap: 0, falterAt: 1, falterPenalty: 4 });
+    expect(k.expected).toBeCloseTo(1 / 0.3 + 1 / 0.3 + 1 / 0.5, 6);
+  });
+
+  test('percentile finds the attack by which a share of kills are done', () => {
+    expect(percentile([0.5, 0.3, 0.2], 0.5)).toBe(1);
+    expect(percentile([0.5, 0.3, 0.2], 0.8)).toBe(2);
+    expect(percentile([0.5, 0.3, 0.2], 0.9)).toBe(3);
+  });
+
+  test('the campaign rules use Determination +2 up to +4 and Faltering -4', () => {
+    expect(CAMPAIGN_RULES).toEqual({ determinationStep: 2, determinationCap: 4, falterAt: 0, falterPenalty: 4 });
   });
 });

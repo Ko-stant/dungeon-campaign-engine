@@ -8,9 +8,12 @@
 import { parseDice, type DiceExpr } from '../internal/web/src/dice/dice.ts';
 import {
   attacksToKill,
+  CAMPAIGN_RULES,
   heroAttack,
   heroQuestDamage,
+  killOdds,
   monsterAttack,
+  percentile,
   type HeroAttacker,
   type HeroDefender,
   type MonsterAttacker,
@@ -26,19 +29,30 @@ function dice(s: string): DiceExpr {
 
 const NEAR_MISS = 2;
 
-/** Sample hero attacks (the step 2 starting point). */
+/** Proposed step 2 hero attacks with the starting kit (2026-10-04). */
 const HEROES: Record<string, HeroAttacker> = {
-  Barbarian: { hitDice: dice('1d20'), accuracy: 1, critFrom: 18, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 8 },
-  Rogue: { hitDice: dice('2d10'), accuracy: 0, critFrom: 13, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 4 },
-  Ranger: { hitDice: dice('2d10'), accuracy: 4, critFrom: 18, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 5 },
-  Cleric: { hitDice: dice('2d8'), accuracy: 2, critFrom: 20, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 3 },
+  Barbarian: { hitDice: dice('1d20'), accuracy: 3, critFrom: 17, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 10 },
+  Ranger: { hitDice: dice('2d10'), accuracy: 5, critFrom: 18, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 7 },
+  Rogue: { hitDice: dice('2d10'), accuracy: 2, critFrom: 15, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 6 },
+  Cleric: { hitDice: dice('2d8'), accuracy: 4, critFrom: 20, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 5 },
 };
 
-/** Sample hero defenses. */
+/** Sample monster defenses for the kill table: Avoidance, Body. */
+const TARGETS: [number, number][] = [
+  [8, 10],
+  [10, 25],
+  [12, 40],
+  [14, 50],
+];
+
+/** Share of maximum Body at or below which a monster falters. */
+const FALTER_SHARE = 1 / 4;
+
+/** Sample hero defenses (placeholders until step 2's defense pass). */
 const DEFENDERS: Record<string, HeroDefender> = {
   Barbarian: { defenseDice: dice('1d6'), baseAvoidance: 2, mitigation: 2 },
-  Rogue: { defenseDice: dice('1d6'), baseAvoidance: 6, mitigation: 0 },
   Ranger: { defenseDice: dice('1d6'), baseAvoidance: 5, mitigation: 0 },
+  Rogue: { defenseDice: dice('1d6'), baseAvoidance: 6, mitigation: 0 },
   Cleric: { defenseDice: dice('1d6'), baseAvoidance: 3, mitigation: 0 },
 };
 
@@ -116,4 +130,28 @@ table(
       return `${pct(o.hit)} / ${num(o.expectedDamage)}`;
     }),
   ]),
+);
+
+const rules = (body: number) => ({ ...CAMPAIGN_RULES, falterAt: Math.max(1, Math.floor(body * FALTER_SHARE)) });
+table(
+  'Proposed heroes: attacks to kill (average / slowest 10%), with Determination and Faltering',
+  ['Avoidance, Body', ...Object.keys(HEROES)],
+  TARGETS.map(([av, body]) => [
+    `${av}, ${body}`,
+    ...Object.values(HEROES).map((h) => {
+      const k = killOdds(h, av, body, rules(body));
+      return `${num(k.expected)} / ${percentile(k.byAttack, 0.9)}`;
+    }),
+  ]),
+);
+
+const WEIGHT_BODY = 60;
+table(
+  `Effective damage per attack over a fight (${WEIGHT_BODY} Body), and as weights with the Barbarian at 6`,
+  ['Avoidance', ...Object.keys(HEROES)],
+  [8, 10, 12, 14].map((av) => {
+    const dpa = Object.values(HEROES).map((h) => WEIGHT_BODY / killOdds(h, av, WEIGHT_BODY, rules(WEIGHT_BODY)).expected);
+    const top = dpa[0] ?? 1;
+    return [String(av), ...dpa.map((x) => `${x.toFixed(1)} (${((6 * x) / top).toFixed(1)})`)];
+  }),
 );

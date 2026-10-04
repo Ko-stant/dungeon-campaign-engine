@@ -123,6 +123,103 @@ export function heroAttack(a: HeroAttacker, avoidance: number): HeroAttackOdds {
   };
 }
 
+/** An attack on a target that cannot defend: it always hits, and only the crit die is rolled. */
+export function sureHit(a: HeroAttacker): HeroAttackOdds {
+  const crit = (21 - a.critFrom) / 20;
+  const damage: Distribution = new Map();
+  add(damage, a.damage, 1 - crit);
+  add(damage, a.damage * a.critMultiplier, crit);
+  return { hit: 1, crit, nearMissHit: 0, criticalMiss: 0, specialCrit: 0, expectedDamage: expected(damage), damage };
+}
+
+/** Rules that change over a run of attacks on one monster. */
+export interface KillRules {
+  /** Accuracy added per miss in a row (Determination), up to determinationCap. */
+  determinationStep: number;
+  determinationCap: number;
+  /** Body at or below which the monster falters (0 = never). */
+  falterAt: number;
+  /** Avoidance lost while faltering. */
+  falterPenalty: number;
+}
+
+/** Determination +2 per miss in a row up to +4; set falterAt per monster. */
+export const CAMPAIGN_RULES: KillRules = { determinationStep: 2, determinationCap: 4, falterAt: 0, falterPenalty: 4 };
+
+export interface KillOdds {
+  expected: number;
+  /** byAttack[i]: the chance the monster dies on attack i + 1. */
+  byAttack: number[];
+}
+
+const MAX_ATTACKS = 1000;
+
+/** Exact odds of how many attacks one hero needs to bring body to 0. */
+export function killOdds(a: HeroAttacker, avoidance: number, body: number, rules: KillRules): KillOdds {
+  const steps = rules.determinationStep > 0 ? Math.ceil(rules.determinationCap / rules.determinationStep) : 0;
+  const cache = new Map<string, [number, number][]>();
+  const outcomes = (hp: number, streak: number): [number, number][] => {
+    const bonus = Math.min(rules.determinationCap, streak * rules.determinationStep);
+    const av = rules.falterAt > 0 && hp <= rules.falterAt ? avoidance - rules.falterPenalty : avoidance;
+    const key = `${av}:${bonus}`;
+    let o = cache.get(key);
+    if (!o) {
+      o = [...heroAttack({ ...a, accuracy: a.accuracy + bonus }, av).damage];
+      cache.set(key, o);
+    }
+    return o;
+  };
+  // Alive states: "hp:streak" -> probability.
+  let alive = new Map<string, [number, number, number]>([[`${body}:0`, [body, 0, 1]]]);
+  const byAttack: number[] = [];
+  let expectedAttacks = 0;
+  let left = 1;
+  for (let n = 1; n <= MAX_ATTACKS && left > 1e-12; n++) {
+    const next = new Map<string, [number, number, number]>();
+    let killed = 0;
+    for (const [hp, streak, p] of alive.values()) {
+      for (const [x, q] of outcomes(hp, streak)) {
+        const mass = p * q;
+        if (x <= 0) {
+          const s = Math.min(steps, streak + 1);
+          bump(next, hp, s, mass);
+        } else if (hp - x <= 0) {
+          killed += mass;
+        } else {
+          bump(next, hp - x, 0, mass);
+        }
+      }
+    }
+    byAttack.push(killed);
+    expectedAttacks += n * killed;
+    left -= killed;
+    alive = next;
+  }
+  return { expected: left > 1e-9 ? Infinity : expectedAttacks, byAttack };
+}
+
+/** The attack number by which at least share q of kills are done. */
+export function percentile(byAttack: number[], q: number): number {
+  let total = 0;
+  for (let i = 0; i < byAttack.length; i++) {
+    total += byAttack[i] ?? 0;
+    if (total >= q - 1e-12) {
+      return i + 1;
+    }
+  }
+  return Infinity;
+}
+
+function bump(m: Map<string, [number, number, number]>, hp: number, streak: number, p: number): void {
+  const key = `${hp}:${streak}`;
+  const cur = m.get(key);
+  if (cur) {
+    cur[2] += p;
+  } else {
+    m.set(key, [hp, streak, p]);
+  }
+}
+
 export interface MonsterAttacker {
   hitDice: DiceExpr;
   damage: number;

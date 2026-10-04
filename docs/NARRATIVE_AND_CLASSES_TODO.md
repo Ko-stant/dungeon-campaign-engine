@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-03 17:34 EDT
+**Last Updated**: 2026-10-04 14:30 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -20,6 +20,9 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   mitigation, and cooldowns that only finish during a fight. Step 1 (the rules) is written
   up under "Combat" in `docs/campaigns/three-plagues/RULES_AND_CLASSES.md`, with a five-step
   combat roadmap. `bun scripts/combat-odds.ts` prints exact odds (`internal/web/src/combat/odds.ts`).
+  2026-10-04: the GM's answers are folded in (Determination adopted, Faltering, Smite,
+  "cannot defend", starting kit, Quest 1 treasure and targets under "Campaign notes"), and
+  the step 2 attack numbers are proposed (hit dice, Accuracy, crit, damage per class).
 - The script is being revised part by part with the GM, toward a D&D-style campaign that
   does not tell the heroes about Soul Gems, plagues or bosses up front. Done: the prologue
   (P0-01 to P0-04), Quest 1 (with notes Q1-N1 to Q1-N3) and Quest 2 (with notes Q2-N1 to
@@ -31,10 +34,10 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   is in `docs/campaigns/three-plagues/MAPS.md`.
 
 **Next**
-0. Combat step 2: hero numbers (Body, hit dice, Accuracy, crit, damage, avoidance, defense
-   dice, mitigation, mana), tuned with `scripts/combat-odds.ts` against the class fantasy
-   table; then step 3 (base monsters) and step 4 (abilities). Open questions 9-16 in the
-   rules doc are the combat ones.
+0. Combat: an encounter simulator (party against each Quest 1 room, from the board), then
+   hero defense (Body, avoidance, defense dice, mitigation) and monster numbers tuned
+   together against the Quest 1 targets; then step 4 (abilities). Starting defense targets:
+   an orc-tier monster hits the Barbarian ~70%, Cleric ~60%, Ranger ~45%, Rogue ~40%.
 1. Maps for Quests 2 and 3, checked against `MAPS.md` and the script checklists (the GM
    builds; keep the story and the maps in step).
 2. Script: Quest 3 (`04-quest-3-the-wardens-rise.md`): drop the up-front Ogre Lord names,
