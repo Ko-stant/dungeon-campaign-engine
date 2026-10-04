@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-04 12:05 EDT
+**Last Updated**: 2026-10-04 14:30 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -74,6 +74,7 @@ Commits (oldest first):
 | 6fc7af8 | map editor: everything on a square in the panel, choose which one to move; lighter room gray |
 | baed935 | American English spelling throughout, British spellings fail `make lint` |
 | b933e99 | Three Plagues combat rules (step 1) and the exact odds calculator (`scripts/combat-odds.ts`) |
+| f97415e | Three Plagues combat: GM answers, Determination, step 2 attack numbers, `killOdds` |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
@@ -718,7 +719,4 @@ removed traps vanish from the board (still listed in the sidebar); only catalog 
   surprises in editor tooling.
 - Optional: pin the Tailwind v3 palette in `@theme` if the v4 color shift is unwanted.
 - Move to TypeScript 7 when typescript-eslint supports it (also in docs/ROADMAP.md).
-- The old Postgres 16 Docker volume `dungeon-campaign-engine_pgdata` is unused;
-  remove it with `docker volume rm dungeon-campaign-engine_pgdata` once you're sure
-  nothing in it matters.
 - Xcode.app 26.2 is behind CLT 26.6. Update from the App Store when convenient.
