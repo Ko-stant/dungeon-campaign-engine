@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-03 16:01 EDT
+**Last Updated**: 2026-10-03 17:34 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -8,13 +8,18 @@ Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, s
 voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House rules and classes:
 `docs/campaigns/three-plagues/RULES_AND_CLASSES.md`.
 
-## Resume here (2026-09-29)
+## Resume here (2026-10-03)
 
 **Where things stand**
 - App features for the campaign are built and committed: dice, custom classes, inventory,
   abilities and cooldowns, the read-aloud script with a reader and audio clips, and map
   editor aids (note list, placement previews, two-square and exit doors, room painting).
 - The four classes exist in the dev database with placeholder stats (tuning pass later).
+- **Combat system** (2026-10-03): the campaign replaces combat dice with hit dice + a d20
+  crit die, fixed damage from equipment, monster Avoidance, opposed hero defense rolls,
+  mitigation, and cooldowns that only finish during a fight. Step 1 (the rules) is written
+  up under "Combat" in `docs/campaigns/three-plagues/RULES_AND_CLASSES.md`, with a five-step
+  combat roadmap. `bun scripts/combat-odds.ts` prints exact odds (`internal/web/src/combat/odds.ts`).
 - The script is being revised part by part with the GM, toward a D&D-style campaign that
   does not tell the heroes about Soul Gems, plagues or bosses up front. Done: the prologue
   (P0-01 to P0-04), Quest 1 (with notes Q1-N1 to Q1-N3) and Quest 2 (with notes Q2-N1 to
@@ -26,6 +31,10 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   is in `docs/campaigns/three-plagues/MAPS.md`.
 
 **Next**
+0. Combat step 2: hero numbers (Body, hit dice, Accuracy, crit, damage, avoidance, defense
+   dice, mitigation, mana), tuned with `scripts/combat-odds.ts` against the class fantasy
+   table; then step 3 (base monsters) and step 4 (abilities). Open questions 9-16 in the
+   rules doc are the combat ones.
 1. Maps for Quests 2 and 3, checked against `MAPS.md` and the script checklists (the GM
    builds; keep the story and the maps in step).
 2. Script: Quest 3 (`04-quest-3-the-wardens-rise.md`): drop the up-front Ogre Lord names,
@@ -119,7 +128,8 @@ How: `internal/tracker/abilities.go` (+ `abilities_test.go`); TS `abilityRows`,
 abilities or mana on their heroes; start a new session to get them.
 
 ## 5. Stronger monsters
-- [ ] Custom monsters: dice expressions for attack and defense, accuracy, larger Body.
+- [ ] Custom monsters: Avoidance (even number), hit dice (dice expression), fixed damage,
+      larger Body (see "Combat" in the rules doc; combat roadmap step 5).
 - [ ] Monster abilities (bosses) with the same ability model and cooldowns.
 
 ## 6. Campaign and quest story
