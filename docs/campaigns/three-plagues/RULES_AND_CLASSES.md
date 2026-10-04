@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-04 18:20 EDT
+**Last Updated**: 2026-10-04 18:50 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -337,6 +337,143 @@ with starter gear.
    fight start/end in the tracker with the cooldown floor and mana regeneration; odds hints
    (advice only). Once balanced, the app's items and monsters are generated from the agreed
    numbers rather than entered by hand.
+
+## Step 4 proposal: abilities (2026-10-04)
+For the GM to annotate. Each ability is restated in the combat terms with proposed numbers;
+alternatives are new ideas to keep, swap in or drop. After the GM's notes, the chosen kit goes
+into the simulator (replacing its provisional abilities) and Quest 1 is recalibrated.
+
+**What the simulator says about the provisional kit** (Quest 1, 4,000 runs; 79% of parties
+clear it with nobody dead): without the Cleric's healing spell only **4%** do; without every
+Barbarian, Rogue and Ranger ability 54%; without Smite 70%; without any one martial ability
+74-78% (Rain of Arrows, Aimed Shot and Fan of Blades barely register). So the party lives or
+dies by the Cleric's heals, and single martial abilities matter little. Two goals follow:
+- Spread some survival beyond the Cleric (a Cleric death already cascades: they die most
+  often, 16% of runs).
+- Make each martial ability a clear "now is the moment" choice: strong in its situation,
+  not just a little better than an attack.
+
+### Common rules (proposed)
+- Using an active ability takes the hero's action unless it says "free". Reactions happen on
+  the monsters' turn; passives are always on.
+- An ability that attacks uses the normal attack (hit dice + Accuracy + Determination, crit
+  die, near miss) unless it says **sure hit** (only the crit die is rolled). Any hit resets
+  Determination.
+- "Around" means the 8 squares touching the hero.
+- Cooldown tiers, with fights lasting 2-5 rounds and the out-of-fight floor: **3** = once or
+  twice a fight (ready from round 2 of the next fight); **5** = about once a fight (ready from
+  round 3); **7 or more** = once a fight at most, not every fight.
+
+-- I like all of these proposed common rules.
+
+### Barbarian
+- **Echoing Roar** (free, cooldown 5): this turn's attack rolls the hit dice twice and keeps
+  the better roll. Proposed addition: allies around the Barbarian get +2 Accuracy on their next
+  attack (a battle cry; teamwork).
+  - I like the proposal here, I would say allies within 2 squares of the Barbarian get the bonus.
+- **Unburdened Charge** (cooldown 3): as written; on a hit, + the spaces charged (2-6, about
+  +4) to damage.
+  - I like this ability as written; it gives the Barbarian a strong opening move and rewards positioning.
+- **Unleash Fury** (cooldown 6): rage for 3 rounds or until the Barbarian kills an enemy.
+  While raging: +3 damage on every hit and +2 mitigation, but the Barbarian must move to and
+  attack an enemy each turn. Because a kill ends it, it pays most against an elite.
+  - I like this ability as written; it gives the Barbarian a strong mid-fight option and rewards aggressive play.
+- **Tough as Nails** (passive): +1 mitigation.
+  - I like this passive; it gives the Barbarian a small but consistent defensive boost.
+- Alternatives:
+  - **Challenge** (free, cooldown 4): monsters around the Barbarian must attack him on their
+    next turn. Uses his mitigation to shield the Cleric.
+  - I like this, I would add to their skill list not remove anything for it; it gives the Barbarian a way to control enemy behavior and protect allies.
+  - **Cleave** (passive): when the Barbarian kills a monster, he may attack another monster
+    around him at once (once a turn). Rewards finishing blows and Faltering.
+  - I like this as written and wouldn't remove anything for it; it rewards finishing blows and strategic positioning.
+  - **Second Wind** (free, cooldown 6): regain 1/4 of maximum Body. Survival that doesn't
+    run through the Cleric.
+    - I'd like to see how this runs in the simulation, I think it might be too strong to include without testing.
+
+### Rogue
+- **Nimble Fingers** (passive): as written.
+  - I like this as written; it gives the Rogue a reliable passive benefit.
+- **Vanish From Sight** (reaction, cooldown 5): as written; the triggering attack is canceled
+  and no enemy can target the Rogue until the monsters' next turn.
+  - I like this as written; it gives the Rogue a strong defensive option and rewards timing.
+- **Fan of Blades** (cooldown 3): one attack against every enemy around the Rogue (each rolled
+  separately).
+  - I like this as written; it gives the Rogue a strong area-of-effect option and rewards positioning.
+- Alternatives:
+  - **Exploit Opening** (passive): crit range 13-20 (instead of 15-20) against a monster
+    another hero is next to. More crits and more near-miss saves, so it also lifts the Rogue
+    against high-Avoidance elites, and rewards flanking.
+    - I like this, but would adjust to only when behind enemies instead of any of the other written options. When a rogue is behind an enemy, it should get the bonus; otherwise, it should not.
+  - **Riposte** (reaction, cooldown 2): when a monster's attack on the Rogue misses, the
+    Rogue strikes back at once. Turns high avoidance into damage.
+    - I would just change this to striking back at half damage. Guaranteed hit, doesn't need to roll. Narratively they take advantage of the monsters misstep.
+  - **Shadowstep** (cooldown 4): move to any square next to an enemy within 6 squares,
+    passing other figures; this turn's attack is a sure hit. An elite killer.
+    - No. Too powerful.
+  - **Poisoned Blades** (cooldown 5): on the next hit, the target also loses 3 Body at the
+    start of each of the next 3 rounds (no roll).
+    - This might be folded into a special weapon, but I don't like it as a flat ability as written.
+
+### Ranger
+- **Multi-Shot** (cooldown 5): attacks up to 3 different enemies in line of sight.
+  - I like this as written; it gives the Ranger a strong single-target option and rewards careful positioning.
+- **Aimed Shot** (cooldown 5): a sure hit; movement is halved this round and next.
+  - I like this as written; it gives the Ranger a strong single-target option and rewards careful positioning.
+- **Rain of Arrows** (cooldown 7): one attack against every enemy within 2 squares of a chosen
+  square, with half the Accuracy bonus (rounded down); roll 1d4+1 arrows once, and each enemy
+  hit takes weapon damage x arrows (about 24 with the starting bow). Kills fodder outright and
+  takes about a third off a gargoyle.
+  - I really like the flavor of this ability, but maybe its damage ceiling is too high. Let's dream up some ways to balance it, perhaps by reducing the number of arrows or capping the maximum damage.
+- Alternatives:
+  - **Hunter's Mark** (free, cooldown 5): mark an enemy; every hero has +2 Accuracy against
+    it until it dies or the fight ends. Teamwork against an elite.
+    - I like this as a tactical option; it encourages teamwork and focus fire on a single target.
+  - **Pinning Shot** (cooldown 4): on a hit, the target can't move or make its attack on its
+    next turn (a lighter Turn Evil).
+    - Too strong for a 4 turn cooldown; consider increasing the cooldown and just changing it to an enemy can't move, the enemy could still attack on its next turn.
+
+### Cleric
+Mana: maximum 12, regenerating 2 a fight round (+1 with the holy tome).
+  - I'd like to see how the Cleric fares with 20 mana instead of 12; I want them to feel like they can use their abilities more freely and have a greater impact on the battle.
+- **Smite** (2 mana): the main attack, at range (line of sight): 1d20+5 to hit, 6 damage.
+  Proposed: +2 damage against undead (Quest 1 is full of them).
+  - With 20 mana, the Cleric could potentially use Smite more often, making them a more consistent damage dealer against undead; Because of this I'd say we tune it down to 5 damage instead of 6.
+- **Heal Minor Wounds** (6 mana): heals 12 Body.
+  - With 20 mana, the Cleric could potentially use this more often, making them a more reliable healer; consider if the healing amount should be adjusted to maintain balance. I wouldn't go below 10 body points.
+- **Holy Blessing** (3 mana, free): the target adds +2 to attack and defense rolls for 1
+  round.
+  - I like this as written.
+- **Turn Evil** (8 mana, cooldown 3): the target skips its next attack and cannot defend for
+  1 round, so every hero's attack on it is a sure hit. Strong against an elite, so it costs
+  most of a full mana bar.
+  - I would adjust the cooldown to 5 turns instead of 3. This is extremely strong and against a gargoyle or other elite will provide more effective health than the using a heal.
+- **Divine Blessing** (6 mana, cooldown 10): ends every cooldown of one other hero.
+  - I like this as written
+- **Divining** (3 mana): reveals traps, hidden doors and treasure within 6 squares.
+  - I just want to add the text "through walls and doors" to clarify that Divining can detect hidden elements even if they are not in direct line of sight.
+- **Prayer** (free, cooldown 5): restores half of maximum mana (rounded up); the Cleric can't
+  defend until their next turn.
+  - I like this as written.
+- Alternatives:
+  - **Sanctuary** (4 mana): an ally can't be attacked until the Cleric's next turn.
+    - I like the idea of this, but it needs a cooldown. If a hero stood in a doorway, the battle could stall while the cleric prevents the only attackable hero from being attacked. Consider adding a cooldown of 3-4 turns to balance it.
+  - **Circle of Mending** (8 mana, cooldown 4): every hero within 2 squares regains 6 Body.
+    - I like the idea of this, but consider if the healing amount is balanced for the mana cost and cooldown. It might be worth increasing the mana cost to 10.
+  - **Radiant Burst** (5 mana): every undead within 2 squares takes 6 damage, no roll (a
+    classic turn undead; the Specter, mummies and zombies are all undead).
+    - I don't like this. It will feel awful to have when there are very few undead.
+
+### Questions for step 4
+<!-- 1. Which alternatives replace or join the current abilities (keep each class at 3-4)?
+2. Spreading survival: Second Wind, Circle of Mending, more potions, or accept that the party
+   leans on the Cleric?
+3. Echoing Roar's ally bonus; Unleash Fury's numbers; Rain of Arrows' numbers.
+4. Smite at range and +2 against undead? Turn Evil at 8 mana with a cooldown? -->
+
+-- All of the above 4 should be answered with the notes above.
+5. Near-miss bonus: keep +2 for everyone?
+- I like this as written.
 
 ## Class exclusives
 | Class     | Only this class can...                                             |
