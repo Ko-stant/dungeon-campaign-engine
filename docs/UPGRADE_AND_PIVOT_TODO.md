@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-03 16:07 EDT
+**Last Updated**: 2026-10-04 12:05 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -73,6 +73,7 @@ Commits (oldest first):
 | 35d9ece | docs tidy: resume notes, map plans (MAPS.md), branch headers |
 | 6fc7af8 | map editor: everything on a square in the panel, choose which one to move; lighter room gray |
 | baed935 | American English spelling throughout, British spellings fail `make lint` |
+| b933e99 | Three Plagues combat rules (step 1) and the exact odds calculator (`scripts/combat-odds.ts`) |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
