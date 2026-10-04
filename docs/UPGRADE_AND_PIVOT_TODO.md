@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-04 14:30 EDT
+**Last Updated**: 2026-10-04 18:10 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -75,6 +75,7 @@ Commits (oldest first):
 | baed935 | American English spelling throughout, British spellings fail `make lint` |
 | b933e99 | Three Plagues combat rules (step 1) and the exact odds calculator (`scripts/combat-odds.ts`) |
 | f97415e | Three Plagues combat: GM answers, Determination, step 2 attack numbers, `killOdds` |
+| 21ff72f | Three Plagues combat simulator (`scripts/combat-sim.ts`), calibrated against Quest 1 |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
