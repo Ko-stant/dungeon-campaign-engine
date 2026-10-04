@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-04 14:20 EDT
+**Last Updated**: 2026-10-04 18:05 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -235,9 +235,89 @@ a 1-die hero (the Wizard) needed 2.4 and 14.9. The original Barbarian (8 Body) l
 
 Monsters without original stats:
 - **Goblin archer** and **goblin warlock**: as weak in defense as a goblin. The archer attacks
-  from range for goblin damage; the warlock from range for a little more.
+  from range for goblin damage; the warlock from range for a little more, and (proposed) its
+  blast also hurts heroes beside the target, so holding a doorway isn't always safe.
 - **Orc archer**: an orc's attack and defense, attacking from range.
 - **Specter**: as hard as a Gargoyle.
+
+### Simulator
+`bun scripts/combat-sim.ts [runs] [--specter] [--melee=N] [--swap "Room 8=gargoyle,mummy"]`
+plays the party through Quest 1 thousands of times, with abilities and attack-only (no
+abilities or spells; potions and the pool still count). Numbers live in
+`scripts/combat-config.ts` (shared with `combat-odds.ts`); encounters come from the board via
+`bun scripts/quest-encounters.ts "Crumbling Halls" docs/campaigns/three-plagues/sim/crumbling-halls.json`
+(rerun after moving monsters). `--swap` tries a room with other monsters without touching the
+board.
+
+What it models: every hero and monster attack under the rules above, Determination,
+Faltering (1/4), the cooldown floor between fights, mana regeneration, Prayer, potions, the
+pool, and simple tactics (focus the weakest monster; provisional abilities until step 4).
+What it doesn't: movement, positioning, doors, traps, Turn Evil, Holy Blessing, Divine
+Blessing, Unleash Fury. Instead:
+- The heroes hold doorways: at most 2 melee monsters attack a round (ranged ones always can).
+- Only 2 heroes attack in a fight's first round (the others are moving in after the door
+  opens); after that every hero attacks (they rotate at the doorway).
+- Rooms 19, 20, 4 and 5 come first; the rest come in a random order each run, since the
+  party can go anywhere from there.
+
+**Targets** (GM, 2026-10-04): about 75-80% of parties clear Quest 1 with nobody dead (a single
+death can cascade quickly); a party that only attacks fails; a lone dread warrior against the
+whole party is frightening but not extremely dangerous; a lone elite is a real threat to a
+split or worn-down party; a wipe in Room 8 is acceptable.
+
+**Second calibration (2026-10-04)**, draft monsters (Body / Avoidance / hit dice / damage):
+
+| Monster | Body | Avoidance | Hit dice | Damage | Notes |
+|---|---|---|---|---|---|
+| Goblin | 5 | 6 | 1d12 | 4 | archer: the same at range |
+| Goblin warlock | 5 | 6 | 1d12 | 5 | at range; proposed blast: 2 damage to 2 heroes beside the target |
+| Orc | 15 | 8 | 2d8 | 9 | archer: the same at range |
+| Zombie | 15 | 10 | 1d12+1 | 8 | |
+| Abomination | 38 | 10 | 2d8+1 | 10 | |
+| Mummy | 44 | 12 | 2d8+1 | 10 | |
+| Dread warrior | 75 | 12 | 2d10+2 | 15 | |
+| Gargoyle | 75 | 14 | 2d10+3 | 12 | proposed: strikes 2 squares in a straight line (a second hero defends separately) |
+| Specter | 75 | 14 | 2d10+2 | 15 | |
+
+Draft heroes: Barbarian 40 Body, base avoidance 3 + 1d6, mitigation 2 (with Tough as Nails);
+Ranger 30, 6 + 1d6; Rogue 28, 7 + 1d6; Cleric 28, 4 + 1d6, 12 mana, 3 regenerated a round
+(with the holy tome), Smite 2 mana (1d20+5, 6 damage), heal 6 mana for 12 Body. An orc hits
+them 70% / 40% / 30% / 60% of the time.
+
+Results (4,000 runs each, Specter left out; cleared / cleared with nobody dead; attack-only):
+
+| Room 8 | With abilities | Attack-only |
+|---|---|---|
+| As on the board: 2 dread warriors, gargoyle, 2 warlocks | 39% / 13% | 0% / 0% |
+| Gargoyle, 2 warlocks, mummy | 95% / 75% | 2% / 0% |
+| Gargoyle, 2 warlocks, abomination | 95% / 79% | 2% / 0% |
+| Gargoyle, 2 warlocks, dread warrior | 70% / 34% | 0% / 0% |
+
+These rows used the gargoyle without the line attack (2d10+2, 15 damage). With the line
+attack the gargoyle needs less damage: at 15 it costs a fresh party 42% of its Body alone and
+only 23% of parties clear Quest 1 with nobody dead. Damage 13 or more crosses a cliff (two
+hits, plus a warlock blast, kill the 28-Body Rogue or Cleric): 12 gives 83%, 13 gives 54%. At
+12 damage with 2d10+3 to hit:
+
+| Room 8 (line gargoyle) | With abilities | Attack-only |
+|---|---|---|
+| Gargoyle, 2 warlocks | 93% / 78% | 1% / 0% |
+| As on the board | 20% / 7% | 0% / 0% |
+
+With the line gargoyle Room 8 needs no mummy or dread warrior: a fresh party spends about 5
+rounds and 44% of its Body there. The lone gargoyle (Room 11) becomes a real threat too (40% of
+a fresh party's Body), while the lone dread warrior stays frightening but survivable (15%).
+Watch the breakpoints: how many hits of a monster's damage kill each hero matters more than
+the damage itself.
+
+Without the line attack, with Room 8 as gargoyle, 2 warlocks and a mummy, the danger is spread: a fresh party beats the
+lone dread warrior in about 4 rounds for 15% of its Body, and the lone gargoyle, Room 8 and the
+mummy rooms are where worn-down parties die. Lightening Room 8 without raising the other
+monsters made the quest trivial (100% with nobody dead, and attack-only cleared it 85-97% of
+the time), so the danger now comes from attrition across the quest rather than one wall.
+Fodder keeps the original feel (goblins die to any hit), while mid and elite monsters get
+relatively more Body than the original ratios, so four heroes can't fell an elite in one round
+with starter gear.
 
 ### Combat roadmap
 1. Attack and defense rules (this section) - done 2026-10-03.
@@ -246,8 +326,8 @@ Monsters without original stats:
    tiers simulated so no class pulls ahead.
 3. Base monsters: Body, Avoidance, hit dice, damage for Quest 1's monsters (including goblin
    archers and warlocks, orc archers and the Specter), matched to the difficulty reference.
-   An encounter simulator (party against each room, with and without abilities) checks the
-   Quest 1 targets under "Campaign notes".
+   The simulator (see "Simulator") checks the Quest 1 targets under "Campaign notes"; first
+   calibration done 2026-10-04.
 4. Abilities: restate them in these terms (Echoing Roar, Aimed Shot, Holy Blessing, Turn
    Evil, ...), set cooldowns with the out-of-fight rule, give Prayer a cooldown, add Smite.
    Also brainstorm alternative abilities for every class, in case the first ideas aren't the

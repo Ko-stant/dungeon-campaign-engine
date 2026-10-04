@@ -1,11 +1,10 @@
 /**
  * Prints combat odds tables for tuning The Three Plagues numbers:
  *   bun scripts/combat-odds.ts
- * Edit the config below and rerun. The hero and monster values are samples for comparison,
- * not campaign decisions (see docs/campaigns/three-plagues/RULES_AND_CLASSES.md).
+ * Hero attacks come from scripts/combat-config.ts; the defenses and monsters below are
+ * samples for comparison (see docs/campaigns/three-plagues/RULES_AND_CLASSES.md).
  */
 
-import { parseDice, type DiceExpr } from '../internal/web/src/dice/dice.ts';
 import {
   attacksToKill,
   CAMPAIGN_RULES,
@@ -14,28 +13,10 @@ import {
   killOdds,
   monsterAttack,
   percentile,
-  type HeroAttacker,
   type HeroDefender,
   type MonsterAttacker,
 } from '../internal/web/src/combat/odds.ts';
-
-function dice(s: string): DiceExpr {
-  const r = parseDice(s);
-  if (!r.ok) {
-    throw new Error(r.error);
-  }
-  return r.expr;
-}
-
-const NEAR_MISS = 2;
-
-/** Proposed step 2 hero attacks with the starting kit (2026-10-04). */
-const HEROES: Record<string, HeroAttacker> = {
-  Barbarian: { hitDice: dice('1d20'), accuracy: 3, critFrom: 17, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 10 },
-  Ranger: { hitDice: dice('2d10'), accuracy: 5, critFrom: 18, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 7 },
-  Rogue: { hitDice: dice('2d10'), accuracy: 2, critFrom: 15, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 6 },
-  Cleric: { hitDice: dice('2d8'), accuracy: 4, critFrom: 20, critMultiplier: 2, nearMiss: NEAR_MISS, damage: 5 },
-};
+import { dice, HERO_ATTACKS as HEROES } from './combat-config.ts';
 
 /** Sample monster defenses for the kill table: Avoidance, Body. */
 const TARGETS: [number, number][] = [

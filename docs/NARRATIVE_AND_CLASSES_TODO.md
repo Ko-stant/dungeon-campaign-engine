@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-04 14:30 EDT
+**Last Updated**: 2026-10-04 18:05 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -34,10 +34,13 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   is in `docs/campaigns/three-plagues/MAPS.md`.
 
 **Next**
-0. Combat: an encounter simulator (party against each Quest 1 room, from the board), then
-   hero defense (Body, avoidance, defense dice, mitigation) and monster numbers tuned
-   together against the Quest 1 targets; then step 4 (abilities). Starting defense targets:
-   an orc-tier monster hits the Barbarian ~70%, Cleric ~60%, Ranger ~45%, Rogue ~40%.
+0. Combat: the simulator is built (`bun scripts/combat-sim.ts`, numbers in
+   `scripts/combat-config.ts`, "Simulator" in the rules doc) and calibrated to the GM's
+   targets (75-80% clear Quest 1 with nobody dead; attack-only fails). Proposed: Room 8 as a
+   gargoyle that strikes 2 squares in a line (12 damage) and 2 goblin warlocks whose blast
+   splashes adjacent heroes (93% / 78%); the board's current Room 8 is brutal under these
+   numbers. Next: the GM decides and edits the board (then rerun quest-encounters.ts); then
+   step 4 (abilities), which replaces the simulator's provisional abilities.
 1. Maps for Quests 2 and 3, checked against `MAPS.md` and the script checklists (the GM
    builds; keep the story and the maps in step).
 2. Script: Quest 3 (`04-quest-3-the-wardens-rise.md`): drop the up-front Ogre Lord names,
