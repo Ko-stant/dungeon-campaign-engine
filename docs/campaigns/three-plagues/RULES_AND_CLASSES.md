@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-04 18:05 EDT
+**Last Updated**: 2026-10-04 18:20 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -288,7 +288,7 @@ Results (4,000 runs each, Specter left out; cleared / cleared with nobody dead; 
 
 | Room 8 | With abilities | Attack-only |
 |---|---|---|
-| As on the board: 2 dread warriors, gargoyle, 2 warlocks | 39% / 13% | 0% / 0% |
+| The old board: 2 dread warriors, gargoyle, 2 warlocks | 39% / 13% | 0% / 0% |
 | Gargoyle, 2 warlocks, mummy | 95% / 75% | 2% / 0% |
 | Gargoyle, 2 warlocks, abomination | 95% / 79% | 2% / 0% |
 | Gargoyle, 2 warlocks, dread warrior | 70% / 34% | 0% / 0% |
@@ -302,9 +302,10 @@ hits, plus a warlock blast, kill the 28-Body Rogue or Cleric): 12 gives 83%, 13 
 | Room 8 (line gargoyle) | With abilities | Attack-only |
 |---|---|---|
 | Gargoyle, 2 warlocks | 93% / 78% | 1% / 0% |
-| As on the board | 20% / 7% | 0% / 0% |
+| The old board (with 2 dread warriors) | 20% / 7% | 0% / 0% |
 
-With the line gargoyle Room 8 needs no mummy or dread warrior: a fresh party spends about 5
+The GM moved Room 8 to a gargoyle and 2 warlocks on the board (2026-10-04; regenerated
+encounters: 93% / 79%). With the line gargoyle Room 8 needs no mummy or dread warrior: a fresh party spends about 5
 rounds and 44% of its Body there. The lone gargoyle (Room 11) becomes a real threat too (40% of
 a fresh party's Body), while the lone dread warrior stays frightening but survivable (15%).
 Watch the breakpoints: how many hits of a monster's damage kill each hero matters more than
