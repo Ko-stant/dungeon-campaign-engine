@@ -102,4 +102,4 @@ phases committing after each ("the same way": work commit + Docs hash commit), a
 to origin once all phases are done. Resume from the last line here after a compaction.
 - 81ac447 phase 3 committed (Docs ad736f3). Next: phase 4, the player screen page.
 - Phase 4 built and checked in the browser at 1920x1080 on a copy of the dev database
-  (live updates, cards, feed, Body switch, Wounded). Committing next; then phase 5.
+  (live updates, cards, feed, Body switch, Wounded). Committed ea027a1. Next: phase 5.
