@@ -154,8 +154,8 @@ func scanBoard(row pgx.Row) (Board, error) {
 // CreateBoard stores a new board.
 func (s *Store) CreateBoard(ctx context.Context, name string, width, height int, doc json.RawMessage) (Board, error) {
 	return scanBoard(s.pool.QueryRow(ctx,
-		`INSERT INTO board (name, width, height, doc) VALUES ($1, $2, $3, $4) RETURNING `+boardColumns,
-		name, width, height, orEmptyObject(doc)))
+		`INSERT INTO board (name, width, height, doc, owner_id) VALUES ($1, $2, $3, $4, $5) RETURNING `+boardColumns,
+		name, width, height, orEmptyObject(doc), ownerParam(ctx)))
 }
 
 // GetBoard loads a board by id.
@@ -168,7 +168,8 @@ func (s *Store) GetBoard(ctx context.Context, id string) (Board, error) {
 
 // ListBoards returns every board, most recently updated first.
 func (s *Store) ListBoards(ctx context.Context) ([]BoardSummary, error) {
-	rows, err := s.pool.Query(ctx, `SELECT id::text, name, width, height, updated_at FROM board ORDER BY updated_at DESC, id`)
+	rows, err := s.pool.Query(ctx, `SELECT id::text, name, width, height, updated_at FROM board
+		WHERE $1::uuid IS NULL OR owner_id = $1 ORDER BY updated_at DESC, id`, filterParam(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -335,8 +336,8 @@ func orEmptyArray(doc json.RawMessage) json.RawMessage {
 // CreateCampaign stores a new campaign.
 func (s *Store) CreateCampaign(ctx context.Context, name string, heroes json.RawMessage) (Campaign, error) {
 	return scanCampaign(s.pool.QueryRow(ctx,
-		`INSERT INTO campaign (name, heroes) VALUES ($1, $2) RETURNING `+campaignColumns,
-		name, orEmptyArray(heroes)))
+		`INSERT INTO campaign (name, heroes, owner_id) VALUES ($1, $2, $3) RETURNING `+campaignColumns,
+		name, orEmptyArray(heroes), ownerParam(ctx)))
 }
 
 // GetCampaign loads a campaign by id.
@@ -349,7 +350,8 @@ func (s *Store) GetCampaign(ctx context.Context, id string) (Campaign, error) {
 
 // ListCampaigns returns every campaign, most recently updated first.
 func (s *Store) ListCampaigns(ctx context.Context) ([]Campaign, error) {
-	rows, err := s.pool.Query(ctx, `SELECT `+campaignColumns+` FROM campaign ORDER BY updated_at DESC, id`)
+	rows, err := s.pool.Query(ctx, `SELECT `+campaignColumns+` FROM campaign
+		WHERE $1::uuid IS NULL OR owner_id = $1 ORDER BY updated_at DESC, id`, filterParam(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +427,7 @@ func (s *Store) ListChapters(ctx context.Context, campaignID string) ([]Chapter,
 // ListAllChapters returns every campaign's chapters, grouped by campaign
 // (by name) and in play order within each.
 func (s *Store) ListAllChapters(ctx context.Context) ([]Chapter, error) {
-	rows, err := s.pool.Query(ctx, chapterQuery+` ORDER BY lower(c.name), c.id, cc.position`)
+	rows, err := s.pool.Query(ctx, chapterQuery+` WHERE $1::uuid IS NULL OR c.owner_id = $1 ORDER BY lower(c.name), c.id, cc.position`, filterParam(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -488,13 +490,14 @@ func scanCustomMonster(row pgx.Row) (CustomMonster, error) {
 // CreateCustomMonster stores a new custom monster.
 func (s *Store) CreateCustomMonster(ctx context.Context, name string, doc json.RawMessage) (CustomMonster, error) {
 	return scanCustomMonster(s.pool.QueryRow(ctx,
-		`INSERT INTO custom_monster (name, doc) VALUES ($1, $2) RETURNING `+customMonsterColumns,
-		name, orEmptyObject(doc)))
+		`INSERT INTO custom_monster (name, doc, owner_id) VALUES ($1, $2, $3) RETURNING `+customMonsterColumns,
+		name, orEmptyObject(doc), ownerParam(ctx)))
 }
 
 // ListCustomMonsters returns every custom monster by name.
 func (s *Store) ListCustomMonsters(ctx context.Context) ([]CustomMonster, error) {
-	rows, err := s.pool.Query(ctx, `SELECT `+customMonsterColumns+` FROM custom_monster ORDER BY lower(name), id`)
+	rows, err := s.pool.Query(ctx, `SELECT `+customMonsterColumns+` FROM custom_monster
+		WHERE $1::uuid IS NULL OR owner_id = $1 ORDER BY lower(name), id`, filterParam(ctx))
 	if err != nil {
 		return nil, err
 	}

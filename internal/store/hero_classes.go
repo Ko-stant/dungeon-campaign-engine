@@ -28,8 +28,8 @@ func scanCustomHeroClass(row pgx.Row) (CustomHeroClass, error) {
 // CreateCustomHeroClass stores a new custom hero class.
 func (s *Store) CreateCustomHeroClass(ctx context.Context, name string, doc json.RawMessage) (CustomHeroClass, error) {
 	return scanCustomHeroClass(s.pool.QueryRow(ctx,
-		`INSERT INTO custom_hero_class (name, doc) VALUES ($1, $2) RETURNING `+customHeroClassColumns,
-		name, orEmptyObject(doc)))
+		`INSERT INTO custom_hero_class (name, doc, owner_id) VALUES ($1, $2, $3) RETURNING `+customHeroClassColumns,
+		name, orEmptyObject(doc), ownerParam(ctx)))
 }
 
 // GetCustomHeroClass loads a custom hero class by id.
@@ -43,7 +43,8 @@ func (s *Store) GetCustomHeroClass(ctx context.Context, id string) (CustomHeroCl
 
 // ListCustomHeroClasses returns every custom hero class by name.
 func (s *Store) ListCustomHeroClasses(ctx context.Context) ([]CustomHeroClass, error) {
-	rows, err := s.pool.Query(ctx, `SELECT `+customHeroClassColumns+` FROM custom_hero_class ORDER BY lower(name), id`)
+	rows, err := s.pool.Query(ctx, `SELECT `+customHeroClassColumns+` FROM custom_hero_class
+		WHERE $1::uuid IS NULL OR owner_id = $1 ORDER BY lower(name), id`, filterParam(ctx))
 	if err != nil {
 		return nil, err
 	}
