@@ -113,6 +113,13 @@ Tailwind CSS v4, canvas rendering.
   - Multi-map sessions: the `State` top-level fields are the active map; `OtherMaps` keeps maps
     the party left. `tracker.Travel` swaps them (heroes keep stats; round continues).
 - `internal/dice` - Dice expressions (`2d6+1`, d4..d20); mirrored by `internal/web/src/dice/`.
+- `internal/combat` (branch `online`) - Strike math ported from `combat/simulate.ts`: seeded
+  `Mulberry32`, `Script` (fixed dice), `Log`, `HeroStrike`, `MonsterStrike`. Parity fixtures
+  in `internal/{combat,maps}/testdata/parity/` come from `scripts/parity/` (`bun run
+  parity:gen` after changing the TS strike math or geometry; a bun test fails when stale).
+- `internal/maps` geometry for rules (branch `online`): `Terrain` (walls, open doors, blocked
+  and sight-blocking squares), `Reachable`/`Path` (orthogonal, deterministic), `LineOfSight`
+  (pieces block when given; lenient corners), `VisibleTiles`, `WalkDistances`.
 - `internal/maps` - Board and quest documents (Go), validation, advisory `Check`, legacy converters.
 - `internal/tracker` - Session `State`, `NewSession`, `Apply(state, command)` -> new state + readable event, `CarryOver`.
 - `internal/store` - Postgres (pgx) persistence; `RecordEvent` atomically saves state + event. `storetest` gives tests a throwaway schema.

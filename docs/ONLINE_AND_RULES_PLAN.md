@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 15:40 EDT
+**Last Updated**: 2026-10-05 15:50 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -64,6 +64,16 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
      committed fixtures go stale.
    - **Exit:** the parity fixtures pass in both languages, and `make lint` and `make test`
      pass.
+   - **Done 2026-10-05.**
+     - Geometry (`5f564e8`): `internal/maps/{adjacent,footprint,terrain,path,sight}.go`.
+     - Combat and parity (`f446ed7`): `internal/combat/{roller,strike}.go`, the
+       `scripts/parity/` generator, and fixtures in `internal/{combat,maps}/testdata/parity/`.
+       There are 1,220 hero and 520 monster strike cases, each replayed from its dice and from
+       its seed. A mutation check confirmed that changing the hit rule or ignoring blocked
+       squares fails them.
+     - Moved to Phase 2: building attackers from session heroes and monsters (it belongs in
+       `internal/tracker`, which imports `internal/combat`, not the other way round) and
+       Faltering (it's applied to the Avoidance passed in).
 2. **Rules engine core** (`internal/tracker`):
    - **Rules state:** `State.Rules *RulesState`, holding:
      - the ruleset, its config and the RNG state;
@@ -158,10 +168,24 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 
 ## Resume here
 - **Where things stand:** the worktree, the `hq_online` database (a copy of the GM's data) and
-  the plan are set up. Phase 1 has not started.
-- **Next:** Phase 1a, the geometry, test-first.
+  the plan are set up. Phase 1 is done: Go geometry (paths, line of sight) and strike math,
+  parity-tested against TS.
+- **Next:** Phase 2, the rules engine core in `internal/tracker`, built test-first:
+  1. `RulesState` and `Command.Actor`;
+  2. `rules.enable` with the seed;
+  3. the turn and phase commands;
+  4. `turn.move` with view reveals;
+  5. `turn.attack`;
+  6. `LegalActions`.
+
+  Two small rule points are still open in `ONLINE_RULES.md`: searching with monsters in view,
+  and the treasure "once per hero" reading.
 
 ## Running log
 - 2026-10-05: plan written. The online worktree has its own container, ports and `.env`.
   `docker-compose.yml` and the `Makefile` read the container name and ports from `.env`, with
   main's defaults.
+- 2026-10-05: Phase 1 done.
+  - `5f564e8`: geometry.
+  - `f446ed7`: combat port and parity fixtures. Run `bun run parity:gen` after changing the TS
+    strike math or the geometry.
