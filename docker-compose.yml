@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:18
-    container_name: hq_postgres
+    container_name: ${DB_CONTAINER:-hq_postgres}
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -22,10 +22,10 @@ services:
 
   adminer:
     image: adminer:latest
-    container_name: hq_adminer
+    container_name: ${ADMINER_CONTAINER:-hq_adminer}
     restart: unless-stopped
     ports:
-      - "8081:8080"
+      - "${ADMINER_PORT:-8081}:8080"
     depends_on:
       - postgres
 

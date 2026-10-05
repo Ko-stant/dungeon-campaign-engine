@@ -10,7 +10,12 @@ GO := go
 GO_PACKAGES := ./...
 GO_TEST_TIMEOUT := 60s
 CGO_ENABLED ?= 0
-APP_PORT ?= 8080
+# Settings read from .env when set there (a second checkout, such as the online worktree,
+# uses its own container and ports), with the defaults of the main checkout.
+dotenv = $(shell sed -n 's/^$(1)=//p' .env 2>/dev/null)
+APP_PORT ?= $(or $(call dotenv,APP_PORT),8080)
+TEMPL_PROXY_PORT ?= $(or $(call dotenv,TEMPL_PROXY_PORT),7331)
+DB_CONTAINER ?= $(or $(call dotenv,DB_CONTAINER),hq_postgres)
 
 AIR_MODULE := github.com/air-verse/air
 AIR_VERSION ?= v1.67.4
@@ -51,7 +56,7 @@ dev:
 	PID_TW=$$!; \
 	bun run watch:web & \
 	PID_WEB=$$!; \
-	$(GO) tool templ generate --watch --proxy="http://localhost:$(APP_PORT)" --open-browser=false -path=./internal/web/views & \
+	$(GO) tool templ generate --watch --proxy="http://localhost:$(APP_PORT)" --proxyport=$(TEMPL_PROXY_PORT) --open-browser=false -path=./internal/web/views & \
 	PID_TEMPL=$$!; \
 	trap "kill $$PID_TW $$PID_WEB $$PID_TEMPL 2>/dev/null || true" EXIT; \
 	$(TOOLS_DIRECTORY)/air -c .air.toml
@@ -117,14 +122,14 @@ db-logs:
 	@docker compose --env-file .env logs -f postgres
 
 db-psql:
-	@docker exec -it hq_postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB
+	@docker exec -it $(DB_CONTAINER) psql -U $$POSTGRES_USER -d $$POSTGRES_DB
 
 db-backup:
-	@mkdir -p db/backups && docker exec -t hq_postgres pg_dump -U $$POSTGRES_USER -d $$POSTGRES_DB > db/backups/backup-$$(date +%Y%m%d-%H%M%S).sql
+	@mkdir -p db/backups && docker exec -t $(DB_CONTAINER) pg_dump -U $$POSTGRES_USER -d $$POSTGRES_DB > db/backups/backup-$$(date +%Y%m%d-%H%M%S).sql
 
 db-restore:
 	@read -p "backup file path: " file; \
-	cat $$file | docker exec -i hq_postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB
+	cat $$file | docker exec -i $(DB_CONTAINER) psql -U $$POSTGRES_USER -d $$POSTGRES_DB
 
 # --- Goose migrations ---
 db-migrate-new:

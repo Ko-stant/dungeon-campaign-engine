@@ -127,6 +127,12 @@ Tailwind CSS v4, canvas rendering.
 - The Three Plagues campaign (story, script, maps, rules) lives in
   `docs/campaigns/three-plagues/`; progress and next steps are in
   `docs/NARRATIVE_AND_CLASSES_TODO.md` ("Resume here").
+- The `online` branch (rules engine, online play, bots) is a separate worktree,
+  `../dungeon-campaign-engine-online`, with its own `.env`: container `hq_postgres_online`,
+  port 5435, database `hq_online` (a one-way copy of the GM's data), app on :8090. Never
+  check out `online` in the main checkout: the server migrates on start and would migrate
+  the GM's `hq`. Plan and progress: `docs/ONLINE_AND_RULES_PLAN.md`; online rules:
+  `docs/campaigns/three-plagues/ONLINE_RULES.md`.
 - The GM's boards, quests and campaigns in the dev database are theirs: don't edit them
   unless asked. To check UI changes in the browser, use a throwaway database (create
   `hq_preview` in the `hq_postgres` container, add a temporary `.claude/launch.json` entry
