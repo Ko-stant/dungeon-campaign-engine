@@ -3,11 +3,10 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  bin = "tmp/main"
   cmd = "go build -o ./tmp/main ./cmd/server"
+  entrypoint = ["./tmp/main"]
   delay = 1000
   exclude_dir = ["migrations", "testdata", "assets", "tmp", "build", "vendor", "node_modules", "packs", "docs", ".git", "internal/web/static/dist", "internal/web/src"]
-  full_bin = "tmp/main"
   include_ext = ["go"]
   log = "build-errors.log"
 
