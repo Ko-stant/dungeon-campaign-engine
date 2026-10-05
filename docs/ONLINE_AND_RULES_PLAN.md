@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 17:28 EDT
+**Last Updated**: 2026-10-05 17:47 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -29,7 +29,13 @@ seats and bots.
 - **RL stack:**
   - Python with Gymnasium drives a Go sim binary over JSON lines on stdin/stdout.
   - Training uses MaskablePPO (sb3-contrib), masked by the engine's legal actions.
-- **Sign-in method:** decided when Phase 3 starts.
+- **Sign-in (2026-10-05):**
+  - Discord first (OAuth2, "identify" scope: Discord ID, username, avatar; no email).
+  - Invite links decide who gets a seat. Signing in only says who someone is.
+  - Logins are stored as `user_identity` (provider + subject) linked to `app_user`, so Google
+    or passkeys can be added later without a migration.
+  - Rolled-our-own passwords are ruled out.
+  - The table keeps `AUTH_MODE=none`, and a dev login covers local testing and bots.
 - **Isolation:** the branch lives in its own git worktree, with its own Postgres container
   (`hq_postgres_online`, port 5435, database `hq_online`), app port 8090 and templ proxy
   port 7341, all set in the worktree's `.env`.
@@ -192,7 +198,11 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   - The code is in `internal/tracker` (`rules.go`, `turns.go`, `moves.go`, `board_rules.go`,
     `attacks.go`, `search.go`, `outcome.go`, `legal.go`).
 - **Map editor:** the editor sets a quest's goal, objectives and door keys (`56513db`).
-- **Phase 3 (auth)** needs the GM to choose the sign-in method.
+- **Phase 3 (auth)** is next, with Discord as the sign-in.
+  - Before a real login works, the GM registers a free application in the Discord developer
+    portal (redirect URL `http://localhost:8090/auth/discord/callback` for the worktree), and
+    puts `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` in the worktree's `.env`.
+  - Tests use a fake OAuth server, so the code doesn't wait on that.
 - **Browser checks:** add a temporary `dce-online` entry to the main checkout's
   `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
   ./build/dungeon-campaign-engine"`, port 8090) after `make build` in the worktree. Restore the
@@ -228,3 +238,5 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   tests.
 - 2026-10-05: `56513db`, map editor fields for the goal, objectives and door keys. Checked in
   the browser on a throwaway board in `hq_online`, then deleted.
+- 2026-10-05: the GM chose Discord for sign-in (trade-offs weighed against Google, an email
+  link, passkeys and passwords). Invite links gate seats.
