@@ -72,7 +72,7 @@ export function questEncounters(board: BoardDoc, quest: QuestDoc, skipTypes: rea
 }
 
 /** Steps from the nearest start square to every reachable square. */
-function walkDistances(board: BoardDoc, quest: QuestDoc): Map<string, number> {
+export function walkDistances(board: BoardDoc, quest: QuestDoc): Map<string, number> {
   const { width, height, regions } = board;
   const walls = new Set(deriveWalls(width, height, regions, board.drawnWalls ?? []).map(edgeKey));
   const blocked = new Set<string>();

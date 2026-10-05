@@ -11,7 +11,8 @@
     "typecheck": "tsc -p .",
     "spelling": "bun scripts/check-spelling.ts",
     "build:web": "bun scripts/build.ts --minify",
-    "watch:web": "bun scripts/build.ts --watch"
+    "watch:web": "bun scripts/build.ts --watch",
+    "parity:gen": "bun scripts/parity/gen.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
