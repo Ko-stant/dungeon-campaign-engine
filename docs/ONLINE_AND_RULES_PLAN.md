@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 18:55 EDT
+**Last Updated**: 2026-10-05 19:07 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -193,8 +193,13 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
        - `seat/model.ts` (tested).
        - The players' feed hears rules commands, sanitized in `tracker/player.go`
          `playerSafe`: no monster ids, no quest notes, nothing from unseen monsters.
+     - **Browser check** (`43f3384`): a pretend player claimed two heroes, took turns, opened
+       a door, moved through an ally and attacked by clicking the board. Fixed what it found:
+       - Hero action labels name pieces as the players see them, with the way to them
+         ("Attack the Goblin to the east"), never by id (`tracker/names.go`).
+       - `playerSafe` drops door, furniture and trap ids and the GM's "(seen: ...)" counts.
+       - The seat page stacks at phone width (board, then turn and feed, then sheet).
      - **Not yet done:**
-       - A browser check of the seat page (see Resume here).
        - **5c:** the GM rules console.
 6. **Hosting and the content boundary:**
    - a multi-stage Dockerfile running a single instance, since session locks are in memory;
@@ -250,25 +255,14 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 
 ## Resume here
 - **Where things stand (2026-10-05, end of a long session):**
-  - Phases 1-4 are done, and Phase 5 is through 5b. All committed on `online`; the last code
-    commit is `569d23b`.
-  - Tests: about 404 Go (`make test-db`) and 336 bun, with `make lint` clean.
+  - Phases 1-4 are done, and Phase 5 is through 5b plus the seat page's browser check. All
+    committed on `online`; the last code commit is `43f3384`.
+  - Tests: 406 Go (`make test-db`) and 336 bun, with `make lint` clean.
   - The worktree's `.env` has `AUTH_MODE=discord` and `AUTH_ADMINS=discord:<the GM's id>`.
   - Main and the GM's `hq` database were never touched. Main's `.claude/launch.json` is
     restored.
 - **Next, in order:**
-  1. **Browser-check the seat page** (built and unit-tested, not yet seen in a browser).
-     1. Set `AUTH_MODE=dev` in the worktree's `.env`, `make build`, and add a temporary
-        `dce-online` launch entry (below).
-     2. Sign in as a pretend GM (`POST /auth/dev`), make a `zz` board (corridor plus a
-        room), a quest with two start squares, a campaign with a hero, and a session.
-     3. Open it to players and start online play.
-     4. Sign in as a pretend player, claim the hero, and open `/play/{id}/seat`.
-     5. Start a turn, roll, click a highlighted square, and check the board, buttons, feed
-        and presence.
-     6. Clean up: delete the `zz` rows and the `provider = 'dev'` users, then set
-        `AUTH_MODE=discord` again.
-  2. **5c, the GM rules console:**
+  1. **5c, the GM rules console:**
      - A `ui/rulesConsole.ts` panel in the tracker's right column, above `renderSelection`.
      - It shows the phase, whose turn, and "The monsters' turn" / "End the round" buttons.
      - It lists the monsters' moves and attacks from `LegalActions` for the GM. That needs a
@@ -276,11 +270,29 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
        rules live only in Go.
      - Pure logic goes in `tracker/rules.ts` with tests. `presence` is already in
        `pages/tracker.ts`.
-  3. **The Phase 5 exit:** play a whole small quest online (GM tracker plus two seat tabs).
-  4. **Phase 6, hosting:** see its hosting notes (`kostant.dev`, containers, a members
+  2. **The Phase 5 exit:** play a whole small quest online (GM tracker plus two seat tabs).
+     The classes in `hq_online` were copied before class reach existed, so every hero has
+     adjacent reach there until `make fill-campaign CAMPAIGN="Three Plagues" APPLY=1` runs
+     against the worktree's database (ask the GM first). The catalog classes (Barbarian,
+     Elf...) have no combat stats, so their heroes can't attack in rules mode.
+  3. **Phase 6, hosting:** see its hosting notes (`kostant.dev`, containers, a members
      allowlist).
 - **Open decisions:** none pending.
-- **Browser checks:** add a temporary `dce-online` entry to the main checkout's
+- **Browser checks** (the dev-mode procedure):
+  1. Set `AUTH_MODE=dev` in the worktree's `.env`, `make build`, and add the temporary
+     `dce-online` launch entry (below).
+  2. Make the game as a pretend GM with a script (Python `urllib` with a cookie jar):
+     `POST /auth/dev` (form `name=zz GM`), then a `zz` board, quest, campaign and session,
+     `POST /play/{id}/open` and `/play/{id}/start`. GM commands go to
+     `/api/sessions/{id}/commands`.
+  3. Sign in as a pretend player in the browser pane at `127.0.0.1:8090` (its cookies are
+     apart from `localhost`, so the GM and player don't share a sign-in), then join from
+     the lobby.
+  4. For attacks the heroes need classes with combat stats: copy rows into
+     `custom_hero_class` owned by the pretend GM, and set the campaign's `monster_stats`.
+  5. Clean up: delete the `zz` rows (session events, sessions, campaign, quests, boards,
+     classes) and the `provider = 'dev'` users, then set `AUTH_MODE=discord` again.
+- **Launch entry:** add a temporary `dce-online` entry to the main checkout's
   `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
   ./build/dungeon-campaign-engine"`, port 8090) after `make build` in the worktree. Restore the
   file afterward. The GM signs in with Discord from their own browser at
@@ -328,6 +340,8 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   - A browser check as a pretend GM and player in dev mode, cleaned up afterward. It found
     and fixed a quest-list leak.
 - 2026-10-05: Phase 5a and 5b.
+- 2026-10-05: `43f3384`, the seat page's browser check and its fixes: player wording for
+  actions and the feed, and a phone layout.
   - `a3c9caf`: seats, the seat stream, presence.
   - `569d23b`: the seat page and player lines for rules commands.
   - The seat page's browser check is still to do.
