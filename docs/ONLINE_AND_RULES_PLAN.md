@@ -189,8 +189,6 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   1. 2d: searching (three kinds; none while a monster is revealed; treasure once per piece per
      party), disarming (the Rogue's exclusive), quest objectives and the outcome.
   2. 2e: `LegalActions` shared with the checks, plus the property test.
-- **Open for the GM:** may ordinary melee monsters attack diagonally? (`ONLINE_RULES.md`, "Open
-  questions"; for now they may not.)
 - **Browser checks:** add a temporary `dce-online` entry to the main checkout's
   `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
   ./build/dungeon-campaign-engine"`, port 8090) after `make build` in the worktree. Restore the

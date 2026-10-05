@@ -1,6 +1,6 @@
 # The Three Plagues - Online rules
 
-**Last Updated**: 2026-10-05 16:13 EDT
+**Last Updated**: 2026-10-05 16:15 EDT
 
 These are the rules the online rules engine enforces for heroes played from a seat or by a
 bot (`docs/ONLINE_AND_RULES_PLAN.md`). The combat math, classes and abilities are in
@@ -67,9 +67,11 @@ touches a wall corner is still clear. There are two kinds of sight:
 - **Monsters** attack once and move once per round, in the monsters' phase, in either order.
   They pass through other monsters but not heroes, don't set off traps, and are revealed
   when they step into the heroes' view. A hero brought to 0 Body falls.
-  - Melee monsters reach orthogonally adjacent squares.
-  - Monsters marked `reach` add the diagonals.
-  - Monsters marked `ranged` attack anything in attack sight (see the open question below).
+  - **Melee monsters never attack diagonally** (GM, 2026-10-05), with or without reach. They
+    attack an orthogonally adjacent square.
+  - **Reach** adds the square two away in a straight line, past whoever stands between, but not
+    through a wall, a closed door or tall furniture.
+  - Monsters marked `ranged` attack anything in attack sight.
 
 ### Traps
 - **D8. Stepping on a hidden trap triggers it, and the move ends there.** The Rogue's
@@ -120,12 +122,9 @@ touches a wall corner is still clear. There are two kinds of sight:
     likely harder than at the table. Balance is re-checked with the headless simulator once
     it exists. The table game is unaffected, because the GM runs the monsters there.
 
-## Open questions
-1. **Melee monsters and diagonals:** may an ordinary melee monster attack a hero diagonally?
-   For now it may not (the original game's rule), while monsters marked `reach` may. The
-   tactical AI will lean on whatever is decided here.
-
 ## Answered
+- **Melee monsters and diagonals** (2026-10-05): never, reach included; reach is a 2-square
+  straight-line attack.
 - **Ranged range** (2026-10-05): no limit, only line of sight, for heroes and monsters alike.
 - **Searching with monsters revealed** (2026-10-05): not allowed, for treasure, traps and
   secret doors alike, as long as any monster is revealed on the board (see D9).

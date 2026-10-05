@@ -27,6 +27,9 @@ const (
 	// critMultiplier and nearMiss are the same for every class.
 	critMultiplier = 2
 	nearMissBonus  = 2
+	// reachLine is a monster's reach: adjacent, or two squares away in a
+	// straight line past whatever stands between (never diagonal).
+	reachLine = "line"
 )
 
 // footprint lists the squares a monster covers.
@@ -49,8 +52,10 @@ func (a *applier) piecesBut(ids ...string) func(maps.Tile) bool {
 // reaches reports whether an attack from any of the squares from reaches any
 // of the squares to. Adjacent means orthogonally beside with no wall or
 // closed door between; diagonal adds the diagonal squares (around a corner
-// only when the corner leaves a gap); sight is a clear line of attack sight
-// at any range, with pieces in between blocking it.
+// only when the corner leaves a gap); line adds the square two away in a
+// straight line, past a piece but not a wall, closed door or tall
+// furniture; sight is a clear line of attack sight at any range, with pieces
+// in between blocking it.
 func (a *applier) reaches(from, to []maps.Tile, reach string, pieces func(maps.Tile) bool) bool {
 	t := a.terrain()
 	for _, f := range from {
@@ -64,6 +69,13 @@ func (a *applier) reaches(from, to []maps.Tile, reach string, pieces func(maps.T
 				if maps.LineOfSight(t, f, g, nil) {
 					return true
 				}
+			case reach == reachLine && straightTwo(f, g):
+				mid := maps.Tile{X: (f.X + g.X) / 2, Y: (f.Y + g.Y) / 2}
+				e1, _ := maps.EdgeBetween(f, mid)
+				e2, _ := maps.EdgeBetween(mid, g)
+				if t.Passable(e1) && t.Passable(e2) && !t.BlocksSight(mid) {
+					return true
+				}
 			case reach == content.ReachSight:
 				if maps.LineOfSight(t, f, g, pieces) {
 					return true
@@ -72,6 +84,12 @@ func (a *applier) reaches(from, to []maps.Tile, reach string, pieces func(maps.T
 		}
 	}
 	return false
+}
+
+// straightTwo reports whether two squares are two apart in a row or column.
+func straightTwo(a, b maps.Tile) bool {
+	dx, dy := b.X-a.X, b.Y-a.Y
+	return (dx == 0 && (dy == 2 || dy == -2)) || (dy == 0 && (dx == 2 || dx == -2))
 }
 
 // diceDetail is "1d20: 15" (or "2d8: 6, 5") for the first dice of an
@@ -248,7 +266,7 @@ func (a *applier) monsterAttack(payload json.RawMessage) (string, error) {
 	case m.Combat.Ranged:
 		reach = content.ReachSight
 	case m.Combat.Reach:
-		reach = content.ReachDiagonal
+		reach = reachLine
 	}
 	if !a.reaches(m.footprint(), []maps.Tile{{X: h.X, Y: h.Y}}, reach, a.piecesBut(h.ID, m.ID)) {
 		return "", fmt.Errorf("%s is out of reach of %s", h.Name, monsterLabel(m))

@@ -223,8 +223,27 @@ func TestMonsterReachAndPhase(t *testing.T) {
 		t.Errorf("Ilsa is diagonal to a melee monster: %q", msg)
 	}
 	s.Monsters[0].Combat.Reach = true
+	if msg := hallErr(t, s, monsterAttack(t, "hero-2")); !strings.Contains(msg, "out of reach") {
+		t.Errorf("reach never strikes diagonally: %q", msg)
+	}
+	// Reach strikes two squares in a straight line, past whoever stands
+	// between: the orc at (5,3) over Grom at (5,2) to Ilsa at (5,1).
+	s.Monsters[0].Y = 3
+	s.Heroes[0].X, s.Heroes[0].Y = 5, 2
+	s.Heroes[1].X, s.Heroes[1].Y = 5, 1
 	if _, ev := hallApply(t, s, monsterAttack(t, "hero-2", 1, 1, 6)); !strings.HasPrefix(ev.Summary, "Orc (orc) attacks Ilsa") {
-		t.Errorf("a reaching monster strikes diagonally: %q", ev.Summary)
+		t.Errorf("a reaching monster strikes two squares away: %q", ev.Summary)
+	}
+	s.Monsters[0].Combat.Reach = false
+	if msg := hallErr(t, s, monsterAttack(t, "hero-2")); !strings.Contains(msg, "out of reach") {
+		t.Errorf("without reach, two squares is too far: %q", msg)
+	}
+	// Three squares is too far even with reach, and a wall stops it.
+	s.Monsters[0].Combat.Reach = true
+	s.Monsters[0].X, s.Monsters[0].Y = 3, 2
+	s.Heroes[1].X, s.Heroes[1].Y = 1, 2
+	if msg := hallErr(t, s, monsterAttack(t, "hero-2")); !strings.Contains(msg, "out of reach") {
+		t.Errorf("through a wall: %q", msg)
 	}
 	if msg := hallErr(t, duelState(t), monsterAttack(t, "hero-1", 6, 5, 3, 1, 1)); !strings.Contains(msg, "monsters' phase") {
 		t.Errorf("in the heroes' phase: %q", msg)
