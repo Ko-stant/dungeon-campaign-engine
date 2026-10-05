@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-05 05:25 EDT
+**Last Updated**: 2026-10-04 22:30 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -86,6 +86,7 @@ Commits (oldest first):
 | 5b195eb | classes: Three Plagues combat stats on the class form and hero cards (step 5a) |
 | 4b63244 | campaign monster stats, shown in the tracker with Faltering (step 5b) |
 | d892397 | tracker fights: mana regeneration, cooldown floor, generic effects (step 5c) |
+| c252090 | item stats, equipped items, hero totals and the party purse (step 5d) |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
