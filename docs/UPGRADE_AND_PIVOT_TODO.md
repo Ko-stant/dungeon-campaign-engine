@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-04 23:30 EDT
+**Last Updated**: 2026-10-04 23:50 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -88,6 +88,7 @@ Commits (oldest first):
 | d892397 | tracker fights: mana regeneration, cooldown floor, generic effects (step 5c) |
 | c252090 | item stats, equipped items, hero totals and the party purse (step 5d) |
 | 7715e32 | campaign fill: combat.json as the one source, make fill-campaign (step 5e) |
+| f3f64ae | tracker odds hints in the monster panel (step 5f) |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
