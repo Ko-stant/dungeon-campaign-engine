@@ -1,10 +1,12 @@
 /**
- * Proposed and draft numbers for The Three Plagues combat, shared by
- * scripts/combat-odds.ts and scripts/combat-sim.ts. Attack numbers are the
- * step 2 proposal; defense, monsters, supplies and the Cleric's spells are
- * drafts to tune with the simulator (see RULES_AND_CLASSES.md, "Combat").
+ * The Three Plagues combat numbers for scripts/combat-odds.ts and
+ * scripts/combat-sim.ts. Class bases, the starting kit and the monsters come
+ * from docs/campaigns/three-plagues/combat.json, which `make fill-campaign`
+ * also loads into the app; the Quest 1 finds, supplies and the simulated
+ * spells live here (see RULES_AND_CLASSES.md, "Combat").
  */
 
+import combat from '../docs/campaigns/three-plagues/combat.json';
 import { parseDice, type DiceExpr } from '../internal/web/src/dice/dice.ts';
 import type { HeroAttacker } from '../internal/web/src/combat/odds.ts';
 import { DEFAULT_TACTICS, type HeroSpec, type MonsterSpec, type Supplies, type Tactics } from '../internal/web/src/combat/simulate.ts';
@@ -35,13 +37,21 @@ interface HeroBase {
   manaRegen?: number;
 }
 
-/** Class base stats, backfilled so the starting kit gives the step 2 totals (2026-10-04). */
-const BASES: HeroBase[] = [
-  { name: 'Barbarian', cls: 'barbarian', body: 40, hitDice: '1d20', accuracy: 3, critFrom: 17, damage: 3, avoidance: 2, defenseDice: '1d6', mitigation: 1 },
-  { name: 'Ranger', cls: 'ranger', body: 30, hitDice: '2d10', accuracy: 4, critFrom: 18, damage: 2, avoidance: 4, defenseDice: '1d6', mitigation: 0 },
-  { name: 'Rogue', cls: 'rogue', body: 28, hitDice: '2d10', accuracy: 2, critFrom: 15, damage: 1, avoidance: 4, defenseDice: '1d6', mitigation: 0 },
-  { name: 'Cleric', cls: 'cleric', body: 28, hitDice: '2d8', accuracy: 4, critFrom: 20, damage: 2, avoidance: 3, defenseDice: '1d6', mitigation: 0, mana: 16, manaRegen: 2 },
-];
+const CLASSES: Record<string, HeroSpec['cls']> = { Barbarian: 'barbarian', Ranger: 'ranger', Rogue: 'rogue', Cleric: 'cleric' };
+
+/** Class base stats (combat.json), backfilled so the starting kit gives the step 2 totals (2026-10-04). */
+const BASES: HeroBase[] = combat.classes.map((c): HeroBase => {
+  const cls = CLASSES[c.name];
+  if (!cls) {
+    throw new Error(`combat.json: the simulator has no class ${c.name}`);
+  }
+  const { name, body, hitDice, accuracy, critFrom, damage, avoidance, defenseDice, mitigation } = c;
+  return {
+    name, cls, body, hitDice, accuracy, critFrom, damage, avoidance, defenseDice, mitigation,
+    ...('mana' in c ? { mana: c.mana } : {}),
+    ...('manaRegen' in c ? { manaRegen: c.manaRegen } : {}),
+  };
+});
 
 export interface Item {
   name: string;
@@ -59,22 +69,8 @@ export interface Item {
   note?: string;
 }
 
-/** Each hero's starting gear (2026-10-04). */
-export const STARTING_KIT: Item[] = [
-  { name: 'Greataxe', hero: 'Barbarian', kind: 'two-handed weapon', damage: 7 },
-  { name: 'Hide Cuirass', hero: 'Barbarian', kind: 'chest, heavy (Barbarian-only)', mitigation: 1 },
-  { name: 'Iron-shod Boots', hero: 'Barbarian', kind: 'feet', avoidance: 1 },
-  { name: 'Sword', hero: 'Rogue', kind: 'weapon', damage: 3 },
-  { name: 'Dirk', hero: 'Rogue', kind: 'weapon', damage: 2 },
-  { name: 'Leather Jerkin', hero: 'Rogue', kind: 'chest', avoidance: 2 },
-  { name: 'Soft Boots', hero: 'Rogue', kind: 'feet', avoidance: 1 },
-  { name: 'Hunting Bow', hero: 'Ranger', kind: 'bow', damage: 5 },
-  { name: 'Leather Armor', hero: 'Ranger', kind: 'chest', avoidance: 2 },
-  { name: "Archer's Gloves", hero: 'Ranger', kind: 'hands', accuracy: 1 },
-  { name: 'Mace', hero: 'Cleric', kind: 'weapon', damage: 3 },
-  { name: 'Padded Robes', hero: 'Cleric', kind: 'chest', avoidance: 1 },
-  { name: 'Holy Tome', hero: 'Cleric', kind: 'off-hand', manaRegen: 1 },
-];
+/** Each hero's starting gear (combat.json, 2026-10-04). */
+export const STARTING_KIT: Item[] = combat.startingKit;
 
 /** Quest 1 finds (approved 2026-10-05), keyed to the board notes, found after these encounters. */
 export const QUEST_1_FINDS: { label: string; after: string; item: Item }[] = [
@@ -127,35 +123,44 @@ export const PARTY_AFTER_QUEST_1: HeroSpec[] = PARTY.map((h) => QUEST_1_FINDS.fi
 /** Hero attacks with the starting kit. */
 export const HERO_ATTACKS: Record<string, HeroAttacker> = Object.fromEntries(PARTY.map((h) => [h.name, h.attack]));
 
-const monster = (body: number, avoidance: number, hitDice: string, damage: number, more: Partial<MonsterSpec> = {}): MonsterSpec => ({
-  body,
-  avoidance,
-  attack: { hitDice: dice(hitDice), damage },
-  ...more,
-});
+/** A monster's stat line as combat.json (and the app's campaign monster stats) keep it. */
+interface MonsterLine {
+  body: number;
+  avoidance: number;
+  hitDice: string;
+  damage: number;
+  ranged?: boolean;
+  reach?: boolean;
+  line?: number;
+  splashDamage?: number;
+  splashTargets?: number;
+  undead?: boolean;
+}
+
+function monster(m: MonsterLine): MonsterSpec {
+  return {
+    body: m.body,
+    avoidance: m.avoidance,
+    attack: { hitDice: dice(m.hitDice), damage: m.damage },
+    ...(m.ranged ? { ranged: true } : {}),
+    ...(m.reach ? { reach: true } : {}),
+    ...(m.line ? { line: m.line } : {}),
+    ...(m.splashDamage && m.splashTargets ? { splash: { damage: m.splashDamage, targets: m.splashTargets } } : {}),
+    ...(m.undead ? { undead: true } : {}),
+  };
+}
 
 /**
- * Draft monster numbers (step 3). Third calibration 2026-10-04, for the step 4 kit: non-fodder
+ * Monster numbers (combat.json). Third calibration 2026-10-04, for the step 4 kit: non-fodder
  * Body x1.45 over the second calibration (heroes hold doorways: 2 melee attackers a round).
  * Fodder keeps the original feel (goblins die to any hit); mid and elite monsters get
  * relatively more Body than the original ratios, so four heroes can't fell them in one round.
+ * The warlock's blast also hits 2 heroes beside the target; the gargoyle strikes 2 squares in
+ * a straight line (the hero behind defends separately).
  */
-export const MONSTERS: Record<string, MonsterSpec> = {
-  goblin: monster(5, 6, '1d12', 4),
-  goblin_archer: monster(5, 6, '1d12', 4, { ranged: true }),
-  // Proposed: the warlock's blast also hits 2 heroes beside the target for light damage.
-  goblin_warlock: monster(5, 6, '1d12', 5, { ranged: true, splash: { damage: 2, targets: 2 } }),
-  orc: monster(22, 8, '2d8', 9),
-  orc_archer: monster(22, 8, '2d8', 9, { ranged: true }),
-  skeleton: monster(17, 8, '1d12', 6, { undead: true }),
-  zombie: monster(22, 10, '1d12+1', 8, { undead: true }),
-  abomination: monster(55, 10, '2d8+1', 10),
-  mummy: monster(64, 12, '2d8+1', 10, { undead: true }),
-  dread_warrior: monster(109, 12, '2d10+2', 15),
-  // Proposed: strikes 2 squares in a straight line (the hero behind defends separately).
-  gargoyle: monster(109, 14, '2d10+3', 12, { line: 1 }),
-  specter: monster(109, 14, '2d10+2', 15, { undead: true }),
-};
+export const MONSTERS: Record<string, MonsterSpec> = Object.fromEntries(
+  Object.entries(combat.monsters as Record<string, MonsterLine>).map(([type, m]) => [type, monster(m)]),
+);
 
 /** The agreed ability kit (step 4) with draft numbers; see the simulator's DEFAULT_TACTICS. */
 export const TACTICS: Tactics = {

@@ -84,6 +84,11 @@ Tailwind CSS v4, canvas rendering.
     fight `round.advance` finishes cooldowns, regenerates mana (`Combat.ManaRegen`) and counts
     effects down; out of a fight cooldowns stop at 1-2 rounds left. Generic effects
     (`effect.add`/`effect.remove`, `Effects` on heroes and monsters) only count down and remind.
+  - Campaign fill (`internal/campaignfill`, `cmd/fill-campaign`): `make fill-campaign
+    CAMPAIGN="Three Plagues" [APPLY=1]` loads `docs/campaigns/three-plagues/combat.json`
+    (class stats and abilities, monster stat lines, starting kits; the simulator's
+    `scripts/combat-config.ts` reads the same file) into the classes, the campaign and its
+    heroes. A dry run without `APPLY=1`; run it for real only when the GM asks.
   - Campaign chapters (table `campaign_chapter`): ordered quests, each on its own board;
     `/campaigns/{id}/chapters...` and `/campaigns/{id}/maps` forms, `GET /api/campaigns/{id}/chapters`.
   - Multi-map sessions: the `State` top-level fields are the active map; `OtherMaps` keeps maps

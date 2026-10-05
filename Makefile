@@ -33,7 +33,7 @@ endef
         test-db test-js test-all \
         db-up db-up-all db-down db-destroy db-logs db-psql \
         db-migrate-new db-migrate-up db-migrate-down db-backup db-restore import-content \
-        load-script print-script
+        load-script print-script fill-campaign
 
 all: build
 
@@ -148,6 +148,13 @@ import-content:
 SCRIPT_DIR ?= docs/campaigns/three-plagues/script
 load-script:
 	@set -a; [ -f .env ] && . ./.env; set +a; $(GO) run ./cmd/load-script -dir $(SCRIPT_DIR) -campaign "$(CAMPAIGN)"
+
+# Load the agreed combat numbers (classes, monster stats, starting kits) into a
+# campaign. A dry run unless APPLY=1:
+# make fill-campaign CAMPAIGN="Three Plagues" [APPLY=1] [COMBAT_FILE=...]
+COMBAT_FILE ?= docs/campaigns/three-plagues/combat.json
+fill-campaign:
+	@set -a; [ -f .env ] && . ./.env; set +a; $(GO) run ./cmd/fill-campaign -file $(COMBAT_FILE) -campaign "$(CAMPAIGN)" $(if $(APPLY),-apply)
 
 # Write the joined script to the terminal (for pasting into the campaign page).
 print-script:

@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-04 22:20 EDT
+**Last Updated**: 2026-10-04 23:05 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -257,8 +257,10 @@ Monsters without original stats:
 ### Simulator
 `bun scripts/combat-sim.ts [runs] [--specter] [--melee=N] [--swap "Room 8=gargoyle,mummy"]`
 plays the party through Quest 1 thousands of times, with abilities and attack-only (no
-abilities or spells; potions and the pool still count). Numbers live in
-`scripts/combat-config.ts` (shared with `combat-odds.ts`); encounters come from the board via
+abilities or spells; potions and the pool still count). Class bases, the starting kit,
+the ability kit and the monsters live in `docs/campaigns/three-plagues/combat.json` (the
+simulator and the app both load it; see 5e below); finds, supplies and the simulated spells
+are in `scripts/combat-config.ts` (shared with `combat-odds.ts`). Encounters come from the board via
 `bun scripts/quest-encounters.ts "Crumbling Halls" docs/campaigns/three-plagues/sim/crumbling-halls.json`
 (rerun after moving monsters). `--swap` tries a room with other monsters without touching the
 board.
@@ -361,8 +363,8 @@ with starter gear.
 
 ### Gear and upgrade tiers (2026-10-04)
 - `bun scripts/combat-sim.ts --finds` picks the Quest 1 finds up as they're found;
-  `--geared` starts with all of them. Items live in `scripts/combat-config.ts`
-  (`STARTING_KIT`, `QUEST_1_FINDS`).
+  `--geared` starts with all of them. The starting kit is in `combat.json`, the finds in
+  `scripts/combat-config.ts` (`QUEST_1_FINDS`).
 - Class balance: weights over a long fight against Avoidance 10 (Barbarian 6), starting kit
   6 / 4.9 / 4.2 / 3.0 (Barbarian / Ranger / Rogue / Cleric's basic attack); with every Quest 1
   find 6 / 4.8 / 4.2 / 2.6. The Barbarian (+2), Ranger (+1) and Rogue (+1) keep their
@@ -462,8 +464,14 @@ dead):
      hero cards; equipped mana raises the mana maximum and equipped regen adds to mana per
      fight round (taking off a mana item lowers mana to the new maximum). Gold is one party
      purse (campaign page and tracker); migration 00007 added up each hero's gold into it.
-   - 5e. A script that fills the Three Plagues campaign with the agreed classes, monster stats
-     and starting kits (run only when the GM asks).
+   - 5e. Campaign fill - done 2026-10-04: `make fill-campaign CAMPAIGN="Three Plagues"`
+     reports what it would change; `APPLY=1` saves it (run only when the GM asks). It loads
+     `combat.json`: the four classes' combat stats and the step 4 ability kit (abilities keep
+     their ids by name, or former name, so Fan of Blades becomes Fan of Cards; pruned ones are
+     removed; mind, movement, color and description stay as the GM set them), the campaign's
+     monster stat lines, and each hero's starting kit, equipped. A hero who already carries
+     any starting-kit item is left alone, and kits wait while a quest is running. Classes are
+     shared by every campaign.
    - 5f. Odds hints (advice only).
 
 ## Abilities (step 4)

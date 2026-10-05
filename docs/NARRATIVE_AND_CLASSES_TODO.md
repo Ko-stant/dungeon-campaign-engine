@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-04 22:20 EDT
+**Last Updated**: 2026-10-04 23:05 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -51,9 +51,12 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
    5c (fights in the tracker: fight start/end, mana regeneration, the out-of-fight cooldown
    floor, generic effects) is done, checked in the browser and committed. 5d (item kind,
    stats and equipped flag; hero totals; one party purse, hero gold merged in by migration
-   00007) is done and checked in the browser. Next: 5e (script that fills the Three Plagues
-   campaign with the classes, monster stats and starting kits; run only when asked), 5f
-   (odds hints).
+   00007) is done and committed. 5e (`make fill-campaign CAMPAIGN="Three Plagues"`, a dry
+   run unless `APPLY=1`; numbers in `docs/campaigns/three-plagues/combat.json`, which the
+   simulator reads too) is built, and the GM ran it on the Three Plagues campaign
+   (2026-10-04): the four classes, 12 monster stat lines, and the party (Mordecai Muldoon,
+   Ranger; Derrick Rosewood, Cleric; Brentanamo Bay, Barbarian; Papi Ponzi, Rogue) with
+   their starting kits equipped. Next: 5f (odds hints).
 1. Maps for Quests 2 and 3, checked against `MAPS.md` and the script checklists (the GM
    builds; keep the story and the maps in step).
 2. Script: Quest 3 (`04-quest-3-the-wardens-rise.md`): drop the up-front Ogre Lord names,

@@ -1,0 +1,208 @@
+{
+  "about": "The Three Plagues combat numbers, one source for the simulator (scripts/combat-config.ts) and the app (make fill-campaign). See RULES_AND_CLASSES.md: class bases are backfilled so the starting kit gives the step 2 totals (2026-10-04); abilities are the step 4 kit (2026-10-04); monsters are the third calibration (2026-10-04).",
+  "classes": [
+    {
+      "name": "Barbarian",
+      "color": "#b91c1c",
+      "body": 40,
+      "hitDice": "1d20",
+      "accuracy": 3,
+      "critFrom": 17,
+      "damage": 3,
+      "avoidance": 2,
+      "defenseDice": "1d6",
+      "mitigation": 1,
+      "exclusives": ["two-handed"],
+      "abilities": [
+        {
+          "name": "Unburdened Charge",
+          "kind": "active",
+          "cooldown": 3,
+          "text": "Charges 2-6 spaces (the player chooses) in one straight line; a diagonal step costs 2 spaces. The charge stops at the first enemy or wall. An enemy hit takes weapon damage + spaces charged. Traps on the path trigger, but the Barbarian takes no damage or penalty from them."
+        },
+        {
+          "name": "Unleash Fury",
+          "kind": "active",
+          "cooldown": 6,
+          "text": "An echoing roar to the god of battle, then blind rage. The Barbarian attacks the nearest enemy, rolling the hit dice twice and keeping the better roll; allies within 2 squares get +2 Accuracy on their next attack. The rage lasts 3 rounds, or until the Barbarian kills an enemy: +3 damage on every hit and +2 mitigation, but each turn he must move to and attack an enemy if at all possible."
+        },
+        {
+          "name": "Challenge",
+          "kind": "active",
+          "cooldown": 4,
+          "text": "Free (no action). Monsters around the Barbarian must attack him on their next turn."
+        },
+        {
+          "name": "Tough as Nails",
+          "kind": "passive",
+          "text": "+1 mitigation (already in the class's mitigation); it can bring a hit to 0."
+        },
+        {
+          "name": "Cleave",
+          "kind": "passive",
+          "text": "Once a turn: when the Barbarian kills a monster, he may attack another monster around him at once."
+        }
+      ]
+    },
+    {
+      "name": "Ranger",
+      "color": "#15803d",
+      "body": 30,
+      "hitDice": "2d10",
+      "accuracy": 4,
+      "critFrom": 18,
+      "damage": 2,
+      "avoidance": 4,
+      "defenseDice": "1d6",
+      "mitigation": 0,
+      "exclusives": ["ranged"],
+      "abilities": [
+        {
+          "name": "Multi-Shot",
+          "kind": "active",
+          "cooldown": 5,
+          "text": "Shoots up to 3 different enemies in line of sight as one action."
+        },
+        {
+          "name": "Aimed Shot",
+          "kind": "active",
+          "cooldown": 5,
+          "text": "A sure hit (only the crit die is rolled). The target is marked: every hero has +2 Accuracy against it until it dies or the fight ends. Movement is halved this round and next."
+        },
+        {
+          "name": "Rain of Arrows",
+          "kind": "active",
+          "cooldown": 7,
+          "text": "Every enemy within 2 squares of a chosen square is attacked once, with half the Accuracy bonus (rounded down). Roll 1d4 arrows once; each enemy hit takes weapon damage x arrows."
+        }
+      ]
+    },
+    {
+      "name": "Rogue",
+      "color": "#4b5563",
+      "body": 28,
+      "hitDice": "2d10",
+      "accuracy": 2,
+      "critFrom": 15,
+      "damage": 1,
+      "avoidance": 4,
+      "defenseDice": "1d6",
+      "mitigation": 0,
+      "exclusives": ["disarm"],
+      "abilities": [
+        {
+          "name": "Nimble Fingers",
+          "kind": "passive",
+          "text": "Disarms a trap on 1d8; fails only on a 1."
+        },
+        {
+          "name": "Exploit Opening",
+          "kind": "passive",
+          "text": "Crit range 13-20 (instead of 15-20) against a monster the Rogue is behind (a monster faces the hero it last attacked)."
+        },
+        {
+          "name": "Fan of Cards",
+          "formerly": ["Fan of Blades"],
+          "kind": "active",
+          "cooldown": 3,
+          "text": "Razor-edged cards hurled at every enemy around the Rogue: one attack against each, rolled separately."
+        },
+        {
+          "name": "Venom Vial",
+          "kind": "active",
+          "cooldown": 4,
+          "text": "Cracks a vial over the blades and strikes: a normal attack, and on a hit the target also loses 3 Body at the start of each of its next 3 turns (6 on a crit), no roll. A new vial restarts the count; it doesn't stack."
+        },
+        {
+          "name": "Vanish From Sight",
+          "kind": "reaction",
+          "cooldown": 5,
+          "text": "When attacked, vanishes: the triggering attack is canceled, and no enemy can target the Rogue until the enemies' next turn cycle."
+        },
+        {
+          "name": "Riposte",
+          "kind": "reaction",
+          "cooldown": 2,
+          "text": "When a monster's attack on the Rogue misses, the Rogue strikes back at once for half weapon damage (rounded down), no roll."
+        }
+      ]
+    },
+    {
+      "name": "Cleric",
+      "color": "#ca8a04",
+      "body": 28,
+      "hitDice": "2d8",
+      "accuracy": 4,
+      "critFrom": 20,
+      "damage": 2,
+      "avoidance": 3,
+      "defenseDice": "1d6",
+      "mitigation": 0,
+      "mana": 16,
+      "manaRegen": 2,
+      "exclusives": ["spells"],
+      "abilities": [
+        {
+          "name": "Smite",
+          "kind": "spell",
+          "manaCost": 2,
+          "text": "The Cleric's main attack, at range (line of sight): rolls to hit (1d20+5) and deals 5 damage, +2 against undead."
+        },
+        {
+          "name": "Heal Minor Wounds",
+          "kind": "spell",
+          "manaCost": 6,
+          "text": "Heals the target 12 Body, up to their maximum."
+        },
+        {
+          "name": "Turn Evil",
+          "kind": "spell",
+          "manaCost": 8,
+          "cooldown": 5,
+          "text": "The target enemy skips its next attack and cannot defend for 1 round: every hero's attack on it is a sure hit."
+        },
+        {
+          "name": "Divining",
+          "kind": "spell",
+          "manaCost": 3,
+          "text": "Reveals traps, hidden doors and treasure within 6 squares, through walls and doors."
+        },
+        {
+          "name": "Prayer",
+          "kind": "spell",
+          "cooldown": 5,
+          "text": "Free (no mana). Restores half of maximum mana, rounded up. Takes the Cleric's action; they cannot defend until their next turn. The only way to regain mana out of a fight."
+        }
+      ]
+    }
+  ],
+  "startingKit": [
+    { "name": "Greataxe", "hero": "Barbarian", "kind": "two-handed weapon", "damage": 7 },
+    { "name": "Hide Cuirass", "hero": "Barbarian", "kind": "chest, heavy (Barbarian-only)", "mitigation": 1 },
+    { "name": "Iron-shod Boots", "hero": "Barbarian", "kind": "feet", "avoidance": 1 },
+    { "name": "Sword", "hero": "Rogue", "kind": "weapon", "damage": 3 },
+    { "name": "Dirk", "hero": "Rogue", "kind": "weapon", "damage": 2 },
+    { "name": "Leather Jerkin", "hero": "Rogue", "kind": "chest", "avoidance": 2 },
+    { "name": "Soft Boots", "hero": "Rogue", "kind": "feet", "avoidance": 1 },
+    { "name": "Hunting Bow", "hero": "Ranger", "kind": "bow", "damage": 5 },
+    { "name": "Leather Armor", "hero": "Ranger", "kind": "chest", "avoidance": 2 },
+    { "name": "Archer's Gloves", "hero": "Ranger", "kind": "hands", "accuracy": 1 },
+    { "name": "Mace", "hero": "Cleric", "kind": "weapon", "damage": 3 },
+    { "name": "Padded Robes", "hero": "Cleric", "kind": "chest", "avoidance": 1 },
+    { "name": "Holy Tome", "hero": "Cleric", "kind": "off-hand", "manaRegen": 1 }
+  ],
+  "monsters": {
+    "goblin": { "body": 5, "avoidance": 6, "hitDice": "1d12", "damage": 4 },
+    "goblin_archer": { "body": 5, "avoidance": 6, "hitDice": "1d12", "damage": 4, "ranged": true },
+    "goblin_warlock": { "body": 5, "avoidance": 6, "hitDice": "1d12", "damage": 5, "ranged": true, "splashDamage": 2, "splashTargets": 2 },
+    "orc": { "body": 22, "avoidance": 8, "hitDice": "2d8", "damage": 9 },
+    "orc_archer": { "body": 22, "avoidance": 8, "hitDice": "2d8", "damage": 9, "ranged": true },
+    "skeleton": { "body": 17, "avoidance": 8, "hitDice": "1d12", "damage": 6, "undead": true },
+    "zombie": { "body": 22, "avoidance": 10, "hitDice": "1d12+1", "damage": 8, "undead": true },
+    "abomination": { "body": 55, "avoidance": 10, "hitDice": "2d8+1", "damage": 10 },
+    "mummy": { "body": 64, "avoidance": 12, "hitDice": "2d8+1", "damage": 10, "undead": true },
+    "dread_warrior": { "body": 109, "avoidance": 12, "hitDice": "2d10+2", "damage": 15 },
+    "gargoyle": { "body": 109, "avoidance": 14, "hitDice": "2d10+3", "damage": 12, "line": 1 },
+    "specter": { "body": 109, "avoidance": 14, "hitDice": "2d10+2", "damage": 15, "undead": true }
+  }
+}
