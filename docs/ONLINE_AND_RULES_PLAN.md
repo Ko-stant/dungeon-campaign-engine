@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 16:20 EDT
+**Last Updated**: 2026-10-05 16:42 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -114,6 +114,9 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
      - **Monster reach ruling** (`5fbe435`).
      - **2d, searching, disarming, outcomes** (`bdaf658`): `turn.search`, `turn.disarm`,
        `quest.end`, quest `objectives`.
+     - **GM rulings on furniture, disarming and objectives** (`8d94651`): all furniture blocks
+       movement; disarming steps onto a floor trap; quest `goal`, kill/collect/escape
+       objectives, `turn.exit`, door keys.
      - **Left:** 2e (`LegalActions` with its property test).
 3. **Auth, users, ownership:**
    - `internal/auth` behind an `Authenticator` interface;
@@ -189,7 +192,10 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
     `attacks.go`, `search.go`, `outcome.go`).
 - **Next:** 2e, `LegalActions(s, actor, catalog)` sharing its predicates with the checks, plus
   a property test (every listed action applies; unlisted seat commands are refused). That ends
-  Phase 2. Phase 3 (auth) needs the sign-in method decided.
+  Phase 2.
+- **Before online play:** the map editor needs fields for a quest's goal, its objectives and
+  door keys (the engine and the editor model already keep them). Phase 3 (auth) needs the
+  sign-in method decided.
 - **Browser checks:** add a temporary `dce-online` entry to the main checkout's
   `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
   ./build/dungeon-campaign-engine"`, port 8090) after `make build` in the worktree. Restore the
@@ -215,3 +221,9 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 - 2026-10-05: Phase 2d.
   - `5fbe435`: monster reach is 2 squares in a straight line and never diagonal (GM).
   - `bdaf658`: searching, disarming, objectives and outcomes.
+- 2026-10-05: `8d94651`, the GM's rulings.
+  - All furniture blocks movement, and treasure is searched from beside a piece.
+  - A floor trap is disarmed by stepping onto it.
+  - Quests get a goal and kill/collect/escape objectives. Without objectives, clearing every
+    monster completes the quest.
+  - Door keys.
