@@ -196,7 +196,7 @@ describe('runFight', () => {
     expect(heroes[0]?.alive).toBe(false);
   });
 
-  test('a badly hurt hero drinks a healing potion instead of attacking', () => {
+  test('drinking a potion is free: a badly hurt hero drinks and still attacks', () => {
     const wall: MonsterSpec = { body: 1000, avoidance: 1000, attack: sureHits(0) };
     const heroes = [newHero(spec())];
     const h = heroes[0];
@@ -207,6 +207,18 @@ describe('runFight', () => {
     const s = { ...supplies(), healPotions: 1 };
     runFight(heroes, [wall], attackOnly, s, seededRoller(5), 1);
     expect(h.body).toBe(15);
+    expect(s.healPotions).toBe(0);
+    expect(h.uses).toEqual({ potion: 1, attack: 1 });
+  });
+
+  test('a potion can be drunk during the monsters\' turn, between hits', () => {
+    const wall: MonsterSpec = { body: 1000, avoidance: 1000, attack: sureHits(6) };
+    const h = newHero(spec({ attack: { ...barbarian, damage: 0 } }));
+    h.body = 20;
+    const s = { ...supplies(), healPotions: 1 };
+    runFight([h], [wall, wall, wall], { ...attackOnly, meleeLimit: 3 }, s, seededRoller(38), 1);
+    // 20 -> 14 -> 8 (at or below a quarter: drink, 18) -> 12.
+    expect(h.body).toBe(12);
     expect(s.healPotions).toBe(0);
   });
 });

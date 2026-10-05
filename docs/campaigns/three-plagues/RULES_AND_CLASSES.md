@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 02:00 EDT
+**Last Updated**: 2026-10-05 02:40 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -30,6 +30,8 @@ The app records and reminds; it never enforces any of this (see `docs/IMPORTANT.
   (ready round = round used + cooldown).
 - **Cooldowns out of a fight** stop short of ready; see "Fights, cooldowns and mana".
 - **Gold** belongs to the party, not to single heroes.
+- **Potions**: drinking one is a free action, at any time, even during the monsters' turn
+  (between their attacks). A healing potion restores 8 Body, a mana potion 6 mana.
 
 ## Combat
 Agreed 2026-10-03, refined 2026-10-04. Numbers are still to be tuned (steps 2 and 3 under
@@ -262,7 +264,8 @@ abilities or spells; potions and the pool still count). Numbers live in
 board.
 
 What it models: every hero and monster attack under the rules above, Determination,
-Faltering (1/4), the cooldown floor between fights, mana regeneration, potions, the pool,
+Faltering (1/4), the cooldown floor between fights, mana regeneration, potions (free, drunk
+at a quarter of Body or less, even between monster attacks), the pool,
 and the class abilities (see "Abilities (step 4)") with simple tactics: focus the weakest
 monster, use an ability when its moment comes. What it doesn't: movement, positioning,
 doors, traps. Instead:
@@ -367,7 +370,11 @@ with starter gear.
   add to Smite). A first try with Cardsharp's Gloves instead of the Wardens' Dirk let the
   Barbarian pull ahead (Rogue 4.2 -> 3.8).
 - Quest 1 survival (nobody dead; prayer beads +2): 77% without finds, 84% picking them up as
-  found; a party that skips some lands in between.
+  found; a party that skips some lands in between. **Since potions became a free action
+  (2026-10-05)**, drunk between monster attacks, 10-Body potions lifted that to 84% / 88%;
+  at 8 Body it is **72% without finds, 81% with finds** (89% geared, 70% with finds and the
+  Specter; attack-only never clears it). There is a cliff between 8 and 9 Body (9: 81% /
+  86%): from 9 up, a hero who drinks at a quarter of their Body survives one more elite hit.
 - Upgrade tier: with every Quest 1 find the party clears Quest 1 at 93% with nobody dead;
   Quest 1's monsters would need about 30% more Body (x1.35: 75%) to challenge it the same
   way, and +1 damage on every monster drops it to 49-58%. The GM prefers not to lean on Body
@@ -604,7 +611,8 @@ crit range of 18-20, a shot is charged 20% of the time and a crit 15%.
   One gear chest may still swap with a gold chest (or the
   reverse) to lean less or more on upgrades. Cardsharp's Gloves (+1 Accuracy, Rogue) are kept
   for a later quest.
-- Consumables: V, 3 healing potions and 1 mana potion. The pool (N) heals fully, once.
+- Consumables: V, 3 healing potions (8 Body each) and 1 mana potion (6 mana); drinking is a
+  free action. The pool (N) heals fully, once.
 - Monsters: 5 orcs, 3 goblin archers, 3 mummies, 3 dread warriors (+1 from trap G), 2 orc
   archers, 2 goblin warlocks, 2 goblins, 2 gargoyles, 2 zombies, 1 abomination, and the
   Specter if the Stranger is never freed. Early rooms are easier; later ones mix easy and hard.

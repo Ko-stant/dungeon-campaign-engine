@@ -136,7 +136,7 @@ for (const [mode, tactics] of modes) {
 
   if (tactics.abilities) {
     // Turns spent on each action; "free" abilities ride along with another action.
-    const FREE = new Set(['challenge', 'cleave', 'vanish', 'riposte']);
+    const FREE = new Set(['challenge', 'cleave', 'vanish', 'riposte', 'potion', 'manaPotion']);
     const MAIN: Record<string, string> = { Cleric: 'smite' };
     table(
       'How heroes spend their turns (share of turns; free abilities and reactions per 10 turns)',

@@ -149,7 +149,7 @@ export interface Tactics {
   /** Share of maximum Body at or below which a monster falters (0 = never; at least 1 Body). */
   falterShare: number;
   falterPenalty: number;
-  /** A hero at or below this share of Body drinks a healing potion. */
+  /** A hero at or below this share of Body drinks a healing potion (a free action, at any time). */
   potionAt: number;
   /** The Cleric heals an ally at or below this share of Body in a fight... */
   healAt: number;
@@ -357,6 +357,15 @@ export function runFight(heroes: HeroState[], monsters: MonsterSpec[], t: Tactic
     patient.body = Math.min(patient.maxBody, patient.body + amount);
   };
 
+  /** Drinking a potion is a free action, even during the monsters' turn. */
+  const drinkIfLow = (h: HeroState): void => {
+    if (h.alive && h.body <= t.potionAt * h.maxBody && supplies.healPotions > 0) {
+      supplies.healPotions--;
+      count(h, 'potion');
+      heal(h, supplies.healAmount);
+    }
+  };
+
   const barbarianTurn = (h: HeroState, targets: Foe[]): void => {
     const melee = targets.filter((f) => !f.spec.ranged).length;
     if (usable(t, h, 'challenge') && melee >= 2 && liveHeroes().length > 1) {
@@ -488,7 +497,6 @@ export function runFight(heroes: HeroState[], monsters: MonsterSpec[], t: Tactic
           supplies.manaPotions--;
           count(h, 'manaPotion');
           h.mana = Math.min(h.maxMana, h.mana + supplies.manaAmount);
-          return;
         }
       }
       if (t.smite && pay(t.smite.cost)) {
@@ -508,12 +516,7 @@ export function runFight(heroes: HeroState[], monsters: MonsterSpec[], t: Tactic
       return;
     }
     h.undefended = false;
-    if (h.body <= t.potionAt * h.maxBody && supplies.healPotions > 0) {
-      supplies.healPotions--;
-      count(h, 'potion');
-      heal(h, supplies.healAmount);
-      return;
-    }
+    drinkIfLow(h);
     const targets = liveFoes();
     if (targets.length === 0) {
       return;
@@ -545,6 +548,7 @@ export function runFight(heroes: HeroState[], monsters: MonsterSpec[], t: Tactic
       h.body = 0;
       h.alive = false;
     }
+    drinkIfLow(h);
   };
 
   const defenseOf = (h: HeroState): HeroDefender => {

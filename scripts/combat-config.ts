@@ -171,8 +171,8 @@ export const TACTICS: Tactics = {
 /** Abilities being tested, switched on with --with=name (none at the moment). */
 export const TESTING: Partial<Tactics> = {};
 
-/** Quest 1 consumables (note V): 3 healing potions and 1 mana potion. */
-export const SUPPLIES: Supplies = { healPotions: 3, healAmount: 10, manaPotions: 1, manaAmount: 6 };
+/** Quest 1 consumables (note V): 3 healing potions (8 Body) and 1 mana potion (6 mana); drinking is free. */
+export const SUPPLIES: Supplies = { healPotions: 3, healAmount: 8, manaPotions: 1, manaAmount: 6 };
 
 /** Quest 1 adjustments to the generated encounters. */
 export const QUEST_1 = {
