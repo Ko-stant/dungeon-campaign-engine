@@ -94,7 +94,7 @@ func Travel(s *State, dest Destination, catalog *content.Catalog) (*State, Event
 	if err != nil {
 		return nil, Event{}, err
 	}
-	return next, Event{Round: next.Round, Kind: "map.travel", Summary: summary, Payload: payload}, nil
+	return next, Event{Round: next.Round, Kind: "map.travel", Summary: summary, Payload: payload, PlayerSummary: summary}, nil
 }
 
 // saveMap captures the active map, including where each hero stands.

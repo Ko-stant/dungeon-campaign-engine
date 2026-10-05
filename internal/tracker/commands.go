@@ -27,6 +27,9 @@ type Event struct {
 	Kind    string          `json:"kind"`
 	Summary string          `json:"summary"`
 	Payload json.RawMessage `json:"payload"`
+	// PlayerSummary is the line the player screen shows (see player.go);
+	// empty when the players hear nothing about this change.
+	PlayerSummary string `json:"playerSummary,omitempty"`
 }
 
 // Apply returns the state after the command and the event describing it. It
@@ -127,7 +130,7 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 	if err != nil {
 		return nil, Event{}, err
 	}
-	return next, Event{Round: next.Round, Kind: c.Type, Summary: summary, Payload: payload}, nil
+	return next, Event{Round: next.Round, Kind: c.Type, Summary: summary, Payload: payload, PlayerSummary: PlayerSummary(s, next, c, summary)}, nil
 }
 
 func clone(s *State) (*State, error) {

@@ -324,7 +324,7 @@ func (s *Server) sessionTravel(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "%v", err)
 		return
 	}
-	resp, err := s.record(r.Context(), id, next, store.NewEvent{Round: ev.Round, Kind: ev.Kind, Summary: ev.Summary, Payload: ev.Payload})
+	resp, err := s.record(r.Context(), id, next, store.NewEvent{Round: ev.Round, Kind: ev.Kind, Summary: ev.Summary, Payload: ev.Payload, PlayerSummary: ev.PlayerSummary})
 	if err != nil {
 		writeStoreError(w, err)
 		return

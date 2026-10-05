@@ -635,6 +635,8 @@ type NewEvent struct {
 	Kind    string
 	Summary string
 	Payload json.RawMessage
+	// PlayerSummary is the player screen's line ("" for none).
+	PlayerSummary string
 }
 
 // Event is a recorded, ordered change.
@@ -646,6 +648,16 @@ type Event struct {
 	Summary   string
 	Payload   json.RawMessage
 	CreatedAt time.Time
+	// PlayerSummary is the player screen's line ("" for none).
+	PlayerSummary string
+}
+
+const eventColumns = `session_id::text, seq, round, kind, summary, payload, created_at, player_summary`
+
+func scanEvent(row pgx.Row) (Event, error) {
+	var e Event
+	err := row.Scan(&e.SessionID, &e.Seq, &e.Round, &e.Kind, &e.Summary, &e.Payload, &e.CreatedAt, &e.PlayerSummary)
+	return e, err
 }
 
 // RecordEvent atomically replaces the session's state and appends the event
@@ -663,12 +675,12 @@ func (s *Store) RecordEvent(ctx context.Context, sessionID string, state json.Ra
 		if err != nil {
 			return notFoundIfNoRows(err)
 		}
-		return tx.QueryRow(ctx,
-			`INSERT INTO session_event (session_id, seq, round, kind, summary, payload)
-			 VALUES ($1, $2, $3, $4, $5, $6)
-			 RETURNING session_id::text, seq, round, kind, summary, payload, created_at`,
-			sessionID, seq, ev.Round, ev.Kind, ev.Summary, orEmptyObject(ev.Payload)).
-			Scan(&out.SessionID, &out.Seq, &out.Round, &out.Kind, &out.Summary, &out.Payload, &out.CreatedAt)
+		out, err = scanEvent(tx.QueryRow(ctx,
+			`INSERT INTO session_event (session_id, seq, round, kind, summary, payload, player_summary)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7)
+			 RETURNING `+eventColumns,
+			sessionID, seq, ev.Round, ev.Kind, ev.Summary, orEmptyObject(ev.Payload), ev.PlayerSummary))
+		return err
 	})
 	if err != nil {
 		return Event{}, err
@@ -685,15 +697,32 @@ func (s *Store) ListEvents(ctx context.Context, sessionID string, afterSeq int64
 		limit = defaultEventLimit
 	}
 	rows, err := s.pool.Query(ctx,
-		`SELECT session_id::text, seq, round, kind, summary, payload, created_at
+		`SELECT `+eventColumns+`
 		 FROM session_event WHERE session_id = $1 AND seq > $2 ORDER BY seq LIMIT $3`,
 		sessionID, afterSeq, limit)
 	if err != nil {
 		return nil, err
 	}
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Event, error) {
-		var e Event
-		err := row.Scan(&e.SessionID, &e.Seq, &e.Round, &e.Kind, &e.Summary, &e.Payload, &e.CreatedAt)
-		return e, err
+		return scanEvent(row)
+	})
+}
+
+// ListPlayerEvents returns a session's latest events that have a player
+// screen line (at most limit), oldest first.
+func (s *Store) ListPlayerEvents(ctx context.Context, sessionID string, limit int) ([]Event, error) {
+	if !validID(sessionID) {
+		return []Event{}, nil
+	}
+	rows, err := s.pool.Query(ctx,
+		`SELECT * FROM (SELECT `+eventColumns+`
+		 FROM session_event WHERE session_id = $1 AND player_summary <> '' ORDER BY seq DESC LIMIT $2) latest
+		 ORDER BY seq`,
+		sessionID, limit)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Event, error) {
+		return scanEvent(row)
 	})
 }

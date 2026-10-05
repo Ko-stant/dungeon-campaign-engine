@@ -85,6 +85,8 @@ func (s *Server) registerTracker(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/sessions/{id}/complete", s.completeSession)
 	mux.HandleFunc("POST /api/sessions/{id}/reopen", s.reopenSession)
 	mux.HandleFunc("GET /api/sessions/{id}/stream", s.sessionStream)
+	mux.HandleFunc("GET /api/sessions/{id}/player", s.playerView)
+	mux.HandleFunc("GET /api/sessions/{id}/player-stream", s.playerStream)
 }
 
 // --- Campaigns ---
@@ -330,7 +332,7 @@ func (s *Server) newSession(ctx context.Context, campaignID, questID, name strin
 	if len(names) > 0 {
 		summary += " with " + strings.Join(names, ", ")
 	}
-	if _, err := s.store.RecordEvent(ctx, sess.ID, data, store.NewEvent{Round: state.Round, Kind: "session.start", Summary: summary}); err != nil {
+	if _, err := s.store.RecordEvent(ctx, sess.ID, data, store.NewEvent{Round: state.Round, Kind: "session.start", Summary: summary, PlayerSummary: "The quest begins"}); err != nil {
 		return store.Session{}, err
 	}
 	return s.store.GetSession(ctx, sess.ID)
@@ -405,6 +407,12 @@ func (s *Server) record(ctx context.Context, sessionID string, state *tracker.St
 	}
 	resp := CommandResponse{State: *state, Event: eventResponse(saved), EventSeq: saved.Seq}
 	s.streams.broadcast(sessionID, resp)
+	update := PlayerUpdate{State: tracker.PlayerView(state), EventSeq: saved.Seq}
+	if saved.PlayerSummary != "" {
+		ev := playerEventResponse(saved)
+		update.Event = &ev
+	}
+	s.playerStreams.broadcast(sessionID, update)
 	return resp, nil
 }
 
@@ -452,7 +460,7 @@ func (s *Server) sessionCommand(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "%v", err)
 		return
 	}
-	resp, err := s.record(r.Context(), id, next, store.NewEvent{Round: ev.Round, Kind: ev.Kind, Summary: ev.Summary, Payload: ev.Payload})
+	resp, err := s.record(r.Context(), id, next, store.NewEvent{Round: ev.Round, Kind: ev.Kind, Summary: ev.Summary, Payload: ev.Payload, PlayerSummary: ev.PlayerSummary})
 	if err != nil {
 		writeStoreError(w, err)
 		return
@@ -511,7 +519,7 @@ func (s *Server) completeSession(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	resp, err := s.record(r.Context(), id, state, store.NewEvent{Round: state.Round, Kind: "session.complete", Summary: "Quest completed; gold, items, equipment and notes saved to the campaign"})
+	resp, err := s.record(r.Context(), id, state, store.NewEvent{Round: state.Round, Kind: "session.complete", Summary: "Quest completed; gold, items, equipment and notes saved to the campaign", PlayerSummary: "Quest complete"})
 	if err != nil {
 		writeStoreError(w, err)
 		return

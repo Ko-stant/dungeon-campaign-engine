@@ -1,6 +1,6 @@
 # Player screen (TV) plan
 
-**Last Updated**: 2026-10-05 01:50 EDT
+**Last Updated**: 2026-10-05 02:30 EDT
 
 ## Goal
 At the table the GM runs the tracker on the laptop and opens a second Chrome tab, the
@@ -67,6 +67,19 @@ only what the heroes know.
    `GET /api/sessions/{id}/player`, plus a player WebSocket stream fed by `record()`.
    Events get a player-safe summary at `Apply` time (empty means not shown), stored with
    the event; old events show nothing.
+   **Done 2026-10-05** (`internal/tracker/player.go`, `internal/app/player_api.go`,
+   migration 00008 adds `session_event.player_summary`). The player view keeps the layout
+   (no room names), discovered squares, shown doors (a found secret door is a plain door),
+   shown furniture and blocked squares plus added ones, revealed/triggered/disarmed traps
+   (no labels, never "trigger" markers), shown living monsters (stats, effects, Body unless
+   hidden, Wounded when hurt and at a quarter of Body or less) and the heroes with their
+   totals. Player lines come from an allow-list: heroes' Body/Mind/Mana and status, items,
+   gold, abilities, rounds and fights, doors the players were shown opening or closing,
+   monsters spotted, hit (numbers only while Body is shown) or slain, effects on heroes and
+   shown monsters, travel, quest start and completion. Traps, notes, the script, GM log
+   notes and anything hidden say nothing. `GET /api/sessions/{id}/player` gives the view
+   and the last 30 lines; `/api/sessions/{id}/player-stream` pushes `{state, event,
+   eventSeq}` on every change.
 4. **Player screen page:** `/play/{id}/players` (templ + `pages/players.ts`). Board in
    player style (seen tint, no GM marks), party panel, piece cards on click, the event
    feed toggle, a full-screen button, and reconnection.

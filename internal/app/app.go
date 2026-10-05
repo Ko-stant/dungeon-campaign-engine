@@ -28,6 +28,8 @@ type Server struct {
 	sessionLocks sync.Map // session id -> *sync.Mutex
 	audio        *audio.Library
 	streams      streams
+	// playerStreams carries the player screen's filtered view (see player_api.go).
+	playerStreams streams
 }
 
 // New creates the app server.
