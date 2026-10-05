@@ -89,9 +89,12 @@ export function withShape(view: PieceView, shape: { width?: number | undefined; 
   return view;
 }
 
-/** True when square t lies on a piece of the given size anchored at (x, y). */
+/**
+ * True when square t lies on a piece of the given size anchored at (x, y).
+ * A missing or 0 size is one square (sessions from before monster sizes store 0), as in Go.
+ */
 export function covers(x: number, y: number, width: number | undefined, height: number | undefined, t: TileCoord): boolean {
-  return t.x >= x && t.x < x + (width ?? 1) && t.y >= y && t.y < y + (height ?? 1);
+  return t.x >= x && t.x < x + Math.max(width ?? 1, 1) && t.y >= y && t.y < y + Math.max(height ?? 1, 1);
 }
 
 export interface TrapView {

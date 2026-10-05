@@ -215,6 +215,19 @@ describe('interaction', () => {
     expect(pieceAt(s, { x: 4, y: 1 })).toBeNull();
   });
 
+  test('a monster saved with size 0 (sessions from before monster sizes) is one square and can be selected', () => {
+    const s = state();
+    const orc = s.monsters[0];
+    if (!orc) {
+      throw new Error('fixture has no monster');
+    }
+    orc.width = 0;
+    orc.height = 0;
+    expect(pieceAt(s, { x: 3, y: 1 })).toBe('monster-1');
+    expect(pieceAt(s, { x: 4, y: 1 })).toBeNull();
+    expect(clickCommand(s, select, null, { tile: { x: 3, y: 1 }, edge: null })).toEqual({ command: null, select: 'monster-1' });
+  });
+
   test('doorAt matches a door on the exact edge', () => {
     expect(doorAt(state(), { x: 3, y: 2, orientation: 'vertical' })).toBe('door-1');
     expect(doorAt(state(), { x: 3, y: 2, orientation: 'horizontal' })).toBeNull();
