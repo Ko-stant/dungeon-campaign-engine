@@ -35,7 +35,7 @@ func (s *Server) SetAudioDir(dir string) {
 	s.audio = audio.New(dir)
 }
 
-func (s *Server) registerAudio(mux *http.ServeMux) {
+func (s *Server) registerAudio(mux routeMux) {
 	mux.HandleFunc("GET /api/campaigns/{id}/audio", s.listAudio)
 	mux.HandleFunc("GET /audio/{campaign}/{file}", s.serveAudio)
 	mux.HandleFunc("POST /campaigns/{id}/audio", s.uploadAudioForm)

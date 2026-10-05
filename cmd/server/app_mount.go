@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/app"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/auth"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 )
@@ -15,7 +16,7 @@ import (
 // mountApp registers the map creator and tracker. It needs DATABASE_URL;
 // without it (or without a reachable database) the app's routes answer 503
 // with instructions. It returns a cleanup function.
-func mountApp(mux *http.ServeMux, contentDir string) func() {
+func mountApp(mux *http.ServeMux, contentDir string, authCfg auth.Config) func() {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Printf("app: DATABASE_URL is not set; see .env and make db-up")
@@ -43,6 +44,12 @@ func mountApp(mux *http.ServeMux, contentDir string) func() {
 	}
 
 	server := app.New(st, catalog)
+	server.SetAuth(authCfg)
+	if authCfg.On() {
+		if err := st.DeleteExpiredLoginSessions(ctx); err != nil {
+			log.Printf("app: clearing expired sign-ins: %v", err)
+		}
+	}
 	audioDir := os.Getenv("AUDIO_DIR")
 	if audioDir == "" {
 		audioDir = "audio"

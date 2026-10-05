@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/auth"
 )
 
 // These tests run from cmd/server, so point the static roots at the repo.
@@ -46,5 +48,26 @@ func TestStaticFilesAreServedWithoutCaching(t *testing.T) {
 	testRoutes(t).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/static/styles/index.css", nil))
 	if rec.Code != http.StatusOK || rec.Header().Get("Cache-Control") != "no-cache" {
 		t.Fatalf("static: %d cache=%q", rec.Code, rec.Header().Get("Cache-Control"))
+	}
+}
+
+func TestCrossSitePostsAreBlockedWhenSignInIsOn(t *testing.T) {
+	ok := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	post := func(h http.Handler, site string) int {
+		req := httptest.NewRequest(http.MethodPost, "http://localhost/api/boards", nil)
+		req.Header.Set("Sec-Fetch-Site", site)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	on := protect(ok, auth.Config{Mode: auth.ModeDiscord})
+	if code := post(on, "cross-site"); code != http.StatusForbidden {
+		t.Errorf("a cross-site post with sign-in on: %d", code)
+	}
+	if code := post(on, "same-origin"); code != http.StatusNoContent {
+		t.Errorf("a same-origin post: %d", code)
+	}
+	if code := post(protect(ok, auth.Config{Mode: auth.ModeNone}), "cross-site"); code != http.StatusNoContent {
+		t.Errorf("the table companion is unchanged: %d", code)
 	}
 }

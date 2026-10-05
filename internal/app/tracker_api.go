@@ -69,7 +69,7 @@ type CommandResponse struct {
 	EventSeq int64         `json:"eventSeq"`
 }
 
-func (s *Server) registerTracker(mux *http.ServeMux) {
+func (s *Server) registerTracker(mux routeMux) {
 	mux.HandleFunc("GET /api/campaigns", s.listCampaigns)
 	mux.HandleFunc("POST /api/campaigns", s.createCampaign)
 	mux.HandleFunc("GET /api/campaigns/{id}", s.getCampaign)
@@ -283,6 +283,9 @@ func (s *Server) newSession(ctx context.Context, campaignID, questID, name strin
 	}
 	var heroes []tracker.CampaignHero
 	if err := json.Unmarshal(camp.Heroes, &heroes); err != nil {
+		return store.Session{}, err
+	}
+	if err := s.mayUseFromRequest(ctx, store.OwnedQuest, questID); err != nil {
 		return store.Session{}, err
 	}
 	questRec, err := s.store.GetQuest(ctx, questID)

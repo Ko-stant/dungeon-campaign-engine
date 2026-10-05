@@ -13,8 +13,11 @@ func env(vars map[string]string) func(string) string {
 
 func TestConfigDefaultsToNoSignIn(t *testing.T) {
 	cfg, err := ConfigFromEnv(env(nil))
-	if err != nil || cfg.Mode != ModeNone {
+	if err != nil || cfg.Mode != ModeNone || cfg.On() {
 		t.Fatalf("cfg %+v, %v", cfg, err)
+	}
+	if (Config{}).On() {
+		t.Error("an empty config means sign-in off")
 	}
 }
 

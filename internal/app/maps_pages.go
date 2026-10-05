@@ -12,7 +12,7 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views"
 )
 
-func (s *Server) registerPages(mux *http.ServeMux) {
+func (s *Server) registerPages(mux routeMux) {
 	mux.HandleFunc("GET /maps", s.mapsPage)
 	mux.HandleFunc("POST /maps", s.createBoardForm)
 	mux.HandleFunc("GET /maps/{id}/edit", s.mapEditorPage)

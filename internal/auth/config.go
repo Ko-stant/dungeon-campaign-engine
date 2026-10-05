@@ -85,6 +85,12 @@ func ConfigFromEnv(getenv func(string) string) (Config, error) {
 	return cfg, nil
 }
 
+// On reports whether sign-in is required (any mode but none; an empty mode
+// is none).
+func (c Config) On() bool {
+	return c.Mode != "" && c.Mode != ModeNone
+}
+
 // IsAdmin reports whether any of a user's identities is an admin.
 func (c Config) IsAdmin(ids []store.IdentityKey) bool {
 	return slices.ContainsFunc(ids, func(k store.IdentityKey) bool { return slices.Contains(c.Admins, k) })

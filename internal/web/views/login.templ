@@ -1,0 +1,40 @@
+package views
+
+import "github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
+
+// LoginData is the sign-in page's state.
+type LoginData struct {
+	// Mode is the auth mode: "discord" or "dev".
+	Mode   string
+	Next   string
+	Failed bool
+}
+
+// LoginPage asks who is playing: Sign in with Discord, or a name in dev mode.
+templ LoginPage(d LoginData) {
+	@components.Page("Sign in", "") {
+		<main class="mx-auto max-w-md space-y-6 p-6">
+			<h1 class="text-2xl font-bold text-amber-400">Dungeon Campaign Engine</h1>
+			<section class={ cardClass }>
+				<h2 class="mb-4 text-lg font-semibold">Sign in</h2>
+				if d.Failed {
+					<p class="mb-4 rounded-md border border-danger/60 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">Signing in didn't finish. Try again.</p>
+				}
+				if d.Mode == "discord" {
+					<a href={ templ.SafeURL("/auth/discord/login?next=" + d.Next) } class="block rounded-md bg-[#5865F2] px-4 py-2 text-center font-semibold text-white hover:bg-[#4752C4]">Sign in with Discord</a>
+					<p class="mt-3 text-xs opacity-60">Only your Discord name and picture are used. Your GM's invite decides which games you can join.</p>
+				} else {
+					<form method="post" action="/auth/dev" class="space-y-3">
+						<input type="hidden" name="next" value={ d.Next }/>
+						<label class="block text-sm">
+							<span class="mb-1 block opacity-80">Name</span>
+							<input name="name" required maxlength="40" placeholder="e.g. gm" class={ inputClass }/>
+						</label>
+						<button type="submit" class={ buttonClass }>Sign in</button>
+					</form>
+					<p class="mt-3 text-xs opacity-60">Dev sign-in: any name, from this machine only. For testing.</p>
+				}
+			</section>
+		</main>
+	}
+}

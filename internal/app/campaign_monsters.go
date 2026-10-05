@@ -14,7 +14,7 @@ import (
 // Campaign monster stats: a campaign's own stat lines for monster types (The
 // Three Plagues combat). Sessions in the campaign use them when monsters are
 // set up or added; monsters without a line keep their catalog stats.
-func (s *Server) registerCampaignMonsterPages(mux *http.ServeMux) {
+func (s *Server) registerCampaignMonsterPages(mux routeMux) {
 	mux.HandleFunc("POST /campaigns/{id}/monsters", s.saveMonsterStatsForm)
 	mux.HandleFunc("POST /campaigns/{id}/monsters/{type}/delete", s.deleteMonsterStatsForm)
 }

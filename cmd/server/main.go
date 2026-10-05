@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/auth"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/dotenv"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web"
 )
@@ -20,6 +21,7 @@ type routesConfig struct {
 	staticDir  string
 	assetsDir  string
 	contentDir string
+	auth       auth.Config
 }
 
 // newMux builds every route. It returns a cleanup function for the database.
@@ -30,8 +32,17 @@ func newMux(cfg routesConfig) (*http.ServeMux, func()) {
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/campaigns", http.StatusSeeOther)
 	})
-	cleanup := mountApp(mux, cfg.contentDir)
+	cleanup := mountApp(mux, cfg.contentDir, cfg.auth)
 	return mux, cleanup
+}
+
+// protect blocks cross-site form posts and API calls (another site making a
+// signed-in browser change things here) whenever sign-in is on.
+func protect(h http.Handler, cfg auth.Config) http.Handler {
+	if !cfg.On() {
+		return h
+	}
+	return http.NewCrossOriginProtection().Handler(h)
 }
 
 func main() {
@@ -43,10 +54,16 @@ func main() {
 		port = "8080"
 	}
 
-	mux, cleanup := newMux(routesConfig{staticDir: "internal/web/static", assetsDir: "assets", contentDir: "content"})
+	authCfg, err := auth.ConfigFromEnv(os.Getenv)
+	if err != nil {
+		log.Fatalf("sign-in settings: %v", err)
+	}
+	log.Printf("sign-in: %s (%d admins)", authCfg.Mode, len(authCfg.Admins))
+
+	mux, cleanup := newMux(routesConfig{staticDir: "internal/web/static", assetsDir: "assets", contentDir: "content", auth: authCfg})
 	defer cleanup()
 
-	srv := &http.Server{Addr: ":" + port, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Addr: ":" + port, Handler: protect(mux, authCfg), ReadHeaderTimeout: 10 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 

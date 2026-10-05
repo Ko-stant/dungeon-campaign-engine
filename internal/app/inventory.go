@@ -14,7 +14,7 @@ import (
 // quests. During a quest the tracker's item and gold commands change the
 // session's copy, which is saved back to the campaign when the quest is
 // completed.
-func (s *Server) registerInventoryPages(mux *http.ServeMux) {
+func (s *Server) registerInventoryPages(mux routeMux) {
 	mux.HandleFunc("POST /campaigns/{id}/gold", s.partyGoldForm)
 	mux.HandleFunc("POST /campaigns/{id}/heroes/{heroId}/items", s.addItemForm)
 	mux.HandleFunc("POST /campaigns/{id}/heroes/{heroId}/items/{itemId}", s.updateItemForm)

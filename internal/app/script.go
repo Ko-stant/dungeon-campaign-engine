@@ -15,7 +15,7 @@ type ScriptResponse struct {
 	Sections []script.Section `json:"sections"`
 }
 
-func (s *Server) registerScript(mux *http.ServeMux) {
+func (s *Server) registerScript(mux routeMux) {
 	mux.HandleFunc("GET /api/campaigns/{id}/script", s.getScript)
 	mux.HandleFunc("POST /campaigns/{id}/script", s.saveScriptForm)
 }

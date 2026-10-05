@@ -13,7 +13,7 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views"
 )
 
-func (s *Server) registerTrackerPages(mux *http.ServeMux) {
+func (s *Server) registerTrackerPages(mux routeMux) {
 	mux.HandleFunc("GET /campaigns", s.campaignsPage)
 	mux.HandleFunc("POST /campaigns", s.createCampaignForm)
 	mux.HandleFunc("GET /campaigns/{id}", s.campaignPage)

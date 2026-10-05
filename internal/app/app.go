@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/audio"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/auth"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 )
@@ -30,15 +31,19 @@ type Server struct {
 	streams      streams
 	// playerStreams carries the player screen's filtered view (see player_api.go).
 	playerStreams streams
+	// auth is how people sign in; the zero value (no mode) is treated as none.
+	auth auth.Config
 }
 
 // New creates the app server.
 func New(st *store.Store, catalog *content.Catalog) *Server {
-	return &Server{store: st, catalog: catalog}
+	return &Server{store: st, catalog: catalog, auth: auth.Config{Mode: auth.ModeNone}}
 }
 
 // Register mounts the app's routes.
-func (s *Server) Register(mux *http.ServeMux) {
+func (s *Server) Register(serveMux *http.ServeMux) {
+	s.registerSignIn(serveMux)
+	mux := guarded{s: s, mux: serveMux}
 	mux.HandleFunc("GET /api/catalog", s.getCatalog)
 
 	mux.HandleFunc("GET /api/boards", s.listBoards)

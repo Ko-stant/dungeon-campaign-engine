@@ -138,6 +138,11 @@ templ appNav(active string) {
 		<a href="/maps" class={ templ.KV("text-amber-400", active == "maps"), "hover:text-amber-400" }>Maps</a>
 		<a href="/monsters" class={ templ.KV("text-amber-400", active == "monsters"), "hover:text-amber-400" }>Monsters</a>
 		<a href="/classes" class={ templ.KV("text-amber-400", active == "classes"), "hover:text-amber-400" }>Classes</a>
+		if name, ok := components.SignedIn(ctx); ok {
+			<form method="post" action="/auth/logout">
+				<button type="submit" class="opacity-70 hover:text-amber-400" title={ "Signed in as " + name }>Sign out</button>
+			</form>
+		}
 	</nav>
 }
 

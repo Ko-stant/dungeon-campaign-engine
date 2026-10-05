@@ -36,7 +36,7 @@ type customMonsterDoc struct {
 	Notes    string `json:"notes,omitempty"`
 }
 
-func (s *Server) registerMonsterPages(mux *http.ServeMux) {
+func (s *Server) registerMonsterPages(mux routeMux) {
 	mux.HandleFunc("GET /monsters", s.monstersPage)
 	mux.HandleFunc("POST /monsters", s.createMonsterForm)
 	mux.HandleFunc("POST /monsters/{id}", s.updateMonsterForm)

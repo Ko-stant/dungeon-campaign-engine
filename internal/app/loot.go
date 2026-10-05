@@ -19,7 +19,7 @@ import (
 // GM to hand out during play (the tracker's loot picker). make fill-campaign
 // adds the campaign's finds from combat.json.
 
-func (s *Server) registerLoot(mux *http.ServeMux) {
+func (s *Server) registerLoot(mux routeMux) {
 	mux.HandleFunc("GET /api/campaigns/{id}/loot", s.getLoot)
 	mux.HandleFunc("POST /campaigns/{id}/loot", s.saveLootForm)
 	mux.HandleFunc("POST /campaigns/{id}/loot/{lootId}/delete", s.deleteLootForm)

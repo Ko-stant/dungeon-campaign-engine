@@ -54,7 +54,7 @@ type customClassDoc struct {
 	Reach string `json:"reach,omitempty"`
 }
 
-func (s *Server) registerClassPages(mux *http.ServeMux) {
+func (s *Server) registerClassPages(mux routeMux) {
 	mux.HandleFunc("GET /classes", s.classesPage)
 	mux.HandleFunc("GET /classes/new", s.newClassPage)
 	mux.HandleFunc("POST /classes", s.createClassForm)

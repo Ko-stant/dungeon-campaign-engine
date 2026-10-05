@@ -22,7 +22,7 @@ const (
 	chapterDone       = "done"
 )
 
-func (s *Server) registerChapterPages(mux *http.ServeMux) {
+func (s *Server) registerChapterPages(mux routeMux) {
 	mux.HandleFunc("POST /campaigns/{id}/chapters", s.addChapterForm)
 	mux.HandleFunc("POST /campaigns/{id}/chapters/{questId}/{action}", s.chapterActionForm)
 	mux.HandleFunc("POST /campaigns/{id}/maps", s.newCampaignMapForm)
@@ -126,7 +126,11 @@ func (s *Server) addChapterForm(w http.ResponseWriter, r *http.Request) {
 	if !slices.Contains(ids, questID) {
 		ids = append(ids, questID)
 	}
-	if err := s.store.SetChapters(r.Context(), id, ids); err != nil {
+	err = s.mayUseFromRequest(r.Context(), store.OwnedQuest, questID)
+	if err == nil {
+		err = s.store.SetChapters(r.Context(), id, ids)
+	}
+	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			s.renderCampaignPage(w, r, http.StatusBadRequest, id, "That quest no longer exists.")
 			return
@@ -297,6 +301,10 @@ func (s *Server) sessionTravel(w http.ResponseWriter, r *http.Request) {
 	}
 	dest := tracker.Destination{QuestID: req.QuestID}
 	if !state.Visited(req.QuestID) {
+		if err := s.mayUseFromRequest(r.Context(), store.OwnedQuest, req.QuestID); err != nil {
+			writeStoreError(w, err)
+			return
+		}
 		questRec, err := s.store.GetQuest(r.Context(), req.QuestID)
 		if err != nil {
 			writeStoreError(w, err)
