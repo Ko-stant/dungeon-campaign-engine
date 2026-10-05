@@ -161,7 +161,22 @@ type HeroDef struct {
 	Avoidance  int `json:"avoidance,omitempty"`
 	Mitigation int `json:"mitigation,omitempty"`
 	ManaRegen  int `json:"manaRegen,omitempty"`
+	// Reach is what the class's basic attack reaches (Reach*); empty means
+	// adjacent.
+	Reach string `json:"reach,omitempty"`
 }
+
+// What a basic attack reaches (RULES_AND_CLASSES.md, "Who a basic attack
+// reaches"): orthogonally adjacent squares, those plus the diagonals, or
+// anything in line of sight.
+const (
+	ReachAdjacent = "adjacent"
+	ReachDiagonal = "diagonal"
+	ReachSight    = "sight"
+)
+
+// Reaches lists the reaches in display order.
+var Reaches = []string{ReachAdjacent, ReachDiagonal, ReachSight}
 
 // Ability kinds.
 const (

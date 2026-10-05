@@ -225,3 +225,37 @@ func TestCustomHeroClassCombatDefaults(t *testing.T) {
 		t.Fatalf("class list summary: %s", body)
 	}
 }
+
+func TestCustomHeroClassReach(t *testing.T) {
+	srv := testServer(t)
+	client := noRedirects()
+	c := func(method, path string, body any) (int, []byte) { return call(t, srv, method, path, body) }
+
+	// Without the field (an older page) a class reaches adjacent squares.
+	form := rogueForm()
+	form.Del("reach")
+	if resp, _ := postForm(t, client, srv.URL+"/classes", form); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("create: %d", resp.StatusCode)
+	}
+	list := customClasses(t, c)
+	if len(list) != 1 || list[0].Reach != content.ReachAdjacent {
+		t.Fatalf("default reach: %+v", list)
+	}
+
+	id := strings.TrimPrefix(list[0].ID, customPrefix)
+	form.Set("reach", content.ReachSight)
+	if resp, _ := postForm(t, client, srv.URL+"/classes/"+id, form); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("update: %d", resp.StatusCode)
+	}
+	if list = customClasses(t, c); list[0].Reach != content.ReachSight {
+		t.Fatalf("reach after update: %q", list[0].Reach)
+	}
+	if _, body := get(t, client, srv.URL+"/classes/"+id); !strings.Contains(body, `<option value="sight" selected`) {
+		t.Error("the form should show the stored reach")
+	}
+
+	form.Set("reach", "far")
+	if resp, body := postForm(t, client, srv.URL+"/classes/"+id, form); resp.StatusCode != http.StatusBadRequest || !strings.Contains(body, "reach") {
+		t.Errorf("an unknown reach: %d", resp.StatusCode)
+	}
+}

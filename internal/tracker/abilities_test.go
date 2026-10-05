@@ -61,7 +61,7 @@ func TestNewSessionCopiesClassCombatStats(t *testing.T) {
 	b, q, cat := fixture()
 	cat.Heroes = append(cat.Heroes, content.HeroDef{
 		ID: "custom-barbarian", Name: "Barbarian", Body: 40, Mind: 2, Custom: true,
-		AttackDice: "1d20", DefenseDice: "1d6", Accuracy: 3, CritFrom: 17, Damage: 3, Avoidance: 2, Mitigation: 1,
+		AttackDice: "1d20", DefenseDice: "1d6", Accuracy: 3, CritFrom: 17, Damage: 3, Avoidance: 2, Mitigation: 1, Reach: content.ReachDiagonal,
 	}, content.HeroDef{
 		ID: "custom-cleric", Name: "Cleric", Body: 28, Mind: 4, Custom: true, Mana: 16, ManaRegen: 2,
 		AttackDice: "2d8", DefenseDice: "1d6", Accuracy: 4, CritFrom: 20, Damage: 2, Avoidance: 3,
@@ -74,7 +74,7 @@ func TestNewSessionCopiesClassCombatStats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := Combat{HitDice: "1d20", Accuracy: 3, CritFrom: 17, Damage: 3, DefenseDice: "1d6", Avoidance: 2, Mitigation: 1}
+	want := Combat{HitDice: "1d20", Accuracy: 3, CritFrom: 17, Damage: 3, DefenseDice: "1d6", Avoidance: 2, Mitigation: 1, Reach: content.ReachDiagonal}
 	if got := s.Heroes[0].Combat; got == nil || *got != want {
 		t.Fatalf("barbarian combat: %+v", got)
 	}

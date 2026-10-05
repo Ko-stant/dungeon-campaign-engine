@@ -93,6 +93,8 @@ type Combat struct {
 	Avoidance   int    `json:"avoidance"`
 	Mitigation  int    `json:"mitigation"`
 	ManaRegen   int    `json:"manaRegen,omitempty"`
+	// Reach is what the basic attack reaches (content.Reach*).
+	Reach string `json:"reach,omitempty"`
 }
 
 // Monster is a monster during a session.
@@ -245,9 +247,14 @@ func ClassCombat(class content.HeroDef) *Combat {
 	if crit == 0 {
 		crit = 20
 	}
+	reach := class.Reach
+	if reach == "" {
+		reach = content.ReachAdjacent
+	}
 	return &Combat{
 		HitDice: class.AttackDice, Accuracy: class.Accuracy, CritFrom: crit, Damage: class.Damage,
 		DefenseDice: class.DefenseDice, Avoidance: class.Avoidance, Mitigation: class.Mitigation, ManaRegen: class.ManaRegen,
+		Reach: reach,
 	}
 }
 

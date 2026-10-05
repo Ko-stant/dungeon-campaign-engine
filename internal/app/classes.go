@@ -50,6 +50,8 @@ type customClassDoc struct {
 	Avoidance  int `json:"avoidance,omitempty"`
 	Mitigation int `json:"mitigation,omitempty"`
 	ManaRegen  int `json:"manaRegen,omitempty"`
+	// Reach is what the basic attack reaches (content.Reach*).
+	Reach string `json:"reach,omitempty"`
 }
 
 func (s *Server) registerClassPages(mux *http.ServeMux) {
@@ -80,6 +82,7 @@ func customHeroClassDef(rec store.CustomHeroClass) (content.HeroDef, error) {
 		AttackDice: doc.Attack, DefenseDice: doc.Defense, Movement: doc.Movement,
 		Accuracy: doc.Accuracy, Mana: doc.Mana, Exclusives: doc.Exclusives, Abilities: doc.Abilities,
 		CritFrom: doc.CritFrom, Damage: doc.Damage, Avoidance: doc.Avoidance, Mitigation: doc.Mitigation, ManaRegen: doc.ManaRegen,
+		Reach: doc.Reach,
 	}, nil
 }
 
@@ -116,7 +119,7 @@ func parseClassForm(r *http.Request, next int) (views.ClassForm, string, customC
 		Movement: pf.Get("movement"), Accuracy: pf.Get("accuracy"), Mana: pf.Get("mana"),
 		Exclusives: pf["exclusives"],
 		CritFrom:   pf.Get("crit_from"), Damage: pf.Get("damage"), Avoidance: pf.Get("avoidance"),
-		Mitigation: pf.Get("mitigation"), ManaRegen: pf.Get("mana_regen"),
+		Mitigation: pf.Get("mitigation"), ManaRegen: pf.Get("mana_regen"), Reach: pf.Get("reach"),
 	}
 	ids, names, kinds, manas, cooldowns, texts := pf["ability_id"], pf["ability_name"], pf["ability_kind"], pf["ability_mana"], pf["ability_cooldown"], pf["ability_text"]
 	at := func(list []string, i int) string {
@@ -177,6 +180,12 @@ func parseClassForm(r *http.Request, next int) (views.ClassForm, string, customC
 		if *f.dst, err = formDice(f.label, f.value); err != nil {
 			return fail(err)
 		}
+	}
+	switch doc.Reach = form.Reach; {
+	case doc.Reach == "":
+		doc.Reach = content.ReachAdjacent
+	case !slices.Contains(content.Reaches, doc.Reach):
+		return fail(fmt.Errorf("reach must be one of %s", strings.Join(content.Reaches, ", ")))
 	}
 	for _, tag := range form.Exclusives {
 		if !slices.Contains(content.Exclusives, tag) {

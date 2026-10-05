@@ -37,6 +37,7 @@ type ClassForm struct {
 	Avoidance   string
 	Mitigation  string
 	ManaRegen   string
+	Reach       string
 }
 
 // ClassItem is one custom class on the /classes list.
@@ -52,8 +53,19 @@ const blankAbilityRows = 3
 func DefaultClassForm() ClassForm {
 	return ClassForm{
 		Color: "#1d4ed8", Body: "20", Mind: "3", Attack: "1d20", Defense: "1d6", Movement: "2d6", Accuracy: "0", Mana: "0",
-		CritFrom: "20", Damage: "0", Avoidance: "0", Mitigation: "0", ManaRegen: "0",
+		CritFrom: "20", Damage: "0", Avoidance: "0", Mitigation: "0", ManaRegen: "0", Reach: content.ReachAdjacent,
 	}
+}
+
+// reachLabel names a basic attack reach for the class form.
+func reachLabel(r string) string {
+	switch r {
+	case content.ReachDiagonal:
+		return "Adjacent and diagonal"
+	case content.ReachSight:
+		return "Line of sight"
+	}
+	return "Adjacent"
 }
 
 func formNumber(n int) string {
@@ -72,7 +84,7 @@ func ClassFormFromDef(h content.HeroDef) ClassForm {
 		Accuracy: strconv.Itoa(h.Accuracy), Mana: strconv.Itoa(h.Mana),
 		Exclusives: h.Exclusives,
 		CritFrom: strconv.Itoa(critFrom(h)), Damage: strconv.Itoa(h.Damage), Avoidance: strconv.Itoa(h.Avoidance),
-		Mitigation: strconv.Itoa(h.Mitigation), ManaRegen: strconv.Itoa(h.ManaRegen),
+		Mitigation: strconv.Itoa(h.Mitigation), ManaRegen: strconv.Itoa(h.ManaRegen), Reach: h.Reach,
 	}
 	for _, a := range h.Abilities {
 		f.Abilities = append(f.Abilities, AbilityRow{
@@ -220,6 +232,14 @@ templ classFields(f ClassForm) {
 			@classText("Defense dice", "defense", f.Defense, "e.g. 1d6", 40)
 			@monsterNumber("Avoidance", "avoidance", f.Avoidance, 0, 99)
 			@monsterNumber("Mitigation", "mitigation", f.Mitigation, 0, 99)
+			<label class="text-sm">
+				<span class="mb-1 block opacity-70">Basic attack reaches</span>
+				<select name="reach" class={ smallInputClass }>
+					for _, r := range content.Reaches {
+						<option value={ r } selected?={ r == f.Reach || (f.Reach == "" && r == content.ReachAdjacent) }>{ reachLabel(r) }</option>
+					}
+				</select>
+			</label>
 		</div>
 		<p class="text-xs opacity-60">A hero hits when hit dice + Accuracy meets or beats a monster's Avoidance, and crits when the d20 crit die shows "Crit from" or more. A monster hits only by beating Avoidance + defense dice; Mitigation comes off its damage. Damage, Avoidance and Mitigation here are the class's own: gear adds to them.</p>
 	</fieldset>

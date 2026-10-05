@@ -119,6 +119,13 @@ func TestCampaignFileLoads(t *testing.T) {
 	for _, c := range d.Classes {
 		minds[c.Name] = c.Mind
 	}
+	reach := map[string]string{}
+	for _, c := range d.Classes {
+		reach[c.Name] = c.Reach
+	}
+	if reach["Barbarian"] != content.ReachDiagonal || reach["Ranger"] != content.ReachSight || reach["Rogue"] != content.ReachAdjacent || reach["Cleric"] != content.ReachAdjacent {
+		t.Errorf("basic attack reach (RULES_AND_CLASSES.md): %v", reach)
+	}
 	if minds["Barbarian"] != 3 || minds["Ranger"] != 4 || minds["Rogue"] != 5 || minds["Cleric"] != 6 {
 		t.Fatalf("Mind (Will): %v", minds)
 	}
@@ -295,5 +302,23 @@ func TestMergeLoot(t *testing.T) {
 	}
 	if _, changes = MergeLoot(out, want); len(changes) != 0 {
 		t.Fatalf("again: %v", changes)
+	}
+}
+
+func TestMergeClassReach(t *testing.T) {
+	rogue := load(t).Classes[0]
+	old := json.RawMessage(`{"color": "#111111", "body": 20, "attack": "1d6", "defense": "1d6", "movement": "2d6", "reach": "adjacent"}`)
+	// No reach in the file leaves the class's own.
+	doc, _, err := MergeClass(old, rogue)
+	if err != nil || decodeDoc(t, doc)["reach"] != "adjacent" {
+		t.Fatalf("reach kept: %v", err)
+	}
+	rogue.Reach = content.ReachDiagonal
+	doc, changes, err := MergeClass(old, rogue)
+	if err != nil || decodeDoc(t, doc)["reach"] != "diagonal" || !strings.Contains(strings.Join(changes, "; "), "reach adjacent → diagonal") {
+		t.Fatalf("reach set: %v %v", changes, err)
+	}
+	if _, err := Load([]byte(strings.Replace(fixture, `"critFrom": 15,`, `"critFrom": 15, "reach": "far",`, 1))); err == nil || !strings.Contains(err.Error(), "reach") {
+		t.Errorf("an unknown reach: %v", err)
 	}
 }

@@ -48,21 +48,24 @@ type LootItem struct {
 // Class is a hero class's combat stats and abilities. Movement and the
 // description are left to the GM; Mind (the heroes' Will) is set when given.
 type Class struct {
-	Name        string    `json:"name"`
-	Color       string    `json:"color"`
-	Body        int       `json:"body"`
-	Mind        int       `json:"mind,omitempty"`
-	HitDice     string    `json:"hitDice"`
-	Accuracy    int       `json:"accuracy"`
-	CritFrom    int       `json:"critFrom"`
-	Damage      int       `json:"damage"`
-	Avoidance   int       `json:"avoidance"`
-	DefenseDice string    `json:"defenseDice"`
-	Mitigation  int       `json:"mitigation"`
-	Mana        int       `json:"mana,omitempty"`
-	ManaRegen   int       `json:"manaRegen,omitempty"`
-	Exclusives  []string  `json:"exclusives,omitempty"`
-	Abilities   []Ability `json:"abilities"`
+	Name        string   `json:"name"`
+	Color       string   `json:"color"`
+	Body        int      `json:"body"`
+	Mind        int      `json:"mind,omitempty"`
+	HitDice     string   `json:"hitDice"`
+	Accuracy    int      `json:"accuracy"`
+	CritFrom    int      `json:"critFrom"`
+	Damage      int      `json:"damage"`
+	Avoidance   int      `json:"avoidance"`
+	DefenseDice string   `json:"defenseDice"`
+	Mitigation  int      `json:"mitigation"`
+	Mana        int      `json:"mana,omitempty"`
+	ManaRegen   int      `json:"manaRegen,omitempty"`
+	Exclusives  []string `json:"exclusives,omitempty"`
+	// Reach is what the basic attack reaches (content.Reach*); empty leaves
+	// the class's own.
+	Reach     string    `json:"reach,omitempty"`
+	Abilities []Ability `json:"abilities"`
 }
 
 // Ability is one class ability. Formerly lists names it had before, so a
@@ -172,6 +175,9 @@ func checkClass(c *Class) error {
 		if f.v < f.lo || f.v > f.hi {
 			return fmt.Errorf("%s must be from %d to %d", f.label, f.lo, f.hi)
 		}
+	}
+	if c.Reach != "" && !slices.Contains(content.Reaches, c.Reach) {
+		return fmt.Errorf("reach must be one of %s", strings.Join(content.Reaches, ", "))
 	}
 	var err error
 	if c.HitDice, err = canonicalDice(c.HitDice); err != nil {
@@ -283,6 +289,12 @@ func MergeClass(old json.RawMessage, c Class) (json.RawMessage, []string, error)
 	setInt("mitigation", "mitigation", c.Mitigation, 0, true)
 	setInt("mana", "mana", c.Mana, 0, false)
 	setInt("mana per fight round", "manaRegen", c.ManaRegen, 0, true)
+	if c.Reach != "" {
+		if before := doc.string("reach"); before != c.Reach {
+			changes = append(changes, fmt.Sprintf("reach %s → %s", orNone(before), c.Reach))
+		}
+		doc.set("reach", c.Reach)
+	}
 	if len(c.Exclusives) > 0 {
 		var before []string
 		_ = json.Unmarshal(doc["exclusives"], &before)
