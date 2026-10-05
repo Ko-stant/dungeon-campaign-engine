@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 19:55 EDT
+**Last Updated**: 2026-10-05 19:58 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -250,6 +250,12 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
      6. The GM's data: a one-way copy of the Three Plagues campaign, boards and quests,
         owned by the GM's Discord user.
      7. Backups: `make` targets to download a dump and to restore one; one practice restore.
+   - **Progress:**
+     - **Step 1** (`7c76a44`): `Dockerfile`, `.dockerignore` (an allowlist), `make image`,
+       `make push` (refuses a dirty tree) and `make deploy`. The image takes only the four
+       catalog folders and `assets/tiles_cleaned` (15 MB). The amd64 image ran against
+       `hq_online`. `.env` needs `DOCKER_IMAGE` (the private Docker Hub repo) and, once the
+       Render service exists, `RENDER_DEPLOY_HOOK`.
    - **Exit:** live at `dce.kostant.dev`; anyone not approved is refused everywhere,
      `/assets/` included.
 7. **Structured rules data:**
@@ -305,7 +311,8 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
      Known gaps to expect: ability effects, trap effects and search rewards are resolved by
      the GM (Phase 7); no reaction prompts yet (D10).
   2. **Phase 6, hosting:** decided (Render, a private Docker Hub image, members approved
-     on first sign-in, audio in Postgres); start with its step 1, the Dockerfile.
+     on first sign-in, audio in Postgres). Step 1 (the image) is done; next is step 2,
+     members approved on first sign-in and `/assets/` behind the guard.
 - **Open decisions:** none pending.
 - **Devices (GM, 2026-10-05):** desktop and laptop browsers only; phones aren't supported, so
   browser checks skip phone widths.
@@ -376,7 +383,8 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 - 2026-10-05: the GM ran `make fill-campaign` on `hq_online` (class reach now there).
   `9ddc831`, Phase 5c: the GM rules console; "Next round" ends the round by the rules.
 - 2026-10-05: Phase 6 decided: Render with a private Docker Hub image that carries the
-  content, members approved on first sign-in, audio in Postgres.
+  content, members approved on first sign-in, audio in Postgres. `7c76a44`, step 1: the
+  image.
   - `a3c9caf`: seats, the seat stream, presence.
   - `569d23b`: the seat page and player lines for rules commands.
   - The seat page's browser check is still to do.
