@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 01:30 EDT
+**Last Updated**: 2026-10-05 02:00 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -600,8 +600,8 @@ crit range of 18-20, a shot is charged 20% of the time and a crit 15%.
   | L | behind the hidden walls | Pilgrim's Prayer Beads | Cleric | +2 maximum mana, 18 in all (a trinket; left by Sister Wenna's pilgrims) |
 
   Early finds lift the weakest spots (the Ranger's and Rogue's damage, the Cleric's defense);
-  the secret route earns the Cleric 2 more mana. Note L on the board says "armor or weapon";
-  the beads would change it. One gear chest may still swap with a gold chest (or the
+  the secret route earns the Cleric 2 more mana (note L on the board describes the beads).
+  One gear chest may still swap with a gold chest (or the
   reverse) to lean less or more on upgrades. Cardsharp's Gloves (+1 Accuracy, Rogue) are kept
   for a later quest.
 - Consumables: V, 3 healing potions and 1 mana potion. The pool (N) heals fully, once.
@@ -628,11 +628,9 @@ crit range of 18-20, a shot is charged 20% of the time and a crit 15%.
 - Balance effect: a wiped party comes back stronger (it keeps its finds), a built-in catch-up.
 
 ## Open questions
-1. **Note L on the board**: it still says "armor or weapon"; update it to the Pilgrim's Prayer
-   Beads.
-2. **Faltering threshold**: between 1 Body and 1/4 of maximum Body (the simulator uses 1/4).
-3. **Tempest-God Axe**: N extra damage, set during balancing.
-4. **Later gear**: a Smite item for the Cleric; Quest 2 and 3 tiers (about +30% monster Body per
+1. **Faltering threshold**: between 1 Body and 1/4 of maximum Body (the simulator uses 1/4).
+2. **Tempest-God Axe**: N extra damage, set during balancing.
+3. **Later gear**: a Smite item for the Cleric; Quest 2 and 3 tiers (about +30% monster Body per
    tier of finds, to check per quest).
 
 ## Answered

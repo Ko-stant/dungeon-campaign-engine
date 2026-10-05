@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-05 00:30 EDT
+**Last Updated**: 2026-10-05 02:00 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -43,8 +43,8 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
    lift Quest 1 to 84%; fodder damage doesn't move survival). The dread warrior stays at 15;
    only trap G's dread warrior scales (27 Body per hero in the room; note G on the board
    explains it with four torches). The finds are approved (2026-10-05). Next: step 5 (app
-   support: class, monster and item stats; fights in the tracker); note L on the board still
-   says "armor or weapon".
+   support: class, monster and item stats; fights in the tracker). Notes G and L on the
+   board describe the trap G torches and the prayer beads.
 1. Maps for Quests 2 and 3, checked against `MAPS.md` and the script checklists (the GM
    builds; keep the story and the maps in step).
 2. Script: Quest 3 (`04-quest-3-the-wardens-rise.md`): drop the up-front Ogre Lord names,
