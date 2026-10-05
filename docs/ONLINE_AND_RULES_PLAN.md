@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 16:42 EDT
+**Last Updated**: 2026-10-05 17:14 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -117,7 +117,10 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
      - **GM rulings on furniture, disarming and objectives** (`8d94651`): all furniture blocks
        movement; disarming steps onto a floor trap; quest `goal`, kill/collect/escape
        objectives, `turn.exit`, door keys.
-     - **Left:** 2e (`LegalActions` with its property test).
+     - **2e, legal actions** (`1c59df1`): `LegalActions`, sharing its checks with the commands.
+       A property test plays seeded random games and holds the list to `Apply` in both
+       directions. A replay test confirms a game repeats from its seed.
+   - **Done 2026-10-05.**
 3. **Auth, users, ownership:**
    - `internal/auth` behind an `Authenticator` interface;
    - `app_user` and `user_session` tables, and `owner_id` on campaigns, boards, quests, custom
@@ -184,18 +187,13 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 
 ## Resume here
 - **Where things stand:**
-  - Phase 1 is done.
-  - Phase 2 is through 2d: a whole quest can be played under the rules through `Apply`.
-    Players roll, move with reveals and traps, open doors, attack, search and disarm. The GM
-    runs the monsters' phase, and objectives or a total party loss end the quest.
-  - All of it is in `internal/tracker` (`rules.go`, `turns.go`, `moves.go`, `board_rules.go`,
-    `attacks.go`, `search.go`, `outcome.go`).
-- **Next:** 2e, `LegalActions(s, actor, catalog)` sharing its predicates with the checks, plus
-  a property test (every listed action applies; unlisted seat commands are refused). That ends
-  Phase 2.
-- **Before online play:** the map editor needs fields for a quest's goal, its objectives and
-  door keys (the engine and the editor model already keep them). Phase 3 (auth) needs the
-  sign-in method decided.
+  - Phases 1 and 2 are done. A whole quest can be played under the rules through `Apply`, with
+    `LegalActions` listing every move for players and the GM.
+  - The code is in `internal/tracker` (`rules.go`, `turns.go`, `moves.go`, `board_rules.go`,
+    `attacks.go`, `search.go`, `outcome.go`, `legal.go`).
+- **Next, before online play:** map editor fields for a quest's goal, its objectives and door
+  keys (the engine and the editor model already keep them).
+- **Phase 3 (auth)** needs the GM to choose the sign-in method.
 - **Browser checks:** add a temporary `dce-online` entry to the main checkout's
   `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
   ./build/dungeon-campaign-engine"`, port 8090) after `make build` in the worktree. Restore the
@@ -227,3 +225,5 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   - Quests get a goal and kill/collect/escape objectives. Without objectives, clearing every
     monster completes the quest.
   - Door keys.
+- 2026-10-05: Phase 2 done with 2e (`1c59df1`), `LegalActions` and its property and replay
+  tests.
