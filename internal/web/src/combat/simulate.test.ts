@@ -110,6 +110,8 @@ describe('monsterStrike', () => {
 
 describe('cooldownFloor', () => {
   test('out of a fight, short cooldowns stop at 1 left, long ones at 2, lower ones stay', () => {
+    expect(cooldownFloor(1, 1)).toBe(0);
+    expect(cooldownFloor(2, 2)).toBe(1);
     expect(cooldownFloor(3, 3)).toBe(1);
     expect(cooldownFloor(5, 5)).toBe(2);
     expect(cooldownFloor(1, 5)).toBe(1);

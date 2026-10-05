@@ -99,6 +99,27 @@ export function monsterLine(c: MonsterCombat): string {
   return parts.join(' · ');
 }
 
+/**
+ * The TV card's line, with the trait names the Players' Handbook explains: reach (striking
+ * past heroes or in a line) and AoE (the blast). The GM's tracker keeps the detail.
+ */
+export function playerMonsterLine(c: MonsterCombat): string {
+  const parts = [`Avoid ${c.avoidance}`, `Hit ${c.hitDice}`, `Damage ${c.damage}`];
+  if (c.ranged) {
+    parts.push('ranged');
+  }
+  if (c.reach || (c.line ?? 0) > 0) {
+    parts.push('reach');
+  }
+  if ((c.splashDamage ?? 0) > 0 && (c.splashTargets ?? 0) > 0) {
+    parts.push('AoE');
+  }
+  if (c.undead) {
+    parts.push('undead');
+  }
+  return parts.join(' · ');
+}
+
 /** Faltering: at or below a quarter of maximum Body (rounded down, at least 1) a monster has Avoidance -4. */
 export const FALTER_PENALTY = 4;
 

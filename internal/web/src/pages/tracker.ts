@@ -391,7 +391,7 @@ async function main(): Promise<void> {
         type: 'button',
         class: btn,
         disabled: completed || busy,
-        title: state.fight ? 'End the fight: effects with a countdown end; out of a fight cooldowns stop at 1-2 rounds left' : 'Start a fight: rounds finish cooldowns, regenerate mana and count effects down',
+        title: state.fight ? 'End the fight: effects with a countdown end; cooldowns drop to 1-2 rounds left (a 1-round one is ready) and wait for the next fight' : 'Start a fight: rounds finish cooldowns, regenerate mana and count effects down',
         onclick: () => { void send({ type: state.fight ? 'fight.end' : 'fight.start', payload: {} }); },
       }, state.fight ? 'End fight' : 'Start fight'),
       h('label', { class: 'flex items-center gap-1 text-sm', title: 'Darken undiscovered squares and fade the furniture, doors, blocked squares and monsters the players have not been shown' },

@@ -8,7 +8,7 @@ import (
 )
 
 // fightState is a session with a Cleric who regenerates mana (16 max, 3 a fight
-// round) and a Ranger with a long (5) and a short (3) cooldown.
+// round) and a Ranger with a long (5), a short (3) and a 1-round cooldown.
 func fightState(t *testing.T) (*State, *content.Catalog) {
 	t.Helper()
 	b, q, cat := fixture()
@@ -19,6 +19,7 @@ func fightState(t *testing.T) (*State, *content.Catalog) {
 		content.HeroDef{ID: "custom-ranger", Name: "Ranger", Body: 30, Mind: 3, Custom: true, AttackDice: "2d10", DefenseDice: "1d6", Abilities: []content.Ability{
 			{ID: "ability-1", Name: "Multi-Shot", Kind: content.AbilityActive, Cooldown: 5},
 			{ID: "ability-2", Name: "Fan of Cards", Kind: content.AbilityActive, Cooldown: 3},
+			{ID: "ability-3", Name: "Quick Shot", Kind: content.AbilityActive, Cooldown: 1},
 		}},
 	)
 	s, err := NewSession(b, q, "The Test", []CampaignHero{
@@ -101,6 +102,52 @@ func TestCooldownsStopShortOutOfAFight(t *testing.T) {
 	s, _ = applyWith(t, s, cmd(t, "round.advance", map[string]any{}), cat)
 	if got := left(s); got != [2]int{1, 0} {
 		t.Fatalf("after the fight: %v", got)
+	}
+}
+
+func TestFightEndDropsCooldowns(t *testing.T) {
+	s, cat := fightState(t)
+	s, _ = applyWith(t, s, cmd(t, "fight.start", map[string]any{}), cat)
+	for _, id := range []string{"ability-1", "ability-2", "ability-3"} {
+		s, _ = applyWith(t, s, cmd(t, "ability.use", map[string]any{"heroId": "hero-2", "abilityId": id}), cat)
+	}
+	// The fight ends at once, with 5, 3 and 1 rounds left: long cooldowns drop to
+	// 2, short ones to 1, and a 1-round cooldown is ready again.
+	s, ev := applyWith(t, s, cmd(t, "fight.end", map[string]any{}), cat)
+	vex := s.Heroes[1]
+	got := [3]int{vex.CooldownLeft("ability-1", s.Round), vex.CooldownLeft("ability-2", s.Round), vex.CooldownLeft("ability-3", s.Round)}
+	if got != [3]int{2, 1, 0} {
+		t.Fatalf("after the fight: %v (%q)", got, ev.Summary)
+	}
+	if _, ok := vex.Cooldowns["ability-3"]; ok {
+		t.Fatal("a cooldown that drops to 0 leaves the list")
+	}
+	want := "Fight over; cooldowns: Vex's Multi-Shot 2 rounds left, Vex's Fan of Cards 1 round left, Vex's Quick Shot ready"
+	if ev.Summary != want {
+		t.Fatalf("summary: %q, want %q", ev.Summary, want)
+	}
+	// They wait there until the next fight.
+	s, _ = applyWith(t, s, cmd(t, "round.advance", map[string]any{}), cat)
+	s, _ = applyWith(t, s, cmd(t, "round.advance", map[string]any{}), cat)
+	vex = s.Heroes[1]
+	if got := [2]int{vex.CooldownLeft("ability-1", s.Round), vex.CooldownLeft("ability-2", s.Round)}; got != [2]int{2, 1} {
+		t.Fatalf("rounds out of a fight: %v", got)
+	}
+	// A cooldown already below its floor stays; nothing to drop means no note.
+	s, _ = applyWith(t, s, cmd(t, "fight.start", map[string]any{}), cat)
+	s, _ = applyWith(t, s, cmd(t, "round.advance", map[string]any{}), cat)
+	s, ev = applyWith(t, s, cmd(t, "fight.end", map[string]any{}), cat)
+	if left := s.Heroes[1].CooldownLeft("ability-1", s.Round); left != 1 || ev.Summary != "Fight over" {
+		t.Fatalf("1 round left stays at 1: %d %q", left, ev.Summary)
+	}
+}
+
+func TestOneRoundCooldownFinishesOutOfAFight(t *testing.T) {
+	s, cat := fightState(t)
+	s, _ = applyWith(t, s, cmd(t, "ability.use", map[string]any{"heroId": "hero-2", "abilityId": "ability-3"}), cat)
+	s, ev := applyWith(t, s, cmd(t, "round.advance", map[string]any{}), cat)
+	if left := s.Heroes[1].CooldownLeft("ability-3", s.Round); left != 0 || !strings.Contains(ev.Summary, "ready again: Vex's Quick Shot") {
+		t.Fatalf("next round: %d %q", left, ev.Summary)
 	}
 }
 

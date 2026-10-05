@@ -102,7 +102,6 @@ table.build td small { display: block; font-size: 0.78rem; color: var(--ink-mute
 table.build .gear-cell b { color: var(--gold-bright); font-weight: 600; }
 table.build .none { color: var(--ink-muted); }
 table.build .total { font-weight: 700; color: var(--gold-bright); font-size: 1.08rem; }
-table.odds caption { text-align: left; padding-bottom: 0.35rem; }
 .kit-note { font-size: 0.98rem; color: var(--ink-muted); }
 .abilities { display: grid; gap: 0.7rem; }
 .ability { display: grid; gap: 0.15rem; }
@@ -111,11 +110,6 @@ table.odds caption { text-align: left; padding-bottom: 0.35rem; }
 .ability .kind { font-family: var(--label); font-size: 0.8rem; letter-spacing: 0.06em; color: var(--ink-muted); border: 1px solid var(--stone-line); border-radius: 999px; padding: 0 0.5rem; }
 .ability p { font-size: 1rem; }
 .gear { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.2rem; font-size: 1rem; }
-.odds-wrap { overflow-x: auto; }
-table.odds { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
-table.odds th, table.odds td { padding: 0.25rem 0.6rem; text-align: center; border-bottom: 1px solid var(--stone-line); }
-table.odds th { font-family: var(--label); font-weight: 500; letter-spacing: 0.05em; color: var(--ink-muted); }
-table.odds th:first-child, table.odds td:first-child { text-align: left; padding-left: 0; }
 
 /* Glossary */
 dl.glossary { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.4rem; max-width: 46rem; margin: 0; }
@@ -153,12 +147,12 @@ html { scroll-behavior: smooth; }
 
   <section id="changed">
     <h2>What's new</h2>
-    <p class="intro">If you've played HeroQuest before, these are the big changes.</p>
+    <p class="intro">Changes since you last played HeroQuest.</p>
     <div class="pairs">
       <div class="pair"><h3>Roll to hit</h3><p>You roll your class's hit dice against the monster's Avoidance. Hit it and you deal your damage, every time.</p></div>
       <div class="pair"><h3>Fixed damage</h3><p>Damage comes from your class and your gear. A better weapon means bigger hits.</p></div>
       <div class="pair"><h3>Crits and near misses</h3><p>A separate d20 crit die doubles a hit, or can turn a near miss into a hit.</p></div>
-      <div class="pair"><h3>Big Body pools</h3><p>Heroes have 28 to 40 Body and monsters have far more than before. Fights last a few rounds.</p></div>
+      <div class="pair"><h3>Big Body pools</h3><p>Heroes have 28 to 40 Body and monsters have far more than before. Most fights last a few rounds.</p></div>
       <div class="pair"><h3>Abilities every fight</h3><p>Each hero has abilities on cooldowns (the Cleric spends mana). Using them is the point; the question is when.</p></div>
       <div class="pair"><h3>No bad luck streaks</h3><p>Every miss in a row makes your next attack more accurate, and badly hurt monsters are easier to finish.</p></div>
     </div>
@@ -180,7 +174,7 @@ html { scroll-behavior: smooth; }
     <ol class="steps">
       <li>Roll your <strong>hit dice</strong> and the <strong>d20 crit die</strong> together. Read them separately.</li>
       <li>Add your <strong>Accuracy</strong> to the hit dice. If the total <strong>meets or beats</strong> the monster's <strong>Avoidance</strong>, you hit.</li>
-      <li>A hit deals your <strong>damage</strong> in full. Monsters wear no armor.</li>
+      <li>A hit deals your <strong>damage</strong> in full. Monsters have no damage mitigation.</li>
       <li>If the crit die lands in your <strong>crit range</strong>:
         <ul class="points">
           <li>on a hit, your damage is <strong>doubled</strong>;</li>
@@ -191,6 +185,13 @@ html { scroll-behavior: smooth; }
     <div class="example">
       <span class="label">Example</span>
       <p>Papi (hit dice 2d10, Accuracy +2, crit 15-20, damage 6) attacks a monster with Avoidance 14. He rolls 5 and 6 on the hit dice and 17 on the crit die. 11 + 2 = 13 misses by one, but the crit die is in his range, so +2 makes it 15: a hit for 6 damage. Had the hit dice reached 14 on their own, the crit would have doubled it to 12.</p>
+    </div>
+    <h3>Who you can hit</h3>
+    <p class="intro">Your normal attack reaches different squares depending on your class. Abilities say their own reach (Fan of Cards hits every enemy around you, diagonals included).</p>
+    <div class="pairs">
+      <div class="pair"><h3>Barbarian</h3><p>Adjacent or diagonal. The weapon is big enough to reach the corners.</p></div>
+      <div class="pair"><h3>Ranger</h3><p>Anything in line of sight, including adjacent and diagonal squares. Unlike the old crossbow, you can shoot an enemy right next to you.</p></div>
+      <div class="pair"><h3>Rogue and Cleric</h3><p>Adjacent only, not diagonal. The Cleric's Smite is a spell with its own range.</p></div>
     </div>
     <div class="pairs">
       <div class="pair"><h3>Critical miss</h3><p>Every die shows 1 (all hit dice and the crit die). You miss and lose your next turn. Very rare.</p></div>
@@ -204,11 +205,12 @@ html { scroll-behavior: smooth; }
     <h2>Being attacked</h2>
     <ol class="steps">
       <li>The monster rolls its hit dice.</li>
-      <li>You roll your <strong>defense dice</strong> and add your <strong>avoidance</strong> (class plus armor).</li>
+      <li>You roll your <strong>defense dice</strong> and add your <strong>avoidance</strong> (class plus gear).</li>
       <li>The monster hits only if it <strong>beats</strong> your total. <strong>Ties go to you.</strong></li>
       <li>You take its damage minus your <strong>mitigation</strong>. Enough mitigation can bring a hit to 0.</li>
     </ol>
     <ul class="points">
+      <li><strong>Avoidance</strong> keeps you from being hit; <strong>mitigation</strong> softens the hits that land.</li>
       <li>Monsters can crit too: they also roll 2d20, and <strong>double 20s</strong> double their damage (before your mitigation).</li>
       <li>If you <strong>can't defend</strong> (some abilities do this to you), you roll no defense dice, but your avoidance still counts.</li>
       <li>A hero who reaches 0 Body falls. Keep each other alive: potions are free to drink and the Cleric can heal.</li>
@@ -217,10 +219,10 @@ html { scroll-behavior: smooth; }
 
   <section id="mind">
     <h2>Mind and magic</h2>
-    <p class="intro">Mind is your Will. Armor can turn a blade, but not a curse.</p>
+    <p class="intro">Mind is your Will. Quick feet can dodge a blade, but not a curse.</p>
     <ul class="points">
       <li>Some attacks are <strong>mental</strong>: spells, curses, fear, the wail of the restless dead. The monster's card says which.</li>
-      <li>Against a mental attack you roll your <strong>defense dice + Mind</strong> instead of defense dice + avoidance. Armor doesn't count. The monster must <strong>beat</strong> your total, and ties go to you.</li>
+      <li>Against a mental attack you roll your <strong>defense dice + Mind</strong> instead of defense dice + avoidance. Your avoidance doesn't count. The monster must <strong>beat</strong> your total, and ties go to you.</li>
       <li>They rarely cost Body. Instead they leave a condition the TV shows on your card, such as <strong>Frightened</strong> (you can't attack that monster on your next turn), <strong>Dazed</strong> (you lose your next action) or <strong>Cursed</strong> (-2 Accuracy for 2 rounds).</li>
       <li>The Cleric has the strongest Will in the party; the Barbarian, the weakest. Look after each other.</li>
     </ul>
@@ -228,7 +230,7 @@ html { scroll-behavior: smooth; }
 
   <section id="monsters">
     <h2>Monsters</h2>
-    <p class="intro">You won't know a monster's numbers until you meet it. When you do, the GM can show its card on the TV with everything listed below.</p>
+    <p class="intro">You won't know a monster's numbers until you meet it. When you do, the Chronicler can show its card on the TV with everything listed below.</p>
     <div class="pairs">
       <div class="pair"><h3>Avoidance</h3><p>The number your hit roll must reach. Always even. Weak monsters are easy to hit; the worst of them are not.</p></div>
       <div class="pair"><h3>Body</h3><p>How much damage it takes to kill. Big monsters take several hits from the whole party.</p></div>
@@ -239,9 +241,8 @@ html { scroll-behavior: smooth; }
     <p class="intro">Some monsters have special traits. The TV card lists them like this:</p>
     <div class="traits">
       <div class="trait"><code>ranged</code><p>Attacks from a distance. Holding a doorway won't keep it off you.</p></div>
-      <div class="trait"><code>reach</code><p>Strikes past heroes holding a doorway.</p></div>
-      <div class="trait"><code>strikes 2 in a line</code><p>Each attack also hits the hero standing behind its target, in a straight line. Each hero defends separately.</p></div>
-      <div class="trait"><code>blast 2 to 2 beside the target</code><p>Its attack also deals light damage to heroes next to the one it targets. Don't bunch up.</p></div>
+      <div class="trait"><code>reach</code><p>Strikes past the hero in front: each attack also hits the hero standing behind its target, in a straight line, so a doorway won't shelter the one behind. Each hero defends separately.</p></div>
+      <div class="trait"><code>AoE</code><p>Its attack also deals light damage to heroes near the one it targets. Don't bunch up.</p></div>
       <div class="trait"><code>undead</code><p>Smite deals extra damage to it.</p></div>
     </div>
     <ul class="points">
@@ -253,10 +254,17 @@ html { scroll-behavior: smooth; }
   <section id="fights">
     <h2>Fights, cooldowns and mana</h2>
     <ul class="points">
-      <li>The GM says when a <strong>fight</strong> starts and ends.</li>
+      <li>The Chronicler says when a <strong>fight</strong> starts and ends.</li>
       <li>An ability's <strong>cooldown</strong> is how many rounds until you can use it again. Used in round 4 with cooldown 3, it's ready in round 7.</li>
-      <li><strong>Out of a fight</strong>, cooldowns keep ticking but stop 1 round short of ready (cooldowns of 1-3) or 2 rounds short (4 or more). They only finish in a fight. Waiting around never fully resets an ability, and an ability you didn't use stays ready.</li>
-      <li>The Cleric's <strong>mana</strong> comes back at the start of every fight round. Out of a fight, only Prayer restores it, so healing up between fights leaves less for the next one.</li>
+      <li><strong>When a fight ends</strong>, any ability still on cooldown drops to 1 or 2 rounds left and waits there until the next fight:
+        <ul class="points">
+          <li>cooldown 1: ready again;</li>
+          <li>cooldown 2-3: drops to 1 round left;</li>
+          <li>cooldown 4 or more: drops to 2 rounds left. If it only had 1 left, it stays at 1.</li>
+        </ul>
+      </li>
+      <li>Example: Mordecai uses Aimed Shot (cooldown 5) and the fight ends with 4 rounds still to go. It drops to 2 and stays there until the next fight, where it's ready after 2 rounds. Had it been down to 1, it would stay at 1. An ability you didn't use stays ready.</li>
+      <li>The Cleric's <strong>mana</strong> partly regenerates at the start of the heroes' turn during a fight. Out of a fight, only Prayer restores it, so healing up between fights leaves less for the next one.</li>
       <li>Abilities are meant to be used. The choice is when, not whether.</li>
     </ul>
   </section>
@@ -264,7 +272,7 @@ html { scroll-behavior: smooth; }
   <section id="gear">
     <h2>Gear, gold and potions</h2>
     <ul class="points">
-      <li>Your gear is your numbers. Weapons add damage; armor adds avoidance; rare pieces add mitigation, Accuracy or mana.</li>
+      <li>Your gear is your numbers. Weapons add damage. Most armor adds avoidance (you're harder to hit); heavy armor adds mitigation (hits hurt less). Rare pieces add Accuracy or mana.</li>
       <li>Only <strong>equipped</strong> items count. You keep your old gear when you find something new.</li>
       <li>Class rules: only the Barbarian uses two-handed weapons and heavy armor; the Rogue always fights with two weapons; only the Ranger uses bows and crossbows; only the Cleric casts spells and carries a shield.</li>
       <li><strong>Gold is shared</strong> by the whole party: one purse.</li>
@@ -274,18 +282,18 @@ html { scroll-behavior: smooth; }
 
   <section id="tv">
     <h2>The TV</h2>
-    <p class="intro">The GM resolves things on the table, then updates the app while you decide what to do. The TV follows along live and only ever shows what your heroes know.</p>
+    <p class="intro">The Chronicler resolves things on the table, then updates the app while you decide what to do. The TV follows along live and only ever shows what your heroes know.</p>
     <div class="pairs">
       <div class="pair"><h3>The map</h3><p>The whole dungeon's walls are drawn. Rooms you've explored turn light; monsters, furniture and doors appear once you can see them.</p></div>
       <div class="pair"><h3>The party</h3><p>Everyone's Body, Mind and mana, and effects like Raging or Poisoned with rounds left.</p></div>
-      <div class="pair"><h3>Cards</h3><p>Ask the GM to show any monster or hero on the map: its stats, traits and what's affecting it.</p></div>
+      <div class="pair"><h3>Cards</h3><p>Ask the Chronicler to show any monster or hero on the map: its stats, traits and what's affecting it.</p></div>
       <div class="pair"><h3>What happened</h3><p>A log of the last few things that happened, if you lose track. Traps and secrets never appear there.</p></div>
     </div>
   </section>
 
   <section id="heroes">
     <h2>Your heroes</h2>
-    <p class="intro">Each sheet splits your hero in two: what the class is on its own, and what your starting gear adds. New gear replaces old, so the class column is what you keep no matter what you carry. The odds are your chance to hit (near misses included) with your starting gear.</p>
+    <p class="intro">Each sheet splits your hero in two: what the class is on its own, and what your starting gear adds. New gear replaces old, so the class column is what you keep no matter what you carry.</p>
     <div class="sheets">
 
       <article class="sheet" style="--hero: #b91c1c" aria-labelledby="h-brentanamo">
@@ -308,12 +316,7 @@ html { scroll-behavior: smooth; }
             </tbody>
           </table>
         </div>
-        <p class="kit-note">The Greataxe is two-handed and the Hide Cuirass is heavy armor: both Barbarian-only. Your defense against an attack is avoidance + a 1d6 roll.</p>
-        <div class="odds-wrap"><table class="odds">
-          <caption class="label">Chance to hit with starting gear</caption>
-          <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
-          <tr><td>To hit</td><td>92%</td><td>82%</td><td>72%</td><td>62%</td><td>52%</td><td>42%</td></tr>
-        </table></div>
+        <p class="kit-note">The Greataxe is two-handed and the Hide Cuirass is heavy armor: both Barbarian-only. You attack adjacent or diagonal squares. Your defense against an attack is avoidance + a 1d6 roll.</p>
         <div class="abilities">
           <div class="ability"><div class="head"><span class="name">Unburdened Charge</span><span class="kind">active · cooldown 3</span></div><p>Charge 2-6 spaces in a straight line (a diagonal step costs 2), stopping at the first enemy or wall. The enemy you hit takes your damage plus the spaces charged. Traps on the way trigger but can't hurt you.</p></div>
           <div class="ability"><div class="head"><span class="name">Unleash Fury</span><span class="kind">active · cooldown 6</span></div><p>Roar to the god of battle and attack the nearest enemy, rolling your hit dice twice and keeping the better; allies within 2 squares get +2 Accuracy on their next attack. For 3 rounds, or until you kill something: +3 damage on every hit and +2 mitigation, but each turn you must move to and attack an enemy if you can.</p></div>
@@ -340,18 +343,13 @@ html { scroll-behavior: smooth; }
               <tr><th scope="row">Damage</th><td>2</td><td class="gear-cell">Mace <b>+3</b></td><td class="total">5</td></tr>
               <tr><th scope="row">Avoidance</th><td>3</td><td class="gear-cell">Padded Robes <b>+1</b></td><td class="total">4</td></tr>
               <tr><th scope="row">Mitigation</th><td>0</td><td class="gear-cell"><span class="none">none</span></td><td class="total">0</td></tr>
-              <tr><th scope="row">Mana each fight round</th><td>2</td><td class="gear-cell">Holy Tome <b>+1</b></td><td class="total">3</td></tr>
+              <tr><th scope="row">Mana regen (in a fight)</th><td>2</td><td class="gear-cell">Holy Tome <b>+1</b></td><td class="total">3</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="kit-note">Smite is a spell and ignores your weapon: 1d20+5 to hit, 5 damage. Your defense against an attack is avoidance + a 1d6 roll.</p>
-        <div class="odds-wrap"><table class="odds">
-          <caption class="label">Chance to hit with starting gear</caption>
-          <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
-          <tr><td>Mace</td><td>&gt;99%</td><td>96%</td><td>85%</td><td>68%</td><td>45%</td><td>24%</td></tr><tr><td>Smite</td><td>&gt;99%</td><td>91%</td><td>81%</td><td>71%</td><td>61%</td><td>50%</td></tr>
-        </table></div>
+        <p class="kit-note">Your mace attacks adjacent squares only, not diagonal. Smite is a spell and ignores your weapon: line of sight, 1d20+5 to hit, 5 damage. Your defense against an attack is avoidance + a 1d6 roll.</p>
         <div class="abilities">
-          <div class="ability"><div class="head"><span class="name">Smite</span><span class="kind">spell · 2 mana</span></div><p>Your main attack, at range (line of sight): roll 1d20+5 to hit, 5 damage, +2 against undead. With mana coming back every fight round, you can Smite every turn.</p></div>
+          <div class="ability"><div class="head"><span class="name">Smite</span><span class="kind">spell · 2 mana</span></div><p>Your main attack, at range (line of sight): roll 1d20+5 to hit, 5 damage, +2 against undead. Your mana regenerates every round of a fight, so you can Smite every turn.</p></div>
           <div class="ability"><div class="head"><span class="name">Heal Minor Wounds</span><span class="kind">spell · 6 mana</span></div><p>Heal a hero 12 Body, up to their maximum.</p></div>
           <div class="ability"><div class="head"><span class="name">Turn Evil</span><span class="kind">spell · 8 mana · cooldown 5</span></div><p>The target skips its next attack and can't defend for a round: every hero's attack on it is a sure hit.</p></div>
           <div class="ability"><div class="head"><span class="name">Divining</span><span class="kind">spell · 3 mana</span></div><p>Reveal traps, hidden doors and treasure within 6 squares, through walls and doors.</p></div>
@@ -379,12 +377,7 @@ html { scroll-behavior: smooth; }
             </tbody>
           </table>
         </div>
-        <p class="kit-note">Only the Ranger uses bows and crossbows. Your defense against an attack is avoidance + a 1d6 roll.</p>
-        <div class="odds-wrap"><table class="odds">
-          <caption class="label">Chance to hit with starting gear</caption>
-          <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
-          <tr><td>To hit</td><td>&gt;99%</td><td>99%</td><td>95%</td><td>86%</td><td>74%</td><td>58%</td></tr>
-        </table></div>
+        <p class="kit-note">Only the Ranger uses bows and crossbows. You can shoot anything in line of sight, adjacent and diagonal squares included. Your defense against an attack is avoidance + a 1d6 roll.</p>
         <div class="abilities">
           <div class="ability"><div class="head"><span class="name">Multi-Shot</span><span class="kind">active · cooldown 5</span></div><p>Shoot up to 3 different enemies in line of sight as one action.</p></div>
           <div class="ability"><div class="head"><span class="name">Aimed Shot</span><span class="kind">active · cooldown 5</span></div><p>A sure hit. The target is marked: every hero gets +2 Accuracy against it until it dies or the fight ends. Your movement is halved this round and next.</p></div>
@@ -412,12 +405,7 @@ html { scroll-behavior: smooth; }
             </tbody>
           </table>
         </div>
-        <p class="kit-note">The Rogue always fights with two weapons; both add their damage. Your defense against an attack is avoidance + a 1d6 roll.</p>
-        <div class="odds-wrap"><table class="odds">
-          <caption class="label">Chance to hit with starting gear</caption>
-          <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
-          <tr><td>To hit</td><td>98%</td><td>92%</td><td>82%</td><td>69%</td><td>51%</td><td>33%</td></tr>
-        </table></div>
+        <p class="kit-note">The Rogue always fights with two weapons; both add their damage. You attack adjacent squares only, not diagonal. Your defense against an attack is avoidance + a 1d6 roll.</p>
         <div class="abilities">
           <div class="ability"><div class="head"><span class="name">Nimble Fingers</span><span class="kind">passive</span></div><p>Disarm a trap on 1d8; you fail only on a 1. Only you can disarm traps.</p></div>
           <div class="ability"><div class="head"><span class="name">Exploit Opening</span><span class="kind">passive</span></div><p>Crit on 13-20 (instead of 15-20) against a monster you're behind.</p></div>
@@ -435,14 +423,16 @@ html { scroll-behavior: smooth; }
     <h2>Glossary</h2>
     <dl class="glossary">
       <dt>Accuracy</dt><dd>A flat bonus added to your hit dice.</dd>
-      <dt>Avoidance</dt><dd>For a monster, the number your hit roll must reach. For you, the flat part of your defense (class plus armor).</dd>
-      <dt>Cooldown</dt><dd>Rounds until an ability can be used again. Only finishes during a fight.</dd>
+      <dt>Adjacent</dt><dd>The four squares sharing a side with yours. <em>Diagonal</em> is the four corner squares; <em>around you</em> means all eight.</dd>
+      <dt>Armor</dt><dd>Worn gear, not a stat. Most armor adds avoidance; heavy armor adds mitigation.</dd>
+      <dt>Avoidance</dt><dd>For a monster, the number your hit roll must reach. For you, the flat part of your defense (class plus gear): it keeps you from being hit.</dd>
+      <dt>Cooldown</dt><dd>Rounds until an ability can be used again. When a fight ends it drops to 1 or 2 rounds left and waits for the next fight.</dd>
       <dt>Crit range</dt><dd>The d20 results that crit for you: double damage on a hit, +2 on a miss.</dd>
       <dt>Defense dice</dt><dd>What you roll, plus your avoidance, when a monster attacks you.</dd>
       <dt>Determination</dt><dd>+2 Accuracy for each miss in a row, up to +4; any hit resets it.</dd>
-      <dt>Fight</dt><dd>From when the GM says it starts until it's over. Mana comes back and cooldowns finish only in fights.</dd>
+      <dt>Fight</dt><dd>From when the Chronicler says it starts until it's over. Mana regenerates and cooldowns finish only in fights.</dd>
       <dt>Mind</dt><dd>Your Will: defense dice + Mind is your defense against mental attacks.</dd>
-      <dt>Mitigation</dt><dd>Taken off every hit you suffer. Can bring a hit to 0.</dd>
+      <dt>Mitigation</dt><dd>Taken off every hit you suffer. Can bring a hit to 0. Monsters have none.</dd>
       <dt>Round</dt><dd>One full cycle in which every hero and monster takes a turn.</dd>
       <dt>Sure hit</dt><dd>No hit roll: only the crit die is rolled.</dd>
       <dt>Wounded</dt><dd>A monster at a quarter of its Body or less: Avoidance -4.</dd>
@@ -450,6 +440,6 @@ html { scroll-behavior: smooth; }
   </section>
 
   <footer>
-    <p>Numbers may still be tuned as we play. When something here and the GM disagree, the GM wins, and this page gets fixed.</p>
+    <p>Numbers may still be tuned as we play. When something here doesn't agree with what we decide on during the game, I'll make a note and update this when I can.</p>
   </footer>
 </div>

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { combatLine, combatTotals, falterAt, gearBonus, itemStatsLine, manaCap, monsterLine } from './combat.ts';
+import { combatLine, combatTotals, falterAt, gearBonus, itemStatsLine, manaCap, monsterLine, playerMonsterLine } from './combat.ts';
 import type { Hero, Item } from './types.ts';
 
 describe('combatLine', () => {
@@ -70,6 +70,18 @@ describe('monsterLine', () => {
       'Avoid 6 · Hit 1d12 · Damage 5 · ranged · blast 2 to 2 beside the target',
     );
     expect(monsterLine({ avoidance: 12, hitDice: '2d8+1', damage: 10, undead: true, reach: true })).toBe('Avoid 12 · Hit 2d8+1 · Damage 10 · reach · undead');
+  });
+});
+
+describe('playerMonsterLine', () => {
+  test('uses the handbook trait names: reach covers striking in a line, AoE covers the blast', () => {
+    expect(playerMonsterLine({ avoidance: 14, hitDice: '2d10+3', damage: 12, line: 1 })).toBe('Avoid 14 · Hit 2d10+3 · Damage 12 · reach');
+    expect(playerMonsterLine({ avoidance: 12, hitDice: '2d8+1', damage: 10, reach: true, line: 1, undead: true })).toBe(
+      'Avoid 12 · Hit 2d8+1 · Damage 10 · reach · undead',
+    );
+    expect(playerMonsterLine({ avoidance: 6, hitDice: '1d12', damage: 5, ranged: true, splashDamage: 2, splashTargets: 2 })).toBe(
+      'Avoid 6 · Hit 1d12 · Damage 5 · ranged · AoE',
+    );
   });
 });
 

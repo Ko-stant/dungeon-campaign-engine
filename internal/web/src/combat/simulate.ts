@@ -98,9 +98,9 @@ export function monsterStrike(m: MonsterAttacker, d: HeroDefender, roller: Rolle
   return { damage: Math.max(0, (crit ? 2 : 1) * m.damage - d.mitigation), hit: true, crit };
 }
 
-/** Rounds left on a cooldown after time out of a fight: short ones stop at 1, long ones at 2. */
+/** Rounds left on a cooldown after a fight: a 1-round one is ready, 2-3 stop at 1, longer ones at 2. */
 export function cooldownFloor(remaining: number, cooldown: number): number {
-  return Math.min(remaining, cooldown <= 3 ? 1 : 2);
+  return Math.min(remaining, cooldown <= 1 ? 0 : cooldown <= 3 ? 1 : 2);
 }
 
 export type HeroClass = 'barbarian' | 'ranger' | 'rogue' | 'cleric';

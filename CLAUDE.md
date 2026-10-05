@@ -82,7 +82,8 @@ Tailwind CSS v4, canvas rendering.
     `ability.use` / `ability.reset` track cooldowns (`cooldowns`: ability id -> ready round).
   - Fights (`internal/tracker/fights.go`): `fight.start`/`fight.end` set `State.Fight`. In a
     fight `round.advance` finishes cooldowns, regenerates mana (`Combat.ManaRegen`) and counts
-    effects down; out of a fight cooldowns stop at 1-2 rounds left. Generic effects
+    effects down; `fight.end` drops cooldowns to 1-2 rounds left (0 for a 1-round cooldown), and
+    out of a fight they stop there. Generic effects
     (`effect.add`/`effect.remove`, `Effects` on heroes and monsters) only count down and remind.
   - Player screen (TV): `/play/{id}/players` (`pages/players.ts`, `internal/web/src/players/`)
     shows only `tracker.PlayerView` (`internal/tracker/player.go`) from

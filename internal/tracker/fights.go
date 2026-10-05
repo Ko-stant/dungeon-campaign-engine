@@ -44,7 +44,8 @@ func (a *applier) fightStart(payload json.RawMessage) (string, error) {
 }
 
 // fightEnd ends the fight and the effects that had a countdown (they belong
-// to the fight); effects without one stay until removed.
+// to the fight); effects without one stay until removed. Cooldowns drop to
+// their floor at once and wait there for the next fight.
 func (a *applier) fightEnd(payload json.RawMessage) (string, error) {
 	if _, err := decode[struct{}](payload); err != nil {
 		return "", err
@@ -54,18 +55,68 @@ func (a *applier) fightEnd(payload json.RawMessage) (string, error) {
 	}
 	a.s.Fight = false
 	summary := "Fight over"
+	if dropped := a.dropCooldowns(); len(dropped) > 0 {
+		summary += "; cooldowns: " + strings.Join(dropped, ", ")
+	}
 	if ended := a.removeEffects(func(e *Effect) bool { return e.Rounds > 0 }); len(ended) > 0 {
 		summary += "; ended: " + strings.Join(ended, ", ")
 	}
 	return summary, nil
 }
 
-// cooldownFloor is how many rounds an ability's cooldown keeps out of a fight.
+// cooldownFloor is how many rounds an ability's cooldown keeps out of a fight:
+// none for a 1-round cooldown, 1 for 2-3 rounds, 2 for 4 or more.
 func cooldownFloor(cooldown int) int {
-	if cooldown <= 3 {
+	switch {
+	case cooldown <= 1:
+		return 0
+	case cooldown <= 3:
 		return 1
+	default:
+		return 2
 	}
-	return 2
+}
+
+// dropCooldowns runs when a fight ends: each cooldown above its floor drops to
+// it (a floor of 0 makes the ability ready), and one already below stays. It
+// names the changes ("Vex's Multi-Shot 2 rounds left"), in hero and ability order.
+func (a *applier) dropCooldowns() []string {
+	var out []string
+	for i := range a.s.Heroes {
+		h := &a.s.Heroes[i]
+		drop := func(id string, floor int) bool {
+			if h.CooldownLeft(id, a.s.Round) <= floor {
+				return false
+			}
+			if floor == 0 {
+				delete(h.Cooldowns, id)
+			} else {
+				h.Cooldowns[id] = a.s.Round + floor
+			}
+			return true
+		}
+		for _, ab := range h.Abilities {
+			floor := cooldownFloor(ab.Cooldown)
+			if !drop(ab.ID, floor) {
+				continue
+			}
+			if floor == 0 {
+				out = append(out, fmt.Sprintf("%s's %s ready", h.Name, ab.Name))
+			} else {
+				out = append(out, fmt.Sprintf("%s's %s %s left", h.Name, ab.Name, plural(floor, "round")))
+			}
+		}
+		// A cooldown whose ability is gone keeps the long floor, unnamed.
+		for id := range h.Cooldowns {
+			if _, err := h.ability(id); err != nil {
+				drop(id, cooldownFloor(4))
+			}
+		}
+		if len(h.Cooldowns) == 0 {
+			h.Cooldowns = nil
+		}
+	}
+	return out
 }
 
 // holdCooldowns runs after a round passes out of a fight: each cooldown counts

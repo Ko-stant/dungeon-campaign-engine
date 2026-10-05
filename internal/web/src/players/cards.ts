@@ -1,7 +1,7 @@
 /** What a click on the player screen picks, and the card it shows. */
 import { footprintTiles, type TileCoord } from '../board/geometry.ts';
 import { covers } from '../board/model.ts';
-import { combatLine, monsterLine } from '../tracker/combat.ts';
+import { combatLine, playerMonsterLine } from '../tracker/combat.ts';
 import { effectLabel } from '../tracker/effects.ts';
 import type { PlayerCatalog, PlayerState } from './types.ts';
 
@@ -68,7 +68,7 @@ export function cardFor(pv: PlayerState, catalog: PlayerCatalog, pick: Pick): Ca
         lines.push(`Body ${String(m.body)} / ${String(m.maxBody)}`);
       }
       if (m.combat) {
-        lines.push(monsterLine(m.combat));
+        lines.push(playerMonsterLine(m.combat));
       }
       const move = catalog.monsters.find((d) => d.id === m.type)?.movement ?? 0;
       if (move > 0) {

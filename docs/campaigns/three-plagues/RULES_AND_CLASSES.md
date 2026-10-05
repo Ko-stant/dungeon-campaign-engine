@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 10:50 EDT
+**Last Updated**: 2026-10-05 12:45 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -28,7 +28,7 @@ The app records and reminds; it never enforces any of this (see `docs/IMPORTANT.
 - **Cooldowns** count down at the start of each round. An ability with a 3-cycle cooldown
   used in round 4 has 2 cycles left in round 5, 1 in round 6, and is ready in round 7
   (ready round = round used + cooldown).
-- **Cooldowns out of a fight** stop short of ready; see "Fights, cooldowns and mana".
+- **Cooldowns out of a fight** drop short of ready when the fight ends; see "Fights, cooldowns and mana".
 - **Gold** belongs to the party, not to single heroes.
 - **Potions**: drinking one is a free action, at any time, even during the monsters' turn
   (between their attacks). A healing potion restores 8 Body, a mana potion 6 mana.
@@ -63,6 +63,14 @@ Agreed 2026-10-03, refined 2026-10-04. Numbers are still to be tuned (steps 2 an
 
 Both extremes need the crit d20 too, so they stay rare: 1 in 400 for a 1d20 hit die,
 1 in 2,000 for 2d10, 1 in 4,320 for 3d6.
+
+### Who a basic attack reaches (2026-10-05)
+- **Barbarian**: adjacent or diagonal (the weapon is big enough to reach the corners).
+- **Ranger**: anything in line of sight, adjacent and diagonal squares included (the original
+  crossbow couldn't shoot an adjacent monster; in this campaign bows and crossbows can).
+- **Rogue and Cleric**: adjacent only, not diagonal. Smite is a spell with line of sight.
+- This is the basic attack only; abilities keep their own reach (Fan of Cards, Cleave and
+  Challenge cover every square around the hero, diagonals included).
 
 ### A monster attacks
 1. The monster rolls its **hit dice**, plus a separate **2d20 crit check**: a crit only on
@@ -177,12 +185,14 @@ Later items must compete with or replace the holy tome's effect.
 - A **fight** starts and ends when the GM says so.
 - In a fight, cooldowns count down each round as before (ready round = round used +
   cooldown).
-- **Out of a fight, cooldowns keep counting down but stop at 1 round left (short cooldowns,
-  1-3 cycles) or 2 rounds left (long cooldowns, 4 or more); they only finish during a
-  fight.** A cooldown already below its floor stays where it was (a long cooldown with 1
-  round left at the end of a fight stays at 1). Stalling between fights can never fully reset
-  an ability, a 10-cycle ability is about once per fight, and an ability left unused stays
-  ready.
+- **When a fight ends, every cooldown drops at once to its floor and waits there until
+  the next fight: a 1-round cooldown is ready, 2-3 rounds drop to 1 left, 4 or more drop
+  to 2 left (2026-10-05; before, they counted down one round at a time to the same floor).**
+  A cooldown already below its floor stays where it was (a long cooldown with 1 round left
+  at the end of a fight stays at 1). An ability used out of a fight counts down to its
+  floor and waits there too; anything longer than 1 round only finishes during a fight.
+  Stalling between fights can never fully reset an ability, a 10-cycle ability is about
+  once per fight, and an ability left unused stays ready.
 - **Mana** regenerates **N** at the start of each round of a fight, up to the maximum: enough
   to cast Smite every round. A heal costs about 2-3 rounds of regeneration, so Smiting now
   means fewer spells later. Out of a fight mana only comes back through Prayer, which has a
