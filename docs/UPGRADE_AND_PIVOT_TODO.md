@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-05 03:40 EDT
+**Last Updated**: 2026-10-05 08:53 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -94,6 +94,7 @@ Commits (oldest first):
 | 81ac447 | player screen phase 3: player view API and stream, player-safe event lines |
 | ea027a1 | player screen phase 4: the TV page |
 | 427a0da | player screen phase 5: monster abilities text, TV text size |
+| 9660186 | tracker: clicking a door selects it (open/close from the panel) |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
