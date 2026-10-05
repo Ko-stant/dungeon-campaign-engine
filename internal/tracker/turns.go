@@ -160,15 +160,39 @@ func (a *applier) phaseEnd(payload json.RawMessage) (string, error) {
 		h, _ := a.hero(r.Turn.HeroID)
 		return "", fmt.Errorf("%s's turn is still under way", h.Name)
 	}
+	return a.nextRound(""), nil
+}
+
+// nextRound starts the next round's heroes' phase; note follows the round
+// in the summary.
+func (a *applier) nextRound(note string) string {
+	r := a.s.Rules
 	summary := a.roundAdvance()
-	r.Phase, r.Acted, r.MonstersMoved, r.MonstersActed = PhaseHeroes, nil, nil, nil
+	r.Phase, r.Turn, r.Acted, r.MonstersMoved, r.MonstersActed = PhaseHeroes, nil, nil, nil, nil
 	// "Round 2 begins; ready again: ..." becomes "Round 2 begins: the heroes' turns; ready again: ...".
 	head, rest, _ := strings.Cut(summary, ";")
-	summary = head + ": the heroes' turns"
+	summary = head + ": the heroes' turns" + note
 	if rest != "" {
 		summary += ";" + rest
 	}
-	return summary, nil
+	return summary
+}
+
+// gmNextRound is the GM's "Next round" (round.advance): at the table it
+// only counts the round on; in rules mode it starts the next heroes' phase,
+// closing a turn left open (the GM is never blocked).
+func (a *applier) gmNextRound() string {
+	r := a.s.Rules
+	if r == nil || r.Phase == PhaseOver {
+		return a.roundAdvance()
+	}
+	note := ""
+	if r.Turn != nil {
+		if h, err := a.hero(r.Turn.HeroID); err == nil {
+			note = fmt.Sprintf(" (%s's turn ended by the GM)", h.Name)
+		}
+	}
+	return a.nextRound(note)
 }
 
 // turnRollMove rolls the hero's movement dice for this turn (online rules D1).

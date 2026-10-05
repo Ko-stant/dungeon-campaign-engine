@@ -170,6 +170,17 @@ func TestFriendsJoinFromTheLobbyAndPlayATurn(t *testing.T) {
 	if !strings.Contains(events, "Grom (Elf) starts their turn") || !strings.Contains(events, "Grom (Elf) ends their turn") {
 		t.Errorf("the turn is in the log: %s", events)
 	}
+
+	// The GM's rules console lists the GM's own moves; players can't read it.
+	resp, body := gm.get("/api/sessions/" + sessionID + "/actions")
+	actions := decodeAny[ActionsResponse](t, []byte(body))
+	if resp.StatusCode != http.StatusOK || actions.EventSeq == 0 || len(actions.Actions) != 2 ||
+		actions.Actions[0].Command.Type != "phase.monsters" || actions.Actions[1].Command.Type != "phase.end" {
+		t.Errorf("the GM's actions: %d %s", resp.StatusCode, body)
+	}
+	if resp, _ := jo.get("/api/sessions/" + sessionID + "/actions"); resp.StatusCode != http.StatusForbidden {
+		t.Errorf("a player reading the GM's actions: %d", resp.StatusCode)
+	}
 }
 
 func TestStartingTwiceAndClosing(t *testing.T) {

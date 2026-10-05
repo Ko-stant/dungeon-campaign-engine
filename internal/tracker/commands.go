@@ -87,7 +87,7 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 	case "note.consume":
 		summary, err = a.noteConsume(c.Payload)
 	case "round.advance":
-		summary = a.roundAdvance()
+		summary = a.gmNextRound()
 	case "fight.start":
 		summary, err = a.fightStart(c.Payload)
 	case "fight.end":

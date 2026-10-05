@@ -171,7 +171,7 @@ async function main(): Promise<void> {
     const groups = groupActions(hero);
     const detail = turnDetail(hero);
     return [
-      h('h2', { class: 'text-sm font-semibold uppercase tracking-wide opacity-60' }, `${hero.name}'s turn`),
+      h('h2', { class: 'text-sm font-semibold uppercase tracking-wide opacity-60' }, hero.turn ? `${hero.name}'s turn` : hero.name),
       detail ? h('p', { class: 'text-sm' }, detail) : null,
       groups.moves.size ? h('p', { class: 'text-xs opacity-70' }, 'Click a highlighted square to move there, or a monster in reach to attack it.') : null,
       groups.buttons.length

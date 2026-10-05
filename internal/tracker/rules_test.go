@@ -167,6 +167,23 @@ func TestTheGMMaySkipTheMonstersPhase(t *testing.T) {
 	}
 }
 
+// The tracker's "Next round" (round.advance) is the GM's override: in rules
+// mode it ends the round as phase.end does, closing a turn left open.
+func TestNextRoundInRulesModeStartsTheHeroesPhase(t *testing.T) {
+	s := rulesState(t)
+	s, _ = apply(t, s, as(seat("hero-1"), cmd(t, "turn.start", map[string]any{"hero": "hero-1"})))
+	s, ev := apply(t, s, cmd(t, "round.advance", map[string]any{}))
+	if s.Round != 2 || s.Rules.Phase != PhaseHeroes || s.Rules.Turn != nil || len(s.Rules.Acted) != 0 {
+		t.Fatalf("round %d, %+v", s.Round, s.Rules)
+	}
+	if ev.Summary != "Round 2 begins: the heroes' turns (Grom's turn ended by the GM)" {
+		t.Errorf("summary %q", ev.Summary)
+	}
+	if s, _ = apply(t, s, as(seat("hero-1"), cmd(t, "turn.start", map[string]any{"hero": "hero-1"}))); s.Rules.Turn == nil {
+		t.Error("Grom plays again in the new round")
+	}
+}
+
 func TestRulesModeRunsFightsFromRevealedMonsters(t *testing.T) {
 	s := newState(t)
 	s, _ = apply(t, s, cmd(t, "seen.set", map[string]any{"id": "monster-1", "seen": true}))

@@ -2,7 +2,7 @@
 import { createRequester, encodeId as id } from '../api/http.ts';
 import type { Catalog } from '../maps/types.ts';
 import type { PlayerResponse } from '../players/types.ts';
-import type { SeatResponse } from '../seat/types.ts';
+import type { Action, SeatResponse } from '../seat/types.ts';
 import type { Chapter, Command, CommandResponse, Item, ScriptSection, SessionEvent, SessionResponse } from './types.ts';
 
 export function createTrackerApi(fetchFn: typeof fetch = fetch.bind(globalThis)) {
@@ -11,6 +11,8 @@ export function createTrackerApi(fetchFn: typeof fetch = fetch.bind(globalThis))
     catalog: () => request<Catalog>('GET', '/api/catalog'),
     session: (sessionId: string) => request<SessionResponse>('GET', `/api/sessions/${id(sessionId)}`),
     command: (sessionId: string, command: Command) => request<CommandResponse>('POST', `/api/sessions/${id(sessionId)}/commands`, command),
+    /** What the GM may do now by the rules (empty while the rules are off), and the event it was listed for. */
+    gmActions: (sessionId: string) => request<{ eventSeq: number; actions: Action[] }>('GET', `/api/sessions/${id(sessionId)}/actions`),
     events: (sessionId: string, after = 0) => request<SessionEvent[]>('GET', `/api/sessions/${id(sessionId)}/events?after=${after}`),
     complete: (sessionId: string) => request<CommandResponse>('POST', `/api/sessions/${id(sessionId)}/complete`),
     reopen: (sessionId: string) => request<CommandResponse>('POST', `/api/sessions/${id(sessionId)}/reopen`),

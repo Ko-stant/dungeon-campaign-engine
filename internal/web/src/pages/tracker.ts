@@ -25,6 +25,9 @@ import { oddsBlock } from '../ui/odds.ts';
 import { effectSuggestions, effectsBlock } from '../ui/effects.ts';
 import { readAloudPanel, readerOverlay, type ReadAloudContext } from '../ui/readAloud.ts';
 import { currentSection, passageClips } from '../tracker/script.ts';
+import { gmConsole, monsterMoveAt, monsterMoveTiles } from '../tracker/rules.ts';
+import { rulesConsole } from '../ui/rulesConsole.ts';
+import type { Action } from '../seat/types.ts';
 
 const TRAP_STATES: readonly LiveTrapState[] = ['hidden', 'revealed', 'triggered', 'disarmed', 'removed'];
 const btn = 'rounded-md border border-border/60 px-2 py-1 text-sm hover:border-amber-500 disabled:opacity-40';
@@ -88,6 +91,10 @@ async function main(): Promise<void> {
   let live = false;
   /** Players connected online (sign-in on); empty at the table. */
   let presence: Present[] = [];
+  // The GM's legal actions in rules mode (online play), for the event they were listed for.
+  let gmActions: Action[] = [];
+  let actionsSeq = -1;
+  let actionsLoading = false;
   // The passage open in the reader, and script sections the GM opened or closed.
   let readerId: string | null = null;
   const scriptSectionOpen = new Map<number, boolean>();
@@ -126,7 +133,8 @@ async function main(): Promise<void> {
   const requestDraw = (): void => {
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
-      const tiles = mode.kind === 'pickSquares' ? pending : revealDrag?.moved ? corridorPath(state, revealDrag.path) : null;
+      const moves = mode.kind === 'select' ? monsterMoveTiles(gmConsole(state, currentActions()), selectedId) : [];
+      const tiles = mode.kind === 'pickSquares' ? pending : revealDrag?.moved ? corridorPath(state, revealDrag.path) : moves.length ? moves : null;
       renderer.draw(trackerView(state, catalog, { fog }), { selectedId, tiles });
     });
   };
@@ -193,6 +201,13 @@ async function main(): Promise<void> {
   canvas.addEventListener('click', (ev) => {
     if (swallowClick) {
       swallowClick = false;
+      return;
+    }
+    // A selected monster's highlighted square: its move by the rules.
+    const tile = targetAt(ev).tile;
+    const ruled = mode.kind === 'select' && tile ? monsterMoveAt(gmConsole(state, currentActions()), selectedId, tile) : null;
+    if (ruled) {
+      void send(ruled.command);
       return;
     }
     const result = clickCommand(state, mode, selectedId, targetAt(ev), catalog);
@@ -948,6 +963,14 @@ async function main(): Promise<void> {
     replaceChildren(
       rightPanel,
       status !== 'active' ? h('p', { class: 'rounded-md border border-purple-400/60 bg-purple-400/10 p-2 text-sm' }, 'This quest is completed. Reopen it to make changes.') : null,
+      rulesConsole({
+        state,
+        actions: currentActions(),
+        selectedId,
+        disabled: busy || status !== 'active',
+        send: (c) => { void send(c); },
+        select: (id) => { selectedId = id; setMode({ kind: 'select' }); },
+      }),
       renderSelection(),
       readAloudPanel(readAloudContext()),
       h('section', { class: 'space-y-2' },
@@ -972,7 +995,36 @@ async function main(): Promise<void> {
     );
   }
 
+  /** The GM's legal actions, if they were listed for the state on screen. */
+  function currentActions(): Action[] {
+    return actionsSeq === lastSeq ? gmActions : [];
+  }
+
+  /** Fetches the GM's legal actions when the state has moved on (rules mode only). */
+  function syncActions(): void {
+    if (!state.rules) {
+      gmActions = [];
+      actionsSeq = lastSeq;
+      return;
+    }
+    if (actionsLoading || actionsSeq >= lastSeq) {
+      return;
+    }
+    actionsLoading = true;
+    void api.gmActions(sessionId ?? '').then((r) => {
+      gmActions = r.actions;
+      actionsSeq = r.eventSeq;
+    }).catch(() => {
+      actionsSeq = lastSeq; // shown without actions; the next change tries again
+      gmActions = [];
+    }).finally(() => {
+      actionsLoading = false;
+      refresh();
+    });
+  }
+
   function refresh(): void {
+    syncActions();
     const restoreFocus = preserveFocus(document.body);
     renderHeader();
     renderModeBar();

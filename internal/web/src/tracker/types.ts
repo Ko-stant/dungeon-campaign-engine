@@ -184,6 +184,33 @@ export interface SessionState {
   discovered: number[];
   /** Read-aloud passage ids already read at the table. */
   readPassages?: string[] | null;
+  /** The rules engine (online play); missing while the rules are off. */
+  rules?: RulesState;
+}
+
+/** The rules engine's state, mirroring tracker.RulesState (Go). */
+export interface RulesState {
+  ruleset: string;
+  /** heroes, monsters or over. */
+  phase: string;
+  /** Heroes whose turn this round is over. */
+  acted?: string[] | null;
+  turn?: Turn;
+  /** Heroes who lose their next turn (a critical miss). */
+  skipNext?: string[] | null;
+  monstersMoved?: string[] | null;
+  monstersActed?: string[] | null;
+  /** won or lost, once the quest is over. */
+  outcome?: string;
+}
+
+/** The hero's turn under way, mirroring tracker.Turn (Go). */
+export interface Turn {
+  heroId: string;
+  moveRoll?: number;
+  moveLeft?: number;
+  acted?: boolean;
+  moveDone?: boolean;
 }
 
 /** A campaign's read-aloud script, mirroring internal/script (Go). */

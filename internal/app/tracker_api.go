@@ -82,6 +82,7 @@ func (s *Server) registerTracker(mux routeMux) {
 	mux.HandleFunc("POST /api/sessions/{id}/travel", s.sessionTravel)
 	mux.HandleFunc("GET /api/campaigns/{id}/chapters", s.listChapters)
 	mux.HandleFunc("GET /api/sessions/{id}/events", s.sessionEvents)
+	mux.HandleFunc("GET /api/sessions/{id}/actions", s.gmActions)
 	mux.HandleFunc("POST /api/sessions/{id}/complete", s.completeSession)
 	mux.HandleFunc("POST /api/sessions/{id}/reopen", s.reopenSession)
 	mux.HandleFunc("GET /api/sessions/{id}/stream", s.sessionStream)
@@ -397,6 +398,33 @@ func (s *Server) getSession(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeStoreError(w, err)
 		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// ActionsResponse is what the GM may do now by the rules (the tracker's
+// rules console): phase changes and, in the monsters' phase, every
+// monster's moves and attacks. EventSeq is the state they were listed
+// for. Empty while the rules are off.
+type ActionsResponse struct {
+	EventSeq int64            `json:"eventSeq"`
+	Actions  []tracker.Action `json:"actions"`
+}
+
+func (s *Server) gmActions(w http.ResponseWriter, r *http.Request) {
+	ss, state, err := s.loadSessionState(r.Context(), r.PathValue("id"))
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	cat, err := s.campaignCatalog(r.Context(), ss.CampaignID)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	resp := ActionsResponse{EventSeq: ss.EventSeq, Actions: tracker.LegalActions(state, tracker.Actor{}, cat)}
+	if resp.Actions == nil {
+		resp.Actions = []tracker.Action{}
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

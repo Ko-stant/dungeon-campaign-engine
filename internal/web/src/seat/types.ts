@@ -1,5 +1,7 @@
 /** A player's seat online, mirroring internal/tracker/seat.go and internal/app/seat.go (Go). */
-import type { Effect, HeroCombat, Item } from '../tracker/types.ts';
+import type { Effect, HeroCombat, Item, Turn } from '../tracker/types.ts';
+
+export type { Turn } from '../tracker/types.ts';
 import type { PlayerResponse, PlayerUpdate } from '../players/types.ts';
 
 /** A command the seat may send now, ready to post (tracker.Action). */
@@ -8,14 +10,6 @@ export interface Action {
   command: { type: string; payload: Record<string, unknown> };
 }
 
-/** The turn under way (tracker.Turn). */
-export interface Turn {
-  heroId: string;
-  moveRoll?: number;
-  moveLeft?: number;
-  acted?: boolean;
-  moveDone?: boolean;
-}
 
 export interface SeatAbility {
   id: string;
