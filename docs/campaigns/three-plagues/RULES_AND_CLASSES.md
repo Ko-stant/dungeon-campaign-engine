@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 00:30 EDT
+**Last Updated**: 2026-10-05 01:30 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -390,6 +390,36 @@ with starter gear.
   just spent their action searching or failing a disarm. Alone: the Barbarian survives 76%,
   the Rogue 44%, the Ranger 9%, the Cleric never; in pairs (54 Body) 80-99% win. Very likely
   a death when a hero opens those chests alone.
+
+### Hallway monsters (2026-10-05)
+Tried and removed: hallways stay mostly clear, apart from the few monsters guarding chests.
+The GM added three hallway monsters to Quest 1: a skeleton at (10,14) between Room 4 and Room
+20, a lone abomination at (18,1) and an orc at (13,7). Results (6,000 runs; cleared / nobody
+dead):
+
+| | No finds | Finds as found |
+|---|---|---|
+| Before | 90% / 78% | 94% / 85% |
+| Each waits alone in its hallway | 90% / 80% | 94% / 86% |
+| Each joins the nearest room fight (skeleton Room 4, abomination Room 11, orc Room 8) | 65% / 42% | 80% / 60% |
+| Skeleton and orc join (Room 4, Room 8); the abomination waits | 86% / 70% | 92% / 81% |
+| Only the abomination joins the gargoyle (Room 11) | 76% / 56% | 86% / 69% |
+| Doubled (2 of each), each pair waits in its hallway | 89% / 78% | 93% / 86% |
+| Doubled; skeletons join Room 4, orcs join Room 8, abominations wait | 82% / 67% | 89% / 79% |
+| Doubled; all three pairs join their rooms | 51% / 29% | 70% / 49% |
+
+- A lone hallway monster changes nothing: the heroes act first and gang up on it (skeleton
+  about 1 round, orc 2, abomination 2.5; 0-4% of the party's Body). An ambush (the monster
+  acts first) barely matters either (1-5%).
+- Easy fights even help the party: mana regenerates and cooldowns finish only in fights, so a
+  quick fight refills the Cleric for healing afterward (the "keep a weak monster alive" effect,
+  here earned legitimately).
+- Doubling them doesn't change that on its own: a fresh party beats 2 skeletons in about 2
+  rounds (2% of its Body), 2 orcs in 2 (7%), 2 abominations in about 4 (14%), and heals up
+  afterward. How many matters far less than whether they pile onto another fight.
+- Hallway monsters bite when they join a room fight. The abomination joining the lone gargoyle
+  turns Room 11 into half the party's Body (about 6 rounds); the skeleton and orc joining
+  Room 4 and Room 8 land Quest 1 at 81% with finds.
 
 ### Combat roadmap
 1. Attack and defense rules (this section) - done 2026-10-03.
