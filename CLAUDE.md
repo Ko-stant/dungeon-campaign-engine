@@ -89,7 +89,8 @@ Tailwind CSS v4, canvas rendering.
     shows only `tracker.PlayerView` (`internal/tracker/player.go`) from
     `GET /api/sessions/{id}/player` and `/api/sessions/{id}/player-stream`
     (`internal/app/player_api.go`); events carry a player-safe `player_summary` from an
-    allow-list. The GM shows pieces with `seen.set` (doors, furniture, blocked squares,
+    allow-list, and sightings apart in `player_spotted` (`tracker.PlayerLine` joins them):
+    removing a living monster takes its sighting back (a killed one's stays). The GM shows pieces with `seen.set` (doors, furniture, blocked squares,
     monsters); anything new that the players could see must be added to the allow-lists
     there, never sent from the GM state. Plan and decisions: `docs/PLAYER_SCREEN_PLAN.md`.
   - Odds hints (`internal/web/src/tracker/odds.ts`, `ui/odds.ts`): the selected monster's

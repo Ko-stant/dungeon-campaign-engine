@@ -12,7 +12,7 @@ import { createTrackerApi } from '../tracker/api.ts';
 import { combatLine, combatTotals, FALTER_PENALTY, falterAt, manaCap, monsterLine } from '../tracker/combat.ts';
 import { formatEvent } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
-import { clickCommand, corridorPath, paintPending, revealPathCommand, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
+import { clickCommand, corridorPath, hotkey, paintPending, revealPathCommand, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
 import { triggerButton } from '../tracker/traps.ts';
 import { shownToPlayers } from '../tracker/visibility.ts';
 import type { Command, CommandResponse, Hero, LiveTrapState, Monster, ScriptSection, SessionEvent, SessionState } from '../tracker/types.ts';
@@ -301,6 +301,15 @@ async function main(): Promise<void> {
       mode = { kind: 'select' };
       pending = [];
       refresh();
+      return;
+    }
+    const key = hotkey(ev, mode, revealSeen);
+    if (key) {
+      ev.preventDefault();
+      if (key.deselect) {
+        selectedId = null;
+      }
+      setMode(key.mode);
     }
   });
 
@@ -448,13 +457,13 @@ async function main(): Promise<void> {
 
   function renderModeBar(): void {
     const revealing = mode.kind === 'reveal' || mode.kind === 'pickSquares';
-    const modeBtn = (m: Mode, label: string, title: string, active = mode.kind === m.kind): HTMLButtonElement =>
+    const modeBtn = (m: Mode, label: string, title: string, active = mode.kind === m.kind, key = ''): HTMLButtonElement =>
       h('button', {
         type: 'button',
-        title,
+        title: key ? `${title} (key ${key})` : title,
         class: active ? btnActive : btn,
         onclick: () => { setMode(m); },
-      }, label);
+      }, label, key ? h('kbd', { class: 'ml-1.5 rounded border border-current/30 px-1 font-mono text-[0.7rem] opacity-60' }, key) : null);
     const checkbox = (label: string, checked: boolean, onChange: (v: boolean) => void): HTMLElement =>
       h('label', { class: 'flex items-center gap-1 text-sm' },
         h('input', { type: 'checkbox', checked, onchange: (e: Event) => { onChange((e.target as HTMLInputElement).checked); } }), label);
@@ -483,7 +492,7 @@ async function main(): Promise<void> {
       },
     }, ...catalog.monsters.map((m) => h('option', { value: m.id, selected: m.id === monsterType }, monsterOptionLabel(m))));
     const hint: Record<Mode['kind'], string> = {
-      select: 'Click a hero, monster or movable trap (boulder), then a square to move it. Click a door to select it, then open, close or lock it from the Selected panel. Click furniture or blocked squares to show them to the players.',
+      select: 'Click a hero, monster or movable trap (boulder), then a square to move it; press 1 to let go of it. Click a door to select it, then open, close or lock it from the Selected panel. Click furniture or blocked squares to show them to the players.',
       reveal: revealSeen
         ? 'Click a room to reveal it, or drag along a corridor to reveal its squares, and show the players what is there: monsters, furniture, blocked squares and doors (never traps or unfound secret doors).'
         : 'Click a room to reveal it, or drag along a corridor to reveal its squares. What is there stays hidden from the players.',
@@ -494,10 +503,10 @@ async function main(): Promise<void> {
     };
     replaceChildren(
       modeBar,
-      modeBtn({ kind: 'select' }, 'Select / move', 'Select pieces, move them, open and close doors'),
-      modeBtn({ kind: 'reveal', seen: revealSeen }, 'Reveal', 'Mark areas the heroes have discovered', revealing),
+      modeBtn({ kind: 'select' }, 'Select / move', 'Select pieces, move them, open and close doors; the key also clears the selection', mode.kind === 'select', '1'),
+      modeBtn({ kind: 'reveal', seen: revealSeen }, 'Reveal', 'Mark areas the heroes have discovered', revealing, '2'),
       ...revealOptions,
-      modeBtn({ kind: 'hide' }, 'Hide', 'Un-discover a square'),
+      modeBtn({ kind: 'hide' }, 'Hide', 'Un-discover a square', mode.kind === 'hide', '3'),
       modeBtn({ kind: 'block' }, 'Block square', 'Put a blocked square down during play'),
       modeBtn({ kind: 'addMonster', monsterType }, 'Add monster', 'Place a new monster'),
       monsterSelect,

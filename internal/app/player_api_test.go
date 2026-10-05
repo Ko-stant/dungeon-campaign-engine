@@ -93,4 +93,18 @@ func TestPlayerScreenAPI(t *testing.T) {
 	if u, raw = read(); u.Event != nil || u.EventSeq != 6 || strings.Contains(raw, "spy") {
 		t.Fatalf("a GM note pushes the state but no line: %s", raw)
 	}
+
+	// Removing a living monster (added by mistake) takes back its sighting: the
+	// screen gets the whole feed again, without it.
+	command("monster.remove", map[string]any{"id": "monster-1"})
+	u, raw = read()
+	if u.Event != nil || u.Feed == nil || strings.Contains(raw, "Spotted") || strings.Contains(raw, "monster-1") {
+		t.Fatalf("removal pushes the feed without the sighting: %s", raw)
+	}
+	if len(u.Feed) != 2 || u.Feed[0].Summary != "The quest begins" || u.Feed[1].Summary != "Round 2" {
+		t.Fatalf("feed after removal: %+v", u.Feed)
+	}
+	if _, data := c(http.MethodGet, "/api/sessions/"+sess.ID+"/player", nil); strings.Contains(string(data), "Spotted") {
+		t.Fatalf("the sighting stays gone on reload: %s", data)
+	}
 }

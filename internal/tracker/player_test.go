@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"encoding/json"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -111,8 +112,8 @@ func TestPlayerSummaries(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s: %v", st.c.Type, err)
 			}
-			if ev.PlayerSummary != st.want {
-				t.Errorf("%s %s: player summary %q, want %q (GM: %q)", st.c.Type, st.c.Payload, ev.PlayerSummary, st.want, ev.Summary)
+			if got := PlayerLine(ev.PlayerSpotted, ev.PlayerSummary); got != st.want {
+				t.Errorf("%s %s: player line %q, want %q (GM: %q)", st.c.Type, st.c.Payload, got, st.want, ev.Summary)
 			}
 			s = next
 		}
@@ -154,4 +155,31 @@ func TestPlayerSummaries(t *testing.T) {
 	run([]step{
 		{cmd(t, "monster.update", map[string]any{"id": "monster-4", "body": 0}), "Orc took damage"},
 	})
+}
+
+func TestSpottedMonstersAreKeptApartForRetraction(t *testing.T) {
+	_, _, cat := fixture()
+	cat.Monsters = append(cat.Monsters, content.MonsterDef{ID: "goblin", Name: "Goblin", Body: 1})
+	s := newState(t)
+	s.QuestID = "quest-a"
+	s, ev := applyWith(t, s, cmd(t, "monster.add", map[string]any{"type": "goblin", "x": 4, "y": 1}), cat)
+	// The spotted monster is kept apart from the rest of the line, with its map.
+	want := []SpottedMonster{{ID: "monster-3", Name: "Goblin", Map: "quest-a"}}
+	if !reflect.DeepEqual(ev.PlayerSpotted, want) || ev.PlayerSummary != "" || ev.PlayerRetract != nil {
+		t.Fatalf("spotted: %+v %q %+v", ev.PlayerSpotted, ev.PlayerSummary, ev.PlayerRetract)
+	}
+	if got := PlayerLine(append(want, SpottedMonster{ID: "monster-4", Name: "Orc"}), "Orc slain"); got != "Spotted: Goblin, Orc; Orc slain" {
+		t.Fatalf("line: %q", got)
+	}
+
+	// Removing a living monster takes back the players' sighting of it.
+	_, ev = applyWith(t, s, cmd(t, "monster.remove", map[string]any{"id": "monster-3"}), cat)
+	if ev.PlayerRetract == nil || *ev.PlayerRetract != want[0] || ev.PlayerSummary != "" {
+		t.Fatalf("remove a living monster: %+v %q", ev.PlayerRetract, ev.PlayerSummary)
+	}
+	// A killed monster's sighting stays, even when its body is cleared away.
+	s, _ = applyWith(t, s, cmd(t, "monster.update", map[string]any{"id": "monster-3", "alive": false}), cat)
+	if _, ev = applyWith(t, s, cmd(t, "monster.remove", map[string]any{"id": "monster-3"}), cat); ev.PlayerRetract != nil {
+		t.Fatalf("remove a dead monster: %+v", ev.PlayerRetract)
+	}
 }

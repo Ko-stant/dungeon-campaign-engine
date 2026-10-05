@@ -8,7 +8,7 @@
 import { pixelToTile } from '../board/geometry.ts';
 import { BoardRenderer } from '../board/renderer.ts';
 import { cardFor, pickAt, type Pick } from '../players/cards.ts';
-import { addEvent } from '../players/feed.ts';
+import { feedAfter } from '../players/feed.ts';
 import { nextScale, parseScale } from '../players/scale.ts';
 import type { PlayerCatalog, PlayerEvent, PlayerHero, PlayerState, PlayerUpdate } from '../players/types.ts';
 import { playerBoardView } from '../players/view.ts';
@@ -217,11 +217,9 @@ async function main(): Promise<void> {
     }
     state = u.state;
     lastSeq = u.eventSeq;
-    if (u.event) {
-      feed = addEvent(feed, u.event, FEED_LENGTH);
-      if (!feedOpen) {
-        unread++;
-      }
+    feed = feedAfter(feed, u, FEED_LENGTH);
+    if (u.event && !feedOpen) {
+      unread++;
     }
   }
 
@@ -233,9 +231,8 @@ async function main(): Promise<void> {
       void api.player(sessionId ?? '').then((r) => {
         state = r.state;
         lastSeq = Math.max(lastSeq, r.eventSeq);
-        for (const e of r.events) {
-          feed = addEvent(feed, e, FEED_LENGTH);
-        }
+        // The server's feed is the truth (a sighting may have been taken back meanwhile).
+        feed = r.events.slice(-FEED_LENGTH);
         refresh();
       }).catch(() => undefined);
       refresh();

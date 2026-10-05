@@ -19,6 +19,27 @@ export type Mode =
   | { kind: 'block' }
   | { kind: 'addMonster'; monsterType: string };
 
+/** The mode bar's keyboard shortcuts: 1 Select / move (and clear the selection), 2 Reveal, 3 Hide. */
+export function hotkey(
+  ev: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean },
+  mode: Mode,
+  revealSeen: boolean,
+): { mode: Mode; deselect: boolean } | null {
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) {
+    return null;
+  }
+  switch (ev.key) {
+    case '1':
+      return { mode: { kind: 'select' }, deselect: true };
+    case '2':
+      return { mode: mode.kind === 'pickSquares' ? mode : { kind: 'reveal', seen: revealSeen }, deselect: false };
+    case '3':
+      return { mode: { kind: 'hide' }, deselect: false };
+    default:
+      return null;
+  }
+}
+
 export interface ClickTarget {
   tile: TileCoord | null;
   edge: Edge | null;

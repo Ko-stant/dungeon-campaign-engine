@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { DOC_VERSION, type Catalog } from '../maps/types.ts';
 import { formatEvent } from './format.ts';
-import { clickCommand, corridorPath, doorAt, paintPending, pieceAt, revealPathCommand, revealSquaresCommand, type Mode } from './interaction.ts';
+import { clickCommand, corridorPath, doorAt, hotkey, paintPending, pieceAt, revealPathCommand, revealSquaresCommand, type Mode } from './interaction.ts';
 import type { SessionState } from './types.ts';
 import { trackerView } from './view.ts';
 import { shownToPlayers } from './visibility.ts';
@@ -385,5 +385,22 @@ describe('shownToPlayers', () => {
     expect(shownToPlayers(s, 'added-1')).toBe(true);
     expect(shownToPlayers(s, 'trap-1')).toBeNull();
     expect(shownToPlayers(s, 'note-A')).toBeNull();
+  });
+});
+
+describe('hotkey', () => {
+  const plain = { ctrlKey: false, metaKey: false, altKey: false };
+  test('1 is Select / move and clears the selection, 2 Reveal, 3 Hide', () => {
+    expect(hotkey({ key: '1', ...plain }, { kind: 'hide' }, true)).toEqual({ mode: { kind: 'select' }, deselect: true });
+    expect(hotkey({ key: '1', ...plain }, { kind: 'select' }, true)).toEqual({ mode: { kind: 'select' }, deselect: true });
+    expect(hotkey({ key: '2', ...plain }, { kind: 'select' }, false)).toEqual({ mode: { kind: 'reveal', seen: false }, deselect: false });
+    expect(hotkey({ key: '3', ...plain }, { kind: 'reveal', seen: true }, true)).toEqual({ mode: { kind: 'hide' }, deselect: false });
+  });
+  test('2 keeps square picking on, and other keys or shortcuts with modifiers do nothing', () => {
+    const picking: Mode = { kind: 'pickSquares', seen: true };
+    expect(hotkey({ key: '2', ...plain }, picking, true)).toEqual({ mode: picking, deselect: false });
+    expect(hotkey({ key: '4', ...plain }, picking, true)).toBeNull();
+    expect(hotkey({ key: '1', ...plain, metaKey: true }, picking, true)).toBeNull();
+    expect(hotkey({ key: '2', ...plain, ctrlKey: true }, picking, true)).toBeNull();
   });
 });

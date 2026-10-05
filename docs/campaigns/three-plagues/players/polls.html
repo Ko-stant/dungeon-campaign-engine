@@ -68,6 +68,22 @@ button.primary:focus-visible { outline: 2px solid var(--gold-bright); outline-of
 .comment { border-left: 3px solid var(--moss-line); padding-left: 0.8rem; display: grid; gap: 0.1rem; }
 .comment .label { color: var(--gold); }
 .comment p { white-space: pre-wrap; }
+
+/* Screenshots of the TV and the Chronicler's screen; each opens large in a viewer on the page (the page can't open new tabs). */
+.screens { display: grid; gap: 1.4rem; }
+.screens .intro { color: var(--ink-muted); }
+figure.shot { margin: 0; display: grid; gap: 0.5rem; }
+figure.shot button { display: block; padding: 0; border: 1px solid var(--stone-line); border-radius: 6px; overflow: hidden; background: none; cursor: zoom-in; }
+figure.shot button:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+figure.shot img { display: block; width: 100%; height: auto; }
+dialog.viewer { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: rgb(0 0 0 / 0.92); color: var(--ink); }
+dialog.viewer[open] { display: grid; grid-template-rows: auto 1fr; }
+dialog.viewer .bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.6rem 16px; }
+dialog.viewer .bar button { font-family: var(--label); font-size: 1rem; letter-spacing: 0.05em; color: var(--stone); background: var(--gold); border: 0; border-radius: 6px; padding: 0.35rem 1rem; cursor: pointer; }
+dialog.viewer .scroll { overflow: auto; padding: 0 16px 16px; }
+dialog.viewer img { display: block; width: 2000px; max-width: none; height: auto; margin-inline: auto; cursor: zoom-out; }
+figure.shot figcaption { color: var(--ink-muted); font-size: 0.98rem; }
+figure.shot figcaption strong { color: var(--gold-bright); font-weight: 600; }
 </style>
 
 <div class="wrap">
@@ -78,6 +94,24 @@ button.primary:focus-visible { outline: 2px solid var(--gold-bright); outline-of
   </header>
 
   <div id="notice" class="notice" hidden></div>
+
+  <section class="screens" aria-labelledby="screens-title">
+    <h2 id="screens-title">What it looks like at the table</h2>
+    <p class="intro">From a test run of the original first quest, The Trial, with our heroes. Click either one to see it full size; scroll around it if it's bigger than your screen.</p>
+    <figure class="shot">
+      <button type="button" class="zoom" aria-label="Show the TV screenshot full size"><img src="screens/player-screen.webp" width="2000" height="1009" loading="lazy" alt="The TV during a fight: the party's Body, Mind and mana on the left, the map with two explored rooms and a corridor in the middle, and on the right a goblin's card above the What happened log."></button>
+      <figcaption><strong>The TV.</strong> Your party on the left, the map in the middle (explored rooms are light, explored corridors tan) and, on the right, a monster's card and the "What happened" log. Monster Body is hidden here, which is one of the questions below.</figcaption>
+    </figure>
+    <figure class="shot">
+      <button type="button" class="zoom" aria-label="Show the Chronicler's screen full size"><img src="screens/gm-tracker.webp" width="2000" height="1015" loading="lazy" alt="The Chronicler's screen: a hero's stats, abilities and gear on the left, the whole map with hidden monsters dimmed in the middle, and the selected door and the full log on the right."></button>
+      <figcaption><strong>The Chronicler's screen.</strong> The whole map, hidden monsters included, with each hero's abilities, cooldowns and gear, and the full log. Monster health is blacked out so nothing gets spoiled.</figcaption>
+    </figure>
+  </section>
+
+  <dialog class="viewer" id="viewer" aria-label="Screenshot, full size">
+    <div class="bar"><span class="label" id="viewer-title"></span><button type="button" id="viewer-close">Close</button></div>
+    <div class="scroll"><img id="viewer-img" alt=""></div>
+  </dialog>
 
   <form id="poll" novalidate>
     <div class="question">
@@ -118,17 +152,17 @@ button.primary:focus-visible { outline: 2px solid var(--gold-bright); outline-of
     {
       id: 'narration',
       title: 'How should the story be told?',
-      why: 'The read-aloud scenes can play as voiced audio clips, or the GM can narrate everything live.',
+      why: 'The read-aloud scenes can play as voiced audio clips, or the Chronicler can narrate everything live.',
       options: [
         { id: 'audio', title: 'Voiced audio', detail: 'Play the recorded clips for the read-aloud scenes.' },
-        { id: 'gm', title: 'The GM narrates', detail: 'Everything read live at the table.' },
-        { id: 'mix', title: 'A mix', detail: 'Audio for the big moments, the GM for the rest.' },
+        { id: 'gm', title: 'The Chronicler narrates', detail: 'Everything read live at the table.' },
+        { id: 'mix', title: 'A mix', detail: 'Audio for the big moments, the Chronicler for the rest.' },
       ],
     },
     {
       id: 'monsterBody',
       title: "Should the TV show monsters' exact Body?",
-      why: "When the GM shows a monster's card, it can list its Body, or keep you guessing until it's badly hurt.",
+      why: "When the Chronicler shows a monster's card, it can list its Body, or keep you guessing until it's badly hurt.",
       options: [
         { id: 'exact', title: 'Exact Body', detail: 'For example "Body 64 / 109", always.' },
         { id: 'wounded', title: 'Only "Wounded"', detail: 'No numbers; a tag appears once it is down to a quarter of its Body.' },
@@ -140,7 +174,7 @@ button.primary:focus-visible { outline: 2px solid var(--gold-bright); outline-of
       why: 'When every die shows 1 (very rare), the rules say you miss and lose your next turn.',
       options: [
         { id: 'keep', title: 'Keep it', detail: 'Lose your next turn. Rare, painful, memorable.' },
-        { id: 'soften', title: 'Soften it', detail: 'Just a miss, with a blunder the GM describes.' },
+        { id: 'soften', title: 'Soften it', detail: 'Just a miss, with a blunder the Chronicler describes.' },
       ],
     },
     {
@@ -158,8 +192,8 @@ button.primary:focus-visible { outline: 2px solid var(--gold-bright); outline-of
       why: 'Abilities have cooldowns in rounds, and Determination adds +2 Accuracy per miss in a row.',
       options: [
         { id: 'players', title: 'Each player', detail: 'Dice or tokens beside your hero card.' },
-        { id: 'gm', title: 'The GM', detail: 'In the app; the TV shows what matters.' },
-        { id: 'both', title: 'Both', detail: 'You track at the table, the GM double-checks in the app.' },
+        { id: 'gm', title: 'The Chronicler', detail: 'In the app; the TV shows what matters.' },
+        { id: 'both', title: 'Both', detail: 'You track at the table, the Chronicler double-checks in the app.' },
       ],
     },
     {
@@ -168,7 +202,7 @@ button.primary:focus-visible { outline: 2px solid var(--gold-bright); outline-of
       why: 'When every die shows its highest face, the hit deserves a flourish.',
       options: [
         { id: 'player', title: 'The player', detail: 'You rolled it, you tell us what happens.' },
-        { id: 'gm', title: 'The GM', detail: 'The GM narrates the moment.' },
+        { id: 'gm', title: 'The Chronicler', detail: 'The Chronicler narrates the moment.' },
       ],
     },
     {
@@ -183,6 +217,20 @@ button.primary:focus-visible { outline: 2px solid var(--gold-bright); outline-of
   ];
 
   const $ = (id) => document.getElementById(id);
+
+  // Screenshots open in the viewer; a click on the picture, Close or Escape shuts it.
+  const viewer = $('viewer');
+  for (const btn of document.querySelectorAll('figure.shot button.zoom')) {
+    btn.addEventListener('click', () => {
+      const img = btn.querySelector('img');
+      $('viewer-img').src = img.getAttribute('src');
+      $('viewer-img').alt = img.alt;
+      $('viewer-title').textContent = btn.closest('figure').querySelector('figcaption strong').textContent.replace(/\.$/, '');
+      viewer.showModal();
+    });
+  }
+  $('viewer-close').addEventListener('click', () => viewer.close());
+  $('viewer-img').addEventListener('click', () => viewer.close());
   const form = $('poll');
   const notice = $('notice');
   const statusEl = $('status');
@@ -307,7 +355,7 @@ button.primary:focus-visible { outline: 2px solid var(--gold-bright); outline-of
     } catch (err) {
       const code = err && err.code;
       if (code === 'invalid_argument' || code === 'not_granted' || code === 'revoked') {
-        setReadOnly("You can see the results, but this invite can't save answers. Ask the GM to invite you as an Editor, or tell them your answers.");
+        setReadOnly("You can see the results, but this invite can't save answers. Ask the Chronicler to invite you as an Editor, or tell them your answers.");
         statusEl.textContent = '';
       } else {
         statusEl.textContent = code === 'resource_exhausted' ? 'Too many saves at once. Try again in a moment.' : 'Could not save. Check your connection and try again.';
@@ -330,7 +378,7 @@ button.primary:focus-visible { outline: 2px solid var(--gold-bright); outline-of
     db = dbNs;
     myId = userNs ? await userNs.id() : null;
     if (!db || !myId) {
-      setReadOnly('Sign in to claude.ai with the invite the GM sent to answer and see the results.');
+      setReadOnly('Sign in to claude.ai with the invite the Chronicler sent to answer and see the results.');
       if (!db) return;
     }
     db.collection('votes').onSnapshot((snap) => {

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"slices"
 	"time"
@@ -83,15 +85,48 @@ func playerCatalog(cat *content.Catalog) PlayerCatalog {
 }
 
 // PlayerUpdate is pushed to player screens on every change; Event is nil
-// when the players hear nothing about it.
+// when the players hear nothing about it. Feed (nil otherwise) replaces the
+// screen's feed when earlier lines changed: a sighting taken back.
 type PlayerUpdate struct {
-	State    tracker.PlayerState  `json:"state"`
-	Event    *PlayerEventResponse `json:"event"`
-	EventSeq int64                `json:"eventSeq"`
+	State    tracker.PlayerState   `json:"state"`
+	Event    *PlayerEventResponse  `json:"event"`
+	EventSeq int64                 `json:"eventSeq"`
+	Feed     []PlayerEventResponse `json:"feed"`
 }
 
+// playerEventResponse is an event's player line: its sightings (monster ids
+// stay on the server) and the rest.
 func playerEventResponse(e store.Event) PlayerEventResponse {
-	return PlayerEventResponse{Seq: e.Seq, Round: e.Round, Summary: e.PlayerSummary, CreatedAt: e.CreatedAt}
+	var spotted []tracker.SpottedMonster
+	_ = json.Unmarshal(e.PlayerSpotted, &spotted) // a bad value just shows no sightings
+	return PlayerEventResponse{Seq: e.Seq, Round: e.Round, Summary: tracker.PlayerLine(spotted, e.PlayerSummary), CreatedAt: e.CreatedAt}
+}
+
+// playerFeed is the screen's latest lines, oldest first.
+func (s *Server) playerFeed(ctx context.Context, sessionID string) ([]PlayerEventResponse, error) {
+	events, err := s.store.ListPlayerEvents(ctx, sessionID, playerFeedLength)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]PlayerEventResponse, 0, len(events))
+	for _, e := range events {
+		if line := playerEventResponse(e); line.Summary != "" {
+			out = append(out, line)
+		}
+	}
+	return out, nil
+}
+
+// newEvent is the store's record of a tracker event.
+func newEvent(ev tracker.Event) store.NewEvent {
+	out := store.NewEvent{Round: ev.Round, Kind: ev.Kind, Summary: ev.Summary, Payload: ev.Payload, PlayerSummary: ev.PlayerSummary}
+	if len(ev.PlayerSpotted) > 0 {
+		out.PlayerSpotted, _ = json.Marshal(ev.PlayerSpotted) // plain strings: cannot fail
+	}
+	if r := ev.PlayerRetract; r != nil {
+		out.RetractSpotted = &store.SpottedRef{ID: r.ID, Map: r.Map}
+	}
+	return out
 }
 
 func (s *Server) playerView(w http.ResponseWriter, r *http.Request) {
@@ -101,7 +136,7 @@ func (s *Server) playerView(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	events, err := s.store.ListPlayerEvents(r.Context(), id, playerFeedLength)
+	events, err := s.playerFeed(r.Context(), id)
 	if err != nil {
 		writeStoreError(w, err)
 		return
@@ -111,11 +146,7 @@ func (s *Server) playerView(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	resp := PlayerResponse{State: tracker.PlayerView(state), Events: make([]PlayerEventResponse, 0, len(events)), EventSeq: ss.EventSeq, Catalog: playerCatalog(cat)}
-	for _, e := range events {
-		resp.Events = append(resp.Events, playerEventResponse(e))
-	}
-	writeJSON(w, http.StatusOK, resp)
+	writeJSON(w, http.StatusOK, PlayerResponse{State: tracker.PlayerView(state), Events: events, EventSeq: ss.EventSeq, Catalog: playerCatalog(cat)})
 }
 
 func (s *Server) playerStream(w http.ResponseWriter, r *http.Request) {

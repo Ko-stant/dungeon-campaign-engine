@@ -637,6 +637,18 @@ type NewEvent struct {
 	Payload json.RawMessage
 	// PlayerSummary is the player screen's line ("" for none).
 	PlayerSummary string
+	// PlayerSpotted lists the monsters the players just saw (a JSON array of
+	// {id, name, map}; nil for none).
+	PlayerSpotted json.RawMessage
+	// RetractSpotted takes a monster's sightings out of earlier events (it
+	// was removed, never really there).
+	RetractSpotted *SpottedRef
+}
+
+// SpottedRef names one monster's sightings: its id on the map of quest Map.
+type SpottedRef struct {
+	ID  string
+	Map string
 }
 
 // Event is a recorded, ordered change.
@@ -650,13 +662,15 @@ type Event struct {
 	CreatedAt time.Time
 	// PlayerSummary is the player screen's line ("" for none).
 	PlayerSummary string
+	// PlayerSpotted lists the monsters the players saw ("[]" for none).
+	PlayerSpotted json.RawMessage
 }
 
-const eventColumns = `session_id::text, seq, round, kind, summary, payload, created_at, player_summary`
+const eventColumns = `session_id::text, seq, round, kind, summary, payload, created_at, player_summary, player_spotted`
 
 func scanEvent(row pgx.Row) (Event, error) {
 	var e Event
-	err := row.Scan(&e.SessionID, &e.Seq, &e.Round, &e.Kind, &e.Summary, &e.Payload, &e.CreatedAt, &e.PlayerSummary)
+	err := row.Scan(&e.SessionID, &e.Seq, &e.Round, &e.Kind, &e.Summary, &e.Payload, &e.CreatedAt, &e.PlayerSummary, &e.PlayerSpotted)
 	return e, err
 }
 
@@ -675,11 +689,23 @@ func (s *Store) RecordEvent(ctx context.Context, sessionID string, state json.Ra
 		if err != nil {
 			return notFoundIfNoRows(err)
 		}
+		if r := ev.RetractSpotted; r != nil {
+			// Only the GM's log is history; the players' lines follow what was really there.
+			_, err = tx.Exec(ctx,
+				`UPDATE session_event SET player_spotted = (
+				   SELECT coalesce(jsonb_agg(m ORDER BY i), '[]') FROM jsonb_array_elements(player_spotted) WITH ORDINALITY AS x(m, i)
+				   WHERE NOT (m->>'id' = $2 AND coalesce(m->>'map', '') = $3))
+				 WHERE session_id = $1 AND player_spotted @> jsonb_build_array(jsonb_build_object('id', $2::text))`,
+				sessionID, r.ID, r.Map)
+			if err != nil {
+				return err
+			}
+		}
 		out, err = scanEvent(tx.QueryRow(ctx,
-			`INSERT INTO session_event (session_id, seq, round, kind, summary, payload, player_summary)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7)
+			`INSERT INTO session_event (session_id, seq, round, kind, summary, payload, player_summary, player_spotted)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			 RETURNING `+eventColumns,
-			sessionID, seq, ev.Round, ev.Kind, ev.Summary, orEmptyObject(ev.Payload), ev.PlayerSummary))
+			sessionID, seq, ev.Round, ev.Kind, ev.Summary, orEmptyObject(ev.Payload), ev.PlayerSummary, orEmptyArray(ev.PlayerSpotted)))
 		return err
 	})
 	if err != nil {
@@ -709,14 +735,14 @@ func (s *Store) ListEvents(ctx context.Context, sessionID string, afterSeq int64
 }
 
 // ListPlayerEvents returns a session's latest events that have a player
-// screen line (at most limit), oldest first.
+// screen line or sighting (at most limit), oldest first.
 func (s *Store) ListPlayerEvents(ctx context.Context, sessionID string, limit int) ([]Event, error) {
 	if !validID(sessionID) {
 		return []Event{}, nil
 	}
 	rows, err := s.pool.Query(ctx,
 		`SELECT * FROM (SELECT `+eventColumns+`
-		 FROM session_event WHERE session_id = $1 AND player_summary <> '' ORDER BY seq DESC LIMIT $2) latest
+		 FROM session_event WHERE session_id = $1 AND (player_summary <> '' OR player_spotted <> '[]') ORDER BY seq DESC LIMIT $2) latest
 		 ORDER BY seq`,
 		sessionID, limit)
 	if err != nil {

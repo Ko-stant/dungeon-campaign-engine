@@ -408,9 +408,14 @@ func (s *Server) record(ctx context.Context, sessionID string, state *tracker.St
 	resp := CommandResponse{State: *state, Event: eventResponse(saved), EventSeq: saved.Seq}
 	s.streams.broadcast(sessionID, resp)
 	update := PlayerUpdate{State: tracker.PlayerView(state), EventSeq: saved.Seq}
-	if saved.PlayerSummary != "" {
-		ev := playerEventResponse(saved)
-		update.Event = &ev
+	if line := playerEventResponse(saved); line.Summary != "" {
+		update.Event = &line
+	}
+	if ev.RetractSpotted != nil {
+		// Earlier lines changed: send the screen its whole feed again.
+		if update.Feed, err = s.playerFeed(ctx, sessionID); err != nil {
+			update.Feed = nil // the change is saved; the screen catches up on reload
+		}
 	}
 	s.playerStreams.broadcast(sessionID, update)
 	return resp, nil
@@ -460,7 +465,7 @@ func (s *Server) sessionCommand(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "%v", err)
 		return
 	}
-	resp, err := s.record(r.Context(), id, next, store.NewEvent{Round: ev.Round, Kind: ev.Kind, Summary: ev.Summary, Payload: ev.Payload, PlayerSummary: ev.PlayerSummary})
+	resp, err := s.record(r.Context(), id, next, newEvent(ev))
 	if err != nil {
 		writeStoreError(w, err)
 		return

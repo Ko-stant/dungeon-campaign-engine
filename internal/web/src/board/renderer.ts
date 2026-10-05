@@ -40,8 +40,10 @@ export interface BoardTheme {
   hero: string;
   label: string;
   undiscovered: string;
-  /** Discovered squares on the player screen: a light, neutral color. */
+  /** Discovered room squares on the player screen: a light, neutral color. */
   seen: string;
+  /** Discovered corridor squares on the player screen: a little darker and warmer than rooms. */
+  seenCorridor: string;
   highlight: string;
   preview: string;
   start: string;
@@ -49,6 +51,17 @@ export interface BoardTheme {
   teleport: string;
   note: string;
   trap: Record<TrapState, string>;
+}
+
+/** A square's fill: solid rock, or a corridor or room, light once discovered (the player screen). */
+export function tileFill(theme: BoardTheme, region: number, seen: boolean): string {
+  if (region === VOID) {
+    return theme.rock;
+  }
+  if (region === CORRIDOR) {
+    return seen ? theme.seenCorridor : theme.corridor;
+  }
+  return seen ? theme.seen : theme.room;
 }
 
 /** Reads the --rgb-* theme channels defined in styles/index.css. */
@@ -78,6 +91,7 @@ export function readTheme(el: Element = document.documentElement): BoardTheme {
     label: rgb('content', '231 236 243'),
     undiscovered: 'rgb(0 0 0 / 0.55)',
     seen: 'rgb(214 209 199)',
+    seenCorridor: 'rgb(178 166 146)',
     highlight: rgb('warning', '250 204 21'),
     preview: rgb('warning', '250 204 21', 0.25),
     start: rgb('positive', '74 222 128', 0.22),
@@ -212,10 +226,7 @@ export class BoardRenderer {
   #drawTiles(view: BoardView, m: GridMetrics): void {
     const ctx = this.#ctx;
     view.regions.forEach((region, i) => {
-      ctx.fillStyle = region === VOID ? this.#theme.rock : region === CORRIDOR ? this.#theme.corridor : this.#theme.room;
-      if (region !== VOID && view.seenTiles?.has(i)) {
-        ctx.fillStyle = this.#theme.seen;
-      }
+      ctx.fillStyle = tileFill(this.#theme, region, view.seenTiles?.has(i) ?? false);
       const r = tileRect(m, tileAt(view.cols, i));
       ctx.fillRect(r.x, r.y, r.w, r.h);
       const color = region > CORRIDOR ? view.roomColors?.get(region) : undefined;

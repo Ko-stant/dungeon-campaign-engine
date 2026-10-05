@@ -30,6 +30,11 @@ type Event struct {
 	// PlayerSummary is the line the player screen shows (see player.go);
 	// empty when the players hear nothing about this change.
 	PlayerSummary string `json:"playerSummary,omitempty"`
+	// PlayerSpotted are the monsters the players just saw, kept apart from
+	// PlayerSummary (PlayerLine joins them); PlayerRetract is a sighting the
+	// change takes back.
+	PlayerSpotted []SpottedMonster `json:"playerSpotted,omitempty"`
+	PlayerRetract *SpottedMonster  `json:"playerRetract,omitempty"`
 }
 
 // Apply returns the state after the command and the event describing it. It
@@ -130,7 +135,8 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 	if err != nil {
 		return nil, Event{}, err
 	}
-	return next, Event{Round: next.Round, Kind: c.Type, Summary: summary, Payload: payload, PlayerSummary: PlayerSummary(s, next, c, summary)}, nil
+	return next, Event{Round: next.Round, Kind: c.Type, Summary: summary, Payload: payload, PlayerSummary: PlayerSummary(s, next, c, summary),
+		PlayerSpotted: PlayerSpotted(s, next, c), PlayerRetract: PlayerRetract(s, c)}, nil
 }
 
 func clone(s *State) (*State, error) {

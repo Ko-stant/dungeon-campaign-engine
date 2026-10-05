@@ -124,9 +124,13 @@ export interface PlayerResponse {
   catalog: PlayerCatalog;
 }
 
-/** Pushed on every change; event is null when the players hear nothing about it. */
+/**
+ * Pushed on every change; event is null when the players hear nothing about it. feed (null
+ * otherwise) replaces the whole feed when earlier lines changed: a sighting taken back.
+ */
 export interface PlayerUpdate {
   state: PlayerState;
   event: PlayerEvent | null;
   eventSeq: number;
+  feed: PlayerEvent[] | null;
 }

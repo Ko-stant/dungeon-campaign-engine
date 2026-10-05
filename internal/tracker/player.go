@@ -1,6 +1,7 @@
 package tracker
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -295,15 +296,14 @@ func doorChanges(before, after *State) string {
 // monsterChanges describes monsters the players can see: newly spotted ones,
 // Body changes (without numbers while Body is hidden) and deaths.
 func monsterChanges(before, after *State) string {
-	var spotted, parts []string
+	var parts []string
 	for i := range after.Monsters {
 		a := &after.Monsters[i]
 		b := findMonster(before, a.ID)
 		seenNow := a.Visibility == MonsterSeen
 		seenBefore := b != nil && b.Visibility == MonsterSeen
 		if seenNow && a.Alive && !seenBefore {
-			spotted = append(spotted, a.Name)
-			continue
+			continue // spotted: see spottedMonsters
 		}
 		if !seenNow || b == nil || !seenBefore {
 			continue
@@ -326,10 +326,72 @@ func monsterChanges(before, after *State) string {
 			parts = append(parts, line)
 		}
 	}
+	return strings.Join(parts, "; ")
+}
+
+// SpottedMonster is a monster the players just saw. Events keep sightings
+// apart from the rest of the player line, so removing a monster added by
+// mistake can take its sighting back (see PlayerRetract); Map is the quest of
+// the map it was on, since monster ids repeat between maps.
+type SpottedMonster struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Map  string `json:"map,omitempty"`
+}
+
+// PlayerLine is the player screen's line for an event: its sightings, then
+// the rest ("Spotted: Goblin, Orc; Orc slain").
+func PlayerLine(spotted []SpottedMonster, rest string) string {
+	var parts []string
 	if len(spotted) > 0 {
-		parts = append([]string{"Spotted: " + strings.Join(spotted, ", ")}, parts...)
+		names := make([]string, len(spotted))
+		for i, m := range spotted {
+			names[i] = m.Name
+		}
+		parts = append(parts, "Spotted: "+strings.Join(names, ", "))
+	}
+	if rest != "" {
+		parts = append(parts, rest)
 	}
 	return strings.Join(parts, "; ")
+}
+
+// PlayerSpotted lists the living monsters that a command shows the players.
+func PlayerSpotted(before, after *State, c Command) []SpottedMonster {
+	switch c.Type {
+	case "monster.update", "monster.add", "seen.set", "area.reveal", "tiles.reveal":
+	default:
+		return nil
+	}
+	var out []SpottedMonster
+	for i := range after.Monsters {
+		a := &after.Monsters[i]
+		b := findMonster(before, a.ID)
+		if a.Visibility == MonsterSeen && a.Alive && (b == nil || b.Visibility != MonsterSeen) {
+			out = append(out, SpottedMonster{ID: a.ID, Name: a.Name, Map: after.QuestID})
+		}
+	}
+	return out
+}
+
+// PlayerRetract is the sighting a command takes back: removing a living
+// monster means it was never there. A killed monster's sighting stays, even
+// when its body is cleared away.
+func PlayerRetract(before *State, c Command) *SpottedMonster {
+	if c.Type != "monster.remove" {
+		return nil
+	}
+	var p struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(c.Payload, &p); err != nil {
+		return nil
+	}
+	m := findMonster(before, p.ID)
+	if m == nil || !m.Alive {
+		return nil
+	}
+	return &SpottedMonster{ID: m.ID, Name: m.Name, Map: before.QuestID}
 }
 
 // effectChanges names effects added to or removed from heroes and seen monsters.

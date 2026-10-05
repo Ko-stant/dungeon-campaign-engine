@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { cardFor, pickAt } from './cards.ts';
-import { addEvent } from './feed.ts';
+import { addEvent, feedAfter } from './feed.ts';
 import type { PlayerCatalog, PlayerEvent, PlayerState } from './types.ts';
 import { playerBoardView } from './view.ts';
 
@@ -116,5 +116,17 @@ describe('addEvent', () => {
     feed = addEvent(feed, ev(3), 3);
     feed = addEvent(feed, ev(4), 3);
     expect(feed.map((e) => e.seq)).toEqual([2, 3, 4]);
+  });
+});
+
+describe('feedAfter', () => {
+  const ev = (seq: number): PlayerEvent => ({ seq, round: 1, summary: `line ${String(seq)}`, createdAt: '' });
+  const state = view();
+  test('adds the new line, or takes the whole feed when the server sends it (a sighting taken back)', () => {
+    const feed = [ev(1), ev(2)];
+    expect(feedAfter(feed, { state, event: ev(3), eventSeq: 3, feed: null }, 30).map((e) => e.seq)).toEqual([1, 2, 3]);
+    expect(feedAfter(feed, { state, event: null, eventSeq: 3, feed: null }, 30).map((e) => e.seq)).toEqual([1, 2]);
+    expect(feedAfter(feed, { state, event: null, eventSeq: 3, feed: [ev(2)] }, 30).map((e) => e.seq)).toEqual([2]);
+    expect(feedAfter(feed, { state, event: null, eventSeq: 3, feed: [] }, 30)).toEqual([]);
   });
 });
