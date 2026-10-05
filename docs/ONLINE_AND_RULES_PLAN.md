@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 19:07 EDT
+**Last Updated**: 2026-10-05 19:09 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -278,6 +278,8 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   3. **Phase 6, hosting:** see its hosting notes (`kostant.dev`, containers, a members
      allowlist).
 - **Open decisions:** none pending.
+- **Devices (GM, 2026-10-05):** desktop and laptop browsers only; phones aren't supported, so
+  browser checks skip phone widths.
 - **Browser checks** (the dev-mode procedure):
   1. Set `AUTH_MODE=dev` in the worktree's `.env`, `make build`, and add the temporary
      `dce-online` launch entry (below).
