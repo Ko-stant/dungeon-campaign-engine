@@ -1,6 +1,7 @@
 /** Typed client for the tracker session API (internal/app). */
 import { createRequester, encodeId as id } from '../api/http.ts';
 import type { Catalog } from '../maps/types.ts';
+import type { PlayerResponse } from '../players/types.ts';
 import type { Chapter, Command, CommandResponse, ScriptSection, SessionEvent, SessionResponse } from './types.ts';
 
 export function createTrackerApi(fetchFn: typeof fetch = fetch.bind(globalThis)) {
@@ -19,6 +20,11 @@ export function createTrackerApi(fetchFn: typeof fetch = fetch.bind(globalThis))
     script: (campaignId: string) => request<{ sections: ScriptSection[] }>('GET', `/api/campaigns/${id(campaignId)}/script`),
     /** The campaign's audio clips: clip id ("Q2-03", "Q3-09a") -> URL. */
     audio: (campaignId: string) => request<{ clips: Record<string, string> }>('GET', `/api/campaigns/${id(campaignId)}/audio`),
+    /** The player screen's filtered view, latest lines and catalog (see internal/app/player_api.go). */
+    player: (sessionId: string) => request<PlayerResponse>('GET', `/api/sessions/${id(sessionId)}/player`),
+    /** WebSocket URL for the player screen's live updates. */
+    playerStreamUrl: (sessionId: string, loc: { protocol: string; host: string } = window.location) =>
+      `${loc.protocol === 'https:' ? 'wss' : 'ws'}://${loc.host}/api/sessions/${id(sessionId)}/player-stream`,
     /** WebSocket URL for live updates, matching the page's scheme. */
     streamUrl: (sessionId: string, loc: { protocol: string; host: string } = window.location) =>
       `${loc.protocol === 'https:' ? 'wss' : 'ws'}://${loc.host}/api/sessions/${id(sessionId)}/stream`,

@@ -20,6 +20,7 @@ func (s *Server) registerTrackerPages(mux *http.ServeMux) {
 	mux.HandleFunc("POST /campaigns/{id}/heroes/{heroId}/delete", s.removeHeroForm)
 	mux.HandleFunc("POST /campaigns/{id}/sessions", s.startSessionForm)
 	mux.HandleFunc("GET /play/{id}", s.playPage)
+	mux.HandleFunc("GET /play/{id}/players", s.playerScreenPage)
 }
 
 func sessionLinks(list []store.SessionSummary) []views.SessionLink {
@@ -263,4 +264,18 @@ func (s *Server) playPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render(w, r, http.StatusOK, views.PlayPage(ss.ID, ss.Name))
+}
+
+// playerScreenPage is the read-only player screen for the TV (see player_api.go).
+func (s *Server) playerScreenPage(w http.ResponseWriter, r *http.Request) {
+	ss, err := s.store.GetSession(r.Context(), r.PathValue("id"))
+	if errors.Is(err, store.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	render(w, r, http.StatusOK, views.PlayerScreenPage(ss.ID, ss.Name))
 }

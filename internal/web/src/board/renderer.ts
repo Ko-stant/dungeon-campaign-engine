@@ -40,6 +40,8 @@ export interface BoardTheme {
   hero: string;
   label: string;
   undiscovered: string;
+  /** Discovered squares on the player screen: a light, neutral color. */
+  seen: string;
   highlight: string;
   preview: string;
   start: string;
@@ -75,6 +77,7 @@ export function readTheme(el: Element = document.documentElement): BoardTheme {
     hero: rgb('accent', '255 160 122'),
     label: rgb('content', '231 236 243'),
     undiscovered: 'rgb(0 0 0 / 0.55)',
+    seen: 'rgb(214 209 199)',
     highlight: rgb('warning', '250 204 21'),
     preview: rgb('warning', '250 204 21', 0.25),
     start: rgb('positive', '74 222 128', 0.22),
@@ -210,6 +213,9 @@ export class BoardRenderer {
     const ctx = this.#ctx;
     view.regions.forEach((region, i) => {
       ctx.fillStyle = region === VOID ? this.#theme.rock : region === CORRIDOR ? this.#theme.corridor : this.#theme.room;
+      if (region !== VOID && view.seenTiles?.has(i)) {
+        ctx.fillStyle = this.#theme.seen;
+      }
       const r = tileRect(m, tileAt(view.cols, i));
       ctx.fillRect(r.x, r.y, r.w, r.h);
       const color = region > CORRIDOR ? view.roomColors?.get(region) : undefined;

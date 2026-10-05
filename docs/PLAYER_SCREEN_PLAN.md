@@ -1,6 +1,6 @@
 # Player screen (TV) plan
 
-**Last Updated**: 2026-10-05 02:30 EDT
+**Last Updated**: 2026-10-05 03:10 EDT
 
 ## Goal
 At the table the GM runs the tracker on the laptop and opens a second Chrome tab, the
@@ -82,7 +82,17 @@ only what the heroes know.
    eventSeq}` on every change.
 4. **Player screen page:** `/play/{id}/players` (templ + `pages/players.ts`). Board in
    player style (seen tint, no GM marks), party panel, piece cards on click, the event
-   feed toggle, a full-screen button, and reconnection.
+   feed toggle, a full-screen button, and reconnection. **Done 2026-10-05**: the tracker
+   header's "Open player screen" opens `/play/{id}/players` in a "player-screen" tab. The
+   screen: header (quest, round, Fight badge, "Events (n new)", "Full screen", live dot);
+   party panel (Body, Mind and Mana bars, effects, Fallen/Escaped); the board drawn from
+   the player view (`internal/web/src/players/view.ts`; unexplored rooms plain gray,
+   discovered squares the new light "seen" color, `BoardView.seenTiles`); clicking a piece
+   or a hero shows its card (`players/cards.ts`: monsters' Body unless hidden, Wounded,
+   stats line, Move, effects; heroes' stats and totals; furniture, trap and blocked-square
+   names) in a right-hand column with the event feed, so nothing covers the map. The
+   player API also sends a trimmed catalog (names, sizes, colors, artwork; never custom
+   monsters' notes).
 5. **Polish:** monster "abilities" text on campaign monster stat lines for the cards, TV
    sizing (large type), and then the player docs and polls.
 
@@ -91,3 +101,5 @@ The GM asked (2026-10-05, before bed) to commit phase 3, then work through the r
 phases committing after each ("the same way": work commit + Docs hash commit), and push
 to origin once all phases are done. Resume from the last line here after a compaction.
 - 81ac447 phase 3 committed (Docs ad736f3). Next: phase 4, the player screen page.
+- Phase 4 built and checked in the browser at 1920x1080 on a copy of the dev database
+  (live updates, cards, feed, Body switch, Wounded). Committing next; then phase 5.

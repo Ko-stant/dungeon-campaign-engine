@@ -14,6 +14,9 @@ import (
 func TestPlayerScreenAPI(t *testing.T) {
 	srv := testServer(t)
 	c := func(method, path string, body any) (int, []byte) { return call(t, srv, method, path, body) }
+	if resp, _ := postForm(t, noRedirects(), srv.URL+"/monsters", ogreForm()); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("custom monster: %d", resp.StatusCode)
+	}
 	questID := setupQuest(t, urlServer{srv.URL}, c)
 	_, data := c(http.MethodPost, "/api/campaigns", map[string]any{"name": "C"})
 	camp := decodeAny[CampaignResponse](t, data)
@@ -40,13 +43,24 @@ func TestPlayerScreenAPI(t *testing.T) {
 	if len(view.Events) != 2 || view.Events[0].Summary != "The quest begins" || view.Events[1].Summary != "Round 2" {
 		t.Fatalf("player events: %+v", view.Events)
 	}
-	for _, secret := range []string{"carries the key", "stranger lies", "monster-1", "Round 2 begins"} {
+	// The screen's own catalog: names, sizes and artwork, never a custom monster's notes.
+	if !strings.Contains(string(data), `"Cave Ogre"`) || view.Catalog.Monsters == nil || view.Catalog.Furniture == nil {
+		t.Fatalf("player catalog: %+v", view.Catalog)
+	}
+	for _, secret := range []string{"carries the key", "stranger lies", "monster-1", "Round 2 begins", "Smashes doors"} {
 		if strings.Contains(string(data), secret) {
 			t.Errorf("the player view leaks %q", secret)
 		}
 	}
 	if code, _ := c(http.MethodGet, "/api/sessions/01900000-0000-7000-8000-000000000000/player", nil); code != http.StatusNotFound {
 		t.Fatalf("unknown session: %d", code)
+	}
+	status, page := get(t, noRedirects(), srv.URL+"/play/"+sess.ID+"/players")
+	if status != http.StatusOK || !strings.Contains(page, `id="players"`) || !strings.Contains(page, "players.js") || !strings.Contains(page, sess.ID) {
+		t.Fatalf("player screen page: %d", status)
+	}
+	if status, _ := get(t, noRedirects(), srv.URL+"/play/01900000-0000-7000-8000-000000000000/players"); status != http.StatusNotFound {
+		t.Fatalf("unknown session page: %d", status)
 	}
 
 	// The player stream pushes the filtered view, with the player line when there is one.

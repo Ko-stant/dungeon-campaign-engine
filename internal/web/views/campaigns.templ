@@ -338,6 +338,15 @@ templ CampaignPage(d CampaignPageData) {
 	}
 }
 
+// PlayerScreenPage is the shell for the TypeScript player screen (the TV).
+templ PlayerScreenPage(sessionID string, title string) {
+	@components.Page(title+" - player screen", "players") {
+		<div id="players" data-session-id={ sessionID } class="flex h-screen flex-col overflow-hidden">
+			<noscript class="p-6">The player screen needs JavaScript.</noscript>
+		</div>
+	}
+}
+
 // PlayPage is the shell for the TypeScript tracker.
 templ PlayPage(sessionID string, title string) {
 	@components.Page(title, "tracker") {

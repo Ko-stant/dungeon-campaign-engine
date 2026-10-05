@@ -143,6 +143,8 @@ export interface BoardView {
   teleports?: readonly TeleportView[];
   /** Fill colors for rooms, by region id. */
   roomColors?: ReadonlyMap<number, string>;
+  /** Squares drawn in the "seen" color (the player screen's discovered squares). */
+  seenTiles?: ReadonlySet<number>;
   /** Discovered tile indexes. Omitted means everything is shown (GM view). */
   discovered?: ReadonlySet<number>;
 }

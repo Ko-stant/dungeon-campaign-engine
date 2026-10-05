@@ -357,6 +357,12 @@ async function main(): Promise<void> {
       h('label', { class: 'flex items-center gap-1 text-sm', title: 'Darken undiscovered squares and fade the furniture, doors, blocked squares and monsters the players have not been shown' },
         h('input', { type: 'checkbox', checked: fog, onchange: (e: Event) => { fog = (e.target as HTMLInputElement).checked; requestDraw(); } }),
         'Show what the heroes have seen'),
+      h('a', {
+        class: btn,
+        href: `/play/${encodeURIComponent(sessionId ?? '')}/players`,
+        target: 'player-screen',
+        title: 'Open the player screen in a new tab (drag it to the TV and go full screen)',
+      }, 'Open player screen'),
       h('label', { class: 'flex items-center gap-1 text-sm', title: "Show monsters' Body on the player screen" },
         h('input', {
           type: 'checkbox',

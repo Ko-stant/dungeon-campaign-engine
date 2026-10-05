@@ -84,6 +84,13 @@ Tailwind CSS v4, canvas rendering.
     fight `round.advance` finishes cooldowns, regenerates mana (`Combat.ManaRegen`) and counts
     effects down; out of a fight cooldowns stop at 1-2 rounds left. Generic effects
     (`effect.add`/`effect.remove`, `Effects` on heroes and monsters) only count down and remind.
+  - Player screen (TV): `/play/{id}/players` (`pages/players.ts`, `internal/web/src/players/`)
+    shows only `tracker.PlayerView` (`internal/tracker/player.go`) from
+    `GET /api/sessions/{id}/player` and `/api/sessions/{id}/player-stream`
+    (`internal/app/player_api.go`); events carry a player-safe `player_summary` from an
+    allow-list. The GM shows pieces with `seen.set` (doors, furniture, blocked squares,
+    monsters); anything new that the players could see must be added to the allow-lists
+    there, never sent from the GM state. Plan and decisions: `docs/PLAYER_SCREEN_PLAN.md`.
   - Odds hints (`internal/web/src/tracker/odds.ts`, `ui/odds.ts`): the selected monster's
     panel shows each hero's chance to hit it and attacks to finish it, and its chance to hit
     each hero, from the exact combat math in `internal/web/src/combat/odds.ts`. Advice only.
