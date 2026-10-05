@@ -30,6 +30,20 @@ export interface Hero {
   abilities?: Ability[] | null;
   /** Ability id -> round it is ready again, for abilities still cooling down. */
   cooldowns?: Record<string, number> | null;
+  /** The class's combat stats, frozen at session start; missing for built-in classes and older sessions. */
+  combat?: HeroCombat | null;
+}
+
+/** A hero's combat stats (The Three Plagues rules), mirroring tracker.Combat (Go). */
+export interface HeroCombat {
+  hitDice: string;
+  accuracy: number;
+  critFrom: number;
+  damage: number;
+  defenseDice: string;
+  avoidance: number;
+  mitigation: number;
+  manaRegen?: number;
 }
 
 /** Something a hero carries; nothing is equipped and there are no limits. */

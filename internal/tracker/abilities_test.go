@@ -57,6 +57,36 @@ func TestNewSessionCopiesClassAbilitiesAndMana(t *testing.T) {
 	}
 }
 
+func TestNewSessionCopiesClassCombatStats(t *testing.T) {
+	b, q, cat := fixture()
+	cat.Heroes = append(cat.Heroes, content.HeroDef{
+		ID: "custom-barbarian", Name: "Barbarian", Body: 40, Mind: 2, Custom: true,
+		AttackDice: "1d20", DefenseDice: "1d6", Accuracy: 3, CritFrom: 17, Damage: 3, Avoidance: 2, Mitigation: 1,
+	}, content.HeroDef{
+		ID: "custom-cleric", Name: "Cleric", Body: 28, Mind: 4, Custom: true, Mana: 16, ManaRegen: 2,
+		AttackDice: "2d8", DefenseDice: "1d6", Accuracy: 4, CritFrom: 20, Damage: 2, Avoidance: 3,
+	})
+	s, err := NewSession(b, q, "The Test", []CampaignHero{
+		{ID: "hero-1", Name: "Brak", Class: "custom-barbarian"},
+		{ID: "hero-2", Name: "Mira", Class: "custom-cleric"},
+		{ID: "hero-3", Name: "Old", Class: cat.Heroes[0].ID},
+	}, cat)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Combat{HitDice: "1d20", Accuracy: 3, CritFrom: 17, Damage: 3, DefenseDice: "1d6", Avoidance: 2, Mitigation: 1}
+	if got := s.Heroes[0].Combat; got == nil || *got != want {
+		t.Fatalf("barbarian combat: %+v", got)
+	}
+	if got := s.Heroes[1].Combat; got == nil || got.ManaRegen != 2 || got.CritFrom != 20 {
+		t.Fatalf("cleric combat: %+v", got)
+	}
+	// Built-in classes roll combat dice: no combat stats to copy.
+	if s.Heroes[2].Combat != nil {
+		t.Fatalf("built-in class: %+v", s.Heroes[2].Combat)
+	}
+}
+
 func TestAbilityCooldowns(t *testing.T) {
 	s, cat := abilityState(t)
 	s.Round = 4

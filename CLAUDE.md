@@ -51,8 +51,10 @@ Tailwind CSS v4, canvas rendering.
     merges them into `monsters` with `custom-<uuid>` ids; use `Server.catalogFor(ctx)`, not
     `s.catalog`, wherever monsters are looked up.
   - Custom hero classes: `/classes` (table `custom_hero_class`): dice stats, accuracy, mana,
-    class exclusives and abilities (cooldown in rounds and/or mana cost). Merged into the
-    catalog's `heroes` as `custom-<uuid>` by `catalogFor` too; look classes up there.
+    class exclusives and abilities (cooldown in rounds and/or mana cost), and the Three Plagues
+    combat stats (hit dice, crit range, damage, avoidance, mitigation, mana per fight round),
+    frozen into session heroes as `Combat`. Merged into the catalog's `heroes` as
+    `custom-<uuid>` by `catalogFor` too; look classes up there.
   - Tracker: `/campaigns`, `/campaigns/{id}`, `/play/{id}`, `/api/campaigns...`, `/api/sessions/{id}/(commands|travel|events|complete|reopen|stream)`
   - Inventory: campaign heroes carry gold and `items` (name, quantity, notes) between quests;
     `/campaigns/{id}/heroes/{heroId}/(gold|items...)` forms, `item.*` tracker commands.

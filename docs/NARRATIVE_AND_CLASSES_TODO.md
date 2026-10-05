@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-05 02:40 EDT
+**Last Updated**: 2026-10-05 03:30 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -45,7 +45,8 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
    explains it with four torches). The finds are approved (2026-10-05). Next: step 5 (app
    support: class, monster and item stats; fights in the tracker). Notes G and L on the
    board describe the trap G torches, the prayer beads, the other finds (W, S, O, X, T) and
-   the potions (V).
+   the potions (V). Step 5 is under way in phases 5a-5f (rules doc, "Combat roadmap");
+   5a (class combat stats) is done.
 1. Maps for Quests 2 and 3, checked against `MAPS.md` and the script checklists (the GM
    builds; keep the story and the maps in step).
 2. Script: Quest 3 (`04-quest-3-the-wardens-rise.md`): drop the up-front Ogre Lord names,

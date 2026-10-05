@@ -9,6 +9,7 @@ import { monsterOptionLabel, type TrapDoc } from '../maps/types.ts';
 import { BoardRenderer } from '../board/renderer.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
+import { combatLine } from '../tracker/combat.ts';
 import { formatEvent } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
 import { clickCommand, paintPending, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
@@ -474,6 +475,7 @@ async function main(): Promise<void> {
         },
           h('span', { class: 'font-semibold' }, hero.name, h('span', { class: 'ml-1 text-xs opacity-60' }, `${cls}${hero.player ? ` · ${hero.player}` : ''}`)),
           h('span', { class: 'text-xs opacity-60' }, hero.placed ? `(${hero.x}, ${hero.y})` : 'not on board')),
+        hero.combat ? h('p', { class: 'text-xs opacity-70', title: 'Combat stats from the class' }, combatLine(hero.combat)) : null,
         statControl('Body', hero.body, hero.maxBody, (v) => { heroCmd(hero, { body: v }); }),
         statControl('Mind', hero.mind, hero.maxMind, (v) => { heroCmd(hero, { mind: v }); }),
         (hero.maxMana ?? 0) > 0 ? statControl('Mana', hero.mana ?? 0, hero.maxMana ?? 0, (v) => { heroCmd(hero, { mana: v }); }) : null,

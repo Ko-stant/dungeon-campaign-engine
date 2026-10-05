@@ -202,6 +202,12 @@ export interface HeroDef {
   mana?: number;
   exclusives?: string[];
   abilities?: Ability[];
+  /** Combat (custom classes): crit range start on the d20, the class's own damage, avoidance and mitigation, mana per fight round. */
+  critFrom?: number;
+  damage?: number;
+  avoidance?: number;
+  mitigation?: number;
+  manaRegen?: number;
 }
 
 export interface Catalog {

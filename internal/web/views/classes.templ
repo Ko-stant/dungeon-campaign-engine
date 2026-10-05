@@ -32,6 +32,11 @@ type ClassForm struct {
 	Mana        string
 	Exclusives  []string
 	Abilities   []AbilityRow
+	CritFrom    string
+	Damage      string
+	Avoidance   string
+	Mitigation  string
+	ManaRegen   string
 }
 
 // ClassItem is one custom class on the /classes list.
@@ -45,7 +50,10 @@ const blankAbilityRows = 3
 
 // DefaultClassForm is the empty create form.
 func DefaultClassForm() ClassForm {
-	return ClassForm{Color: "#1d4ed8", Body: "20", Mind: "3", Attack: "1d6", Defense: "1d6", Movement: "2d6", Accuracy: "0", Mana: "0"}
+	return ClassForm{
+		Color: "#1d4ed8", Body: "20", Mind: "3", Attack: "1d20", Defense: "1d6", Movement: "2d6", Accuracy: "0", Mana: "0",
+		CritFrom: "20", Damage: "0", Avoidance: "0", Mitigation: "0", ManaRegen: "0",
+	}
 }
 
 func formNumber(n int) string {
@@ -63,6 +71,8 @@ func ClassFormFromDef(h content.HeroDef) ClassForm {
 		Attack: h.AttackDice, Defense: h.DefenseDice, Movement: h.Movement,
 		Accuracy: strconv.Itoa(h.Accuracy), Mana: strconv.Itoa(h.Mana),
 		Exclusives: h.Exclusives,
+		CritFrom: strconv.Itoa(critFrom(h)), Damage: strconv.Itoa(h.Damage), Avoidance: strconv.Itoa(h.Avoidance),
+		Mitigation: strconv.Itoa(h.Mitigation), ManaRegen: strconv.Itoa(h.ManaRegen),
 	}
 	for _, a := range h.Abilities {
 		f.Abilities = append(f.Abilities, AbilityRow{
@@ -116,15 +126,52 @@ func AbilityLimit(a content.Ability) string {
 	return strings.Join(parts, ", ")
 }
 
-// ClassStats is a one-line stat summary for a custom class.
+// critFrom is the class's crit range start; classes saved before crits existed crit on a 20.
+func critFrom(h content.HeroDef) int {
+	if h.CritFrom == 0 {
+		return 20
+	}
+	return h.CritFrom
+}
+
+// withBonus adds a flat bonus to a dice expression for display: "1d20+3", or
+// "2d10+2 +3" when the expression has its own modifier or several terms.
+func withBonus(diceExpr string, bonus int) string {
+	switch {
+	case bonus == 0:
+		return diceExpr
+	case strings.ContainsAny(diceExpr, "+-"):
+		return diceExpr + " +" + strconv.Itoa(bonus)
+	default:
+		return diceExpr + "+" + strconv.Itoa(bonus)
+	}
+}
+
+// ClassStats is a one-line stat summary for a custom class, e.g.
+// "Body 40 · Mind 2 · Hit 1d20+3 · Crit 17-20 · Damage 3 · Avoid 2+1d6 · Mitigation 1 · Move 2d6".
 func ClassStats(h content.HeroDef) string {
+	crit := "Crit " + strconv.Itoa(critFrom(h))
+	if critFrom(h) < 20 {
+		crit += "-20"
+	}
+	avoid := h.DefenseDice
+	if h.Avoidance > 0 {
+		avoid = strconv.Itoa(h.Avoidance) + "+" + h.DefenseDice
+	}
 	parts := []string{
 		"Body " + strconv.Itoa(h.Body), "Mind " + strconv.Itoa(h.Mind),
-		"Attack " + h.AttackDice, "Defend " + h.DefenseDice, "Move " + h.Movement,
-		"Accuracy " + strconv.Itoa(h.Accuracy),
+		"Hit " + withBonus(h.AttackDice, h.Accuracy), crit, "Damage " + strconv.Itoa(h.Damage), "Avoid " + avoid,
 	}
+	if h.Mitigation > 0 {
+		parts = append(parts, "Mitigation "+strconv.Itoa(h.Mitigation))
+	}
+	parts = append(parts, "Move "+h.Movement)
 	if h.Mana > 0 {
-		parts = append(parts, "Mana "+strconv.Itoa(h.Mana))
+		mana := "Mana " + strconv.Itoa(h.Mana)
+		if h.ManaRegen > 0 {
+			mana += " (+" + strconv.Itoa(h.ManaRegen) + " a fight round)"
+		}
+		parts = append(parts, mana)
 	}
 	return strings.Join(parts, " · ")
 }
@@ -153,15 +200,28 @@ templ classFields(f ClassForm) {
 		<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 			@monsterNumber("Body", "body", f.Body, 1, 999)
 			@monsterNumber("Mind", "mind", f.Mind, 0, 999)
-			@monsterNumber("Accuracy", "accuracy", f.Accuracy, 0, 99)
 			@monsterNumber("Mana", "mana", f.Mana, 0, 999)
+			@monsterNumber("Mana per fight round", "mana_regen", f.ManaRegen, 0, 99)
 		</div>
-		<div class="grid grid-cols-3 gap-3">
-			@classText("Attack dice", "attack", f.Attack, "e.g. 1d8+1", 40)
-			@classText("Defend dice", "defense", f.Defense, "e.g. 1d6", 40)
+		<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 			@classText("Movement", "movement", f.Movement, "e.g. 2d6 or 6", 40)
 		</div>
 		<p class="text-xs opacity-60">Dice: d4, d6, d8, d10, d12, d20, e.g. <code>2d6+1</code> or <code>1d8+1d4</code>. A plain number is a fixed value. Mana 0 means the class has none.</p>
+	</fieldset>
+	<fieldset class="space-y-2">
+		<legend class="mb-1 text-sm font-semibold">Combat</legend>
+		<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+			@classText("Hit dice", "attack", f.Attack, "e.g. 2d10", 40)
+			@monsterNumber("Accuracy", "accuracy", f.Accuracy, 0, 99)
+			@monsterNumber("Crit from (d20)", "crit_from", f.CritFrom, 2, 20)
+			@monsterNumber("Damage", "damage", f.Damage, 0, 99)
+		</div>
+		<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+			@classText("Defense dice", "defense", f.Defense, "e.g. 1d6", 40)
+			@monsterNumber("Avoidance", "avoidance", f.Avoidance, 0, 99)
+			@monsterNumber("Mitigation", "mitigation", f.Mitigation, 0, 99)
+		</div>
+		<p class="text-xs opacity-60">A hero hits when hit dice + Accuracy meets or beats a monster's Avoidance, and crits when the d20 crit die shows "Crit from" or more. A monster hits only by beating Avoidance + defense dice; Mitigation comes off its damage. Damage, Avoidance and Mitigation here are the class's own: gear adds to them.</p>
 	</fieldset>
 	<fieldset>
 		<legend class="mb-1 text-sm font-semibold">Only this class can use</legend>

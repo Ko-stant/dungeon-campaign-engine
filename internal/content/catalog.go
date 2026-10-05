@@ -84,6 +84,17 @@ type HeroDef struct {
 	Mana        int       `json:"mana,omitempty"`
 	Exclusives  []string  `json:"exclusives,omitempty"`
 	Abilities   []Ability `json:"abilities,omitempty"`
+
+	// The Three Plagues combat (see docs/campaigns/three-plagues/RULES_AND_CLASSES.md):
+	// AttackDice is the hit dice and DefenseDice the defense dice; a crit on the d20
+	// crit die from CritFrom up; the class's own damage, avoidance and mitigation
+	// (gear adds to them); mana regenerated each fight round. Zero means none (CritFrom
+	// zero: not set, on classes saved before these existed).
+	CritFrom   int `json:"critFrom,omitempty"`
+	Damage     int `json:"damage,omitempty"`
+	Avoidance  int `json:"avoidance,omitempty"`
+	Mitigation int `json:"mitigation,omitempty"`
+	ManaRegen  int `json:"manaRegen,omitempty"`
 }
 
 // Ability kinds.

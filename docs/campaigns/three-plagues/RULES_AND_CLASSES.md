@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 02:40 EDT
+**Last Updated**: 2026-10-05 03:30 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -439,10 +439,19 @@ dead):
    calibration done 2026-10-04.
 4. Abilities: done 2026-10-04. The merged kit is pruned, the Rogue has Venom Vial, and Quest 1
    is recalibrated to it (see "Abilities (step 4)" and "Simulator").
-5. App support: the new class, monster and item stats; items marked equipped; party gold;
-   fight start/end in the tracker with the cooldown floor and mana regeneration; odds hints
-   (advice only). Once balanced, the app's items and monsters are generated from the agreed
-   numbers rather than entered by hand.
+5. App support, in phases (GM, 2026-10-05: monster stats per campaign, one party purse with
+   hero gold merged in, generic effects with countdowns):
+   - 5a. Class combat stats - done 2026-10-05: hit dice, Accuracy, crit range, damage,
+     defense dice, avoidance, mitigation and mana per fight round on the class form; sessions
+     keep a frozen copy, shown on the hero cards.
+   - 5b. Monster combat stats per campaign (Body, Avoidance, hit dice, damage, traits), shown
+     in the tracker, with a Faltering badge.
+   - 5c. Fights in the tracker: start/end, mana regeneration each fight round, the cooldown
+     floor out of a fight, effects with countdowns.
+   - 5d. Item stats, equipped items and hero totals; the party purse.
+   - 5e. A script that fills the Three Plagues campaign with the agreed classes, monster stats
+     and starting kits (run only when the GM asks).
+   - 5f. Odds hints (advice only).
 
 ## Abilities (step 4)
 Agreed 2026-10-04 from the GM's notes on the proposal (commit b39a157 has the full proposal

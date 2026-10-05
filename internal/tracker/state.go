@@ -70,6 +70,21 @@ type Hero struct {
 	// Cooldowns maps an ability id to the round it is ready again, for
 	// abilities still cooling down.
 	Cooldowns map[string]int `json:"cooldowns,omitempty"`
+	// Combat is the class's combat stats, frozen like the abilities; nil for
+	// built-in classes, which roll combat dice.
+	Combat *Combat `json:"combat,omitempty"`
+}
+
+// Combat is a hero's combat stats (see content.HeroDef and the Three Plagues rules).
+type Combat struct {
+	HitDice     string `json:"hitDice"`
+	Accuracy    int    `json:"accuracy"`
+	CritFrom    int    `json:"critFrom"`
+	Damage      int    `json:"damage"`
+	DefenseDice string `json:"defenseDice"`
+	Avoidance   int    `json:"avoidance"`
+	Mitigation  int    `json:"mitigation"`
+	ManaRegen   int    `json:"manaRegen,omitempty"`
 }
 
 // Monster is a monster during a session.
@@ -172,6 +187,16 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 		}
 		if h.Items == nil {
 			h.Items = []Item{}
+		}
+		if class.Custom && class.AttackDice != "" {
+			crit := class.CritFrom
+			if crit == 0 {
+				crit = 20
+			}
+			h.Combat = &Combat{
+				HitDice: class.AttackDice, Accuracy: class.Accuracy, CritFrom: crit, Damage: class.Damage,
+				DefenseDice: class.DefenseDice, Avoidance: class.Avoidance, Mitigation: class.Mitigation, ManaRegen: class.ManaRegen,
+			}
 		}
 		if i < len(quest.StartTiles) {
 			h.X, h.Y, h.Placed = quest.StartTiles[i].X, quest.StartTiles[i].Y, true

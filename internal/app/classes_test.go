@@ -17,6 +17,7 @@ func rogueForm() url.Values {
 		"name": {"Rogue"}, "color": {"#334455"}, "description": {"Quick hands."},
 		"body": {"30"}, "mind": {"4"}, "attack": {"1d8 + 1"}, "defense": {"1d6"}, "movement": {"2d6"},
 		"accuracy": {"2"}, "mana": {"0"}, "exclusives": {"disarm"},
+		"crit_from": {"15"}, "damage": {"1"}, "avoidance": {"4"}, "mitigation": {"0"}, "mana_regen": {"0"},
 		"ability_id":       {"", "", ""},
 		"ability_name":     {"Nimble Fingers", "Fan of Blades", ""},
 		"ability_kind":     {"passive", "active", "active"},
@@ -64,7 +65,8 @@ func TestCustomHeroClassPages(t *testing.T) {
 	if !strings.HasPrefix(rogue.ID, "custom-") || rogue.Name != "Rogue" || rogue.Color != "#334455" ||
 		rogue.Description != "Quick hands." || rogue.Body != 30 || rogue.Mind != 4 ||
 		rogue.AttackDice != "1d8+1" || rogue.DefenseDice != "1d6" || rogue.Movement != "2d6" ||
-		rogue.Accuracy != 2 || rogue.Mana != 0 || len(rogue.Exclusives) != 1 || rogue.Exclusives[0] != "disarm" {
+		rogue.Accuracy != 2 || rogue.Mana != 0 || len(rogue.Exclusives) != 1 || rogue.Exclusives[0] != "disarm" ||
+		rogue.CritFrom != 15 || rogue.Damage != 1 || rogue.Avoidance != 4 || rogue.Mitigation != 0 || rogue.ManaRegen != 0 {
 		t.Fatalf("custom class in catalog: %+v", rogue)
 	}
 	want := []content.Ability{
@@ -95,6 +97,10 @@ func TestCustomHeroClassPages(t *testing.T) {
 		"negative body":    {"body", "-1"},
 		"no body":          {"body", "0"},
 		"too much mana":    {"mana", "1000"},
+		"crit too low":     {"crit_from", "1"},
+		"crit too high":    {"crit_from", "21"},
+		"negative damage":  {"damage", "-1"},
+		"too much regen":   {"mana_regen", "100"},
 		"bad exclusive":    {"exclusives", "flying"},
 		"description long": {"description", strings.Repeat("x", 2001)},
 	} {
@@ -195,5 +201,27 @@ func TestCustomHeroClassUpdateUnknown(t *testing.T) {
 	resp, _ := postForm(t, noRedirects(), srv.URL+"/classes/0190c6a0-0000-7000-8000-000000000000", rogueForm())
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("update unknown class: %d", resp.StatusCode)
+	}
+}
+
+func TestCustomHeroClassCombatDefaults(t *testing.T) {
+	srv := testServer(t)
+	client := noRedirects()
+	c := func(method, path string, body any) (int, []byte) { return call(t, srv, method, path, body) }
+
+	// A form without the combat fields (an older page) crits on a 20 and adds nothing.
+	form := rogueForm()
+	for _, f := range []string{"crit_from", "damage", "avoidance", "mitigation", "mana_regen"} {
+		form.Del(f)
+	}
+	if resp, _ := postForm(t, client, srv.URL+"/classes", form); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("create: %d", resp.StatusCode)
+	}
+	list := customClasses(t, c)
+	if len(list) != 1 || list[0].CritFrom != 20 || list[0].Damage != 0 || list[0].Avoidance != 0 {
+		t.Fatalf("defaults: %+v", list)
+	}
+	if _, body := get(t, client, srv.URL+"/classes"); !strings.Contains(body, "Hit 1d8+1 +2") || !strings.Contains(body, "Crit 20") {
+		t.Fatalf("class list summary: %s", body)
 	}
 }

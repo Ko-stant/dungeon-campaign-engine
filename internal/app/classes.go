@@ -44,6 +44,12 @@ type customClassDoc struct {
 	Abilities   []content.Ability `json:"abilities,omitempty"`
 	// NextAbility is the number the next new ability's id gets.
 	NextAbility int `json:"nextAbility,omitempty"`
+	// Combat (see content.HeroDef); Attack and Defense above are the hit and defense dice.
+	CritFrom   int `json:"critFrom,omitempty"`
+	Damage     int `json:"damage,omitempty"`
+	Avoidance  int `json:"avoidance,omitempty"`
+	Mitigation int `json:"mitigation,omitempty"`
+	ManaRegen  int `json:"manaRegen,omitempty"`
 }
 
 func (s *Server) registerClassPages(mux *http.ServeMux) {
@@ -73,6 +79,7 @@ func customHeroClassDef(rec store.CustomHeroClass) (content.HeroDef, error) {
 		Body: doc.Body, Mind: doc.Mind, Custom: true, Color: doc.Color,
 		AttackDice: doc.Attack, DefenseDice: doc.Defense, Movement: doc.Movement,
 		Accuracy: doc.Accuracy, Mana: doc.Mana, Exclusives: doc.Exclusives, Abilities: doc.Abilities,
+		CritFrom: doc.CritFrom, Damage: doc.Damage, Avoidance: doc.Avoidance, Mitigation: doc.Mitigation, ManaRegen: doc.ManaRegen,
 	}, nil
 }
 
@@ -108,6 +115,8 @@ func parseClassForm(r *http.Request, next int) (views.ClassForm, string, customC
 		Body: pf.Get("body"), Mind: pf.Get("mind"), Attack: pf.Get("attack"), Defense: pf.Get("defense"),
 		Movement: pf.Get("movement"), Accuracy: pf.Get("accuracy"), Mana: pf.Get("mana"),
 		Exclusives: pf["exclusives"],
+		CritFrom: pf.Get("crit_from"), Damage: pf.Get("damage"), Avoidance: pf.Get("avoidance"),
+		Mitigation: pf.Get("mitigation"), ManaRegen: pf.Get("mana_regen"),
 	}
 	ids, names, kinds, manas, cooldowns, texts := pf["ability_id"], pf["ability_name"], pf["ability_kind"], pf["ability_mana"], pf["ability_cooldown"], pf["ability_text"]
 	at := func(list []string, i int) string {
@@ -139,16 +148,21 @@ func parseClassForm(r *http.Request, next int) (views.ClassForm, string, customC
 		return fail(fmt.Errorf("description must be at most %d characters", maxClassDescription))
 	}
 	for _, f := range []struct {
-		label, value string
-		lo, hi       int
-		dst          *int
+		label, value    string
+		lo, hi, missing int
+		dst             *int
 	}{
-		{"body", form.Body, 1, 999, &doc.Body},
-		{"mind", form.Mind, 0, 999, &doc.Mind},
-		{"accuracy", form.Accuracy, 0, 99, &doc.Accuracy},
-		{"mana", form.Mana, 0, 999, &doc.Mana},
+		{"body", form.Body, 1, 999, 1, &doc.Body},
+		{"mind", form.Mind, 0, 999, 0, &doc.Mind},
+		{"accuracy", form.Accuracy, 0, 99, 0, &doc.Accuracy},
+		{"mana", form.Mana, 0, 999, 0, &doc.Mana},
+		{"crit range (lowest d20 roll that crits)", form.CritFrom, 2, 20, 20, &doc.CritFrom},
+		{"damage", form.Damage, 0, 99, 0, &doc.Damage},
+		{"avoidance", form.Avoidance, 0, 99, 0, &doc.Avoidance},
+		{"mitigation", form.Mitigation, 0, 99, 0, &doc.Mitigation},
+		{"mana per fight round", form.ManaRegen, 0, 99, 0, &doc.ManaRegen},
 	} {
-		if *f.dst, err = formInt(f.label, f.value, f.lo, f.hi, f.lo); err != nil {
+		if *f.dst, err = formInt(f.label, f.value, f.lo, f.hi, f.missing); err != nil {
 			return fail(err)
 		}
 	}
@@ -156,8 +170,8 @@ func parseClassForm(r *http.Request, next int) (views.ClassForm, string, customC
 		label, value string
 		dst          *string
 	}{
-		{"attack dice", form.Attack, &doc.Attack},
-		{"defend dice", form.Defense, &doc.Defense},
+		{"hit dice", form.Attack, &doc.Attack},
+		{"defense dice", form.Defense, &doc.Defense},
 		{"movement", form.Movement, &doc.Movement},
 	} {
 		if *f.dst, err = formDice(f.label, f.value); err != nil {
