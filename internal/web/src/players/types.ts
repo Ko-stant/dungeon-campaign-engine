@@ -79,6 +79,8 @@ export interface PlayerHero {
 
 export interface PlayerState {
   questName: string;
+  /** The quest's aim as the players hear it (rules mode); missing when none. */
+  goal?: string;
   round: number;
   fight?: boolean;
   width: number;

@@ -3,6 +3,7 @@ package tracker
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -215,8 +216,43 @@ func PlayerSummary(before, after *State, c Command, gmSummary string) string {
 		return monsterChanges(before, after)
 	case "effect.add", "effect.remove":
 		return effectChanges(before, after)
+	case "rules.enable":
+		return "The game begins: the heroes' turns"
+	case "phase.monsters":
+		return "The monsters' turn"
+	case "phase.end", "hero.join", "quest.end":
+		return playerSafe(before, after, gmSummary)
+	case "monster.move", "monster.attack":
+		// A monster the heroes can't see acts unheard.
+		var p struct {
+			Monster string `json:"monster"`
+		}
+		_ = json.Unmarshal(c.Payload, &p) // the command was applied, so it decodes
+		if m := findMonster(after, p.Monster); m == nil || m.Visibility != MonsterSeen {
+			return ""
+		}
+		return playerSafe(before, after, gmSummary)
+	}
+	if strings.HasPrefix(c.Type, "turn.") {
+		return playerSafe(before, after, gmSummary)
 	}
 	return ""
+}
+
+// notesMentioned matches the GM's reminder that a quest note is on a
+// searched piece ("; note A is here").
+var notesMentioned = regexp.MustCompile(`; note [^;]+ is here`)
+
+// playerSafe is a rules command's GM line as the players may hear it: no
+// quest notes, and monsters by name without their ids.
+func playerSafe(before, after *State, line string) string {
+	line = notesMentioned.ReplaceAllString(line, "")
+	for _, st := range []*State{after, before} {
+		for _, m := range st.Monsters {
+			line = strings.ReplaceAll(line, monsterLabel(&m), m.Name)
+		}
+	}
+	return line
 }
 
 func heroChanges(before, after *State) string {

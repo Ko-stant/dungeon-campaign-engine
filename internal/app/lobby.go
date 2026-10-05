@@ -27,6 +27,7 @@ func (s *Server) registerLobby(mux routeMux) {
 	mux.HandleFunc("POST /join/{id}/claim/{heroId}", s.joinWithFreeHero)
 	mux.HandleFunc("POST /play/{id}/open", s.openSessionForm)
 	mux.HandleFunc("POST /play/{id}/start", s.startOnlineForm)
+	mux.HandleFunc("GET /play/{id}/seat", s.seatPage)
 	mux.HandleFunc("GET /api/sessions/{id}/seat", s.getSeat)
 	mux.HandleFunc("GET /api/sessions/{id}/seat-stream", s.seatStream)
 	mux.HandleFunc("POST /api/sessions/{id}/seat-commands", s.seatCommand)

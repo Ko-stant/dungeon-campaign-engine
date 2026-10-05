@@ -14,6 +14,7 @@ import (
 	"github.com/coder/websocket"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/tracker"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views"
 )
 
 // A player's seat online (docs/ONLINE_AND_RULES_PLAN.md, Phase 5): the game
@@ -167,6 +168,19 @@ func (s *Server) seatResponse(ctx context.Context, sessionID, userID string) (Se
 		Seat:           tracker.SeatView(state, ids, cat),
 		Presence:       s.seats.presence(sessionID),
 	}, nil
+}
+
+// seatPage is the shell of a player's game screen.
+func (s *Server) seatPage(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.signedInUser(w, r); !ok {
+		return
+	}
+	ss, err := s.store.GetSession(r.Context(), r.PathValue("id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	render(w, r, http.StatusOK, views.SeatPage(ss.ID, ss.Name))
 }
 
 func (s *Server) getSeat(w http.ResponseWriter, r *http.Request) {

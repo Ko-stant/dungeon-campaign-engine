@@ -52,6 +52,7 @@ func accessRule(pattern string) (owned []ownedParam, ok bool) {
 		{"/api/sessions/{id}/player", []ownedParam{{"id", store.OwnedSession, true}}},
 		{"/api/sessions/{id}/player-stream", []ownedParam{{"id", store.OwnedSession, true}}},
 		{"/play/{id}/players", []ownedParam{{"id", store.OwnedSession, true}}},
+		{"/play/{id}/seat", []ownedParam{{"id", store.OwnedSession, true}}},
 		// Joining checks the session is open itself.
 		{"/join/{id}", nil},
 		{"/api/boards/{id}", []ownedParam{{"id", store.OwnedBoard, false}}},
