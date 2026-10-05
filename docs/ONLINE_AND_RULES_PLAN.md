@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 18:33 EDT
+**Last Updated**: 2026-10-05 18:45 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -152,6 +152,26 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
    - lobby, then active, then completed;
    - presence over the existing stream hub.
    - **Exit:** two browsers each claim a hero and play a turn.
+   - **Decisions (GM, 2026-10-05):**
+     - **A lobby, not invite links:** players sign in, see the games opened to them, pick a free
+       hero or make their own, and join.
+     - A player may play several heroes.
+     - The GM starts online play; late joins are fine.
+   - **Built differently from the sketch:** no `session_seat` table. A campaign hero's
+     `userId` says who plays it (kept across GM saves), and a seat is every hero of yours in
+     the session.
+   - **Done 2026-10-05.**
+     - `f7c45db`: the open flag, `hero.join`, and hero players.
+     - `e3b3dd4`: the lobby, join page, seat API, the GM's Open/Start controls, and the
+       "seated" guard rule.
+     - `81c436e`: a quest-list leak found in the browser check.
+     - Exit test: `TestFriendsJoinFromTheLobbyAndPlayATurn`.
+   - **Moved to Phase 5:**
+     - presence (who is connected; it belongs with the per-seat stream);
+     - the player's own game screen;
+     - the hero sheet in the seat view.
+   - **Before hosting publicly (Phase 6):** a members allowlist, since any Discord account
+     could join an open game.
 5. **Online player client:**
    - `tracker.SeatView`: the player view, plus the seat's own hero, plus its legal actions;
    - a per-seat stream;
@@ -204,16 +224,20 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 13. **Generated campaigns:** packs generated against the same validators.
 
 ## Resume here
-- **Where things stand:**
-  - Phases 1-3 are done: the rules engine, the map editor fields, and Discord sign-in with
-    owners.
-  - The worktree's `.env` has `AUTH_MODE=discord` and `AUTH_ADMINS` (the GM). Unowned data
-    from before sign-in is reached as an admin.
-- **Next:** Phase 4, seats and the lobby:
-  - `session_seat` (session, hero, user, invite token) and `/join/{token}`;
-  - a seat command endpoint that stamps the seat actor;
-  - access for seated players to their session's views;
-  - presence.
+- **Where things stand:** Phases 1-4 are done.
+  - Friends sign in with Discord, see open games at `/lobby`, pick or make a hero, and join.
+  - The GM opens a session and starts online play from the campaign page.
+  - Players read their seat (`GET /api/sessions/{id}/seat`) and send their heroes' turn
+    commands (`POST .../seat-commands`).
+- **Next:** Phase 5, the online player client.
+  - `tracker.SeatView` (the player view plus the seat's own hero sheets) and a per-seat stream
+    with presence.
+  - A `pages/seat.ts` game screen: board, buttons from legal actions, move highlighting, a
+    dice log.
+  - A GM rules console in the tracker (phase, the monsters' turn, reactions).
+- **Checking as a pretend user:** set `AUTH_MODE=dev` in the worktree's `.env`
+  temporarily (any name signs in, from this machine), then restore `discord` and delete what
+  was made (`provider = 'dev'` users and `zz` records).
 - **Browser checks:** add a temporary `dce-online` entry to the main checkout's
   `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
   ./build/dungeon-campaign-engine"`, port 8090) after `make build` in the worktree. Restore the
@@ -256,3 +280,7 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   - `a31184f`: auth.
   - `7ed4f8d`: app guard and sign-in.
   - Real Discord sign-in checked by the GM.
+- 2026-10-05: Phase 4 done.
+  - `f7c45db`, `e3b3dd4`, `81c436e`.
+  - A browser check as a pretend GM and player in dev mode, cleaned up afterward. It found
+    and fixed a quest-list leak.
