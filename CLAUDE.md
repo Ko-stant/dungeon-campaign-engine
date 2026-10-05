@@ -68,6 +68,13 @@ Tailwind CSS v4, canvas rendering.
     (`Hero.CombatTotals`, `ManaCap`, `ManaRegen`; TS `combatTotals`, `manaCap`).
     `/campaigns/{id}/gold` and `/campaigns/{id}/heroes/{heroId}/items...` forms, `item.*`
     tracker commands (`item.equip` too). Shared pure helpers in `internal/tracker/inventory.go`.
+    The gold box takes `+25`, `-10` or `=40` (a bare number is refused). Usable items
+    (`healBody`, `restoreMana`: potions) are spent by `item.use`, which heals in one event.
+  - Loot list (`campaign.loot`, migration 00010; `internal/app/loot.go`): items with their
+    kind and stats ready, edited on the campaign page (`/campaigns/{id}/loot...`), served by
+    `GET /api/campaigns/{id}/loot` to the tracker's per-hero loot picker
+    (`internal/web/src/tracker/loot.ts`). `make fill-campaign` merges combat.json's `loot`
+    (matched by name; the GM's own entries stay).
   - Read-aloud script: one Markdown text per campaign (`campaign.script`) parsed by
     `internal/script`; saved with `POST /campaigns/{id}/script`, served parsed by
     `GET /api/campaigns/{id}/script`; the tracker's Read aloud panel logs `passage.read`.
@@ -98,7 +105,7 @@ Tailwind CSS v4, canvas rendering.
     each hero, from the exact combat math in `internal/web/src/combat/odds.ts`. Advice only.
   - Campaign fill (`internal/campaignfill`, `cmd/fill-campaign`): `make fill-campaign
     CAMPAIGN="Three Plagues" [APPLY=1]` loads `docs/campaigns/three-plagues/combat.json`
-    (class stats and abilities, monster stat lines, starting kits; the simulator's
+    (class stats and abilities, monster stat lines, starting kits, the loot list; the simulator's
     `scripts/combat-config.ts` reads the same file) into the classes, the campaign and its
     heroes. A dry run without `APPLY=1`; run it for real only when the GM asks.
   - Campaign chapters (table `campaign_chapter`): ordered quests, each on its own board;

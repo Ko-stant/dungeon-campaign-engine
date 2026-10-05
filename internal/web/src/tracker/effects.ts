@@ -10,8 +10,6 @@ export const EFFECT_SUGGESTIONS: readonly string[] = [
   'Marked',
   'Vanished',
   'Cannot defend',
-  'Determination +2',
-  'Determination +4',
   'Stunned',
 ];
 

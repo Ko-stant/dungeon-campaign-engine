@@ -73,6 +73,8 @@ export interface PlayerHero {
   effects?: Effect[] | null;
   /** Class stats plus equipped items. */
   combat?: HeroCombat | null;
+  /** Accuracy bonus from misses in a row. */
+  determination?: number;
 }
 
 export interface PlayerState {

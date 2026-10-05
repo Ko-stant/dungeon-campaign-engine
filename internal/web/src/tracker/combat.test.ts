@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { combatLine, combatTotals, falterAt, gearBonus, itemStatsLine, manaCap, monsterLine, playerMonsterLine } from './combat.ts';
+import { combatLine, combatTotals, determinationAfter, falterAt, statChange, gearBonus, itemStatsLine, manaCap, monsterLine, playerMonsterLine } from './combat.ts';
 import type { Hero, Item } from './types.ts';
 
 describe('combatLine', () => {
@@ -90,5 +90,36 @@ describe('falterAt', () => {
     expect(falterAt(109)).toBe(27);
     expect(falterAt(5)).toBe(1);
     expect(falterAt(3)).toBe(1);
+  });
+});
+
+describe('determinationAfter', () => {
+  test('a miss adds +2 up to +4; a hit clears it', () => {
+    expect(determinationAfter(0, 'miss')).toBe(2);
+    expect(determinationAfter(2, 'miss')).toBe(4);
+    expect(determinationAfter(4, 'miss')).toBe(4);
+    expect(determinationAfter(4, 'hit')).toBe(0);
+    expect(determinationAfter(0, 'hit')).toBe(0);
+  });
+});
+
+describe('statChange', () => {
+  test('a plain or minus number takes damage (stopping at 0), plus heals (stopping at the maximum), = sets', () => {
+    expect(statChange(40, 40, '-15')).toEqual({ ok: true, value: 25 });
+    expect(statChange(40, 40, '15')).toEqual({ ok: true, value: 25 });
+    expect(statChange(10, 40, ' - 15 ')).toEqual({ ok: true, value: 0 });
+    expect(statChange(30, 40, '+8')).toEqual({ ok: true, value: 38 });
+    expect(statChange(36, 40, '+8')).toEqual({ ok: true, value: 40 });
+    expect(statChange(40, 40, '=12')).toEqual({ ok: true, value: 12 });
+    expect(statChange(40, 40, '= 45')).toEqual({ ok: true, value: 45 });
+  });
+  test('anything else is refused with a reason', () => {
+    for (const input of ['', '+', '=', 'abc', '1.5', '--3', '+1000']) {
+      const r = statChange(40, 40, input);
+      expect(r.ok).toBe(false);
+      if (!r.ok) {
+        expect(r.error).toContain('e.g.');
+      }
+    }
   });
 });

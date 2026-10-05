@@ -33,7 +33,7 @@ func TestRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	report := strings.Join(lines, "\n")
-	for _, s := range []string{"Dry run", "Rogue: body 20 → 28", "Fan of Blades renamed Fan of Cards", "Cleric: new class", "goblin added", "Vex: Sword, Soft Boots (equipped)", "no Cleric hero"} {
+	for _, s := range []string{"Dry run", "Rogue: body 20 → 28", "Fan of Blades renamed Fan of Cards", "Cleric: new class", "goblin added", "Wardens' Dirk added", "Vex: Sword, Soft Boots (equipped)", "no Cleric hero"} {
 		if !strings.Contains(report, s) {
 			t.Errorf("dry run report should mention %q:\n%s", s, report)
 		}
@@ -68,6 +68,9 @@ func TestRun(t *testing.T) {
 	_ = json.Unmarshal(raw, &stats)
 	if stats["gargoyle"].Body != 109 || stats["gargoyle"].Line != 1 {
 		t.Fatalf("monster stats: %s", raw)
+	}
+	if raw, _ := st.GetCampaignLoot(ctx, c.ID); !strings.Contains(string(raw), "Wardens' Dirk") || !strings.Contains(string(raw), `"healBody": 8`) {
+		t.Fatalf("loot list: %s", raw)
 	}
 	camp, _ := st.GetCampaign(ctx, c.ID)
 	var after []tracker.CampaignHero

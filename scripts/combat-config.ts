@@ -72,16 +72,37 @@ export interface Item {
 /** Each hero's starting gear (combat.json, 2026-10-04). */
 export const STARTING_KIT: Item[] = combat.startingKit;
 
-/** Quest 1 finds (approved 2026-10-05), keyed to the board notes, found after these encounters. */
-export const QUEST_1_FINDS: { label: string; after: string; item: Item }[] = [
-  { label: 'W', after: 'Room 5', item: { name: "Wardens' Longbow", hero: 'Ranger', kind: 'bow', damage: 6, replaces: 'Hunting Bow' } },
-  { label: 'S', after: 'Room 5', item: { name: "Wardens' Dirk", hero: 'Rogue', kind: 'weapon', damage: 3, replaces: 'Dirk' } },
-  { label: 'S', after: 'Room 5', item: { name: "Wardens' Chain Shirt", hero: 'Cleric', kind: 'chest', avoidance: 2, replaces: 'Padded Robes' } },
-  { label: 'O', after: 'Room 11', item: { name: "Wardens' Greatsword", hero: 'Barbarian', kind: 'two-handed weapon', damage: 9, replaces: 'Greataxe' } },
-  { label: 'X', after: 'Room 17', item: { name: 'Quivering Boots', hero: 'Rogue', kind: 'feet', avoidance: 2, replaces: 'Soft Boots', note: 'special: traps (see the Rogue)' } },
-  { label: 'T', after: 'Corridor at (29,5)', item: { name: "Wardens' Scale Hauberk", hero: 'Barbarian', kind: 'chest, heavy (Barbarian-only)', mitigation: 2, replaces: 'Hide Cuirass' } },
-  { label: 'L', after: 'Corridor at (15,24)', item: { name: "Pilgrim's Prayer Beads", hero: 'Cleric', kind: 'trinket', mana: 2, note: "left by Sister Wenna's pilgrims" } },
-];
+/** A loot list entry in combat.json: an item, or a potion (healBody / restoreMana). */
+interface LootLine extends Partial<Item> {
+  name: string;
+  label?: string;
+  after?: string;
+  healBody?: number;
+  restoreMana?: number;
+}
+
+const LOOT = (combat as unknown as { loot: LootLine[] }).loot;
+
+/** Quest 1 finds (approved 2026-10-05; combat.json "loot"), keyed to the board notes, found after these encounters. */
+export const QUEST_1_FINDS: { label: string; after: string; item: Item }[] = LOOT.filter(
+  (l): l is LootLine & { hero: string; kind: string; label: string; after: string } => l.hero !== undefined && l.label !== undefined && l.after !== undefined && l.kind !== undefined,
+).map((l) => ({
+  label: l.label,
+  after: l.after,
+  item: {
+    name: l.name,
+    hero: l.hero,
+    kind: l.kind,
+    ...(l.damage ? { damage: l.damage } : {}),
+    ...(l.accuracy ? { accuracy: l.accuracy } : {}),
+    ...(l.avoidance ? { avoidance: l.avoidance } : {}),
+    ...(l.mitigation ? { mitigation: l.mitigation } : {}),
+    ...(l.mana ? { mana: l.mana } : {}),
+    ...(l.manaRegen ? { manaRegen: l.manaRegen } : {}),
+    ...(l.replaces ? { replaces: l.replaces } : {}),
+    ...(l.note ? { note: l.note } : {}),
+  },
+}));
 
 /** Adds an item's stats to a hero (sign -1 takes them away). */
 export function withItem(h: HeroSpec, item: Item, sign = 1): HeroSpec {
@@ -126,9 +147,10 @@ export const HERO_ATTACKS: Record<string, HeroAttacker> = Object.fromEntries(PAR
 /** A monster's stat line as combat.json (and the app's campaign monster stats) keep it. */
 interface MonsterLine {
   body: number;
-  avoidance: number;
-  hitDice: string;
-  damage: number;
+  /** Missing on a body-only line (a monster that doesn't fight, e.g. the Stranger). */
+  avoidance?: number;
+  hitDice?: string;
+  damage?: number;
   ranged?: boolean;
   reach?: boolean;
   line?: number;
@@ -137,11 +159,11 @@ interface MonsterLine {
   undead?: boolean;
 }
 
-function monster(m: MonsterLine): MonsterSpec {
+function monster(m: MonsterLine & { hitDice: string }): MonsterSpec {
   return {
     body: m.body,
-    avoidance: m.avoidance,
-    attack: { hitDice: dice(m.hitDice), damage: m.damage },
+    avoidance: m.avoidance ?? 0,
+    attack: { hitDice: dice(m.hitDice), damage: m.damage ?? 0 },
     ...(m.ranged ? { ranged: true } : {}),
     ...(m.reach ? { reach: true } : {}),
     ...(m.line ? { line: m.line } : {}),
@@ -159,8 +181,12 @@ function monster(m: MonsterLine): MonsterSpec {
  * a straight line (the hero behind defends separately).
  */
 export const MONSTERS: Record<string, MonsterSpec> = Object.fromEntries(
-  Object.entries(combat.monsters as Record<string, MonsterLine>).map(([type, m]) => [type, monster(m)]),
+  Object.entries(combat.monsters as Record<string, MonsterLine>)
+    .filter((e): e is [string, MonsterLine & { hitDice: string }] => e[1].hitDice !== undefined)
+    .map(([type, m]) => [type, monster(m)]),
 );
+
+const CLERIC_MIND = combat.classes.find((c) => c.name === 'Cleric')?.mind ?? 0;
 
 /** The agreed ability kit (step 4) with draft numbers; see the simulator's DEFAULT_TACTICS. */
 export const TACTICS: Tactics = {
@@ -169,15 +195,21 @@ export const TACTICS: Tactics = {
   openingAttackers: 2,
   // The heroes hold a doorway: 1-2 melee monsters reach them a round.
   meleeLimit: 2,
-  smite: { cost: 2, attack: { hitDice: dice('1d20'), accuracy: 5, damage: 5 }, undead: 2 },
+  // Smite rolls 1d20 + the Cleric's Mind (Will) to hit, not the weapon's hit dice and Accuracy (2026-10-05).
+  smite: { cost: 2, attack: { hitDice: dice('1d20'), accuracy: CLERIC_MIND, damage: 5 }, undead: 2 },
   heal: { cost: 6, amount: 12 },
 };
 
 /** Abilities being tested, switched on with --with=name (none at the moment). */
 export const TESTING: Partial<Tactics> = {};
 
-/** Quest 1 consumables (note V): 3 healing potions (8 Body) and 1 mana potion (6 mana); drinking is free. */
-export const SUPPLIES: Supplies = { healPotions: 3, healAmount: 8, manaPotions: 1, manaAmount: 6 };
+/** Quest 1 consumables (note V): 3 healing potions and 1 mana potion, their amounts from the loot list; drinking is free. */
+export const SUPPLIES: Supplies = {
+  healPotions: 3,
+  healAmount: LOOT.find((l) => l.name === 'Healing Potion')?.healBody ?? 0,
+  manaPotions: 1,
+  manaAmount: LOOT.find((l) => l.name === 'Mana Potion')?.restoreMana ?? 0,
+};
 
 /** Quest 1 adjustments to the generated encounters. */
 export const QUEST_1 = {

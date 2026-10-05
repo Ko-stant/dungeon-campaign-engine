@@ -88,6 +88,18 @@ type MonsterStats struct {
 	MonsterCombat
 }
 
+// BodyOnly reports a stat line with no hit dice: the monster gets its Body
+// and no combat stats (a non-fighting character such as a prisoner).
+func (st MonsterStats) BodyOnly() bool {
+	return st.HitDice == ""
+}
+
+// CombatEmpty reports whether nothing but Body is set (what a body-only line
+// must be).
+func (st MonsterStats) CombatEmpty() bool {
+	return st.MonsterCombat == MonsterCombat{}
+}
+
 // WithMonsterStats returns a copy of the catalog whose monsters use a
 // campaign's stat lines (Body and combat stats), keyed by monster type. Types
 // the catalog lacks are ignored; with no stats the catalog itself is returned.
@@ -99,8 +111,11 @@ func (c *Catalog) WithMonsterStats(stats map[string]MonsterStats) *Catalog {
 	out.Monsters = make([]MonsterDef, len(c.Monsters))
 	for i, m := range c.Monsters {
 		if st, ok := stats[m.ID]; ok {
-			combat := st.MonsterCombat
-			m.Body, m.Combat = st.Body, &combat
+			m.Body, m.Combat = st.Body, nil
+			if !st.BodyOnly() {
+				combat := st.MonsterCombat
+				m.Combat = &combat
+			}
 		}
 		out.Monsters[i] = m
 	}

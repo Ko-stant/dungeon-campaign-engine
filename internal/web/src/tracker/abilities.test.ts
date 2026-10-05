@@ -44,12 +44,14 @@ describe('goldChange', () => {
   test('adds, takes away or sets, matching internal/tracker (Go)', () => {
     expect(goldChange(30, '+25')).toEqual({ ok: true, gold: 55 });
     expect(goldChange(30, ' - 10 ')).toEqual({ ok: true, gold: 20 });
-    expect(goldChange(30, '40')).toEqual({ ok: true, gold: 40 });
+    expect(goldChange(30, '=40')).toEqual({ ok: true, gold: 40 });
+    expect(goldChange(30, '= 0')).toEqual({ ok: true, gold: 0 });
     expect(goldChange(30, '-30')).toEqual({ ok: true, gold: 0 });
   });
 
   test('rejects amounts it cannot read or that leave less than 0', () => {
-    for (const input of ['', '+', 'abc', '1.5', '+1000000']) {
+    // A bare number is refused: +, - or = says what it does.
+    for (const input of ['', '+', '=', '40', 'abc', '1.5', '+1000000', '=-5']) {
       expect(goldChange(30, input).ok).toBe(false);
     }
     const r = goldChange(5, '-6');

@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-05 11:55 EDT
+**Last Updated**: 2026-10-05 18:40 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -34,6 +34,24 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   is in `docs/campaigns/three-plagues/MAPS.md`.
 
 **Next**
+- **Done 2026-10-05, applied by the GM:** `make fill-campaign CAMPAIGN="Three Plagues"
+  APPLY=1` updated the Cleric's Smite text (1d20 + Mind) and added the loot list (the seven
+  Quest 1 finds and the two potions) to the campaign. Smite on Mind was
+  simulated as no meaningful change (72% / 81% with nobody dead, without / with finds).
+- **Quest 1 dry run (2026-10-05)** on a throwaway copy (Crumbling Halls, the real party):
+  reveal, fight, Determination, odds, abilities, mana, effects, traps, loot, potions, gold,
+  fight end and quest completion all work. Findings, as the GM decided them:
+  1. Done: a damage/heal box beside Body (and Mana) for heroes and monsters: 9 or -9 takes
+     damage, +8 heals up to the maximum, =12 sets; one entry, one event.
+  2. Kept: a monster at 0 Body stays until Kill is pressed (no accidental deaths from a
+     mistyped number).
+  3. Open: the Cleric's odds use the mace; Smite gets its own line once the GM decides
+     whether Smite rolls 1d20 + Mind.
+  4. Done: "gained 3 Healing Potions"; the Stranger has a body-only stat line (1 Body, no
+     combat stats) in combat.json, applied to the Three Plagues campaign.
+  Not pursued: removing a damaged monster leaves its damage lines (the GM kills instead).
+  Waiting until after the Quest 1 session: the Tempest-God Axe, a Smite item, and any
+  number changes (the GM takes notes on game day). Mental attacks wait for Quests 2-3.
 - **Decided (2026-10-05): elite attacks stay as they are.** The GM Bestiary
   (https://claude.ai/artifact/CoGhfTV4sUUb5uecWw36xA, GM only; `bun scripts/gm-bestiary.ts`
   writes `docs/campaigns/three-plagues/gm/bestiary.html`) shows defense (avoidance + 1d6)

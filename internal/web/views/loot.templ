@@ -1,0 +1,70 @@
+package views
+
+// LootRow is one item on a campaign's loot list.
+type LootRow struct {
+	ID    string
+	Name  string
+	Notes string
+	// Tag sums up its kind, stats and use, e.g. "potion · heals 8 Body".
+	Tag string
+}
+
+func lootURL(d CampaignPageData, rest string) templ.SafeURL {
+	return templ.SafeURL("/campaigns/" + d.ID + "/loot" + rest)
+}
+
+templ useInput(label, name string) {
+	<label class="block text-xs">
+		<span class="mb-1 block opacity-70">{ label }</span>
+		<input name={ name } type="number" min="0" max="99" placeholder="0" class={ inlineInputClass + " w-24" }/>
+	</label>
+}
+
+// campaignLoot is the campaign's loot list: items to hand out, stats ready.
+templ campaignLoot(d CampaignPageData) {
+	<section id="loot" class={ cardClass + " space-y-4" }>
+		<div>
+			<h2 class="text-lg font-semibold">Loot list</h2>
+			<p class="text-xs opacity-60">Items to hand out from chests and finds, with their kind and stats ready. During a quest, add one to a hero from the loot picker in their inventory. Saving a name that is already here replaces it; <code>make fill-campaign</code> adds the finds and potions from the campaign's combat.json.</p>
+		</div>
+		if len(d.Loot) == 0 {
+			<p class="text-sm opacity-70">No loot yet.</p>
+		} else {
+			<ul class="divide-y divide-border/40 rounded-lg border border-border/60">
+				for _, it := range d.Loot {
+					<li class="flex flex-wrap items-baseline justify-between gap-2 p-3 text-sm">
+						<div class="min-w-0">
+							<span class="font-semibold">{ it.Name }</span>
+							if it.Tag != "" {
+								<span class="ml-2 text-xs opacity-70">{ it.Tag }</span>
+							}
+							if it.Notes != "" {
+								<p class="text-xs opacity-60">{ it.Notes }</p>
+							}
+						</div>
+						<form method="post" action={ lootURL(d, "/"+it.ID+"/delete") }>
+							<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove " + it.Name + " from the loot list" }>Remove</button>
+						</form>
+					</li>
+				}
+			</ul>
+		}
+		<form method="post" action={ lootURL(d, "") } class="space-y-2 rounded-md border border-border/60 p-3">
+			<h3 class="text-sm font-semibold">Add or replace a loot item</h3>
+			<label class="block text-xs">
+				<span class="mb-1 block opacity-70">Name</span>
+				<input name="name" required maxlength="120" placeholder="e.g. Wardens' Longbow" class={ smallInputClass }/>
+			</label>
+			@itemStatFields(ItemRow{})
+			<div class="flex flex-wrap items-end gap-2">
+				@useInput("Heals Body when used", "heal_body")
+				@useInput("Restores mana when used", "restore_mana")
+			</div>
+			<label class="block text-xs">
+				<span class="mb-1 block opacity-70">Notes</span>
+				<input name="notes" maxlength="500" placeholder="e.g. For the Ranger; replaces the Hunting Bow" class={ smallInputClass }/>
+			</label>
+			<button type="submit" class={ buttonClass }>Save loot item</button>
+		</form>
+	</section>
+}

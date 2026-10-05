@@ -106,8 +106,12 @@ func TestItemCommands(t *testing.T) {
 	s := newState(t)
 
 	s, ev := apply(t, s, cmd(t, "item.add", map[string]any{"heroId": "hero-1", "name": "Healing Potion", "quantity": 2}))
-	if it := s.Heroes[0].Items; len(it) != 1 || it[0].Quantity != 2 || ev.Summary != "Grom gained 2 Healing Potion (now 2)" {
+	if it := s.Heroes[0].Items; len(it) != 1 || it[0].Quantity != 2 || ev.Summary != "Grom gained 2 Healing Potions" {
 		t.Fatalf("add: %+v %q", it, ev.Summary)
+	}
+	// Adding to a stack says how many there are now.
+	if _, ev := apply(t, s, cmd(t, "item.add", map[string]any{"heroId": "hero-1", "name": "Healing Potion", "quantity": 3})); ev.Summary != "Grom gained 3 Healing Potions (now 5)" {
+		t.Fatalf("add to a stack: %q", ev.Summary)
 	}
 	s, ev = apply(t, s, cmd(t, "item.add", map[string]any{"heroId": "hero-1", "name": "Rope"}))
 	if ev.Summary != "Grom gained Rope" {
@@ -387,15 +391,71 @@ func TestPartyGold(t *testing.T) {
 }
 
 func TestGoldChange(t *testing.T) {
-	for in, want := range map[string]int{"+25": 55, " - 10 ": 20, "40": 40, "0": 0, "-30": 0} {
+	for in, want := range map[string]int{"+25": 55, " - 10 ": 20, "=40": 40, "= 0": 0, "-30": 0} {
 		got, err := GoldChange(30, in)
 		if err != nil || got != want {
 			t.Errorf("GoldChange(30, %q) = %d, %v; want %d", in, got, err, want)
 		}
 	}
-	for _, in := range []string{"", "+", "abc", "-31", "+1000000", "1.5"} {
+	// A bare number is refused: +, - or = says what it does.
+	for _, in := range []string{"", "+", "=", "40", "abc", "-31", "+1000000", "1.5", "=-5"} {
 		if _, err := GoldChange(30, in); err == nil {
 			t.Errorf("GoldChange(30, %q) should fail", in)
 		}
+	}
+}
+
+func TestCountedName(t *testing.T) {
+	for _, c := range []struct {
+		n          int
+		name, want string
+	}{
+		{1, "Healing Potion", "Healing Potion"},
+		{3, "Healing Potion", "3 Healing Potions"},
+		{2, "Soft Boots", "2 Soft Boots"},
+		{2, "Potion of Healing", "2 Potions of Healing"},
+		{2, "Torch", "2 Torches"},
+		{2, "Ruby", "2 Rubies"},
+		{2, "Key", "2 Keys"},
+	} {
+		if got := countedName(c.n, c.name); got != c.want {
+			t.Errorf("countedName(%d, %q) = %q, want %q", c.n, c.name, got, c.want)
+		}
+	}
+}
+
+func TestItemUse(t *testing.T) {
+	s, cat := fightState(t) // Mira: Cleric, 28 Body, 16 mana; Vex: Ranger, 30 Body
+	s.Heroes[1].Body = 20
+	s.Heroes[0].Mana = 14
+	s, ev := applyWith(t, s, cmd(t, "item.add", map[string]any{"heroId": "hero-2", "name": "Healing Potion", "quantity": 2, "healBody": 8}), cat)
+	if it := s.Heroes[1].Items[0]; it.HealBody != 8 || ev.Summary != "Vex gained 2 Healing Potions (heals 8 Body)" {
+		t.Fatalf("add a potion: %+v %q", it, ev.Summary)
+	}
+	// Using one spends it and heals, as one change.
+	s, ev = applyWith(t, s, cmd(t, "item.use", map[string]any{"heroId": "hero-2", "itemId": "item-1"}), cat)
+	if s.Heroes[1].Body != 28 || s.Heroes[1].Items[0].Quantity != 1 || ev.Summary != "Vex used Healing Potion: Body 20 → 28 (1 left)" {
+		t.Fatalf("use: %d %+v %q", s.Heroes[1].Body, s.Heroes[1].Items, ev.Summary)
+	}
+	if ev.PlayerSummary != ev.Summary {
+		t.Fatalf("the players hear about it: %q", ev.PlayerSummary)
+	}
+	// Healing stops at the maximum; the last one is gone once used.
+	s, ev = applyWith(t, s, cmd(t, "item.use", map[string]any{"heroId": "hero-2", "itemId": "item-1"}), cat)
+	if s.Heroes[1].Body != 30 || len(s.Heroes[1].Items) != 0 || ev.Summary != "Vex used Healing Potion: Body 28 → 30 (none left)" {
+		t.Fatalf("use the last: %d %+v %q", s.Heroes[1].Body, s.Heroes[1].Items, ev.Summary)
+	}
+	// A mana potion restores mana, up to the hero's maximum.
+	s, _ = applyWith(t, s, cmd(t, "item.add", map[string]any{"heroId": "hero-1", "name": "Mana Potion", "restoreMana": 6}), cat)
+	s, ev = applyWith(t, s, cmd(t, "item.use", map[string]any{"heroId": "hero-1", "itemId": "item-1"}), cat)
+	if s.Heroes[0].Mana != 16 || ev.Summary != "Mira used Mana Potion: Mana 14 → 16 (none left)" {
+		t.Fatalf("mana potion: %d %q", s.Heroes[0].Mana, ev.Summary)
+	}
+	s, _ = applyWith(t, s, cmd(t, "item.add", map[string]any{"heroId": "hero-1", "name": "Rope"}), cat)
+	if _, _, err := Apply(s, cmd(t, "item.use", map[string]any{"heroId": "hero-1", "itemId": "item-1"}), cat); err == nil {
+		t.Fatal("an item with nothing to use should fail")
+	}
+	if _, err := NormalizeItems([]Item{{Name: "Elixir", HealBody: 100}}); err == nil {
+		t.Fatal("healing over 99 should fail")
 	}
 }

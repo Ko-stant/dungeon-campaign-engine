@@ -7,13 +7,12 @@
  */
 import { pixelToTile } from '../board/geometry.ts';
 import { BoardRenderer } from '../board/renderer.ts';
-import { cardFor, pickAt, type Pick } from '../players/cards.ts';
+import { cardFor, heroChips, pickAt, type Pick } from '../players/cards.ts';
 import { feedAfter } from '../players/feed.ts';
 import { nextScale, parseScale } from '../players/scale.ts';
 import type { PlayerCatalog, PlayerEvent, PlayerHero, PlayerState, PlayerUpdate } from '../players/types.ts';
 import { playerBoardView } from '../players/view.ts';
 import { createTrackerApi } from '../tracker/api.ts';
-import { effectLabel } from '../tracker/effects.ts';
 import { h, replaceChildren } from '../ui/dom.ts';
 
 const FEED_LENGTH = 30;
@@ -158,8 +157,8 @@ async function main(): Promise<void> {
         h('span', {}, `Mind ${String(hero.mind)} / ${String(hero.maxMind)}`),
         (hero.manaCap ?? 0) > 0 ? h('span', {}, `Mana ${String(hero.mana ?? 0)} / ${String(hero.manaCap ?? 0)}`) : null),
       (hero.manaCap ?? 0) > 0 ? bar(hero.mana ?? 0, hero.manaCap ?? 0, 'bg-brand') : null,
-      (hero.effects ?? []).length
-        ? h('div', { class: 'flex flex-wrap gap-1 pt-1' }, ...(hero.effects ?? []).map((e) => h('span', { class: 'rounded-full border border-amber-500/60 bg-amber-500/10 px-2 py-0.5 text-sm' }, effectLabel(e))))
+      heroChips(hero).length
+        ? h('div', { class: 'flex flex-wrap gap-1 pt-1' }, ...heroChips(hero).map((c) => h('span', { class: 'rounded-full border border-amber-500/60 bg-amber-500/10 px-2 py-0.5 text-sm' }, c)))
         : null);
   }
 

@@ -126,3 +126,32 @@ export const FALTER_PENALTY = 4;
 export function falterAt(maxBody: number): number {
   return Math.max(1, Math.floor(maxBody / 4));
 }
+
+/** Determination: each miss in a row adds +2 Accuracy to the next attack, up to +4; a hit clears it. */
+export const DETERMINATION_STEP = 2;
+export const DETERMINATION_CAP = 4;
+
+export function determinationAfter(current: number, outcome: 'miss' | 'hit'): number {
+  return outcome === 'hit' ? 0 : Math.min(DETERMINATION_CAP, current + DETERMINATION_STEP);
+}
+
+/**
+ * What the GM typed into a Body or Mana box: "15" or "-15" takes 15 (stopping at 0), "+8"
+ * heals 8 (stopping at the maximum), "=12" sets it to 12. One box entry is one change.
+ */
+export function statChange(current: number, max: number, input: string): { ok: true; value: number } | { ok: false; error: string } {
+  const typed = input.trim();
+  const m = /^([-+=]?)(\d{1,3})$/.exec(typed.replaceAll(' ', ''));
+  if (!m) {
+    return { ok: false, error: `${JSON.stringify(typed)} is not an amount (e.g. 9 or -9 to take damage, +8 to heal, =12 to set)` };
+  }
+  const n = Number(m[2]);
+  switch (m[1]) {
+    case '+':
+      return { ok: true, value: Math.max(current, Math.min(max, current + n)) };
+    case '=':
+      return { ok: true, value: n };
+    default:
+      return { ok: true, value: Math.max(0, current - n) };
+  }
+}

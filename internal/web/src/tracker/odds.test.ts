@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { CAMPAIGN_RULES, heroAttack, killOdds, monsterAttack } from '../combat/odds.ts';
 import { parseDice } from '../dice/dice.ts';
-import { attackOdds, defenseOdds, oddsPercent } from './odds.ts';
+import { attackOdds, defenseOdds, oddsPercent, smiteOdds } from './odds.ts';
 import type { Hero, Monster } from './types.ts';
 
 function dice(s: string) {
@@ -89,5 +89,34 @@ describe('oddsPercent', () => {
     expect(oddsPercent(0)).toBe('0%');
     expect(oddsPercent(0.9995)).toBe('>99%');
     expect(oddsPercent(1)).toBe('100%');
+  });
+});
+
+describe('attackOdds with Determination', () => {
+  test("the hero's current bonus counts toward the next attack and the run to finish the monster", () => {
+    const odds = attackOdds({ ...ranger, determination: 4 }, orc);
+    expect(odds?.hit).toBeCloseTo(heroAttack({ ...attacker, accuracy: attacker.accuracy + 4 }, 8).hit, 10);
+    expect(odds?.attacksToKill).toBeCloseTo(killOdds(attacker, 8, 22, { ...CAMPAIGN_RULES, falterAt: 5 }, 4).expected, 10);
+  });
+});
+
+describe('smiteOdds', () => {
+  const cleric: Hero = {
+    id: 'hero-2', name: 'Derrick', class: 'custom-cleric', x: 1, y: 1, placed: true, body: 28, maxBody: 28, mind: 6, maxMind: 6, status: 'active',
+    combat: { hitDice: '2d8', accuracy: 4, critFrom: 20, damage: 2, defenseDice: '1d6', avoidance: 3, mitigation: 0 },
+    abilities: [{ id: 'ability-7', name: 'Smite', kind: 'spell', manaCost: 2 }],
+    items: [{ id: 'item-1', name: 'Mace', quantity: 1, equipped: true, damage: 3 }],
+  };
+  const smite = { hitDice: dice('1d20'), accuracy: 6, critFrom: 20, critMultiplier: 2, nearMiss: 2, damage: 5 };
+  test('Smite rolls 1d20 + Mind (not the weapon) for 5 damage, +2 against undead, Determination included', () => {
+    const odds = smiteOdds(cleric, orc);
+    expect(odds?.hit).toBeCloseTo(heroAttack(smite, 8).hit, 10);
+    expect(odds?.expectedDamage).toBeCloseTo(heroAttack(smite, 8).expectedDamage, 10);
+    const skeleton: Monster = { ...orc, id: 'monster-2', name: 'Skeleton', combat: { avoidance: 8, hitDice: '1d12', damage: 6, undead: true } };
+    expect(smiteOdds(cleric, skeleton)?.expectedDamage).toBeCloseTo(heroAttack({ ...smite, damage: 7 }, 8).expectedDamage, 10);
+    expect(smiteOdds({ ...cleric, determination: 2 }, orc)?.hit).toBeCloseTo(heroAttack({ ...smite, accuracy: 8 }, 8).hit, 10);
+  });
+  test('only a hero who has Smite gets the line', () => {
+    expect(smiteOdds(ranger, orc)).toBeNull();
   });
 });

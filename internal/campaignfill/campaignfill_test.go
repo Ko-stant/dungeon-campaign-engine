@@ -36,8 +36,13 @@ const fixture = `{
   ],
   "monsters": {
     "goblin": {"body": 5, "avoidance": 6, "hitDice": "1d12", "damage": 4},
-    "gargoyle": {"body": 109, "avoidance": 14, "hitDice": "2d10 + 3", "damage": 12, "line": 1}
-  }
+    "gargoyle": {"body": 109, "avoidance": 14, "hitDice": "2d10 + 3", "damage": 12, "line": 1},
+    "stranger": {"body": 1}
+  },
+  "loot": [
+    {"name": "Wardens' Dirk", "hero": "Rogue", "kind": "weapon", "damage": 3, "replaces": "Sword", "label": "S", "after": "Room 5"},
+    {"name": "Healing Potion", "healBody": 8, "label": "V", "note": "Drinking is free."}
+  ]
 }`
 
 func load(t *testing.T) Data {
@@ -51,8 +56,14 @@ func load(t *testing.T) Data {
 
 func TestLoad(t *testing.T) {
 	d := load(t)
-	if len(d.Classes) != 2 || len(d.StartingKit) != 3 || len(d.Monsters) != 2 {
+	if len(d.Classes) != 2 || len(d.StartingKit) != 3 || len(d.Monsters) != 3 {
 		t.Fatalf("loaded: %+v", d)
+	}
+	if st := d.Monsters["stranger"]; st.Body != 1 || st.HitDice != "" {
+		t.Fatalf("a body-only line (no combat stats): %+v", st)
+	}
+	if l := d.Loot; len(l) != 2 || l[0].Name != "Wardens' Dirk" || l[0].Damage != 3 || l[0].Replaces != "Sword" || l[1].HealBody != 8 {
+		t.Fatalf("loot: %+v", d.Loot)
 	}
 	if d.Monsters["gargoyle"].HitDice != "2d10+3" {
 		t.Fatalf("dice are made canonical: %q", d.Monsters["gargoyle"].HitDice)
@@ -62,18 +73,23 @@ func TestLoad(t *testing.T) {
 	}
 
 	bad := map[string]func(s string) string{
-		"unknown field":     func(s string) string { return strings.Replace(s, `"about"`, `"aboot"`, 1) },
-		"bad hit dice":      func(s string) string { return strings.Replace(s, `"hitDice": "2d10",`, `"hitDice": "2d7",`, 1) },
-		"bad monster dice":  func(s string) string { return strings.Replace(s, `"1d12"`, `"lots"`, 1) },
-		"crit out of range": func(s string) string { return strings.Replace(s, `"critFrom": 15`, `"critFrom": 21`, 1) },
-		"bad ability kind":  func(s string) string { return strings.Replace(s, `"kind": "passive"`, `"kind": "lazy"`, 1) },
-		"repeated ability":  func(s string) string { return strings.Replace(s, `"Venom Vial"`, `"Fan of Cards"`, 1) },
-		"repeated class":    func(s string) string { return strings.Replace(s, `"name": "Cleric"`, `"name": "rogue"`, 1) },
-		"kit for no class":  func(s string) string { return strings.Replace(s, `"hero": "Cleric"`, `"hero": "Wizard"`, 1) },
-		"repeated kit item": func(s string) string { return strings.Replace(s, `"Soft Boots"`, `"Sword"`, 1) },
-		"bad color":         func(s string) string { return strings.Replace(s, `"#4b5563"`, `"gray"`, 1) },
-		"no body":           func(s string) string { return strings.Replace(s, `"body": 5,`, `"body": 0,`, 1) },
-		"huge item stat":    func(s string) string { return strings.Replace(s, `"damage": 3}`, `"damage": 300}`, 1) },
+		"unknown field":       func(s string) string { return strings.Replace(s, `"about"`, `"aboot"`, 1) },
+		"bad hit dice":        func(s string) string { return strings.Replace(s, `"hitDice": "2d10",`, `"hitDice": "2d7",`, 1) },
+		"bad monster dice":    func(s string) string { return strings.Replace(s, `"1d12"`, `"lots"`, 1) },
+		"crit out of range":   func(s string) string { return strings.Replace(s, `"critFrom": 15`, `"critFrom": 21`, 1) },
+		"bad ability kind":    func(s string) string { return strings.Replace(s, `"kind": "passive"`, `"kind": "lazy"`, 1) },
+		"repeated ability":    func(s string) string { return strings.Replace(s, `"Venom Vial"`, `"Fan of Cards"`, 1) },
+		"repeated class":      func(s string) string { return strings.Replace(s, `"name": "Cleric"`, `"name": "rogue"`, 1) },
+		"kit for no class":    func(s string) string { return strings.Replace(s, `"hero": "Cleric"`, `"hero": "Wizard"`, 1) },
+		"repeated kit item":   func(s string) string { return strings.Replace(s, `"Soft Boots"`, `"Sword"`, 1) },
+		"bad color":           func(s string) string { return strings.Replace(s, `"#4b5563"`, `"gray"`, 1) },
+		"no body":             func(s string) string { return strings.Replace(s, `"body": 5,`, `"body": 0,`, 1) },
+		"huge item stat":      func(s string) string { return strings.Replace(s, `"damage": 3}`, `"damage": 300}`, 1) },
+		"repeated loot":       func(s string) string { return strings.Replace(s, `"Healing Potion"`, `"Wardens' Dirk"`, 1) },
+		"loot heals too much": func(s string) string { return strings.Replace(s, `"healBody": 8`, `"healBody": 100`, 1) },
+		"stats without dice": func(s string) string {
+			return strings.Replace(s, `"stranger": {"body": 1}`, `"stranger": {"body": 1, "damage": 2}`, 1)
+		},
 	}
 	for name, change := range bad {
 		changed := change(fixture)
@@ -96,8 +112,8 @@ func TestCampaignFileLoads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(d.Classes) != 4 || len(d.StartingKit) != 13 || len(d.Monsters) != 12 {
-		t.Fatalf("combat.json: %d classes, %d kit items, %d monsters", len(d.Classes), len(d.StartingKit), len(d.Monsters))
+	if len(d.Classes) != 4 || len(d.StartingKit) != 13 || len(d.Monsters) != 13 || len(d.Loot) != 9 {
+		t.Fatalf("combat.json: %d classes, %d kit items, %d monsters, %d loot", len(d.Classes), len(d.StartingKit), len(d.Monsters), len(d.Loot))
 	}
 	minds := map[string]int{}
 	for _, c := range d.Classes {
@@ -197,7 +213,7 @@ func TestMergeMonsterStats(t *testing.T) {
 	if out["goblin"].Body != 5 || out["gargoyle"].Line != 1 || out["ogre"].Body != 80 || cur["goblin"].Body != 3 {
 		t.Fatalf("merged: %+v", out)
 	}
-	if got := strings.Join(changes, "; "); got != "gargoyle added; goblin updated" {
+	if got := strings.Join(changes, "; "); got != "gargoyle added; goblin updated; stranger added" {
 		t.Fatalf("changes: %q", got)
 	}
 	if _, changes = MergeMonsterStats(out, want); len(changes) != 0 {
@@ -249,5 +265,35 @@ func TestGiveKits(t *testing.T) {
 	_, changes, _ = GiveKits(nil, classIDs, kit)
 	if len(changes) != 1 || !strings.Contains(changes[0], "no heroes yet") {
 		t.Fatalf("no heroes: %q", changes)
+	}
+}
+
+func TestMergeLoot(t *testing.T) {
+	want := load(t).Loot
+	cur := []tracker.Item{
+		{ID: "loot-1", Name: "healing potion", Quantity: 1, HealBody: 6},
+		{ID: "loot-2", Name: "Rope", Quantity: 1, Notes: "the GM's own"},
+	}
+	out, changes := MergeLoot(cur, want)
+	if got := strings.Join(changes, "; "); got != "Healing Potion updated; Wardens' Dirk added" {
+		t.Fatalf("changes: %q", got)
+	}
+	byName := map[string]tracker.Item{}
+	for _, it := range out {
+		byName[it.Name] = it
+	}
+	dirk, potion := byName["Wardens' Dirk"], byName["Healing Potion"]
+	if len(out) != 3 || byName["Rope"].Notes != "the GM's own" || potion.ID != "loot-1" || potion.HealBody != 8 || dirk.ID != "loot-3" {
+		t.Fatalf("merged: %+v", out)
+	}
+	// Who it's for, what it replaces and the board note become the item's notes.
+	if dirk.Notes != "For the Rogue; replaces Sword; note S (after Room 5)" || potion.Notes != "Note V. Drinking is free." {
+		t.Fatalf("notes: %q / %q", dirk.Notes, potion.Notes)
+	}
+	if cur[0].HealBody != 6 {
+		t.Fatal("cur must not change")
+	}
+	if _, changes = MergeLoot(out, want); len(changes) != 0 {
+		t.Fatalf("again: %v", changes)
 	}
 }

@@ -2,7 +2,7 @@
  * The monster panel's odds hints: each hero attacking the monster, and the
  * monster attacking each hero. Advice only (see tracker/odds.ts).
  */
-import { attackOdds, defenseOdds, oddsPercent } from '../tracker/odds.ts';
+import { attackOdds, defenseOdds, oddsPercent, smiteOdds } from '../tracker/odds.ts';
 import type { Hero, Monster } from '../tracker/types.ts';
 import { h } from './dom.ts';
 
@@ -27,6 +27,10 @@ export function oddsBlock(monster: Monster, heroes: readonly Hero[], open: boole
     if (a) {
       attacks.push(row(hero.name, `hits ${oddsPercent(a.hit)} · crit ${oddsPercent(a.crit)} · ${attacksText(a.attacksToKill)} to finish`));
     }
+    const s = smiteOdds(hero, monster);
+    if (s) {
+      attacks.push(row(`${hero.name} (Smite)`, `hits ${oddsPercent(s.hit)} · crit ${oddsPercent(s.crit)} · ${attacksText(s.attacksToKill)} to finish`));
+    }
     const d = defenseOdds(monster, hero);
     if (d) {
       defenses.push(row(hero.name, `${oddsPercent(d.hit)} to hit · ${String(d.damage)} a hit`));
@@ -46,5 +50,5 @@ export function oddsBlock(monster: Monster, heroes: readonly Hero[], open: boole
       attacks.length ? h('ul', { class: 'space-y-0.5' }, ...attacks) : null,
       defenses.length ? h('p', { class: 'opacity-60' }, `The ${monster.name} attacking`) : null,
       defenses.length ? h('ul', { class: 'space-y-0.5' }, ...defenses) : null,
-      h('p', { class: 'opacity-50' }, 'Class stats and equipped items, current Body, Faltering and Determination; effects, abilities and spells are not counted.')));
+      h('p', { class: 'opacity-50' }, 'Class stats and equipped items, Smite, current Body, Faltering and Determination; other effects, abilities and spells are not counted.')));
 }

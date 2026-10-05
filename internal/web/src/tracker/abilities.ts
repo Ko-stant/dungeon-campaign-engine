@@ -47,23 +47,15 @@ export function abilityRows(
 
 const MAX_GOLD = 999999;
 
-/** What the GM typed into the party gold box: "+25" adds, "-10" takes away, "40" sets. Mirrors tracker.GoldChange (Go). */
+/** What the GM typed into the party gold box: "+25" adds, "-10" takes away, "=40" sets; a bare number is refused. Mirrors tracker.GoldChange (Go). */
 export function goldChange(current: number, input: string): { ok: true; gold: number } | { ok: false; error: string } {
   const typed = input.trim();
-  let s = typed.replaceAll(' ', '');
-  let sign = 0;
-  if (s.startsWith('+')) {
-    sign = 1;
-    s = s.slice(1);
-  } else if (s.startsWith('-')) {
-    sign = -1;
-    s = s.slice(1);
+  const m = /^([-+=])(\d{1,9})$/.exec(typed.replaceAll(' ', ''));
+  if (!m) {
+    return { ok: false, error: `gold: ${JSON.stringify(typed)} is not an amount (e.g. +25, -10 or =40)` };
   }
-  if (!/^\d{1,9}$/.test(s)) {
-    return { ok: false, error: `gold: ${JSON.stringify(typed)} is not an amount (e.g. 40, +25 or -10)` };
-  }
-  const n = Number(s);
-  const gold = sign === 0 ? n : current + sign * n;
+  const n = Number(m[2]);
+  const gold = m[1] === '=' ? n : m[1] === '+' ? current + n : current - n;
   if (gold < 0) {
     return { ok: false, error: `gold: taking ${String(n)} leaves less than 0 (the party has ${String(current)})` };
   }

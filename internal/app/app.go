@@ -61,6 +61,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	s.registerInventoryPages(mux)
 	s.registerCampaignMonsterPages(mux)
 	s.registerScript(mux)
+	s.registerLoot(mux)
 	s.registerAudio(mux)
 	s.registerChapterPages(mux)
 }

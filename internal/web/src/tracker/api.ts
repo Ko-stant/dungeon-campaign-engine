@@ -2,7 +2,7 @@
 import { createRequester, encodeId as id } from '../api/http.ts';
 import type { Catalog } from '../maps/types.ts';
 import type { PlayerResponse } from '../players/types.ts';
-import type { Chapter, Command, CommandResponse, ScriptSection, SessionEvent, SessionResponse } from './types.ts';
+import type { Chapter, Command, CommandResponse, Item, ScriptSection, SessionEvent, SessionResponse } from './types.ts';
 
 export function createTrackerApi(fetchFn: typeof fetch = fetch.bind(globalThis)) {
   const request = createRequester(fetchFn);
@@ -17,6 +17,7 @@ export function createTrackerApi(fetchFn: typeof fetch = fetch.bind(globalThis))
     travel: (sessionId: string, questId: string) => request<CommandResponse>('POST', `/api/sessions/${id(sessionId)}/travel`, { questId }),
     chapters: (campaignId: string) => request<Chapter[]>('GET', `/api/campaigns/${id(campaignId)}/chapters`),
     /** The campaign's read-aloud script (empty sections when it has none). */
+    loot: (campaignId: string) => request<Item[]>('GET', `/api/campaigns/${id(campaignId)}/loot`),
     script: (campaignId: string) => request<{ sections: ScriptSection[] }>('GET', `/api/campaigns/${id(campaignId)}/script`),
     /** The campaign's audio clips: clip id ("Q2-03", "Q3-09a") -> URL. */
     audio: (campaignId: string) => request<{ clips: Record<string, string> }>('GET', `/api/campaigns/${id(campaignId)}/audio`),

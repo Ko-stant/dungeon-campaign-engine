@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/script"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
@@ -102,9 +103,9 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 	}
 	d := views.CampaignPageData{ID: c.ID, Name: c.Name, Gold: c.Gold}
 	for _, h := range heroes {
-		row := views.HeroRow{ID: h.ID, Name: h.Name, Player: h.Player, Class: h.Class, Equipment: h.Equipment, Notes: h.Notes}
+		row := views.HeroRow{ID: h.ID, Name: h.Name, Player: h.Player, Class: h.Class, Equipped: equippedNames(h), Notes: h.Notes}
 		if def, ok := cat.Hero(h.Class); ok {
-			row.Class = def.Name
+			row.Class, row.ClassCustom = def.Name, def.Custom
 			// The totals the hero would start a quest with.
 			hero := tracker.Hero{Combat: tracker.ClassCombat(def), Items: h.Items}
 			if tot := hero.CombatTotals(); tot != nil {
@@ -121,7 +122,7 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 		d.Heroes = append(d.Heroes, row)
 	}
 	for _, def := range cat.Heroes {
-		d.Classes = append(d.Classes, views.ClassOption{ID: def.ID, Name: def.Name})
+		d.Classes = append(d.Classes, views.ClassOption{ID: def.ID, Name: def.Name, Custom: def.Custom})
 	}
 
 	stats, err := s.campaignMonsterStats(ctx, c.ID)
@@ -129,11 +130,17 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 		return views.CampaignPageData{}, err
 	}
 	for _, m := range cat.Monsters {
-		d.MonsterOptions = append(d.MonsterOptions, views.MonsterOption{ID: m.ID, Name: m.Name})
+		d.MonsterOptions = append(d.MonsterOptions, views.MonsterOption{ID: m.ID, Name: m.Name, Custom: m.Custom})
 		if st, ok := stats[m.ID]; ok {
-			d.MonsterStats = append(d.MonsterStats, views.MonsterStatsRow{Type: m.ID, Name: m.Name, Stats: st})
+			d.MonsterStats = append(d.MonsterStats, views.MonsterStatsRow{Type: m.ID, Name: m.Name, Custom: m.Custom, Stats: st})
 		}
 	}
+
+	loot, err := s.campaignLoot(ctx, c.ID)
+	if err != nil {
+		return views.CampaignPageData{}, err
+	}
+	d.Loot = lootRows(loot)
 
 	text, err := s.store.GetCampaignScript(ctx, c.ID)
 	if err != nil {
@@ -164,6 +171,21 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 		return views.CampaignPageData{}, err
 	}
 	return d, nil
+}
+
+// equippedNames lists a campaign hero's equipped items ("Dirk, Sword"), or
+// their old free-text equipment when nothing is equipped.
+func equippedNames(h tracker.CampaignHero) string {
+	var names []string
+	for _, it := range h.Items {
+		if it.Equipped {
+			names = append(names, it.Name)
+		}
+	}
+	if len(names) == 0 {
+		return h.Equipment
+	}
+	return strings.Join(names, ", ")
 }
 
 func (s *Server) renderCampaignPage(w http.ResponseWriter, r *http.Request, status int, id, formError string) {

@@ -33,6 +33,41 @@ type Item struct {
 	Kind     string `json:"kind,omitempty"`
 	Equipped bool   `json:"equipped,omitempty"`
 	ItemStats
+	// HealBody and RestoreMana make the item usable (a potion): using one
+	// spends it and gives its hero that much Body or mana, up to the maximum.
+	HealBody    int `json:"healBody,omitempty"`
+	RestoreMana int `json:"restoreMana,omitempty"`
+}
+
+// Usable reports an item that does something when used (item.use).
+func (it Item) Usable() bool {
+	return it.HealBody > 0 || it.RestoreMana > 0
+}
+
+// Summary is the item's stats and what using it does, e.g. "damage +7" or
+// "heals 8 Body" ("" for neither).
+func (it Item) Summary() string {
+	parts := []string{}
+	if st := it.ItemStats.Summary(); st != "" {
+		parts = append(parts, st)
+	}
+	if it.HealBody > 0 {
+		parts = append(parts, fmt.Sprintf("heals %d Body", it.HealBody))
+	}
+	if it.RestoreMana > 0 {
+		parts = append(parts, fmt.Sprintf("restores %d mana", it.RestoreMana))
+	}
+	return strings.Join(parts, ", ")
+}
+
+func (it Item) check() error {
+	if err := it.ItemStats.check(); err != nil {
+		return err
+	}
+	if it.HealBody < 0 || it.HealBody > MaxItemStat || it.RestoreMana < 0 || it.RestoreMana > MaxItemStat {
+		return fmt.Errorf("an item heals or restores from 0 to %d", MaxItemStat)
+	}
+	return nil
 }
 
 // ItemStats are an item's bonuses to its hero's combat stats, counted once
@@ -250,9 +285,12 @@ func AddItem(items []Item, add Item) ([]Item, Item, error) {
 		if out[i].ItemStats == (ItemStats{}) {
 			out[i].ItemStats = add.ItemStats
 		}
+		if !out[i].Usable() {
+			out[i].HealBody, out[i].RestoreMana = add.HealBody, add.RestoreMana
+		}
 		return out, out[i], nil
 	}
-	it := Item{ID: nextItemID(out), Name: name, Quantity: quantity, Notes: notes, Kind: kind, Equipped: add.Equipped, ItemStats: add.ItemStats}
+	it := Item{ID: nextItemID(out), Name: name, Quantity: quantity, Notes: notes, Kind: kind, Equipped: add.Equipped, ItemStats: add.ItemStats, HealBody: add.HealBody, RestoreMana: add.RestoreMana}
 	return append(out, it), it, nil
 }
 
@@ -285,6 +323,9 @@ type ItemPatch struct {
 	Notes    *string
 	Kind     *string
 	Stats    *ItemStats
+	// HealBody and RestoreMana change what using the item does.
+	HealBody    *int
+	RestoreMana *int
 }
 
 // UpdateItem changes an item's fields. A quantity of 0 is a removal, so it
@@ -322,6 +363,15 @@ func UpdateItem(items []Item, id string, p ItemPatch) ([]Item, Item, error) {
 			return nil, Item{}, err
 		}
 		it.Kind = k
+	}
+	if p.HealBody != nil {
+		it.HealBody = *p.HealBody
+	}
+	if p.RestoreMana != nil {
+		it.RestoreMana = *p.RestoreMana
+	}
+	if err := it.check(); err != nil {
+		return nil, Item{}, err
 	}
 	if p.Stats != nil {
 		if err := p.Stats.check(); err != nil {
@@ -372,11 +422,33 @@ func NormalizeItems(items []Item) ([]Item, error) {
 }
 
 // countedName is "Rope" for one and "3 Rope" for more.
+// countedName is "Rope", or "3 Healing Potions" for more than one.
 func countedName(n int, name string) string {
 	if n == 1 {
 		return name
 	}
-	return fmt.Sprintf("%d %s", n, name)
+	return fmt.Sprintf("%d %s", n, pluralName(name))
+}
+
+// pluralName is an item name in the plural: "Potion of Healing" becomes
+// "Potions of Healing", "Torch" "Torches", "Ruby" "Rubies". A name that
+// already ends in s ("Soft Boots") is taken as plural already.
+func pluralName(name string) string {
+	head, tail, found := strings.Cut(name, " of ")
+	word := head
+	switch lower := strings.ToLower(word); {
+	case strings.HasSuffix(lower, "s"):
+	case strings.HasSuffix(lower, "x"), strings.HasSuffix(lower, "z"), strings.HasSuffix(lower, "ch"), strings.HasSuffix(lower, "sh"):
+		word += "es"
+	case len(lower) > 1 && strings.HasSuffix(lower, "y") && !strings.ContainsRune("aeiou", rune(lower[len(lower)-2])):
+		word = word[:len(word)-1] + "ies"
+	default:
+		word += "s"
+	}
+	if found {
+		return word + " of " + tail
+	}
+	return word
 }
 
 func (a *applier) itemAdd(payload json.RawMessage) (string, error) {
@@ -402,7 +474,8 @@ func (a *applier) itemAdd(payload json.RawMessage) (string, error) {
 	if st := it.Summary(); st != "" {
 		more = append(more, st)
 	}
-	if it.Quantity > 1 {
+	if it.Quantity > added {
+		// Added to a stack the hero already had.
 		more = append(more, fmt.Sprintf("now %d", it.Quantity))
 	}
 	if len(more) > 0 {
@@ -528,6 +601,9 @@ func (a *applier) itemUpdate(payload json.RawMessage) (string, error) {
 		Notes    *string    `json:"notes"`
 		Kind     *string    `json:"kind"`
 		Stats    *ItemStats `json:"stats"`
+		// HealBody and RestoreMana change what using the item does.
+		HealBody    *int `json:"healBody"`
+		RestoreMana *int `json:"restoreMana"`
 	}](payload)
 	if err != nil {
 		return "", err
@@ -541,7 +617,7 @@ func (a *applier) itemUpdate(payload json.RawMessage) (string, error) {
 		return "", fmt.Errorf("no item %q", p.ItemID)
 	}
 	before := h.Items[i]
-	items, it, err := UpdateItem(h.Items, p.ItemID, ItemPatch{Name: p.Name, Quantity: p.Quantity, Notes: p.Notes, Kind: p.Kind, Stats: p.Stats})
+	items, it, err := UpdateItem(h.Items, p.ItemID, ItemPatch{Name: p.Name, Quantity: p.Quantity, Notes: p.Notes, Kind: p.Kind, Stats: p.Stats, HealBody: p.HealBody, RestoreMana: p.RestoreMana})
 	if err != nil {
 		return "", err
 	}
@@ -556,7 +632,7 @@ func (a *applier) itemUpdate(payload json.RawMessage) (string, error) {
 	if it.Kind != before.Kind {
 		changes = append(changes, "kind "+changeText(before.Kind, it.Kind))
 	}
-	if it.ItemStats != before.ItemStats {
+	if it.ItemStats != before.ItemStats || it.HealBody != before.HealBody || it.RestoreMana != before.RestoreMana {
 		changes = append(changes, "stats "+changeText(before.Summary(), it.Summary()))
 	}
 	if it.Notes != before.Notes {
@@ -606,22 +682,24 @@ func (a *applier) goldSet(payload json.RawMessage) (string, error) {
 }
 
 // GoldChange applies what the GM typed to the party's gold: "+25" adds, "-10"
-// takes away and a plain number sets it. Gold never goes below 0.
+// takes away and "=40" sets it; a bare number is refused, so a slip can't
+// replace the purse. Gold never goes below 0.
 func GoldChange(current int, input string) (int, error) {
 	s := strings.ReplaceAll(strings.TrimSpace(input), " ", "")
-	sign := 0
-	if strings.HasPrefix(s, "+") {
-		sign, s = 1, s[1:]
-	} else if strings.HasPrefix(s, "-") {
-		sign, s = -1, s[1:]
+	var op byte
+	if s != "" {
+		op, s = s[0], s[1:]
 	}
 	n, err := strconv.Atoi(s)
-	if err != nil || n < 0 || strings.HasPrefix(s, "+") || strings.HasPrefix(s, "-") {
-		return 0, fmt.Errorf("gold: %q is not an amount (e.g. 40, +25 or -10)", strings.TrimSpace(input))
+	if (op != '+' && op != '-' && op != '=') || err != nil || n < 0 || strings.HasPrefix(s, "+") || strings.HasPrefix(s, "-") {
+		return 0, fmt.Errorf("gold: %q is not an amount (e.g. +25, -10 or =40)", strings.TrimSpace(input))
 	}
 	out := n
-	if sign != 0 {
-		out = current + sign*n
+	switch op {
+	case '+':
+		out = current + n
+	case '-':
+		out = current - n
 	}
 	if out < 0 {
 		return 0, fmt.Errorf("gold: taking %d leaves less than 0 (the party has %d)", n, current)
@@ -630,4 +708,49 @@ func GoldChange(current int, input string) (int, error) {
 		return 0, fmt.Errorf("gold must be at most %d", MaxGold)
 	}
 	return out, nil
+}
+
+// itemUse spends one of a usable item (a potion) and gives its hero the Body
+// or mana it restores, up to their maximum, as one change.
+func (a *applier) itemUse(payload json.RawMessage) (string, error) {
+	p, err := decode[struct {
+		HeroID string `json:"heroId"`
+		ItemID string `json:"itemId"`
+	}](payload)
+	if err != nil {
+		return "", err
+	}
+	h, err := a.hero(p.HeroID)
+	if err != nil {
+		return "", err
+	}
+	i := itemIndex(h.Items, p.ItemID)
+	if i < 0 {
+		return "", fmt.Errorf("no item %q", p.ItemID)
+	}
+	it := h.Items[i]
+	if !it.Usable() {
+		return "", fmt.Errorf("%s does nothing when used (give it healing or mana first)", it.Name)
+	}
+	var effects []string
+	if it.HealBody > 0 {
+		before := h.Body
+		h.Body = max(h.Body, min(h.MaxBody, h.Body+it.HealBody))
+		effects = append(effects, fmt.Sprintf("Body %d → %d", before, h.Body))
+	}
+	if it.RestoreMana > 0 {
+		before := h.Mana
+		h.Mana = max(h.Mana, min(h.ManaCap(), h.Mana+it.RestoreMana))
+		effects = append(effects, fmt.Sprintf("Mana %d → %d", before, h.Mana))
+	}
+	items, left, _, err := RemoveItem(h.Items, it.ID, 1)
+	if err != nil {
+		return "", err
+	}
+	h.Items = items
+	rest := "none left"
+	if left.Quantity > 0 {
+		rest = fmt.Sprintf("%d left", left.Quantity)
+	}
+	return fmt.Sprintf("%s used %s: %s (%s)", h.Name, it.Name, strings.Join(effects, ", "), rest), nil
 }

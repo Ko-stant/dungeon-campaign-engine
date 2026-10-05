@@ -90,6 +90,19 @@ func TestCampaignMonsterStatsForms(t *testing.T) {
 	if _, body := get(t, client, page); strings.Contains(body, "Hit 2d8") {
 		t.Fatal("deleted stats should be gone")
 	}
+	// A line with Body only (no hit dice, nothing else) is a monster that doesn't fight.
+	bodyOnly := url.Values{"type": {"orc"}, "body": {"1"}, "hit_dice": {""}}
+	if resp, body := postForm(t, client, page+"/monsters", bodyOnly); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("body-only line: %d %s", resp.StatusCode, body)
+	}
+	if _, body := get(t, client, page); !strings.Contains(body, "Body 1 · no combat stats") {
+		t.Fatal("the body-only line should say it has no combat stats")
+	}
+	bodyOnly.Set("damage", "2")
+	if resp, body := postForm(t, client, page+"/monsters", bodyOnly); resp.StatusCode != http.StatusBadRequest || !strings.Contains(body, "hit dice") {
+		t.Fatalf("combat stats without hit dice: %d", resp.StatusCode)
+	}
+
 	if code, _ := get(t, client, srv.URL+"/campaigns/0190c6a0-0000-7000-8000-000000000000/monsters"); code != http.StatusMethodNotAllowed && code != http.StatusNotFound {
 		t.Fatalf("GET on the form route: %d", code)
 	}

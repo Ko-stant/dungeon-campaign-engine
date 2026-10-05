@@ -201,3 +201,17 @@ describe('killOdds', () => {
     expect(CAMPAIGN_RULES).toEqual({ determinationStep: 2, determinationCap: 4, falterAt: 0, falterPenalty: 4 });
   });
 });
+
+describe('killOdds with a Determination streak already going', () => {
+  test('a hero who has already missed starts with the bonus, so the kill comes sooner', () => {
+    const a = attacker('2d10', { accuracy: 2, critFrom: 15, damage: 5 });
+    const fresh = killOdds(a, 16, 20, CAMPAIGN_RULES);
+    const two = killOdds(a, 16, 20, CAMPAIGN_RULES, 2);
+    const four = killOdds(a, 16, 20, CAMPAIGN_RULES, 4);
+    expect(two.expected).toBeLessThan(fresh.expected);
+    expect(four.expected).toBeLessThan(two.expected);
+    // The first attack is made with the bonus: its kill chance is a +4 attack's.
+    const one = killOdds(a, 16, 5, CAMPAIGN_RULES, 4);
+    expect(one.byAttack[0]).toBeCloseTo(heroAttack({ ...a, accuracy: 6 }, 16).hit, 10);
+  });
+});

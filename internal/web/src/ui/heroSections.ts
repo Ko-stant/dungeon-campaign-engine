@@ -4,7 +4,7 @@
  * short of mana is shown, not enforced).
  */
 import { abilityLimit, abilityRows, goldChange } from '../tracker/abilities.ts';
-import { itemStatsLine } from '../tracker/combat.ts';
+import { itemSummary, itemUseText, lootAddCommand, usable } from '../tracker/loot.ts';
 import type { Command, Hero, Item, ItemStats } from '../tracker/types.ts';
 import { h } from './dom.ts';
 
@@ -64,9 +64,9 @@ export function abilitySection(hero: Hero, round: number, ctx: SectionContext): 
       : null);
 }
 
-/** The party's purse: "+25" adds, "-10" takes away, "40" sets. */
+/** The party's purse: "+25" adds, "-10" takes away, "=40" sets (a bare number is refused). */
 export function purseControl(gold: number, ctx: SectionContext): HTMLElement {
-  const input = h('input', { class: `${field} w-24 min-w-0 flex-1`, placeholder: '+25, -10, 40', 'aria-label': "Change the party's gold" });
+  const input = h('input', { class: `${field} w-24 min-w-0 flex-1`, placeholder: '+25, -10, =40', 'aria-label': "Change the party's gold" });
   const apply = (): void => {
     if (input.value.trim() === '') {
       return;
@@ -105,6 +105,11 @@ function itemEditor(hero: Hero, it: Item, ctx: SectionContext): HTMLElement {
   const inputs = STAT_INPUTS.map(([k, label]) => [k, h('input', {
     class: `${field} w-full min-w-0 px-1 text-xs`, type: 'number', min: -99, max: 99, value: it[k] ? String(it[k]) : '', placeholder: '0', 'aria-label': `${it.name} ${label}`,
   })] as const);
+  const useInput = (value: number | undefined, label: string): HTMLInputElement => h('input', {
+    class: `${field} w-full min-w-0 px-1 text-xs`, type: 'number', min: 0, max: 99, value: value ? String(value) : '', placeholder: '0', 'aria-label': `${it.name} ${label}`,
+  });
+  const heal = useInput(it.healBody, 'heals Body when used');
+  const restore = useInput(it.restoreMana, 'restores mana when used');
   const save = (): void => {
     const stats: ItemStats = {};
     for (const [k, input] of inputs) {
@@ -113,7 +118,10 @@ function itemEditor(hero: Hero, it: Item, ctx: SectionContext): HTMLElement {
         stats[k] = n;
       }
     }
-    ctx.send({ type: 'item.update', payload: { heroId: hero.id, itemId: it.id, kind: kind.value.trim(), stats } });
+    ctx.send({
+      type: 'item.update',
+      payload: { heroId: hero.id, itemId: it.id, kind: kind.value.trim(), stats, healBody: Math.trunc(Number(heal.value) || 0), restoreMana: Math.trunc(Number(restore.value) || 0) },
+    });
   };
   return h('details', {
     class: 'pl-1',
@@ -125,10 +133,14 @@ function itemEditor(hero: Hero, it: Item, ctx: SectionContext): HTMLElement {
       kind,
       h('div', { class: 'grid grid-cols-3 gap-x-2 gap-y-1' }, ...inputs.map(([k, input]) => h('label', { class: 'block text-xs' },
         h('span', { class: 'block opacity-70' }, STAT_INPUTS.find(([s]) => s === k)?.[1] ?? k), input))),
+      h('div', { class: 'grid grid-cols-2 gap-x-2' },
+        h('label', { class: 'block text-xs' }, h('span', { class: 'block opacity-70' }, 'Heals Body (use)'), heal),
+        h('label', { class: 'block text-xs' }, h('span', { class: 'block opacity-70' }, 'Restores mana (use)'), restore)),
       h('button', { type: 'button', class: btn, onclick: save }, 'Save stats')));
 }
 
-export function inventorySection(hero: Hero, party: readonly Hero[], ctx: SectionContext): HTMLElement {
+/** The hero's items; loot is the campaign's loot list, offered in a picker that adds one to this hero. */
+export function inventorySection(hero: Hero, party: readonly Hero[], ctx: SectionContext, loot: readonly Item[] = []): HTMLElement {
   const items = hero.items ?? [];
   const others = party.filter((o) => o.id !== hero.id);
 
@@ -145,6 +157,15 @@ export function inventorySection(hero: Hero, party: readonly Hero[], ctx: Sectio
         'aria-label': `${it.equipped ? 'Unequip' : 'Equip'} ${it.name}`,
         onclick: () => { ctx.send({ type: 'item.equip', payload: { heroId: hero.id, itemId: it.id, equipped: !it.equipped } }); },
       }, it.equipped ? 'Equipped' : 'Equip'),
+      usable(it)
+        ? h('button', {
+          type: 'button',
+          class: `${btn} border-amber-500/60`,
+          title: `Use one: ${itemUseText(it)}, up to the maximum`,
+          'aria-label': `${hero.name} uses one ${it.name}`,
+          onclick: () => { ctx.send({ type: 'item.use', payload: { heroId: hero.id, itemId: it.id } }); },
+        }, 'Use')
+        : null,
       h('button', { type: 'button', class: smallBtn, 'aria-label': `One less ${it.name}`, onclick: () => { ctx.send({ type: 'item.remove', payload: { heroId: hero.id, itemId: it.id, quantity: 1 } }); } }, '−'),
       h('span', { class: 'w-8 text-center font-mono' }, String(it.quantity)),
       h('button', { type: 'button', class: smallBtn, 'aria-label': `One more ${it.name}`, onclick: () => { ctx.send({ type: 'item.update', payload: { heroId: hero.id, itemId: it.id, quantity: it.quantity + 1 } }); } }, '+'),
@@ -179,14 +200,28 @@ export function inventorySection(hero: Hero, party: readonly Hero[], ctx: Sectio
     }
   });
 
+  const lootPicker = loot.length
+    ? h('select', {
+      class: `${field} w-full text-xs`,
+      'aria-label': `Add an item from the loot list to ${hero.name}`,
+      onchange: (e: Event) => {
+        const picked = loot.find((l) => l.id === (e.target as HTMLSelectElement).value);
+        if (picked) {
+          ctx.send(lootAddCommand(hero.id, picked));
+        }
+      },
+    }, h('option', { value: '' }, 'Add from the loot list…'), ...loot.map((l) => h('option', { value: l.id, title: l.notes ?? '' }, [l.name, itemSummary(l)].filter(Boolean).join(' · '))))
+    : null;
+
   const count = items.reduce((n, it) => n + it.quantity, 0);
   const equipped = items.filter((it) => it.equipped).length;
   return section(ctx, `${hero.id}:inventory`, 'Inventory', `${String(count)} item${count === 1 ? '' : 's'}${equipped ? ` · ${String(equipped)} equipped` : ''}`,
     items.length ? h('ul', { class: 'space-y-1' }, ...rows) : h('p', { class: 'text-xs opacity-60' }, 'No items.'),
+    lootPicker,
     h('div', { class: 'flex items-center gap-1' }, nameInput, qtyInput, h('button', { type: 'button', class: btn, onclick: addItem }, 'Add')));
 }
 
 /** An item's kind and stats on one line, e.g. "bow · damage +6". */
 function itemTag(it: Item): string {
-  return [it.kind ?? '', itemStatsLine(it)].filter(Boolean).join(' · ');
+  return [it.kind ?? '', itemSummary(it)].filter(Boolean).join(' · ');
 }

@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-05 15:10 EDT
+**Last Updated**: 2026-10-05 15:30 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -740,9 +740,10 @@ removed traps vanish from the board (still listed in the sidebar); only catalog 
 ---
 
 ## Open follow-ups
-- The local nvm Node 22.18.0 is an x64 build under Rosetta (Node 20.19.1 is arm64).
-  The project no longer needs Node, but reinstalling Node 22 as arm64 would avoid
-  surprises in editor tooling.
+- Done 2026-10-05: the local nvm Node 22.18.0 was reinstalled as a native arm64 build
+  (it had been an x64 build under Rosetta); it stays the nvm default.
 - Optional: pin the Tailwind v3 palette in `@theme` if the v4 color shift is unwanted.
 - Move to TypeScript 7 when typescript-eslint supports it (also in docs/ROADMAP.md).
+  Checked 2026-10-05: TypeScript 7.0.2 is out, but typescript-eslint 8.71.1 (latest and
+  canary) still requires TypeScript below 6.1, so the project stays on 6.0.3.
 - Xcode.app 26.2 is behind CLT 26.6. Update from the App Store when convenient.

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { cardFor, pickAt } from './cards.ts';
+import { cardFor, heroChips, pickAt } from './cards.ts';
 import { addEvent, feedAfter } from './feed.ts';
 import type { PlayerCatalog, PlayerEvent, PlayerState } from './types.ts';
 import { playerBoardView } from './view.ts';
@@ -95,6 +95,18 @@ describe('cardFor', () => {
       lines: ['Body 20 / 28 · Mind 3 / 3', 'Hit 2d10+2 · Crit 15-20 · Damage 6 · Avoid 7+1d6', 'Will 3+1d6 against magic and fear'],
       effects: [],
     });
+  });
+
+  test("a hero's Determination shows beside their effects", () => {
+    const pv = view();
+    const hero = pv.heroes[0];
+    if (!hero) {
+      throw new Error('fixture has a hero');
+    }
+    hero.determination = 2;
+    hero.effects = [{ id: 'effect-1', name: 'Raging', rounds: 2 }];
+    expect(cardFor(pv, catalog, { kind: 'hero', id: 'hero-1' })?.effects).toEqual(['Raging (2 rounds)', 'Determination +2']);
+    expect(heroChips(hero)).toEqual(['Raging (2 rounds)', 'Determination +2']);
   });
 
   test('furniture, traps and blocked squares get a name', () => {

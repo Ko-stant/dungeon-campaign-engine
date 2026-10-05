@@ -8,20 +8,26 @@ import (
 
 // MonsterStatsRow is one of a campaign's monster stat lines.
 type MonsterStatsRow struct {
-	Type  string
-	Name  string
-	Stats content.MonsterStats
+	Type   string
+	Name   string
+	Custom bool
+	Stats  content.MonsterStats
 }
 
 // MonsterOption is a monster type to give a stat line.
 type MonsterOption struct {
-	ID   string
-	Name string
+	ID     string
+	Name   string
+	Custom bool
 }
 
 // MonsterStatsLine sums up a monster's combat stats and traits, e.g.
 // "Avoid 14 · Hit 2d10+3 · Damage 12 · strikes 2 in a line" (as the tracker shows it).
+// A line without hit dice has no combat stats (Body only).
 func MonsterStatsLine(c content.MonsterCombat) string {
+	if c.HitDice == "" {
+		return "no combat stats"
+	}
 	parts := []string{"Avoid " + strconv.Itoa(c.Avoidance), "Hit " + c.HitDice, "Damage " + strconv.Itoa(c.Damage)}
 	if c.Ranged {
 		parts = append(parts, "ranged")
@@ -56,7 +62,7 @@ templ monsterStatsFields(st content.MonsterStats) {
 		@monsterNumber("Avoidance", "avoidance", numberValue(st.Avoidance), 0, 99)
 		<label class="block text-xs">
 			<span class="mb-1 block opacity-70">Hit dice</span>
-			<input name="hit_dice" required maxlength="40" value={ st.HitDice } placeholder="e.g. 2d8+1" class={ smallInputClass }/>
+			<input name="hit_dice" maxlength="40" value={ st.HitDice } placeholder="e.g. 2d8+1" title="Leave empty, with everything but Body at 0, for a monster that doesn't fight" class={ smallInputClass }/>
 		</label>
 		@monsterNumber("Damage", "damage", numberValue(st.Damage), 0, 99)
 	</div>
@@ -92,6 +98,9 @@ templ campaignMonsterStats(d CampaignPageData) {
 						<div class="flex flex-wrap items-baseline justify-between gap-2">
 							<div>
 								<span class="font-semibold">{ row.Name }</span>
+								if row.Custom {
+									@customTag("monster")
+								}
 								<span class="ml-2 text-sm">Body { strconv.Itoa(row.Stats.Body) } · { MonsterStatsLine(row.Stats.MonsterCombat) }</span>
 								if row.Stats.Abilities != "" {
 									<p class="text-xs opacity-70">{ row.Stats.Abilities }</p>
@@ -119,7 +128,7 @@ templ campaignMonsterStats(d CampaignPageData) {
 				<span class="mb-1 block opacity-70">Monster</span>
 				<select name="type" class={ smallInputClass }>
 					for _, m := range d.MonsterOptions {
-						<option value={ m.ID }>{ m.Name }</option>
+						<option value={ m.ID }>{ setupLabel(m.Name, m.Custom) }</option>
 					}
 				</select>
 			</label>

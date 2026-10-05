@@ -109,6 +109,26 @@ func Run(ctx context.Context, st *store.Store, d Data, campaign string, apply bo
 	}
 	section(fmt.Sprintf("Monster stats (%s)", c.Name), changes)
 
+	raw, err = st.GetCampaignLoot(ctx, c.ID)
+	if err != nil {
+		return nil, err
+	}
+	var loot []tracker.Item
+	if err := json.Unmarshal(raw, &loot); err != nil {
+		return nil, err
+	}
+	loot, changes = MergeLoot(loot, d.Loot)
+	if apply && len(changes) > 0 {
+		data, err := json.Marshal(loot)
+		if err != nil {
+			return nil, err
+		}
+		if err := st.SetCampaignLoot(ctx, c.ID, data); err != nil {
+			return nil, err
+		}
+	}
+	section(fmt.Sprintf("Loot list (%s)", c.Name), changes)
+
 	sessions, err := st.ListSessions(ctx, c.ID)
 	if err != nil {
 		return nil, err

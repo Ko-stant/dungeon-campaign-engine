@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -74,16 +75,23 @@ func parseMonsterStatsForm(r *http.Request, cat *content.Catalog) (string, conte
 		}
 		*f.dst = n
 	}
-	hit, err := formDice("hit dice", pf.Get("hit_dice"))
-	if err != nil {
-		return "", st, err
-	}
-	st.HitDice = hit
 	st.Ranged, st.Reach, st.Undead = pf.Get("ranged") != "", pf.Get("reach") != "", pf.Get("undead") != ""
 	st.Abilities = strings.TrimSpace(pf.Get("abilities"))
 	if len(st.Abilities) > maxMonsterAbilities {
 		return "", st, fmt.Errorf("abilities must be at most %d characters", maxMonsterAbilities)
 	}
+	if strings.TrimSpace(pf.Get("hit_dice")) == "" {
+		// Body only: a monster that doesn't fight (e.g. a prisoner).
+		if !st.CombatEmpty() {
+			return "", st, errors.New("hit dice: needed with combat stats (leave everything but Body empty for a monster that doesn't fight)")
+		}
+		return typ, st, nil
+	}
+	hit, err := formDice("hit dice", pf.Get("hit_dice"))
+	if err != nil {
+		return "", st, err
+	}
+	st.HitDice = hit
 	return typ, st, nil
 }
 

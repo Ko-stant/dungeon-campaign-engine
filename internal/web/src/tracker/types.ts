@@ -29,6 +29,8 @@ export interface Hero {
   abilities?: Ability[] | null;
   /** Ability id -> round it is ready again, for abilities still cooling down. */
   cooldowns?: Record<string, number> | null;
+  /** Accuracy bonus from misses in a row (+2 a miss, up to +4; 0 after a hit or a fight's end). */
+  determination?: number;
   /** The class's combat stats, frozen at session start (equipped items add to them: combatTotals); missing for built-in classes and older sessions. */
   combat?: HeroCombat | null;
   effects?: Effect[] | null;
@@ -74,6 +76,9 @@ export interface Item extends ItemStats {
   /** What it is (weapon, bow, chest...); free text, no slots. */
   kind?: string;
   equipped?: boolean;
+  /** Using one (item.use) spends it and heals this much Body or restores this much mana. */
+  healBody?: number;
+  restoreMana?: number;
 }
 
 export interface Monster {

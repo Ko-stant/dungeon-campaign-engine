@@ -3,8 +3,8 @@
  * the combat calculator for a hero attacking a monster and a monster
  * attacking a hero. Advice only; nothing here changes or refuses anything.
  * Counted: class stats plus equipped items, the monster's current Body and
- * Faltering, Determination over a run of misses. Not counted: effects,
- * abilities and spells.
+ * Faltering, Determination over a run of misses, Smite (smiteOdds). Not counted: effects,
+ * other abilities and spells.
  */
 import { CAMPAIGN_RULES, heroAttack, killOdds, monsterAttack } from '../combat/odds.ts';
 import { parseDice, type DiceExpr } from '../dice/dice.ts';
@@ -57,8 +57,31 @@ export function attackOdds(hero: Hero, monster: Monster): AttackOdds | null {
   const attacker = { hitDice, accuracy: c.accuracy, critFrom: c.critFrom, critMultiplier: CRIT_MULTIPLIER, nearMiss: NEAR_MISS, damage: c.damage };
   const falterBody = falterAt(monster.maxBody);
   const faltering = monster.body <= falterBody;
-  const one = heroAttack(attacker, faltering ? m.avoidance - FALTER_PENALTY : m.avoidance);
-  const kill = killOdds(attacker, m.avoidance, monster.body, { ...CAMPAIGN_RULES, falterAt: falterBody, falterPenalty: FALTER_PENALTY });
+  const bonus = hero.determination ?? 0;
+  const one = heroAttack({ ...attacker, accuracy: attacker.accuracy + bonus }, faltering ? m.avoidance - FALTER_PENALTY : m.avoidance);
+  const kill = killOdds(attacker, m.avoidance, monster.body, { ...CAMPAIGN_RULES, falterAt: falterBody, falterPenalty: FALTER_PENALTY }, bonus);
+  return { hit: one.hit, crit: one.crit, expectedDamage: one.expectedDamage, attacksToKill: kill.expected, faltering };
+}
+
+/** Smite (the Cleric's spell attack): 1d20 + Mind to hit, 5 damage, +2 against undead (RULES_AND_CLASSES.md). */
+const SMITE_DICE = '1d20';
+const SMITE_DAMAGE = 5;
+const SMITE_UNDEAD = 2;
+
+/** A hero with Smite casting it at a monster: 1d20 + current Mind + Determination; null without Smite or combat stats. */
+export function smiteOdds(hero: Hero, monster: Monster): AttackOdds | null {
+  const c = combatTotals(hero);
+  const m = monster.combat;
+  const hitDice = dice(SMITE_DICE);
+  if (!c || !m || !hitDice || !fighting(hero) || !monster.alive || monster.body <= 0 || !(hero.abilities ?? []).some((a) => a.name === 'Smite')) {
+    return null;
+  }
+  const attacker = { hitDice, accuracy: hero.mind, critFrom: c.critFrom, critMultiplier: CRIT_MULTIPLIER, nearMiss: NEAR_MISS, damage: SMITE_DAMAGE + (m.undead ? SMITE_UNDEAD : 0) };
+  const falterBody = falterAt(monster.maxBody);
+  const faltering = monster.body <= falterBody;
+  const bonus = hero.determination ?? 0;
+  const one = heroAttack({ ...attacker, accuracy: attacker.accuracy + bonus }, faltering ? m.avoidance - FALTER_PENALTY : m.avoidance);
+  const kill = killOdds(attacker, m.avoidance, monster.body, { ...CAMPAIGN_RULES, falterAt: falterBody, falterPenalty: FALTER_PENALTY }, bonus);
   return { hit: one.hit, crit: one.crit, expectedDamage: one.expectedDamage, attacksToKill: kill.expected, faltering };
 }
 

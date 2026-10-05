@@ -95,7 +95,7 @@ templ campaignInventory(d CampaignPageData) {
 		<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/gold") } class="flex items-center gap-2 text-sm">
 			<span class="opacity-70">Party gold</span>
 			<span class="font-mono font-semibold text-amber-400">{ strconv.Itoa(d.Gold) }</span>
-			<input name="gold" required maxlength="12" placeholder="+25, -10 or 40" aria-label="Change the party's gold" class={ inlineInputClass + " w-32" }/>
+			<input name="gold" required maxlength="12" placeholder="+25, -10 or =40" aria-label="Change the party's gold" class={ inlineInputClass + " w-32" }/>
 			<button type="submit" class={ linkButton }>Update</button>
 		</form>
 		for _, h := range d.Heroes {
@@ -103,6 +103,9 @@ templ campaignInventory(d CampaignPageData) {
 				<div>
 					<span class="font-semibold">{ h.Name }</span>
 					<span class="ml-1 text-xs opacity-60">{ h.Class }</span>
+					if h.ClassCustom {
+						@customTag("class")
+					}
 					if h.Combat != "" {
 						<p class="text-xs opacity-80" title="Class combat stats plus equipped items">{ h.Combat }</p>
 					}

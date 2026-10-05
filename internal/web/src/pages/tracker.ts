@@ -5,17 +5,17 @@
  */
 import { pixelToEdge, pixelToTile, type TileCoord } from '../board/geometry.ts';
 import { tileIndex } from '../board/model.ts';
-import { monsterOptionLabel, type TrapDoc } from '../maps/types.ts';
+import { monsterPlayLabel, type TrapDoc } from '../maps/types.ts';
 import { BoardRenderer } from '../board/renderer.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
-import { combatLine, combatTotals, FALTER_PENALTY, falterAt, manaCap, monsterLine } from '../tracker/combat.ts';
+import { combatLine, combatTotals, determinationAfter, FALTER_PENALTY, falterAt, manaCap, monsterLine, statChange } from '../tracker/combat.ts';
 import { formatEvent } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
 import { clickCommand, corridorPath, hotkey, paintPending, revealPathCommand, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
 import { triggerButton } from '../tracker/traps.ts';
 import { shownToPlayers } from '../tracker/visibility.ts';
-import type { Command, CommandResponse, Hero, LiveTrapState, Monster, ScriptSection, SessionEvent, SessionState } from '../tracker/types.ts';
+import type { Command, CommandResponse, Hero, Item, LiveTrapState, Monster, ScriptSection, SessionEvent, SessionState } from '../tracker/types.ts';
 import { trackerView } from '../tracker/view.ts';
 import { lineTiles } from '../editor/tools.ts';
 import { h, preserveFocus, replaceChildren } from '../ui/dom.ts';
@@ -29,6 +29,7 @@ const TRAP_STATES: readonly LiveTrapState[] = ['hidden', 'revealed', 'triggered'
 const btn = 'rounded-md border border-border/60 px-2 py-1 text-sm hover:border-amber-500 disabled:opacity-40';
 const btnActive = 'rounded-md border border-amber-500 bg-amber-500/15 px-2 py-1 text-sm';
 const smallBtn = 'h-6 w-6 rounded border border-border/60 text-sm leading-none hover:border-amber-500 disabled:opacity-40';
+const wordBtn = 'h-6 rounded border border-border/60 px-2 text-xs leading-none hover:border-amber-500 disabled:opacity-40';
 const field = 'rounded-md border border-border/60 bg-surface px-2 py-1 text-sm';
 const KIND_STYLES: Record<string, string> = {
   move: 'border-sky-500/50',
@@ -53,6 +54,9 @@ async function main(): Promise<void> {
   const [session, catalog, initialEvents] = await Promise.all([api.session(sessionId), api.catalog(), api.events(sessionId)]);
   // The campaign's chapters, for traveling to another map mid-game.
   const chapters = await api.chapters(session.campaignId).catch(() => []);
+  // The campaign's loot list (edited on the campaign page; the page's Reload in Read aloud picks up changes too).
+  const loadLoot = (): Promise<Item[]> => api.loot(session.campaignId).catch(() => []);
+  let loot = await loadLoot();
   // The campaign's read-aloud script (empty when it has none).
   const loadScript = (): Promise<ScriptSection[]> => api.script(session.campaignId).then((r) => r.sections).catch(() => []);
   let scriptSections = await loadScript();
@@ -490,7 +494,7 @@ async function main(): Promise<void> {
         monsterType = (e.target as HTMLSelectElement).value;
         setMode({ kind: 'addMonster', monsterType });
       },
-    }, ...catalog.monsters.map((m) => h('option', { value: m.id, selected: m.id === monsterType }, monsterOptionLabel(m))));
+    }, ...catalog.monsters.map((m) => h('option', { value: m.id, selected: m.id === monsterType }, monsterPlayLabel(m))));
     const hint: Record<Mode['kind'], string> = {
       select: 'Click a hero, monster or movable trap (boulder), then a square to move it; press 1 to let go of it. Click a door to select it, then open, close or lock it from the Selected panel. Click furniture or blocked squares to show them to the players.',
       reveal: revealSeen
@@ -514,12 +518,54 @@ async function main(): Promise<void> {
     );
   }
 
-  function statControl(label: string, value: number, max: number, onChange: (v: number) => void): HTMLElement {
+  /** − and + change a stat by one; with box, typing 9 or -9 takes damage, +8 heals and =12 sets it, as one change. */
+  function statControl(label: string, value: number, max: number, onChange: (v: number) => void, box = false, who = ''): HTMLElement {
+    let amount: HTMLInputElement | null = null;
+    if (box) {
+      const input = h('input', {
+        class: `${field} h-6 w-16 px-1 py-0 text-xs`,
+        placeholder: '-9, +8, =12',
+        'aria-label': `Change ${who ? `${who}'s ` : ''}${label}: 9 or -9 takes damage, +8 heals, =12 sets it`,
+        title: '9 or -9 takes damage (down to 0), +8 heals (up to the maximum), =12 sets it; Enter applies',
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' || input.value.trim() === '') {
+          return;
+        }
+        const r = statChange(value, max, input.value);
+        if (!r.ok) {
+          message = `${label}: ${r.error}`;
+          refresh();
+          return;
+        }
+        input.value = '';
+        if (r.value !== value) {
+          onChange(r.value);
+        }
+      });
+      amount = input;
+    }
     return h('div', { class: 'flex items-center gap-1 text-sm' },
       h('span', { class: 'w-10 opacity-70' }, label),
       h('button', { type: 'button', class: smallBtn, 'aria-label': `Decrease ${label}`, disabled: value <= 0, onclick: () => { onChange(value - 1); } }, '−'),
       h('span', { class: `w-12 text-center font-mono ${value <= 0 ? 'text-danger' : ''}` }, `${value}/${max}`),
-      h('button', { type: 'button', class: smallBtn, 'aria-label': `Increase ${label}`, onclick: () => { onChange(value + 1); } }, '+'));
+      h('button', { type: 'button', class: smallBtn, 'aria-label': `Increase ${label}`, onclick: () => { onChange(value + 1); } }, '+'),
+      amount);
+  }
+
+  // Determination: the GM records each of the hero's attacks as a miss (+2, up to +4) or a hit (back to 0).
+  function determinationControl(hero: Hero): HTMLElement {
+    const bonus = hero.determination ?? 0;
+    const set = (v: number): void => {
+      if (v !== bonus) {
+        heroCmd(hero, { determination: v });
+      }
+    };
+    return h('div', { class: 'flex items-center gap-1 text-sm', title: 'Each miss in a row adds +2 Accuracy to the next attack, up to +4; a hit clears it' },
+      h('span', { class: 'opacity-70' }, 'Determination'),
+      h('span', { class: `w-8 text-center font-mono ${bonus > 0 ? 'text-amber-400' : 'opacity-60'}` }, `+${String(bonus)}`),
+      h('button', { type: 'button', class: wordBtn, 'aria-label': `${hero.name} missed`, onclick: () => { set(determinationAfter(bonus, 'miss')); } }, 'Miss'),
+      h('button', { type: 'button', class: wordBtn, 'aria-label': `${hero.name} hit`, disabled: bonus === 0, onclick: () => { set(determinationAfter(bonus, 'hit')); } }, 'Hit'));
   }
 
   const sections: SectionContext = {
@@ -555,14 +601,15 @@ async function main(): Promise<void> {
           h('span', { class: 'font-semibold' }, hero.name, h('span', { class: 'ml-1 text-xs opacity-60' }, `${cls}${hero.player ? ` · ${hero.player}` : ''}`)),
           h('span', { class: 'text-xs opacity-60' }, hero.placed ? `(${hero.x}, ${hero.y})` : 'not on board')),
         totalsLine(hero),
-        statControl('Body', hero.body, hero.maxBody, (v) => { heroCmd(hero, { body: v }); }),
+        statControl('Body', hero.body, hero.maxBody, (v) => { heroCmd(hero, { body: v }); }, true, hero.name),
         statControl('Mind', hero.mind, hero.maxMind, (v) => { heroCmd(hero, { mind: v }); }),
-        manaCap(hero) > 0 ? statControl('Mana', hero.mana ?? 0, manaCap(hero), (v) => { heroCmd(hero, { mana: v }); }) : null,
+        manaCap(hero) > 0 ? statControl('Mana', hero.mana ?? 0, manaCap(hero), (v) => { heroCmd(hero, { mana: v }); }, true, hero.name) : null,
+        hero.combat ? determinationControl(hero) : null,
         h('select', { class: field, 'aria-label': `${hero.name} status`, onchange: (e: Event) => { heroCmd(hero, { status: (e.target as HTMLSelectElement).value }); } },
           ...(['active', 'dead', 'escaped'] as const).map((s) => h('option', { value: s, selected: hero.status === s }, s))),
         effectsBlock(hero.id, hero.name, hero.effects, (c) => { void send(c); }),
         abilitySection(hero, state.round, sections),
-        inventorySection(hero, state.heroes, sections),
+        inventorySection(hero, state.heroes, sections, loot),
         hero.equipment ? h('textarea', { class: `${field} h-14 w-full`, placeholder: 'Equipment', title: 'Equipment notes (items are tracked in the inventory)', onchange: (e: Event) => { heroCmd(hero, { equipment: (e.target as HTMLTextAreaElement).value }); } }, hero.equipment) : null,
         h('textarea', { class: `${field} h-14 w-full`, placeholder: 'Notes', onchange: (e: Event) => { heroCmd(hero, { notes: (e.target as HTMLTextAreaElement).value }); } }, hero.notes ?? ''),
         selected ? h('p', { class: 'text-xs text-amber-400' }, hero.placed ? 'Click a square to move this hero.' : 'Click a square to place this hero.') : null,
@@ -606,7 +653,7 @@ async function main(): Promise<void> {
         monster.combat && faltering(monster)
           ? h('p', { class: 'text-xs font-semibold text-amber-400' }, `Faltering: Avoidance ${monster.combat.avoidance - FALTER_PENALTY} (at ${falterAt(monster.maxBody)} Body or less)`)
           : null,
-        statControl('Body', monster.body, monster.maxBody, (v) => { monsterCmd(monster, { body: v }); }),
+        statControl('Body', monster.body, monster.maxBody, (v) => { monsterCmd(monster, { body: v }); }, true, monster.name),
         oddsBlock(monster, state.heroes, sections.isOpen('odds'), (open) => { sections.setOpen('odds', open); }),
         effectsBlock(monster.id, monster.name, monster.effects, (c) => { void send(c); }),
         h('div', { class: 'flex flex-wrap gap-2' },
@@ -775,9 +822,10 @@ async function main(): Promise<void> {
       sectionOpen: (i) => scriptSectionOpen.get(i),
       setSectionOpen: (i, open) => { scriptSectionOpen.set(i, open); },
       reload: () => {
-        void Promise.all([loadScript(), loadClips()]).then(([sections, loadedClips]) => {
+        void Promise.all([loadScript(), loadClips(), loadLoot()]).then(([sections, loadedClips, loadedLoot]) => {
           scriptSections = sections;
           clips = loadedClips;
+          loot = loadedLoot;
           scriptSectionOpen.clear();
           refresh();
         });

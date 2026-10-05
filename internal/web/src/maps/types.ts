@@ -171,6 +171,13 @@ export function monsterOptionLabel(m: MonsterDef): string {
   return w > 1 || h > 1 ? `${m.name} (${w}×${h})` : m.name;
 }
 
+/** A monster's name for pickers during play: custom monsters read like any other. */
+export function monsterPlayLabel(m: MonsterDef): string {
+  const w = m.width ?? 1;
+  const h = m.height ?? 1;
+  return w > 1 || h > 1 ? `${m.name} (${w}×${h})` : m.name;
+}
+
 export type AbilityKind = 'active' | 'passive' | 'reaction' | 'spell';
 
 /** A hero class ability. Cooldown counts rounds: used in round R, ready again in round R + cooldown. */

@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -27,6 +28,21 @@ type Data struct {
 	Classes     []Class                         `json:"classes"`
 	StartingKit []KitItem                       `json:"startingKit"`
 	Monsters    map[string]content.MonsterStats `json:"monsters"`
+	// Loot is the campaign's loot list: finds and potions the GM hands out.
+	Loot []LootItem `json:"loot,omitempty"`
+}
+
+// LootItem is an item on the loot list, with what the simulator needs to
+// know about it: the class it is for, the starting item it replaces, and its
+// board note and the encounter it comes after. Those become the item's notes
+// in the app.
+type LootItem struct {
+	tracker.Item
+	Hero     string `json:"hero,omitempty"`
+	Replaces string `json:"replaces,omitempty"`
+	Label    string `json:"label,omitempty"`
+	After    string `json:"after,omitempty"`
+	Note     string `json:"note,omitempty"`
 }
 
 // Class is a hero class's combat stats and abilities. Movement and the
@@ -100,10 +116,24 @@ func Load(data []byte) (Data, error) {
 		}
 		perHero[k.Hero] = items
 	}
+	names := map[string]bool{}
+	for _, l := range d.Loot {
+		key := strings.ToLower(strings.TrimSpace(l.Name))
+		if names[key] {
+			return d, fmt.Errorf("loot: %q is listed twice", l.Name)
+		}
+		names[key] = true
+		if _, err := tracker.NormalizeItems([]tracker.Item{l.Item}); err != nil {
+			return d, fmt.Errorf("loot %q: %w", l.Name, err)
+		}
+	}
 	for typ, m := range d.Monsters {
 		if m.Body < 1 || m.Body > 999 || m.Avoidance < 0 || m.Avoidance > 99 || m.Damage < 0 || m.Damage > 99 ||
 			m.Line < 0 || m.Line > 3 || m.SplashDamage < 0 || m.SplashTargets < 0 || m.SplashTargets > 8 {
 			return d, fmt.Errorf("monster %q: a number is out of range", typ)
+		}
+		if m.CombatEmpty() {
+			continue // Body only: no combat stats
 		}
 		hit, err := canonicalDice(m.HitDice)
 		if err != nil {
@@ -412,4 +442,67 @@ func GiveKits(heroes []tracker.CampaignHero, classIDs map[string]string, kit []K
 		}
 	}
 	return out, changes, nil
+}
+
+// lootNotes is a loot item's notes in the app: who it is for, what it
+// replaces, its board note, then its own note.
+func lootNotes(l LootItem) string {
+	var parts []string
+	if l.Hero != "" {
+		parts = append(parts, "for the "+l.Hero)
+	}
+	if l.Replaces != "" {
+		parts = append(parts, "replaces "+l.Replaces)
+	}
+	if l.Label != "" {
+		label := "note " + l.Label
+		if l.After != "" {
+			label += " (after " + l.After + ")"
+		}
+		parts = append(parts, label)
+	}
+	out := strings.Join(parts, "; ")
+	if out != "" {
+		out = strings.ToUpper(out[:1]) + out[1:]
+	}
+	if note := strings.TrimSpace(l.Note); note != "" {
+		if out != "" {
+			out += ". "
+		}
+		out += note
+	}
+	return out
+}
+
+// MergeLoot returns the campaign's loot list with want's items set (matched
+// by name; the GM's own items kept) and names the items added or updated.
+// It never modifies cur.
+func MergeLoot(cur []tracker.Item, want []LootItem) ([]tracker.Item, []string) {
+	out := slices.Clone(cur)
+	next := 1
+	for _, it := range out {
+		if n, err := strconv.Atoi(strings.TrimPrefix(it.ID, "loot-")); err == nil && n >= next {
+			next = n + 1
+		}
+	}
+	var changes []string
+	for _, l := range want {
+		it := l.Item
+		it.Name, it.Notes, it.Quantity, it.Equipped = strings.TrimSpace(it.Name), lootNotes(l), 1, false
+		i := slices.IndexFunc(out, func(c tracker.Item) bool { return strings.EqualFold(c.Name, it.Name) })
+		if i < 0 {
+			it.ID = fmt.Sprintf("loot-%d", next)
+			next++
+			out = append(out, it)
+			changes = append(changes, it.Name+" added")
+			continue
+		}
+		it.ID = out[i].ID
+		if !reflect.DeepEqual(out[i], it) {
+			out[i] = it
+			changes = append(changes, it.Name+" updated")
+		}
+	}
+	slices.Sort(changes)
+	return out, changes
 }

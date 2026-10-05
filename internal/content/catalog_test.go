@@ -162,11 +162,17 @@ func TestWithMonsterStats(t *testing.T) {
 	cat := &Catalog{Monsters: []MonsterDef{
 		{ID: "orc", Name: "Orc", Body: 1, Attack: 3},
 		{ID: "goblin", Name: "Goblin", Body: 1},
+		{ID: "stranger", Name: "Stranger"},
 	}}
 	patched := cat.WithMonsterStats(map[string]MonsterStats{
-		"orc":    {Body: 22, MonsterCombat: MonsterCombat{Avoidance: 8, HitDice: "2d8", Damage: 9, Ranged: true}},
-		"dragon": {Body: 500},
+		"orc":      {Body: 22, MonsterCombat: MonsterCombat{Avoidance: 8, HitDice: "2d8", Damage: 9, Ranged: true}},
+		"dragon":   {Body: 500},
+		"stranger": {Body: 1},
 	})
+	// A line with no hit dice gives Body only: no combat stats to show or count.
+	if st, _ := patched.Monster("stranger"); st.Body != 1 || st.Combat != nil {
+		t.Fatalf("body-only line: %+v", st)
+	}
 	orc, _ := patched.Monster("orc")
 	if orc.Body != 22 || orc.Combat == nil || *orc.Combat != (MonsterCombat{Avoidance: 8, HitDice: "2d8", Damage: 9, Ranged: true}) || orc.Attack != 3 {
 		t.Fatalf("orc with campaign stats: %+v", orc)

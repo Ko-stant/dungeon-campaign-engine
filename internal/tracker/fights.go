@@ -45,7 +45,8 @@ func (a *applier) fightStart(payload json.RawMessage) (string, error) {
 
 // fightEnd ends the fight and the effects that had a countdown (they belong
 // to the fight); effects without one stay until removed. Cooldowns drop to
-// their floor at once and wait there for the next fight.
+// their floor at once and wait there for the next fight, and every hero's
+// Determination goes back to 0.
 func (a *applier) fightEnd(payload json.RawMessage) (string, error) {
 	if _, err := decode[struct{}](payload); err != nil {
 		return "", err
@@ -57,6 +58,16 @@ func (a *applier) fightEnd(payload json.RawMessage) (string, error) {
 	summary := "Fight over"
 	if dropped := a.dropCooldowns(); len(dropped) > 0 {
 		summary += "; cooldowns: " + strings.Join(dropped, ", ")
+	}
+	var reset []string
+	for i := range a.s.Heroes {
+		if h := &a.s.Heroes[i]; h.Determination != 0 {
+			h.Determination = 0
+			reset = append(reset, h.Name)
+		}
+	}
+	if len(reset) > 0 {
+		summary += "; Determination reset: " + strings.Join(reset, ", ")
 	}
 	if ended := a.removeEffects(func(e *Effect) bool { return e.Rounds > 0 }); len(ended) > 0 {
 		summary += "; ended: " + strings.Join(ended, ", ")

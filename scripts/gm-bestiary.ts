@@ -26,7 +26,8 @@ interface Line {
   undead?: boolean;
 }
 
-const LINES = combat.monsters as Record<string, Line>;
+// Body-only lines (no hit dice: a monster that doesn't fight) have no odds to show.
+const LINES = Object.fromEntries(Object.entries(combat.monsters as Record<string, Partial<Line>>).filter((e): e is [string, Line] => e[1].hitDice !== undefined));
 const HERO_NAMES: Record<string, string> = { Barbarian: 'Brentanamo', Ranger: 'Mordecai', Rogue: 'Papi', Cleric: 'Derrick' };
 
 const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

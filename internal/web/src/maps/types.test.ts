@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { monsterOptionLabel, type MonsterDef } from './types.ts';
+import { monsterOptionLabel, monsterPlayLabel, type MonsterDef } from './types.ts';
 
 const base: MonsterDef = { id: 'orc', name: 'Orc', body: 1, mind: 2, attack: 3, defense: 2, movement: 8 };
 
@@ -16,5 +16,13 @@ describe('monsterOptionLabel', () => {
   test('a custom monster always shows that it is custom and its size', () => {
     expect(monsterOptionLabel({ ...base, name: 'Troll', custom: true })).toBe('Troll (custom 1×1)');
     expect(monsterOptionLabel({ ...base, name: 'Troll', custom: true, width: 2, height: 2 })).toBe('Troll (custom 2×2)');
+  });
+});
+
+describe('monsterPlayLabel', () => {
+  test('in play a custom monster reads like any other: its name, and its size when bigger than one square', () => {
+    expect(monsterPlayLabel({ ...base, name: 'Troll', custom: true })).toBe('Troll');
+    expect(monsterPlayLabel({ ...base, name: 'Troll', custom: true, width: 2, height: 2 })).toBe('Troll (2×2)');
+    expect(monsterPlayLabel(base)).toBe('Orc');
   });
 });

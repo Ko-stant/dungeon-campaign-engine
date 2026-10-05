@@ -69,6 +69,9 @@ type Hero struct {
 	// Cooldowns maps an ability id to the round it is ready again, for
 	// abilities still cooling down.
 	Cooldowns map[string]int `json:"cooldowns,omitempty"`
+	// Determination is the Accuracy bonus from misses in a row (+2 a miss, up
+	// to +4, back to 0 on a hit; the GM sets it). A fight's end clears it.
+	Determination int `json:"determination,omitempty"`
 	// Combat is the class's combat stats, frozen like the abilities; nil for
 	// built-in classes, which roll combat dice. Equipped items add to them
 	// (see CombatTotals).

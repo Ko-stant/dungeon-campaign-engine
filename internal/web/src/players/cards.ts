@@ -3,7 +3,7 @@ import { footprintTiles, type TileCoord } from '../board/geometry.ts';
 import { covers } from '../board/model.ts';
 import { combatLine, playerMonsterLine } from '../tracker/combat.ts';
 import { effectLabel } from '../tracker/effects.ts';
-import type { PlayerCatalog, PlayerState } from './types.ts';
+import type { PlayerCatalog, PlayerHero, PlayerState } from './types.ts';
 
 export type PickKind = 'hero' | 'monster' | 'trap' | 'furniture' | 'block';
 
@@ -95,7 +95,7 @@ export function cardFor(pv: PlayerState, catalog: PlayerCatalog, pick: Pick): Ca
         // Mind is the heroes' Will: defense dice + Mind against mental attacks.
         lines.push(`Will ${String(h.mind)}+${h.combat.defenseDice} against magic and fear`);
       }
-      const card: Card = { title: h.name, tags: h.status === 'dead' ? ['Fallen'] : h.status === 'escaped' ? ['Escaped'] : [], lines, effects: (h.effects ?? []).map(effectLabel) };
+      const card: Card = { title: h.name, tags: h.status === 'dead' ? ['Fallen'] : h.status === 'escaped' ? ['Escaped'] : [], lines, effects: heroChips(h) };
       const cls = catalog.heroes.find((c) => c.id === h.class)?.name;
       if (cls) {
         card.subtitle = cls;
@@ -120,4 +120,13 @@ export function cardFor(pv: PlayerState, catalog: PlayerCatalog, pick: Pick): Ca
     case 'block':
       return pv.blocks.some((b) => b.id === pick.id) ? { title: 'Blocked squares', tags: [], lines: [], effects: [] } : null;
   }
+}
+
+/** What is affecting a hero, as chips: their effects, then Determination when they have a bonus. */
+export function heroChips(h: PlayerHero): string[] {
+  const chips = (h.effects ?? []).map(effectLabel);
+  if ((h.determination ?? 0) > 0) {
+    chips.push(`Determination +${String(h.determination)}`);
+  }
+  return chips;
 }

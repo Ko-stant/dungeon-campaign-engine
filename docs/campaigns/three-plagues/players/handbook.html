@@ -225,6 +225,7 @@ html { scroll-behavior: smooth; }
       <li>Against a mental attack you roll your <strong>defense dice + Mind</strong> instead of defense dice + avoidance. Your avoidance doesn't count. The monster must <strong>beat</strong> your total, and ties go to you.</li>
       <li>They rarely cost Body. Instead they leave a condition the TV shows on your card, such as <strong>Frightened</strong> (you can't attack that monster on your next turn), <strong>Dazed</strong> (you lose your next action) or <strong>Cursed</strong> (-2 Accuracy for 2 rounds).</li>
       <li>The Cleric has the strongest Will in the party; the Barbarian, the weakest. Look after each other.</li>
+      <li>The Cleric's faith drives <strong>Smite</strong> too: it rolls 1d20 + Mind to hit.</li>
     </ul>
   </section>
 
@@ -235,7 +236,7 @@ html { scroll-behavior: smooth; }
       <div class="pair"><h3>Avoidance</h3><p>The number your hit roll must reach. Always even. Weak monsters are easy to hit; the worst of them are not.</p></div>
       <div class="pair"><h3>Body</h3><p>How much damage it takes to kill. Big monsters take several hits from the whole party.</p></div>
       <div class="pair"><h3>Hit dice and damage</h3><p>What it rolls against your defense, and how hard it hits when it gets through.</p></div>
-      <div class="pair"><h3><span class="tag">Wounded</span></h3><p>A monster at a quarter of its Body or less is faltering: its Avoidance drops by 4, so anyone can land the finishing blow.</p></div>
+      <div class="pair"><h3><span class="tag">Wounded</span></h3><p>A monster at a quarter of its maximum Body or less (rounded down) is faltering: its Avoidance drops by 4, so anyone can land the finishing blow.</p></div>
     </div>
     <h3>Traits</h3>
     <p class="intro">Some monsters have special traits. The TV card lists them like this:</p>
@@ -347,9 +348,9 @@ html { scroll-behavior: smooth; }
             </tbody>
           </table>
         </div>
-        <p class="kit-note">Your mace attacks adjacent squares only, not diagonal. Smite is a spell and ignores your weapon: line of sight, 1d20+5 to hit, 5 damage. Your defense against an attack is avoidance + a 1d6 roll.</p>
+        <p class="kit-note">Your mace attacks adjacent squares only, not diagonal. Smite is a spell and ignores your weapon: line of sight, 1d20 + your Mind (6) to hit, 5 damage. Your defense against an attack is avoidance + a 1d6 roll.</p>
         <div class="abilities">
-          <div class="ability"><div class="head"><span class="name">Smite</span><span class="kind">spell · 2 mana</span></div><p>Your main attack, at range (line of sight): roll 1d20+5 to hit, 5 damage, +2 against undead. Your mana regenerates every round of a fight, so you can Smite every turn.</p></div>
+          <div class="ability"><div class="head"><span class="name">Smite</span><span class="kind">spell · 2 mana</span></div><p>Your main attack, at range (line of sight): roll 1d20 + your Mind to hit, 5 damage, +2 against undead. Determination counts. Your mana regenerates every round of a fight, so you can Smite every turn.</p></div>
           <div class="ability"><div class="head"><span class="name">Heal Minor Wounds</span><span class="kind">spell · 6 mana</span></div><p>Heal a hero 12 Body, up to their maximum.</p></div>
           <div class="ability"><div class="head"><span class="name">Turn Evil</span><span class="kind">spell · 8 mana · cooldown 5</span></div><p>The target skips its next attack and can't defend for a round: every hero's attack on it is a sure hit.</p></div>
           <div class="ability"><div class="head"><span class="name">Divining</span><span class="kind">spell · 3 mana</span></div><p>Reveal traps, hidden doors and treasure within 6 squares, through walls and doors.</p></div>
@@ -431,11 +432,11 @@ html { scroll-behavior: smooth; }
       <dt>Defense dice</dt><dd>What you roll, plus your avoidance, when a monster attacks you.</dd>
       <dt>Determination</dt><dd>+2 Accuracy for each miss in a row, up to +4; any hit resets it.</dd>
       <dt>Fight</dt><dd>From when the Chronicler says it starts until it's over. Mana regenerates and cooldowns finish only in fights.</dd>
-      <dt>Mind</dt><dd>Your Will: defense dice + Mind is your defense against mental attacks.</dd>
+      <dt>Mind</dt><dd>Your Will: defense dice + Mind is your defense against mental attacks. The Cleric's Smite rolls 1d20 + Mind.</dd>
       <dt>Mitigation</dt><dd>Taken off every hit you suffer. Can bring a hit to 0. Monsters have none.</dd>
       <dt>Round</dt><dd>One full cycle in which every hero and monster takes a turn.</dd>
       <dt>Sure hit</dt><dd>No hit roll: only the crit die is rolled.</dd>
-      <dt>Wounded</dt><dd>A monster at a quarter of its Body or less: Avoidance -4.</dd>
+      <dt>Wounded</dt><dd>A monster at a quarter of its maximum Body or less, rounded down: Avoidance -4.</dd>
     </dl>
   </section>
 

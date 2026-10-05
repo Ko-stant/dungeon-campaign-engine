@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/tracker"
 )
 
 func postForm(t *testing.T, client *http.Client, u string, form url.Values) (*http.Response, string) {
@@ -95,5 +97,47 @@ func TestPlayPageForUnknownSessionIs404(t *testing.T) {
 	}
 	if code, _ := get(t, srv.Client(), srv.URL+"/campaigns/01900000-0000-7000-8000-000000000000"); code != http.StatusNotFound {
 		t.Fatalf("status %d", code)
+	}
+}
+
+func TestCampaignPageMarksCustomTypes(t *testing.T) {
+	srv := testServer(t)
+	client := noRedirects()
+	c := func(method, path string, body any) (int, []byte) { return call(t, srv, method, path, body) }
+	if resp, _ := postForm(t, client, srv.URL+"/classes", rogueForm()); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("create class: %d", resp.StatusCode)
+	}
+	if resp, _ := postForm(t, client, srv.URL+"/monsters", ogreForm()); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("create monster: %d", resp.StatusCode)
+	}
+	rogue := customClasses(t, c)[0].ID
+	_, data := c(http.MethodPost, "/api/campaigns", map[string]any{"name": "C"})
+	camp := decodeAny[CampaignResponse](t, data)
+	if code, data := c(http.MethodPut, "/api/campaigns/"+camp.ID, map[string]any{"name": "C", "heroes": []tracker.CampaignHero{
+		{Name: "Vex", Class: "elf", Equipment: "Old sword"},
+		{Name: "Bram", Class: rogue, Items: []tracker.Item{
+			{Name: "Dirk", Kind: "weapon", Equipped: true, ItemStats: tracker.ItemStats{Damage: 2}},
+			{Name: "Sword", Kind: "weapon", Equipped: true, ItemStats: tracker.ItemStats{Damage: 3}},
+			{Name: "Rope"},
+		}},
+	}}); code != http.StatusOK {
+		t.Fatalf("put heroes: %d %s", code, data)
+	}
+
+	_, body := get(t, client, srv.URL+"/campaigns/"+camp.ID)
+	// Setup pages tell custom classes and monsters from the base game's.
+	for _, want := range []string{">Rogue (custom)</option>", ">Elf</option>", ">Cave Ogre (custom)</option>", ">Orc</option>", `title="custom class"`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("campaign page is missing %q", want)
+		}
+	}
+	// The heroes table lists equipped items (old free-text equipment when there are none).
+	for _, want := range []string{`title="Dirk, Sword"`, `title="Old sword"`, "<th>Equipped</th>"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("campaign page is missing %q", want)
+		}
+	}
+	if strings.Contains(body, "Dirk, Sword, Rope") {
+		t.Error("unequipped items are not listed as equipped")
 	}
 }

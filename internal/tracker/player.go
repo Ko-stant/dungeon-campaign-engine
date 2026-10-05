@@ -104,6 +104,8 @@ type PlayerHero struct {
 	Effects []Effect `json:"effects,omitempty"`
 	// Combat is the hero's totals (class plus equipped items).
 	Combat *Combat `json:"combat,omitempty"`
+	// Determination is the hero's Accuracy bonus from misses in a row.
+	Determination int `json:"determination,omitempty"`
 }
 
 // wounded reports a living monster that is hurt and at or below a quarter of
@@ -184,7 +186,7 @@ func PlayerView(s *State) PlayerState {
 		pv.Heroes = append(pv.Heroes, PlayerHero{
 			ID: h.ID, Name: h.Name, Class: h.Class, X: h.X, Y: h.Y, Placed: h.Placed,
 			Body: h.Body, MaxBody: h.MaxBody, Mind: h.Mind, MaxMind: h.MaxMind, Mana: h.Mana, ManaCap: h.ManaCap(),
-			Status: h.Status, Effects: slices.Clone(h.Effects), Combat: h.CombatTotals(),
+			Status: h.Status, Effects: slices.Clone(h.Effects), Combat: h.CombatTotals(), Determination: h.Determination,
 		})
 	}
 	return pv
@@ -195,7 +197,7 @@ func PlayerView(s *State) PlayerState {
 // gmSummary is reused only for commands that concern the heroes alone.
 func PlayerSummary(before, after *State, c Command, gmSummary string) string {
 	switch c.Type {
-	case "item.add", "item.remove", "item.give", "item.update", "item.equip", "gold.set", "ability.use", "ability.reset":
+	case "item.add", "item.remove", "item.give", "item.update", "item.equip", "item.use", "gold.set", "ability.use", "ability.reset":
 		return gmSummary
 	case "round.advance", "round.set":
 		return fmt.Sprintf("Round %d", after.Round)

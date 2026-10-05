@@ -1,5 +1,5 @@
 {
-  "about": "The Three Plagues combat numbers, one source for the simulator (scripts/combat-config.ts) and the app (make fill-campaign). See RULES_AND_CLASSES.md: class bases are backfilled so the starting kit gives the step 2 totals (2026-10-04); abilities are the step 4 kit (2026-10-04); Mind is the heroes' Will against magic and fear (2026-10-05); monsters are the third calibration (2026-10-04).",
+  "about": "The Three Plagues combat numbers, one source for the simulator (scripts/combat-config.ts) and the app (make fill-campaign). See RULES_AND_CLASSES.md: class bases are backfilled so the starting kit gives the step 2 totals (2026-10-04); abilities are the step 4 kit (2026-10-04); Mind is the heroes' Will against magic and fear (2026-10-05); monsters are the third calibration (2026-10-04); the Stranger is a prisoner with 1 Body and no combat stats (2026-10-05); the loot list is the approved Quest 1 finds and potions (2026-10-05), for the app's loot picker and the simulator.",
   "classes": [
     {
       "name": "Barbarian",
@@ -150,7 +150,7 @@
           "name": "Smite",
           "kind": "spell",
           "manaCost": 2,
-          "text": "The Cleric's main attack, at range (line of sight): rolls to hit (1d20+5) and deals 5 damage, +2 against undead."
+          "text": "The Cleric's main attack, at range (line of sight): rolls 1d20 + Mind to hit (faith, not the weapon's hit dice or Accuracy; Determination counts) and deals 5 damage, +2 against undead."
         },
         {
           "name": "Heal Minor Wounds",
@@ -207,6 +207,18 @@
     "mummy": { "body": 64, "avoidance": 12, "hitDice": "2d8+1", "damage": 10, "undead": true },
     "dread_warrior": { "body": 109, "avoidance": 12, "hitDice": "2d10+2", "damage": 15 },
     "gargoyle": { "body": 109, "avoidance": 14, "hitDice": "2d10+3", "damage": 12, "line": 1 },
-    "specter": { "body": 109, "avoidance": 14, "hitDice": "2d10+2", "damage": 15, "undead": true }
-  }
+    "specter": { "body": 109, "avoidance": 14, "hitDice": "2d10+2", "damage": 15, "undead": true },
+    "stranger": { "body": 1 }
+  },
+  "loot": [
+    { "name": "Wardens' Longbow", "hero": "Ranger", "kind": "bow", "damage": 6, "replaces": "Hunting Bow", "label": "W", "after": "Room 5" },
+    { "name": "Wardens' Dirk", "hero": "Rogue", "kind": "weapon", "damage": 3, "replaces": "Dirk", "label": "S", "after": "Room 5" },
+    { "name": "Wardens' Chain Shirt", "hero": "Cleric", "kind": "chest", "avoidance": 2, "replaces": "Padded Robes", "label": "S", "after": "Room 5" },
+    { "name": "Wardens' Greatsword", "hero": "Barbarian", "kind": "two-handed weapon", "damage": 9, "replaces": "Greataxe", "label": "O", "after": "Room 11" },
+    { "name": "Quivering Boots", "hero": "Rogue", "kind": "feet", "avoidance": 2, "replaces": "Soft Boots", "label": "X", "after": "Room 17", "note": "Special: traps (see the Rogue)." },
+    { "name": "Wardens' Scale Hauberk", "hero": "Barbarian", "kind": "chest, heavy (Barbarian-only)", "mitigation": 2, "replaces": "Hide Cuirass", "label": "T", "after": "Corridor at (29,5)" },
+    { "name": "Pilgrim's Prayer Beads", "hero": "Cleric", "kind": "trinket", "mana": 2, "label": "L", "after": "Corridor at (15,24)", "note": "Left by Sister Wenna's pilgrims." },
+    { "name": "Healing Potion", "kind": "potion", "healBody": 8, "label": "V", "note": "Drinking is free. Quest 1 has 3." },
+    { "name": "Mana Potion", "kind": "potion", "restoreMana": 6, "label": "V", "note": "Drinking is free. Quest 1 has 1." }
+  ]
 }

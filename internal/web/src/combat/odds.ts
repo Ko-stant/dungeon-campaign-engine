@@ -154,9 +154,10 @@ export interface KillOdds {
 
 const MAX_ATTACKS = 1000;
 
-/** Exact odds of how many attacks one hero needs to bring body to 0. */
-export function killOdds(a: HeroAttacker, avoidance: number, body: number, rules: KillRules): KillOdds {
+/** Exact odds of how many attacks one hero needs to bring body to 0; startBonus is a Determination bonus the hero already has. */
+export function killOdds(a: HeroAttacker, avoidance: number, body: number, rules: KillRules, startBonus = 0): KillOdds {
   const steps = rules.determinationStep > 0 ? Math.ceil(rules.determinationCap / rules.determinationStep) : 0;
+  const startStreak = rules.determinationStep > 0 ? Math.min(steps, Math.ceil(startBonus / rules.determinationStep)) : 0;
   const cache = new Map<string, [number, number][]>();
   const outcomes = (hp: number, streak: number): [number, number][] => {
     const bonus = Math.min(rules.determinationCap, streak * rules.determinationStep);
@@ -170,7 +171,7 @@ export function killOdds(a: HeroAttacker, avoidance: number, body: number, rules
     return o;
   };
   // Alive states: "hp:streak" -> probability.
-  let alive = new Map<string, [number, number, number]>([[`${body}:0`, [body, 0, 1]]]);
+  let alive = new Map<string, [number, number, number]>([[`${body}:${String(startStreak)}`, [body, startStreak, 1]]]);
   const byAttack: number[] = [];
   let expectedAttacks = 0;
   let left = 1;

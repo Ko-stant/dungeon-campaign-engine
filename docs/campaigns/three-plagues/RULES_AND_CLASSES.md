@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 12:45 EDT
+**Last Updated**: 2026-10-05 17:50 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -85,8 +85,9 @@ Both extremes need the crit d20 too, so they stay rare: 1 in 400 for a 1d20 hit 
 
 ### Faltering
 A monster that is badly hurt has Avoidance -4, so any hero can land the finishing blow.
-Monsters only, never heroes. The threshold is to be set by simulation, somewhere between
-1 Body left and 1/4 of the monster's maximum Body (fixed damage often skips a narrow window).
+Monsters only, never heroes. **Pinned (2026-10-05): at or below a quarter of the monster's
+maximum Body, rounded down (at least 1)**, e.g. 27 for a 109-Body dread warrior; the
+tracker, the TV's Wounded tag and the simulator all use it.
 
 ### Steady progress
 - **Determination** (all heroes, passive; adopted 2026-10-04): each miss in a row adds +2
@@ -119,6 +120,10 @@ fear, where armor doesn't help.
   their next action) or **Cursed** (-2 Accuracy for 2 rounds). The monster's abilities text
   says which attacks are mental and what they do.
 - Mind is a fixed stat, not a pool that spells wear down.
+- The Cleric's **Smite** rolls on Mind too: 1d20 + Mind to hit (adopted 2026-10-05; it was
+  1d20+5). With Mind 6 that is +1, and the simulator barely moves: Quest 1 with nobody dead
+  71% to 72% without the finds, 80% to 81% with them (4000 runs each). The mace keeps the
+  class hit dice and Accuracy.
 - Mental attacks stay rare; the simulator doesn't model conditions, so no numbers are tuned
   around them.
 - Monsters keep a Mind value for flavor (later, perhaps, how hard they are to Turn).
@@ -598,7 +603,7 @@ Mana: maximum **16**, regenerating 2 each round of a fight, +1 with the holy tom
 
 | Spell | Cost | Limit | Effect |
 |---|---|---|---|
-| Smite | 2 mana | Repeatable | The Cleric's main attack, at range (line of sight): rolls to hit (1d20+5) and deals 5 damage, +2 against undead. |
+| Smite | 2 mana | Repeatable | The Cleric's main attack, at range (line of sight): rolls 1d20 + Mind to hit (faith, not the weapon's hit dice or Accuracy; Determination counts) and deals 5 damage, +2 against undead. |
 | Heal Minor Wounds | 6 mana | Repeatable | Heals the target 10-12 Body (to tune; at least 10), up to their maximum. |
 | Turn Evil | 8 mana | Cooldown 5 | The target enemy skips its next attack and cannot defend for 1 round: every hero's attack on it is a sure hit. |
 | Divining | 3 mana | Repeatable | Reveals traps, hidden doors and treasure within 6 squares, through walls and doors. |
@@ -697,12 +702,16 @@ crit range of 18-20, a shot is charged 20% of the time and a crit 15%.
 - Balance effect: a wiped party comes back stronger (it keeps its finds), a built-in catch-up.
 
 ## Open questions
-1. **Faltering threshold**: between 1 Body and 1/4 of maximum Body (the simulator uses 1/4).
-2. **Tempest-God Axe**: N extra damage, set during balancing.
-3. **Later gear**: a Smite item for the Cleric; Quest 2 and 3 tiers (about +30% monster Body per
+1. **Tempest-God Axe**: N extra damage, set during balancing.
+2. **Later gear**: a Smite item for the Cleric; Quest 2 and 3 tiers (about +30% monster Body per
    tier of finds, to check per quest).
+   Both wait until after the Quest 1 session: the GM takes notes on game day and brings
+   them back for tuning.
 
 ## Answered
+- **Smite** (2026-10-05): rolls 1d20 + Mind (Will), with Determination; the mace keeps the
+  class hit dice + Accuracy. Simulated as no meaningful change (see "Mind and magic").
+- **Faltering threshold** (2026-10-05): a quarter of maximum Body, rounded down (at least 1).
 - **Mind** (2026-10-05): kept as Will, the defense against mental attacks (defense dice +
   Mind, armor doesn't count), which usually land conditions; Barbarian 3, Ranger 4, Rogue 5,
   Cleric 6. Not tied to the Cleric's mana (it would mean nothing for the others and double

@@ -207,3 +207,24 @@ func TestEffectsCountDownInFights(t *testing.T) {
 		t.Error("removing an unknown effect should fail")
 	}
 }
+
+func TestDetermination(t *testing.T) {
+	s, cat := fightState(t)
+	s, _ = applyWith(t, s, cmd(t, "fight.start", map[string]any{}), cat)
+	s, ev := applyWith(t, s, cmd(t, "hero.update", map[string]any{"id": "hero-2", "determination": 2}), cat)
+	if s.Heroes[1].Determination != 2 || ev.Summary != "Vex: Determination +0 → +2" {
+		t.Fatalf("a miss: %d %q", s.Heroes[1].Determination, ev.Summary)
+	}
+	// The TV shows it on the hero's card; the feed stays quiet about it.
+	if ev.PlayerSummary != "" || PlayerView(s).Heroes[1].Determination != 2 {
+		t.Fatalf("players: %q %+v", ev.PlayerSummary, PlayerView(s).Heroes[1])
+	}
+	if _, _, err := Apply(s, cmd(t, "hero.update", map[string]any{"id": "hero-2", "determination": -2}), cat); err == nil {
+		t.Fatal("negative Determination should fail")
+	}
+	// A fight's end clears every streak.
+	s, ev = applyWith(t, s, cmd(t, "fight.end", map[string]any{}), cat)
+	if s.Heroes[1].Determination != 0 || ev.Summary != "Fight over; Determination reset: Vex" {
+		t.Fatalf("fight over: %d %q", s.Heroes[1].Determination, ev.Summary)
+	}
+}
