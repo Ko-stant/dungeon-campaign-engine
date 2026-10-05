@@ -563,6 +563,8 @@ type SessionSummary struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	Open            bool
+	// Started: online play has started (the rules are on).
+	Started bool
 }
 
 const sessionColumns = `id::text, campaign_id::text, quest_id::text, name, status, state, event_seq, created_at, updated_at, open`
@@ -607,7 +609,7 @@ func (s *Store) ListSessions(ctx context.Context, campaignID string) ([]SessionS
 	rows, err := s.pool.Query(ctx,
 		`SELECT id::text, campaign_id::text, quest_id::text,
 		        jsonb_path_query_array(state, '$.questId') || jsonb_path_query_array(state, '$.otherMaps[*].questId'),
-		        name, status, event_seq, created_at, updated_at, open
+		        name, status, event_seq, created_at, updated_at, open, state ? 'rules'
 		 FROM game_session WHERE campaign_id = $1
 		 ORDER BY (status = 'active') DESC, updated_at DESC, id`, campaignID)
 	if err != nil {
@@ -615,7 +617,7 @@ func (s *Store) ListSessions(ctx context.Context, campaignID string) ([]SessionS
 	}
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (SessionSummary, error) {
 		var ss SessionSummary
-		err := row.Scan(&ss.ID, &ss.CampaignID, &ss.QuestID, &ss.VisitedQuestIDs, &ss.Name, &ss.Status, &ss.EventSeq, &ss.CreatedAt, &ss.UpdatedAt, &ss.Open)
+		err := row.Scan(&ss.ID, &ss.CampaignID, &ss.QuestID, &ss.VisitedQuestIDs, &ss.Name, &ss.Status, &ss.EventSeq, &ss.CreatedAt, &ss.UpdatedAt, &ss.Open, &ss.Started)
 		return ss, err
 	})
 }

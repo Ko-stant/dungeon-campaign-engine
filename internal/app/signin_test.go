@@ -90,13 +90,17 @@ func (b *browser) signInAs(name string) {
 func TestEveryRoutePatternHasAnAccessRule(t *testing.T) {
 	for pattern, want := range map[string][]ownedParam{
 		"GET /api/boards":                            nil,
-		"PUT /api/boards/{id}":                       {{"id", store.OwnedBoard}},
-		"GET /maps/{id}/edit":                        {{"id", store.OwnedBoard}},
-		"POST /api/sessions/{id}/commands":           {{"id", store.OwnedSession}},
-		"GET /play/{id}/players":                     {{"id", store.OwnedSession}},
-		"GET /audio/{campaign}/{file}":               {{"campaign", store.OwnedCampaign}},
-		"POST /campaigns/{id}/chapters/{questId}/up": {{"id", store.OwnedCampaign}, {"questId", store.OwnedQuest}},
-		"POST /classes/{id}/delete":                  {{"id", store.OwnedClass}},
+		"PUT /api/boards/{id}":                       {{"id", store.OwnedBoard, false}},
+		"GET /maps/{id}/edit":                        {{"id", store.OwnedBoard, false}},
+		"POST /api/sessions/{id}/commands":           {{"id", store.OwnedSession, false}},
+		"GET /play/{id}/players":                     {{"id", store.OwnedSession, true}},
+		"POST /api/sessions/{id}/seat-commands":      {{"id", store.OwnedSession, true}},
+		"GET /api/sessions/{id}/stream":              {{"id", store.OwnedSession, false}},
+		"POST /join/{id}/claim/{heroId}":             nil,
+		"GET /lobby":                                 nil,
+		"GET /audio/{campaign}/{file}":               {{"campaign", store.OwnedCampaign, false}},
+		"POST /campaigns/{id}/chapters/{questId}/up": {{"id", store.OwnedCampaign, false}, {"questId", store.OwnedQuest, false}},
+		"POST /classes/{id}/delete":                  {{"id", store.OwnedClass, false}},
 	} {
 		got, ok := accessRule(pattern)
 		if !ok || len(got) != len(want) {

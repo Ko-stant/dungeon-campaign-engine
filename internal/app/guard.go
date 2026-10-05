@@ -26,9 +26,12 @@ type routeMux interface {
 }
 
 // ownedParam is one thing a route touches: a path parameter and its kind.
+// Seated also lets in players with a hero in the session (player-safe
+// routes only).
 type ownedParam struct {
-	param string
-	kind  store.OwnedKind
+	param  string
+	kind   store.OwnedKind
+	seated bool
 }
 
 // accessRule lists what a route touches, from its pattern; ok is false for a
@@ -42,17 +45,25 @@ func accessRule(pattern string) (owned []ownedParam, ok bool) {
 		prefix string
 		owned  []ownedParam
 	}{
-		{"/api/boards/{id}", []ownedParam{{"id", store.OwnedBoard}}},
-		{"/maps/{id}", []ownedParam{{"id", store.OwnedBoard}}},
-		{"/api/quests/{id}", []ownedParam{{"id", store.OwnedQuest}}},
-		{"/api/campaigns/{id}", []ownedParam{{"id", store.OwnedCampaign}}},
-		{"/campaigns/{id}/chapters/{questId}", []ownedParam{{"id", store.OwnedCampaign}, {"questId", store.OwnedQuest}}},
-		{"/campaigns/{id}", []ownedParam{{"id", store.OwnedCampaign}}},
-		{"/audio/{campaign}", []ownedParam{{"campaign", store.OwnedCampaign}}},
-		{"/api/sessions/{id}", []ownedParam{{"id", store.OwnedSession}}},
-		{"/play/{id}", []ownedParam{{"id", store.OwnedSession}}},
-		{"/monsters/{id}", []ownedParam{{"id", store.OwnedMonster}}},
-		{"/classes/{id}", []ownedParam{{"id", store.OwnedClass}}},
+		// Player-safe session routes: the player view and the seat.
+		{"/api/sessions/{id}/seat", []ownedParam{{"id", store.OwnedSession, true}}},
+		{"/api/sessions/{id}/seat-commands", []ownedParam{{"id", store.OwnedSession, true}}},
+		{"/api/sessions/{id}/player", []ownedParam{{"id", store.OwnedSession, true}}},
+		{"/api/sessions/{id}/player-stream", []ownedParam{{"id", store.OwnedSession, true}}},
+		{"/play/{id}/players", []ownedParam{{"id", store.OwnedSession, true}}},
+		// Joining checks the session is open itself.
+		{"/join/{id}", nil},
+		{"/api/boards/{id}", []ownedParam{{"id", store.OwnedBoard, false}}},
+		{"/maps/{id}", []ownedParam{{"id", store.OwnedBoard, false}}},
+		{"/api/quests/{id}", []ownedParam{{"id", store.OwnedQuest, false}}},
+		{"/api/campaigns/{id}", []ownedParam{{"id", store.OwnedCampaign, false}}},
+		{"/campaigns/{id}/chapters/{questId}", []ownedParam{{"id", store.OwnedCampaign, false}, {"questId", store.OwnedQuest, false}}},
+		{"/campaigns/{id}", []ownedParam{{"id", store.OwnedCampaign, false}}},
+		{"/audio/{campaign}", []ownedParam{{"campaign", store.OwnedCampaign, false}}},
+		{"/api/sessions/{id}", []ownedParam{{"id", store.OwnedSession, false}}},
+		{"/play/{id}", []ownedParam{{"id", store.OwnedSession, false}}},
+		{"/monsters/{id}", []ownedParam{{"id", store.OwnedMonster, false}}},
+		{"/classes/{id}", []ownedParam{{"id", store.OwnedClass, false}}},
 	}
 	for _, r := range byPrefix {
 		if path == r.prefix || strings.HasPrefix(path, r.prefix+"/") {
@@ -60,7 +71,7 @@ func accessRule(pattern string) (owned []ownedParam, ok bool) {
 		}
 	}
 	switch path {
-	case "/api/catalog", "/api/boards", "/api/campaigns", "/maps", "/campaigns", "/monsters", "/classes", "/classes/new":
+	case "/api/catalog", "/api/boards", "/api/campaigns", "/maps", "/campaigns", "/monsters", "/classes", "/classes/new", "/lobby":
 		return nil, true
 	}
 	return nil, false
@@ -98,6 +109,9 @@ func (s *Server) guard(owned []ownedParam, h http.HandlerFunc) http.HandlerFunc 
 			if err := s.mayUse(ctx, o.kind, r.PathValue(o.param)); err != nil {
 				if errors.Is(err, store.ErrNotFound) {
 					break // the handler answers 404
+				}
+				if errors.Is(err, errNotYours) && o.seated && s.seatedIn(ctx, r.PathValue(o.param), user.ID) {
+					continue
 				}
 				if errors.Is(err, errNotYours) {
 					s.forbidden(w, r)

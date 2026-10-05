@@ -14,6 +14,11 @@ type SessionLink struct {
 	Campaign  string
 	Events    int64
 	UpdatedAt time.Time
+	// Online play (sign-in on): Online shows the controls, Open lists the
+	// session in the lobby, Started means the rules are on.
+	Online  bool
+	Open    bool
+	Started bool
 }
 
 // CampaignListItem is one campaign on the /campaigns page.
@@ -139,6 +144,7 @@ templ appNav(active string) {
 		<a href="/monsters" class={ templ.KV("text-amber-400", active == "monsters"), "hover:text-amber-400" }>Monsters</a>
 		<a href="/classes" class={ templ.KV("text-amber-400", active == "classes"), "hover:text-amber-400" }>Classes</a>
 		if name, ok := components.SignedIn(ctx); ok {
+			<a href="/lobby" class={ templ.KV("text-amber-400", active == "lobby"), "hover:text-amber-400" }>Play</a>
 			<form method="post" action="/auth/logout">
 				<button type="submit" class="opacity-70 hover:text-amber-400" title={ "Signed in as " + name }>Sign out</button>
 			</form>
@@ -349,13 +355,33 @@ templ CampaignPage(d CampaignPageData) {
 								<span class="font-semibold">{ s.Name }</span>
 								<span class="ml-2 text-xs opacity-60">{ s.Status } · { fmt.Sprintf("%d events", s.Events) } · { s.UpdatedAt.Local().Format("Jan 2, 15:04") }</span>
 							</div>
-							<a href={ templ.SafeURL("/play/" + s.ID) } class={ linkButton }>
-								if s.Status == "active" {
-									Resume
-								} else {
-									View
+							<div class="flex items-center gap-2">
+								if s.Online && s.Status == "active" {
+									<form method="post" action={ templ.SafeURL("/play/" + s.ID + "/open") }>
+										if s.Open {
+											<input type="hidden" name="open" value="0"/>
+											<button type="submit" class={ linkButton } title="Players see it in the lobby and can join">Close to players</button>
+										} else {
+											<input type="hidden" name="open" value="1"/>
+											<button type="submit" class={ linkButton } title="List it in the lobby so players can join with a hero">Open to players</button>
+										}
+									</form>
+									if !s.Started {
+										<form method="post" action={ templ.SafeURL("/play/" + s.ID + "/start") }>
+											<button type="submit" class={ linkButton } title="Turn the rules on: players take their turns from their seats">Start online play</button>
+										</form>
+									} else {
+										<span class="text-xs text-amber-400">Online</span>
+									}
 								}
-							</a>
+								<a href={ templ.SafeURL("/play/" + s.ID) } class={ linkButton }>
+									if s.Status == "active" {
+										Resume
+									} else {
+										View
+									}
+								</a>
+							</div>
 						</li>
 					}
 				</ul>

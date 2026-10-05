@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 )
 
 // Campaign monster stats: a campaign's own stat lines for monster types (The
@@ -35,6 +36,15 @@ func (s *Server) campaignMonsterStats(ctx context.Context, campaignID string) (m
 // campaignCatalog is the catalog (with custom monsters and classes) with a
 // campaign's monster stat lines laid over its monsters.
 func (s *Server) campaignCatalog(ctx context.Context, campaignID string) (*content.Catalog, error) {
+	// A campaign plays with its owner's classes and monsters, whoever asks
+	// (a player at a seat sees the GM's classes).
+	if _, signedIn := store.ViewerFrom(ctx); signedIn {
+		owner, err := s.store.OwnerOf(ctx, store.OwnedCampaign, campaignID)
+		if err != nil {
+			return nil, err
+		}
+		ctx = store.WithViewer(ctx, store.Viewer{UserID: owner, Admin: owner == ""})
+	}
 	cat, err := s.catalogFor(ctx)
 	if err != nil {
 		return nil, err

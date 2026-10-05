@@ -27,7 +27,7 @@ func (s *Server) registerTrackerPages(mux routeMux) {
 func sessionLinks(list []store.SessionSummary) []views.SessionLink {
 	out := make([]views.SessionLink, 0, len(list))
 	for _, ss := range list {
-		out = append(out, views.SessionLink{ID: ss.ID, Name: ss.Name, Status: ss.Status, Events: ss.EventSeq, UpdatedAt: ss.UpdatedAt})
+		out = append(out, views.SessionLink{ID: ss.ID, Name: ss.Name, Status: ss.Status, Events: ss.EventSeq, UpdatedAt: ss.UpdatedAt, Open: ss.Open, Started: ss.Started})
 	}
 	return out
 }
@@ -167,6 +167,9 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 		return views.CampaignPageData{}, err
 	}
 	d.Sessions = sessionLinks(sessions)
+	for i := range d.Sessions {
+		d.Sessions[i].Online = s.auth.On()
+	}
 	if err := s.addChapterPageData(ctx, &d, sessions); err != nil {
 		return views.CampaignPageData{}, err
 	}

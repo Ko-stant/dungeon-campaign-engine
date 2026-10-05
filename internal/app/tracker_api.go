@@ -234,6 +234,21 @@ func (s *Server) updateCampaign(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "%v", err)
 		return
 	}
+	// Who plays a hero online is the server's to set (the lobby); a save
+	// from the GM keeps it.
+	_, stored, err := s.loadCampaign(r.Context(), r.PathValue("id"))
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	for i := range heroes {
+		heroes[i].UserID = ""
+		for _, old := range stored {
+			if old.ID == heroes[i].ID {
+				heroes[i].UserID = old.UserID
+			}
+		}
+	}
 	if req.Gold != nil {
 		if err := s.store.SetCampaignGold(r.Context(), r.PathValue("id"), *req.Gold); err != nil {
 			writeStoreError(w, err)
@@ -448,35 +463,55 @@ func (s *Server) sessionCommand(w http.ResponseWriter, r *http.Request) {
 	// This is the GM's endpoint: whoever the client claims to be, the
 	// command is the GM's.
 	cmd.Actor = tracker.Actor{}
-	id := r.PathValue("id")
-	unlock := s.lockSession(id)
-	defer unlock()
-
-	ss, state, err := s.loadSessionState(r.Context(), id)
+	resp, err := s.applyCommand(r.Context(), r.PathValue("id"), cmd)
 	if err != nil {
-		writeStoreError(w, err)
-		return
-	}
-	if ss.Status != store.StatusActive {
-		writeError(w, http.StatusConflict, "this session is completed; reopen it to make changes")
-		return
-	}
-	cat, err := s.campaignCatalog(r.Context(), ss.CampaignID)
-	if err != nil {
-		writeStoreError(w, err)
-		return
-	}
-	next, ev, err := tracker.Apply(state, cmd, cat)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "%v", err)
-		return
-	}
-	resp, err := s.record(r.Context(), id, next, newEvent(ev))
-	if err != nil {
-		writeStoreError(w, err)
+		writeCommandError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+var errSessionCompleted = errors.New("this session is completed; reopen it to make changes")
+
+// rejectedError is a command the tracker refused.
+type rejectedError struct{ err error }
+
+func (e rejectedError) Error() string { return e.err.Error() }
+
+// applyCommand applies one command to a session, under its lock, records
+// the event and sends it to the streams. The caller has set the actor.
+func (s *Server) applyCommand(ctx context.Context, id string, cmd tracker.Command) (CommandResponse, error) {
+	unlock := s.lockSession(id)
+	defer unlock()
+	ss, state, err := s.loadSessionState(ctx, id)
+	if err != nil {
+		return CommandResponse{}, err
+	}
+	if ss.Status != store.StatusActive {
+		return CommandResponse{}, errSessionCompleted
+	}
+	cat, err := s.campaignCatalog(ctx, ss.CampaignID)
+	if err != nil {
+		return CommandResponse{}, err
+	}
+	next, ev, err := tracker.Apply(state, cmd, cat)
+	if err != nil {
+		return CommandResponse{}, rejectedError{err}
+	}
+	return s.record(ctx, id, next, newEvent(ev))
+}
+
+// writeCommandError answers an applyCommand error.
+func writeCommandError(w http.ResponseWriter, err error) {
+	var rejected rejectedError
+	switch {
+	case errors.As(err, &rejected):
+		writeError(w, http.StatusBadRequest, "%v", err)
+	case errors.Is(err, errSessionCompleted):
+		writeError(w, http.StatusConflict, "%v", err)
+	default:
+		writeStoreError(w, err)
+	}
 }
 
 func (s *Server) sessionEvents(w http.ResponseWriter, r *http.Request) {
