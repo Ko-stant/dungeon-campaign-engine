@@ -117,4 +117,4 @@ to origin once all phases are done. Resume from the last line here after a compa
 - Phase 4 built and checked in the browser at 1920x1080 on a copy of the dev database
   (live updates, cards, feed, Body switch, Wounded). Committed ea027a1. Next: phase 5.
 - Phase 5 built and checked in the browser (abilities text on a card, A+ text size).
-  Committed 427a0da. All phases done; pushing to origin.
+  Committed 427a0da. All phases done; pushed to origin (main at 2398f6e, 2026-10-05).
