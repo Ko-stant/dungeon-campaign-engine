@@ -1,6 +1,6 @@
 # The Three Plagues - Online rules
 
-**Last Updated**: 2026-10-05 16:42 EDT
+**Last Updated**: 2026-10-05 17:28 EDT
 
 These are the rules the online rules engine enforces for heroes played from a seat or by a
 bot (`docs/ONLINE_AND_RULES_PLAN.md`). The combat math, classes and abilities are in
@@ -134,8 +134,10 @@ touches a wall corner is still clear. There are two kinds of sight:
 - **A quest without objectives is completed once every monster is dead.**
 - **Lost** when no hero is left standing, or when everyone has left before the quest was won.
 - The GM can end a quest either way at any time.
-- The map editor can't set goals, objectives or door keys yet. The editor keeps them through
-  edits.
+- The map editor sets all of this:
+  - "Goal and objectives" under the quest.
+  - "Key item" on a locked door.
+  - Quest checks warn about an escape objective without exit squares.
 
 ### Reactions
 - **D10. A prompt with a timer.**

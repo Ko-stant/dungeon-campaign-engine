@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 17:14 EDT
+**Last Updated**: 2026-10-05 17:28 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -191,8 +191,7 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
     `LegalActions` listing every move for players and the GM.
   - The code is in `internal/tracker` (`rules.go`, `turns.go`, `moves.go`, `board_rules.go`,
     `attacks.go`, `search.go`, `outcome.go`, `legal.go`).
-- **Next, before online play:** map editor fields for a quest's goal, its objectives and door
-  keys (the engine and the editor model already keep them).
+- **Map editor:** the editor sets a quest's goal, objectives and door keys (`56513db`).
 - **Phase 3 (auth)** needs the GM to choose the sign-in method.
 - **Browser checks:** add a temporary `dce-online` entry to the main checkout's
   `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
@@ -227,3 +226,5 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   - Door keys.
 - 2026-10-05: Phase 2 done with 2e (`1c59df1`), `LegalActions` and its property and replay
   tests.
+- 2026-10-05: `56513db`, map editor fields for the goal, objectives and door keys. Checked in
+  the browser on a throwaway board in `hq_online`, then deleted.
