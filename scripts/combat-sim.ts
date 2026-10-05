@@ -1,15 +1,16 @@
 /**
  * Simulates the party through Quest 1, with abilities and attack-only:
  *   bun scripts/combat-sim.ts [runs] [--specter] [--melee=N] [--swap "Room 8=gargoyle,goblin_warlock"]...
- *     [--with=ability] [--without=fury,riposte,...] [--mana=12] [--heal=10]
+ *     [--with=ability] [--without=fury,riposte,...] [--mana=12] [--heal=10] [--finds | --geared]
+ * --finds picks up the Quest 1 finds as they are found; --geared starts with all of them.
  * Numbers come from scripts/combat-config.ts; encounters from the generated JSON
  * (scripts/quest-encounters.ts). The route rooms come first, the rest in a random
  * order each run. --swap replaces a room's monsters (repeatable); --melee sets how
  * many melee monsters can attack a round.
  */
 
-import { runFight, runQuest, newHero, seededRoller, type MonsterSpec, type QuestPlan, type Tactics } from '../internal/web/src/combat/simulate.ts';
-import { MONSTERS, PARTY as BASE_PARTY, QUEST_1, SUPPLIES, TACTICS as BASE_TACTICS, TESTING } from './combat-config.ts';
+import { runFight, runQuest, newHero, seededRoller, type HeroSpec, type MonsterSpec, type QuestPlan, type Tactics } from '../internal/web/src/combat/simulate.ts';
+import { MONSTERS, PARTY as START_PARTY, PARTY_AFTER_QUEST_1, QUEST_1, QUEST_1_FINDS, SUPPLIES, TACTICS as BASE_TACTICS, TESTING, upgrade } from './combat-config.ts';
 
 const args = process.argv.slice(2);
 const runs = Number(args.find((a) => /^\d+$/.test(a)) ?? 4000);
@@ -36,7 +37,9 @@ for (const name of dropped) {
 if (flag('heal') && TACTICS.heal) {
   TACTICS.heal = { ...TACTICS.heal, amount: Number(flag('heal')) };
 }
-const PARTY = BASE_PARTY.map((h) => (h.cls === 'cleric' && flag('mana') ? { ...h, mana: Number(flag('mana')) } : h));
+const geared = args.includes('--geared');
+const finds = args.includes('--finds');
+const PARTY = (geared ? PARTY_AFTER_QUEST_1 : START_PARTY).map((h) => (h.cls === 'cleric' && flag('mana') ? { ...h, mana: Number(flag('mana')) } : h));
 const swaps = new Map<string, string[]>();
 args.forEach((a, i) => {
   const value = a === '--swap' ? args[i + 1] : undefined;
@@ -55,6 +58,7 @@ const plan: QuestPlan = {
   encounters: [...first, ...all.filter((e) => !QUEST_1.route.includes(e.name))],
   poolAfter: QUEST_1.poolAfter,
   shuffleFrom: first.length,
+  ...(finds ? { finds: QUEST_1_FINDS.map((f) => ({ after: f.after, hero: f.item.hero, apply: (h: HeroSpec) => upgrade(h, f.item) })) } : {}),
 };
 
 const pct = (x: number): string => `${Math.round(x * 100)}%`;
@@ -123,6 +127,8 @@ for (const [mode, tactics] of modes) {
     ...(dropped.length ? [`no ${dropped.join(', ')}`] : []),
     ...(flag('mana') ? [`Cleric mana ${flag('mana') ?? ''}`] : []),
     ...(flag('heal') ? [`heal ${flag('heal') ?? ''}`] : []),
+    ...(finds ? ['Quest 1 finds picked up'] : []),
+    ...(geared ? ['all Quest 1 finds from the start'] : []),
   ];
   console.log(`\n## ${mode} (${notes.join('; ')})`);
   console.log(`Quest cleared: ${pct(cleared / runs)} | cleared with no deaths: ${pct(flawless / runs)} | average deaths: ${(deaths / runs).toFixed(2)}`);

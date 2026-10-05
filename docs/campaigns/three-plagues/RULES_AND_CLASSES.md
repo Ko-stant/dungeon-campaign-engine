@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-04 22:10 EDT
+**Last Updated**: 2026-10-05 00:30 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -132,15 +132,27 @@ Direction for the step 2 numbers.
 - Heroes keep old items when they get new ones. Inventory tracks what is equipped, used
   (removed), traded or deleted.
 
-**Starting kit** (stats backfilled during step 2; class base stats go down to match):
+**Class base stats** (before gear; 2026-10-04, backfilled so the starting kit gives the step 2
+totals):
+
+| Class | Body | Hit dice + Accuracy | Crit | Damage | Avoidance | Defense dice | Mitigation | Mana |
+|---|---|---|---|---|---|---|---|---|
+| Barbarian | 40 | 1d20+3 | 17-20 | 3 | 2 | 1d6 | 1 (Tough as Nails) | - |
+| Ranger | 30 | 2d10+4 | 18-20 | 2 | 4 | 1d6 | 0 | - |
+| Rogue | 28 | 2d10+2 | 15-20 | 1 | 4 | 1d6 | 0 | - |
+| Cleric | 28 | 2d8+4 | 20 | 2 | 3 | 1d6 | 0 | 16, regenerating 2 |
+
+**Starting kit**:
 
 | Class | Weapon | Chest | Class item |
 |---|---|---|---|
-| Barbarian | two-handed weapon | armor | boots |
-| Rogue | sword and dirk | armor | boots |
-| Ranger | bow | armor | gloves |
-| Cleric | one-handed weapon | armor | holy tome (off-hand): +1 mana regenerated each fight round |
+| Barbarian | Greataxe (two-handed): +7 damage | Hide Cuirass (heavy, Barbarian-only): +1 mitigation | Iron-shod Boots: +1 avoidance |
+| Rogue | Sword +3 damage and Dirk +2 damage | Leather Jerkin: +2 avoidance | Soft Boots: +1 avoidance |
+| Ranger | Hunting Bow: +5 damage | Leather Armor: +2 avoidance | Archer's Gloves: +1 Accuracy |
+| Cleric | Mace: +3 damage | Padded Robes: +1 avoidance | Holy Tome (off-hand): +1 mana regenerated each fight round |
 
+With the kit: Barbarian 10 damage, avoidance 3, mitigation 2; Ranger 7 damage, Accuracy 5,
+avoidance 6; Rogue 6 damage, avoidance 7; Cleric 5 damage, avoidance 4, 3 mana a round.
 Later items must compete with or replace the holy tome's effect.
 
 ### Fights, cooldowns and mana
@@ -344,6 +356,41 @@ Fodder keeps the original feel (goblins die to any hit), while mid and elite mon
 relatively more Body than the original ratios, so four heroes can't fell an elite in one round
 with starter gear.
 
+### Gear and upgrade tiers (2026-10-04)
+- `bun scripts/combat-sim.ts --finds` picks the Quest 1 finds up as they're found;
+  `--geared` starts with all of them. Items live in `scripts/combat-config.ts`
+  (`STARTING_KIT`, `QUEST_1_FINDS`).
+- Class balance: weights over a long fight against Avoidance 10 (Barbarian 6), starting kit
+  6 / 4.9 / 4.2 / 3.0 (Barbarian / Ranger / Rogue / Cleric's basic attack); with every Quest 1
+  find 6 / 4.8 / 4.2 / 2.6. The Barbarian (+2), Ranger (+1) and Rogue (+1) keep their
+  proportions; the Cleric's basic attack slips, but Smite is their attack (a later item can
+  add to Smite). A first try with Cardsharp's Gloves instead of the Wardens' Dirk let the
+  Barbarian pull ahead (Rogue 4.2 -> 3.8).
+- Quest 1 survival (nobody dead; prayer beads +2): 77% without finds, 84% picking them up as
+  found; a party that skips some lands in between.
+- Upgrade tier: with every Quest 1 find the party clears Quest 1 at 93% with nobody dead;
+  Quest 1's monsters would need about 30% more Body (x1.35: 75%) to challenge it the same
+  way, and +1 damage on every monster drops it to 49-58%. The GM prefers not to lean on Body
+  (the simulator can only capture so much of real play), so Quest 2 will use other levers.
+- Fodder damage doesn't change survival: +1 or +2 damage for goblins, orcs, zombies and
+  skeletons, or +1-2 for the abomination and mummy, all land within a point of the current
+  numbers. Heroes act first and fodder dies to any hit, and what it does take off the party
+  is healed between fights (mana regenerates each fight round), so it never reaches the
+  elite fights where deaths happen. Fodder matters alongside an elite, or if healing between
+  fights gets scarcer. The dread warrior is the one sensitive monster: at 16 damage (from 15)
+  it kills the Barbarian in 3 hits instead of 4, and Quest 1 with finds drops to 80% (no
+  finds 71%, geared 89%). Kept at 15 (GM, 2026-10-04).
+- **Lone heroes against elites.** Elite Body is sized for all four heroes (about 4 rounds),
+  so a hero alone almost never beats one: the Barbarian beats a full dread warrior (109 Body)
+  under 2% of the time, striking first or second, where the original game's Barbarian beat a
+  dread warrior (4 attack, 4 defend, 3 Body) 90% of the time striking first and 82% striking
+  second. Splitting up against an elite is deadly, by design.
+- **Trap G is the one scaled elite** (GM, 2026-10-04): its dread warrior has 27 Body per hero
+  in the room (about one hero's share of 109), and it strikes first, since the heroes inside
+  just spent their action searching or failing a disarm. Alone: the Barbarian survives 76%,
+  the Rogue 44%, the Ranger 9%, the Cleric never; in pairs (54 Body) 80-99% win. Very likely
+  a death when a hero opens those chests alone.
+
 ### Combat roadmap
 1. Attack and defense rules (this section) - done 2026-10-03.
 2. Hero numbers: Body, hit dice, Accuracy, crit range, base damage, base avoidance, defense
@@ -510,16 +557,32 @@ crit range of 18-20, a shot is charged 20% of the time and a crit 15%.
 - Gold: 1,050-1,450 in all. Note G (two chests, 250 each; half goes missing if the Stranger
   warned the heroes first), K 350, P 400, and the Stranger's 200 (H, only if the heroes have
   already been through both trap rooms).
-- Gear: 7 pieces still to choose: L, O, T (weapon or armor), S (two chests, weapon or armor
-  each), W (weapon), X (armor). The Quivering Boots take one of these. One gear chest may
-  swap with a gold chest (or the reverse) to lean less or more on upgrades.
+- Gear (approved 2026-10-05; each find replaces a starting item unless noted):
+
+  | Note | Where | Item | Hero | Stats |
+  |---|---|---|---|---|
+  | W | Room 5, after the lone dread warrior (early) | Wardens' Longbow | Ranger | +6 damage (Hunting Bow +5) |
+  | S | Room 7, beside Room 5 (early) | Wardens' Dirk | Rogue | +3 damage (Dirk +2) |
+  | S | Room 7 | Wardens' Chain Shirt | Cleric | +2 avoidance (Padded Robes +1) |
+  | O | Room 11, the lone gargoyle | Wardens' Greatsword | Barbarian | +9 damage (Greataxe +7) |
+  | X | Room 17 | Quivering Boots | Rogue | +2 avoidance (Soft Boots +1), plus the trap effect |
+  | T | the corridor by the east gate | Wardens' Scale Hauberk | Barbarian | +2 mitigation, heavy (Hide Cuirass +1) |
+  | L | behind the hidden walls | Pilgrim's Prayer Beads | Cleric | +2 maximum mana, 18 in all (a trinket; left by Sister Wenna's pilgrims) |
+
+  Early finds lift the weakest spots (the Ranger's and Rogue's damage, the Cleric's defense);
+  the secret route earns the Cleric 2 more mana. Note L on the board says "armor or weapon";
+  the beads would change it. One gear chest may still swap with a gold chest (or the
+  reverse) to lean less or more on upgrades. Cardsharp's Gloves (+1 Accuracy, Rogue) are kept
+  for a later quest.
 - Consumables: V, 3 healing potions and 1 mana potion. The pool (N) heals fully, once.
 - Monsters: 5 orcs, 3 goblin archers, 3 mummies, 3 dread warriors (+1 from trap G), 2 orc
   archers, 2 goblin warlocks, 2 goblins, 2 gargoyles, 2 zombies, 1 abomination, and the
   Specter if the Stranger is never freed. Early rooms are easier; later ones mix easy and hard.
 - Two major traps: the teleport trap (M) that searching can't find, which sends the first hero
   across the halls, splitting the party; and the two-chest room (G), which locks its door and
-  spawns a dread warrior unless both chests are disarmed. A hero alone in there may die.
+  spawns a dread warrior unless both chests are disarmed. The spawned dread warrior has 27
+  Body per hero in the room and acts first; a hero alone in there will likely die (see "Gear
+  and upgrade tiers").
 - Targets: hard but not impossible. Avoiding those two traps, the party should clear it
   without too much trouble: about 75-80% survival. A party that never uses an ability and
   only attacks should fail. Goblins are mostly fodder; gargoyles and dread warriors are a
@@ -535,12 +598,17 @@ crit range of 18-20, a shot is charged 20% of the time and a crit 15%.
 - Balance effect: a wiped party comes back stronger (it keeps its finds), a built-in catch-up.
 
 ## Open questions
-1. **Faltering threshold**: between 1 Body and 1/4 of maximum Body (the simulator uses 1/4).
-2. **Tempest-God Axe**: N extra damage, set during balancing.
-3. **Gear tiers**: the Quest 1 finds (7 pieces), upgrade sizes, and how they shift these
-   numbers (step 2's upgrade simulation).
+1. **Note L on the board**: it still says "armor or weapon"; update it to the Pilgrim's Prayer
+   Beads.
+2. **Faltering threshold**: between 1 Body and 1/4 of maximum Body (the simulator uses 1/4).
+3. **Tempest-God Axe**: N extra damage, set during balancing.
+4. **Later gear**: a Smite item for the Cleric; Quest 2 and 3 tiers (about +30% monster Body per
+   tier of finds, to check per quest).
 
 ## Answered
+- **Quest 1 finds** (2026-10-05): approved (see "Campaign notes"); Pilgrim's Prayer Beads +2
+  mana (18 in all); trap G's dread warrior scales with the torches (27 Body per hero inside);
+  the dread warrior stays at 15 damage.
 - **Venom Vial** (2026-10-04): weapon damage plus poison (3 a turn for 3 turns); poison alone
   added nothing in fights that end in 3-4 rounds.
 - **Quest 1 calibration** (2026-10-04): heals stay at 12; non-fodder monster Body x1.45 (third

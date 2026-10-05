@@ -712,6 +712,8 @@ export interface QuestPlan {
   poolAfter?: string;
   /** Encounters from this index on come in a random order each run (the party can go anywhere). */
   shuffleFrom?: number;
+  /** Gear found after an encounter changes the hero's stats (Body and mana caps follow). */
+  finds?: { after: string; hero: string; apply: (spec: HeroSpec) => HeroSpec }[];
 }
 
 export interface QuestResult {
@@ -724,6 +726,8 @@ export interface QuestResult {
   bodyLeft: Record<string, number>;
   /** What each hero did with their turns (see HeroState.uses). */
   uses: Record<string, Record<string, number>>;
+  /** Each hero's stats at the end, after any finds. */
+  specs: Record<string, HeroSpec>;
 }
 
 /** Plays the party through every encounter in order; a wipe ends the quest. */
@@ -758,12 +762,23 @@ export function runQuest(party: HeroSpec[], monsters: Record<string, MonsterSpec
     fought,
     bodyLeft: Object.fromEntries(heroes.map((h) => [h.spec.name, h.body])),
     uses: Object.fromEntries(heroes.map((h) => [h.spec.name, h.uses])),
+    specs: Object.fromEntries(heroes.map((h) => [h.spec.name, h.spec])),
   });
   for (const f of fights) {
     const r = runFight(heroes, f.foes, t, stock, roller);
     fought.push({ name: f.name, rounds: r.rounds });
     if (!r.won) {
       return { ...result(false), wipedAt: f.name };
+    }
+    for (const find of plan.finds ?? []) {
+      const h = heroes.find((x) => x.spec.name === find.hero);
+      if (find.after === f.name && h?.alive) {
+        h.spec = find.apply(h.spec);
+        h.maxBody = h.spec.body;
+        h.body = Math.min(h.body, h.maxBody);
+        h.maxMana = h.spec.mana ?? 0;
+        h.mana = Math.min(h.mana, h.maxMana);
+      }
     }
     restBetweenFights(heroes, t, stock, plan.poolAfter === f.name);
   }

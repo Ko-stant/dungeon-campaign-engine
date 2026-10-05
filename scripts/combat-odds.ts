@@ -13,10 +13,11 @@ import {
   killOdds,
   monsterAttack,
   percentile,
+  type HeroAttacker,
   type HeroDefender,
   type MonsterAttacker,
 } from '../internal/web/src/combat/odds.ts';
-import { dice, HERO_ATTACKS as HEROES } from './combat-config.ts';
+import { dice, HERO_ATTACKS as HEROES, PARTY_AFTER_QUEST_1 } from './combat-config.ts';
 
 /** Sample monster defenses for the kill table: Avoidance, Body. */
 const TARGETS: [number, number][] = [
@@ -127,12 +128,16 @@ table(
 );
 
 const WEIGHT_BODY = 60;
-table(
-  `Effective damage per attack over a fight (${WEIGHT_BODY} Body), and as weights with the Barbarian at 6`,
-  ['Avoidance', ...Object.keys(HEROES)],
-  [8, 10, 12, 14].map((av) => {
-    const dpa = Object.values(HEROES).map((h) => WEIGHT_BODY / killOdds(h, av, WEIGHT_BODY, rules(WEIGHT_BODY)).expected);
-    const top = dpa[0] ?? 1;
-    return [String(av), ...dpa.map((x) => `${x.toFixed(1)} (${((6 * x) / top).toFixed(1)})`)];
-  }),
-);
+const weights = (title: string, heroes: Record<string, HeroAttacker>): void => {
+  table(
+    `${title}: effective damage per attack over a fight (${WEIGHT_BODY} Body), and as weights with the Barbarian at 6`,
+    ['Avoidance', ...Object.keys(heroes)],
+    [8, 10, 12, 14].map((av) => {
+      const dpa = Object.values(heroes).map((h) => WEIGHT_BODY / killOdds(h, av, WEIGHT_BODY, rules(WEIGHT_BODY)).expected);
+      const top = dpa[0] ?? 1;
+      return [String(av), ...dpa.map((x) => `${x.toFixed(1)} (${((6 * x) / top).toFixed(1)})`)];
+    }),
+  );
+};
+weights('Starting kit', HEROES);
+weights('With every Quest 1 find', Object.fromEntries(PARTY_AFTER_QUEST_1.map((h) => [h.name, h.attack])));

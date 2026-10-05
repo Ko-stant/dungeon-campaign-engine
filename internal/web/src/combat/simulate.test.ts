@@ -304,6 +304,18 @@ describe('runQuest', () => {
     expect(r.fought).toHaveLength(1);
   });
 
+  test('a find changes a hero\'s stats after its encounter; Body and mana caps follow', () => {
+    const plan = {
+      encounters: [{ name: 'A', monsters: ['goblin'] }, { name: 'B', monsters: ['goblin'] }],
+      finds: [{ after: 'A', hero: 'Barbarian', apply: (h: HeroSpec) => ({ ...h, body: 50, mana: 4, attack: { ...h.attack, damage: 12 } }) }],
+    };
+    const r = runQuest([spec()], monsters, plan, DEFAULT_TACTICS, supplies(), seededRoller(26));
+    expect(r.cleared).toBe(true);
+    expect(r.bodyLeft.Barbarian).toBe(40);
+    expect(r.specs.Barbarian?.attack.damage).toBe(12);
+    expect(r.specs.Barbarian?.body).toBe(50);
+  });
+
   test('encounters from shuffleFrom on come in a new order each run', () => {
     const plan = { encounters: ['A', 'B', 'C', 'D'].map((name) => ({ name, monsters: ['goblin'] })), shuffleFrom: 1 };
     const roller = seededRoller(11);
