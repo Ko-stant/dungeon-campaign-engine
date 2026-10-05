@@ -1,11 +1,14 @@
 /** Builds the renderer's view of a live session for the GM. */
-import { withShape, type BoardView, type PieceView } from '../board/model.ts';
+import { withShape, type BoardView, type DoorView, type PieceView } from '../board/model.ts';
 import { toBoardView, trapView } from '../editor/model.ts';
 import type { Catalog } from '../maps/types.ts';
 import type { SessionState } from './types.ts';
 
 export interface ViewOptions {
-  /** Darken squares the heroes have not discovered. */
+  /**
+   * The heroes' view: darken squares the heroes have not discovered and fade
+   * furniture, doors and blocked squares the players have not been shown.
+   */
   fog: boolean;
 }
 
@@ -35,14 +38,24 @@ export function trackerView(s: SessionState, catalog: Catalog, opts: ViewOptions
   const heroes: PieceView[] = s.heroes.filter((h) => h.placed).map((h) => ({ id: h.id, type: h.class, at: { x: h.x, y: h.y }, label: h.name }));
 
   const removed = new Set(s.removedBlocks ?? []);
+  const seenFurniture = new Set(s.seenFurniture ?? []);
+  const seenBlocks = new Set(s.seenBlocks ?? []);
   const view: BoardView = {
     ...base,
-    blockedSquares: [...base.blockedSquares.filter((b) => !removed.has(b.id)), ...(s.addedBlocks ?? [])],
+    furniture: base.furniture.map((f) => (opts.fog && !seenFurniture.has(f.id) ? { ...f, dim: true } : f)),
+    blockedSquares: [
+      ...base.blockedSquares.filter((b) => !removed.has(b.id)).map((b) => (opts.fog && !seenBlocks.has(b.id) ? { ...b, dim: true } : b)),
+      ...(s.addedBlocks ?? []),
+    ],
     doors: s.quest.doors.map((d) => {
       const live = liveDoors.get(d.id);
       const hiddenSecret = d.kind === 'secret' && !(live?.found ?? false);
       const kind = hiddenSecret ? 'secret' : d.kind === 'gate' || d.kind === 'exit' ? d.kind : 'normal';
-      return { id: d.id, edge: d.edge, kind, state: live?.state ?? d.state, locked: live?.locked ?? d.locked ?? false, span: d.span };
+      const door: DoorView = { id: d.id, edge: d.edge, kind, state: live?.state ?? d.state, locked: live?.locked ?? d.locked ?? false, span: d.span };
+      if (opts.fog && !(live?.seen ?? false)) {
+        door.dim = true;
+      }
+      return door;
     }),
     traps: s.quest.traps.flatMap((t) => {
       const live = liveTraps.get(t.id);

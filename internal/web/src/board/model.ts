@@ -29,6 +29,8 @@ export interface DoorView {
   locked?: boolean;
   /** 2 for a two-wide door (see doorEdges); missing means 1. */
   span?: number | undefined;
+  /** Drawn faded (GM: not shown to the players yet). */
+  dim?: boolean;
 }
 
 /** A rectangle of impassable squares (rubble / blocked-square tiles), anchored bottom-left. */
@@ -40,6 +42,8 @@ export interface BlockedSquareView {
   y: number;
   w: number;
   h: number;
+  /** Drawn faded (GM: not shown to the players yet). */
+  dim?: boolean;
 }
 
 export interface FurnitureView {
@@ -52,6 +56,8 @@ export interface FurnitureView {
   height: number;
   rotation: Rotation;
   image?: string;
+  /** Drawn faded (GM: not shown to the players yet). */
+  dim?: boolean;
 }
 
 export interface PieceView {

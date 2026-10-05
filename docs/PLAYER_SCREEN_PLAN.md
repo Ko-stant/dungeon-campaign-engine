@@ -1,6 +1,6 @@
 # Player screen (TV) plan
 
-**Last Updated**: 2026-10-05 01:20 EDT
+**Last Updated**: 2026-10-05 01:50 EDT
 
 ## Goal
 At the table the GM runs the tracker on the laptop and opens a second Chrome tab, the
@@ -57,7 +57,12 @@ only what the heroes know.
 2. **GM controls** (tracker): select furniture too; a "Visible to players" toggle on the
    selection panel for every piece kind; pieces hidden from the players are drawn dimmed
    on the GM board; the reveal toggle covers contents; a header switch for monster Body;
-   an "Open player screen" button.
+   an "Open player screen" button. **Done 2026-10-05** except the "Open player screen"
+   button, which moves to phase 4 (the page doesn't exist yet): furniture is selectable;
+   monsters, furniture, quest blocked squares and doors have a "Show to players" /
+   "Shown to players" button; with "Show what the heroes have seen" on, the GM board fades
+   whatever the players haven't been shown; the reveal option is "Show contents too"; the
+   header has "Players see monster Body".
 3. **Player view on the server:** `tracker.PlayerView(state)`, a pure Go filter, and
    `GET /api/sessions/{id}/player`, plus a player WebSocket stream fed by `record()`.
    Events get a player-safe summary at `Apply` time (empty means not shown), stored with

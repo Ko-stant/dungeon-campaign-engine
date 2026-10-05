@@ -1,5 +1,5 @@
 /** What a click on the tracker board means in each mode. */
-import { doorCovers, type Edge, type TileCoord } from '../board/geometry.ts';
+import { doorCovers, footprintTiles, type Edge, type TileCoord } from '../board/geometry.ts';
 import { covers } from '../board/model.ts';
 import { trapTiles } from '../editor/model.ts';
 import type { Catalog, TrapDoc } from '../maps/types.ts';
@@ -58,6 +58,15 @@ function trapAt(s: SessionState, t: TileCoord, catalog?: Catalog): string | null
   const hit = boardTraps(s).find(({ doc, at: pos }) =>
     catalog ? trapTiles(catalog, { kind: doc.kind, x: pos.x, y: pos.y, rotation: doc.rotation ?? 0 }).some((tt) => at(tt.x, tt.y, t)) : at(pos.x, pos.y, t));
   return hit?.doc.id ?? null;
+}
+
+/** The furniture on a square: with the catalog, anywhere on its rotated footprint. */
+function furnitureAt(s: SessionState, t: TileCoord, catalog?: Catalog): string | null {
+  const hit = s.quest.furniture.find((f) => {
+    const def = catalog?.furniture.find((d) => d.id === f.type);
+    return footprintTiles({ x: f.x, y: f.y }, def?.width ?? 1, def?.height ?? 1, f.rotation).some((ft) => at(ft.x, ft.y, t));
+  });
+  return hit?.id ?? null;
 }
 
 function isMovable(s: SessionState, id: string | null, catalog?: Catalog): id is string {
@@ -124,7 +133,7 @@ export function clickCommand(s: SessionState, mode: Mode, selectedId: string | n
       const removed = new Set(s.removedBlocks ?? []);
       const inside = (r: { x: number; y: number; w: number; h: number }): boolean => t.x >= r.x && t.x < r.x + r.w && t.y >= r.y && t.y < r.y + r.h;
       const block = (s.addedBlocks ?? []).find(inside) ?? s.quest.blockedSquares.find((r) => !removed.has(r.id) && inside(r));
-      return { command: null, select: trap ?? note?.id ?? block?.id ?? null };
+      return { command: null, select: trap ?? note?.id ?? block?.id ?? furnitureAt(s, t, catalog) };
     }
   }
 }

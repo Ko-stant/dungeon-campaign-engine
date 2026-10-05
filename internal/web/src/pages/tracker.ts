@@ -14,6 +14,7 @@ import { formatEvent } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
 import { clickCommand, paintPending, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
 import { triggerButton } from '../tracker/traps.ts';
+import { shownToPlayers } from '../tracker/visibility.ts';
 import type { Command, CommandResponse, Hero, LiveTrapState, Monster, ScriptSection, SessionEvent, SessionState } from '../tracker/types.ts';
 import { trackerView } from '../tracker/view.ts';
 import { lineTiles } from '../editor/tools.ts';
@@ -353,9 +354,17 @@ async function main(): Promise<void> {
         title: state.fight ? 'End the fight: effects with a countdown end; out of a fight cooldowns stop at 1-2 rounds left' : 'Start a fight: rounds finish cooldowns, regenerate mana and count effects down',
         onclick: () => { void send({ type: state.fight ? 'fight.end' : 'fight.start', payload: {} }); },
       }, state.fight ? 'End fight' : 'Start fight'),
-      h('label', { class: 'flex items-center gap-1 text-sm' },
+      h('label', { class: 'flex items-center gap-1 text-sm', title: 'Darken undiscovered squares and fade the furniture, doors, blocked squares and monsters the players have not been shown' },
         h('input', { type: 'checkbox', checked: fog, onchange: (e: Event) => { fog = (e.target as HTMLInputElement).checked; requestDraw(); } }),
         'Show what the heroes have seen'),
+      h('label', { class: 'flex items-center gap-1 text-sm', title: "Show monsters' Body on the player screen" },
+        h('input', {
+          type: 'checkbox',
+          checked: !(state.players?.hideMonsterBody ?? false),
+          disabled: completed || busy,
+          onchange: (e: Event) => { void send({ type: 'players.set', payload: { hideMonsterBody: !(e.target as HTMLInputElement).checked } }); },
+        }),
+        'Players see monster Body'),
       h('span', { class: `ml-auto text-xs ${message ? 'text-danger' : 'opacity-60'}`, role: 'status' }, message || (busy ? 'Saving…' : `Saved · ${lastSeq} events`)),
       h('span', { class: `h-2 w-2 rounded-full ${live ? 'bg-positive' : 'bg-danger'}`, title: live ? 'Live' : 'Reconnecting…' }),
       completed
@@ -405,7 +414,7 @@ async function main(): Promise<void> {
         h('input', { type: 'checkbox', checked, onchange: (e: Event) => { onChange((e.target as HTMLInputElement).checked); } }), label);
     const revealOptions: (Node | null)[] = revealing
       ? [
-          checkbox('Show monsters too', revealSeen, (v) => {
+          checkbox('Show contents too', revealSeen, (v) => {
             revealSeen = v;
             setMode(mode.kind === 'pickSquares' ? { kind: 'pickSquares', seen: v } : { kind: 'reveal', seen: v });
           }),
@@ -428,10 +437,10 @@ async function main(): Promise<void> {
       },
     }, ...catalog.monsters.map((m) => h('option', { value: m.id, selected: m.id === monsterType }, monsterOptionLabel(m))));
     const hint: Record<Mode['kind'], string> = {
-      select: 'Click a hero, monster or movable trap (boulder), then a square to move it. Click a door to open or close it.',
+      select: 'Click a hero, monster or movable trap (boulder), then a square to move it. Click a door to open or close it. Click furniture or blocked squares to show them to the players.',
       reveal: revealSeen
-        ? 'Click a room to reveal it and everything in it except traps (or a corridor square).'
-        : 'Click a room to reveal it (or a corridor square). Monsters stay hidden.',
+        ? 'Click a room to reveal it and show the players what is in it: monsters, furniture, blocked squares and its doors (never traps or unfound secret doors).'
+        : 'Click a room to reveal it (or a corridor square). What is in it stays hidden from the players.',
       pickSquares: 'Click or drag across squares to pick them, then reveal them all at once.',
       hide: 'Click a square to hide it again.',
       block: 'Click a square to block it (a falling block, where a boulder stopped). Select an added block to clear it.',
@@ -532,6 +541,7 @@ async function main(): Promise<void> {
     const note = state.quest.notes.find((n) => n.id === id);
     const block = state.quest.blockedSquares.find((r) => r.id === id);
     const added = (state.addedBlocks ?? []).find((r) => r.id === id);
+    const furniture = state.quest.furniture.find((f) => f.id === id);
     const rows: (Node | null)[] = [];
     if (monster) {
       rows.push(
@@ -544,8 +554,7 @@ async function main(): Promise<void> {
         oddsBlock(monster, state.heroes, sections.isOpen('odds'), (open) => { sections.setOpen('odds', open); }),
         effectsBlock(monster.id, monster.name, monster.effects, (c) => { void send(c); }),
         h('div', { class: 'flex flex-wrap gap-2' },
-          h('button', { type: 'button', class: btn, onclick: () => { monsterCmd(monster, { visibility: monster.visibility === 'hidden' ? 'seen' : 'hidden' }); } },
-            monster.visibility === 'hidden' ? 'Mark seen' : 'Mark hidden'),
+          playersButton(monster.id),
           h('button', { type: 'button', class: btn, onclick: () => { monsterCmd(monster, { alive: !monster.alive }); } }, monster.alive ? 'Kill' : 'Revive'),
           h('button', { type: 'button', class: `${btn} text-danger`, onclick: () => { selectedId = null; void send({ type: 'monster.remove', payload: { id: monster.id } }); } }, 'Remove')),
       );
@@ -562,7 +571,8 @@ async function main(): Promise<void> {
           door.kind === 'secret'
             ? h('button', { type: 'button', class: btn, onclick: () => { void send({ type: 'door.set', payload: { id: door.id, found: !(live?.found ?? false) } }); } },
               live?.found ? 'Mark not found' : 'Mark found')
-            : null),
+            : null,
+          playersButton(door.id)),
       );
     } else if (trap) {
       const movable = catalog.traps.find((t) => t.id === trap.kind)?.movable ?? false;
@@ -576,11 +586,18 @@ async function main(): Promise<void> {
       rows.push(
         h('p', { class: 'font-semibold' }, 'Blocked squares (added during play) ', h('span', { class: 'text-xs opacity-60' }, `${added.id} (${added.x}, ${added.y})`)),
         h('button', { type: 'button', class: btn, onclick: () => { selectedId = null; void send({ type: 'block.remove', payload: { id: added.id } }); } }, 'Clear'),
+        h('p', { class: 'text-xs opacity-60' }, 'Always on the player screen.'),
       );
     } else if (block) {
       rows.push(
         h('p', { class: 'font-semibold' }, block.hiddenDoor ? 'Blocked square (hides a secret door) ' : 'Blocked squares ', h('span', { class: 'text-xs opacity-60' }, `${block.id} (${block.x}, ${block.y})`)),
-        blockButton(block.id, block.hiddenDoor ?? false),
+        h('div', { class: 'flex flex-wrap gap-2' }, blockButton(block.id, block.hiddenDoor ?? false), playersButton(block.id)),
+      );
+    } else if (furniture) {
+      rows.push(
+        h('p', { class: 'font-semibold' }, `${catalog.furniture.find((f) => f.id === furniture.type)?.name ?? furniture.type.replaceAll('_', ' ')} `,
+          h('span', { class: 'text-xs opacity-60' }, `${furniture.id} (${furniture.x}, ${furniture.y})`)),
+        playersButton(furniture.id),
       );
     } else if (note) {
       rows.push(h('p', { class: 'font-semibold' }, `Note ${note.label}`), h('p', { class: 'whitespace-pre-wrap text-sm' }, note.text || '(no text)'), noteButton(note.id));
@@ -631,6 +648,20 @@ async function main(): Promise<void> {
           class: current === s ? btnActive : s === 'removed' ? `${btn} text-danger` : btn,
           onclick: () => { if (current !== s) { void send({ type: 'trap.set', payload: { id: trapId, state: s } }); } },
         }, s === 'removed' ? 'remove' : s))));
+  }
+
+  /** Shows or hides a piece on the player screen (null for things that can't be shown). */
+  function playersButton(id: string): HTMLElement | null {
+    const shown = shownToPlayers(state, id);
+    if (shown === null) {
+      return null;
+    }
+    return h('button', {
+      type: 'button',
+      class: shown ? `${btn} border-positive/60 text-positive` : btn,
+      title: shown ? 'On the player screen. Click to hide it from the players.' : 'Not on the player screen. Click to show it to the players.',
+      onclick: () => { void send({ type: 'seen.set', payload: { id, seen: !shown } }); },
+    }, shown ? 'Shown to players' : 'Show to players');
   }
 
   function blockButton(blockId: string, hiddenDoor: boolean): HTMLElement {

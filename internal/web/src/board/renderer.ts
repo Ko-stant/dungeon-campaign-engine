@@ -18,6 +18,9 @@ import {
 } from './geometry.ts';
 import { CORRIDOR, VOID, deriveWalls, tileAt, type BoardView, type PieceView, type TrapState } from './model.ts';
 
+/** Opacity of pieces drawn faded (hidden from the players, on the GM's board). */
+const DIM_ALPHA = 0.4;
+
 export interface BoardTheme {
   background: string;
   corridor: string;
@@ -301,12 +304,14 @@ export class BoardRenderer {
     const ctx = this.#ctx;
     for (const door of view.doors) {
       const r = doorSpanRect(m, door.edge, door.span);
+      const alpha = door.dim ? DIM_ALPHA : 1;
       const color =
         door.kind === 'secret' ? this.#theme.doorSecret
           : door.kind === 'gate' ? this.#theme.doorGate
             : door.kind === 'exit' ? this.#theme.doorExit
             : door.state === 'open' ? this.#theme.doorOpen : this.#theme.doorClosed;
       ctx.save();
+      ctx.globalAlpha = alpha;
       if (door.kind === 'gate' && door.state !== 'open') {
         // A closed gate: bars across the opening.
         ctx.fillStyle = this.#theme.background;
@@ -369,6 +374,8 @@ export class BoardRenderer {
     const ctx = this.#ctx;
     const img = this.#images.get('assets/tiles_cleaned/general/blocked_tile_1x1.png');
     for (const b of view.blockedSquares) {
+      ctx.save();
+      ctx.globalAlpha = b.dim ? DIM_ALPHA : 1;
       for (let y = b.y; y < b.y + b.h; y++) {
         for (let x = b.x; x < b.x + b.w; x++) {
           const r = tileRect(m, { x, y });
@@ -390,6 +397,7 @@ export class BoardRenderer {
         ctx.strokeRect(r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3);
         ctx.restore();
       }
+      ctx.restore();
     }
   }
 
@@ -397,12 +405,15 @@ export class BoardRenderer {
     const ctx = this.#ctx;
     for (const f of view.furniture) {
       const img = f.image ? this.#images.get(f.image) : undefined;
+      ctx.save();
+      ctx.globalAlpha = f.dim ? DIM_ALPHA : 1;
       if (img) {
         const box = furnitureDrawBox(m, f.at, f.width, f.height, f.rotation);
         ctx.save();
         ctx.translate(box.cx, box.cy);
         ctx.rotate(box.radians);
         ctx.drawImage(img, -box.width / 2, -box.height / 2, box.width, box.height);
+        ctx.restore();
         ctx.restore();
         continue;
       }
@@ -411,6 +422,7 @@ export class BoardRenderer {
       ctx.fillStyle = this.#theme.furniture;
       ctx.fillRect(r.x + 2, r.y + 2, r.w - 4, r.h - 4);
       this.#label(f.type.replaceAll('_', ' '), r.cx, r.cy, m.tile * 0.3);
+      ctx.restore();
     }
   }
 
@@ -568,7 +580,7 @@ export class BoardRenderer {
       const img = p.image ? this.#images.get(p.image) : undefined;
       ctx.save();
       if (p.dim) {
-        ctx.globalAlpha = 0.4;
+        ctx.globalAlpha = DIM_ALPHA;
       }
       if (img) {
         ctx.drawImage(img, r.x, r.y, r.w, r.h);

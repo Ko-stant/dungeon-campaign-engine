@@ -4,6 +4,7 @@ import { formatEvent } from './format.ts';
 import { clickCommand, doorAt, paintPending, pieceAt, revealSquaresCommand, type Mode } from './interaction.ts';
 import type { SessionState } from './types.ts';
 import { trackerView } from './view.ts';
+import { shownToPlayers } from './visibility.ts';
 
 const catalog: Catalog = {
   furniture: [{ id: 'table', name: 'Table', width: 2, height: 1, blocksMovement: true, blocksLineOfSight: false, image: 'assets/table.png' }],
@@ -78,6 +79,20 @@ function state(): SessionState {
 }
 
 describe('trackerView', () => {
+  test("the heroes' view (fog) dims furniture, doors and blocked squares the players have not been shown", () => {
+    const s = state();
+    s.seenFurniture = [];
+    s.seenBlocks = ['blocked-2'];
+    s.doors = [{ id: 'door-1', state: 'open', found: true, locked: false, seen: true }, { id: 'door-2', state: 'closed', found: false, locked: false }];
+    s.addedBlocks = [{ id: 'added-1', x: 2, y: 1, w: 1, h: 1 }];
+    const fog = trackerView(s, catalog, { fog: true });
+    expect(fog.furniture[0]?.dim).toBe(true);
+    expect(fog.doors.map((d) => d.dim ?? false)).toEqual([false, true]);
+    expect(fog.blockedSquares.map((b) => [b.id, b.dim ?? false])).toEqual([['blocked-1', true], ['blocked-2', false], ['added-1', false]]);
+    const gm = trackerView(s, catalog, { fog: false });
+    expect([gm.furniture[0]?.dim, ...gm.doors.map((d) => d.dim), ...gm.blockedSquares.map((b) => b.dim)].every((d) => d === undefined)).toBe(true);
+  });
+
   test('blocked squares added during play are drawn with the quest ones', () => {
     const s = state();
     s.addedBlocks = [{ id: 'added-1', x: 2, y: 1, w: 1, h: 1 }];
@@ -180,6 +195,10 @@ describe('trackerView', () => {
 });
 
 describe('interaction', () => {
+  test('select picks furniture anywhere on its footprint (with the catalog)', () => {
+    expect(clickCommand(state(), { kind: 'select' }, null, { tile: { x: 2, y: 1 }, edge: null }, catalog)).toEqual({ command: null, select: 'furniture-1' });
+  });
+
   test('block mode blocks the clicked square; select picks an added block', () => {
     expect(clickCommand(state(), { kind: 'block' }, null, { tile: { x: 2, y: 2 }, edge: null })).toEqual({
       command: { type: 'block.add', payload: { x: 2, y: 2 } }, select: null,
@@ -227,7 +246,7 @@ describe('interaction', () => {
   });
 
   test('select mode: clicking an empty square with nothing selected clears the selection', () => {
-    expect(clickCommand(state(), select, null, { tile: { x: 1, y: 1 }, edge: null })).toEqual({ command: null, select: null });
+    expect(clickCommand(state(), select, null, { tile: { x: 4, y: 1 }, edge: null })).toEqual({ command: null, select: null });
   });
 
   test('select mode: clicking a blocked square selects it', () => {
@@ -253,7 +272,8 @@ describe('interaction', () => {
     const s = withBoulder();
     s.traps = [{ id: 'trap-1', state: 'removed' }, { id: 'trap-3', state: 'triggered', at: { x: 4, y: 1 } }];
     expect(clickCommand(s, select, null, { tile: { x: 2, y: 2 }, edge: null }, catalog)).toEqual({ command: null, select: null });
-    expect(clickCommand(s, select, null, { tile: { x: 2, y: 1 }, edge: null }, catalog)).toEqual({ command: null, select: null });
+    // The boulder's old square: only the table under it is found there now.
+    expect(clickCommand(s, select, null, { tile: { x: 2, y: 1 }, edge: null }, catalog)).toEqual({ command: null, select: 'furniture-1' });
     expect(clickCommand(s, select, null, { tile: { x: 4, y: 1 }, edge: null }, catalog)).toEqual({ command: null, select: 'trap-3' });
   });
 
@@ -316,5 +336,23 @@ describe('formatEvent', () => {
     expect(formatEvent({ seq: 1, round: 1, kind: 'log.note', summary: 'x', payload: {}, createdAt: '' }).kind).toBe('note');
     expect(formatEvent({ seq: 1, round: 1, kind: 'session.start', summary: 'x', payload: {}, createdAt: '' }).kind).toBe('session');
     expect(formatEvent({ seq: 1, round: 1, kind: 'weird', summary: 'x', payload: {}, createdAt: 'not a date' }).time).toBe('');
+  });
+});
+
+describe('shownToPlayers', () => {
+  test('whether each kind of piece is on the player screen; null for things that cannot be shown', () => {
+    const s = state();
+    s.seenFurniture = ['furniture-1'];
+    s.seenBlocks = [];
+    s.doors = [{ id: 'door-1', state: 'open', found: true, locked: false, seen: true }, { id: 'door-2', state: 'closed', found: false, locked: false }];
+    s.addedBlocks = [{ id: 'added-1', x: 2, y: 1, w: 1, h: 1 }];
+    expect(shownToPlayers(s, 'furniture-1')).toBe(true);
+    expect(shownToPlayers(s, 'blocked-2')).toBe(false);
+    expect(shownToPlayers(s, 'door-1')).toBe(true);
+    expect(shownToPlayers(s, 'door-2')).toBe(false);
+    expect(shownToPlayers(s, 'monster-1')).toBe(false);
+    expect(shownToPlayers(s, 'added-1')).toBe(true);
+    expect(shownToPlayers(s, 'trap-1')).toBeNull();
+    expect(shownToPlayers(s, 'note-A')).toBeNull();
   });
 });
