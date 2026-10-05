@@ -127,6 +127,7 @@ func TestOwnersAndViewers(t *testing.T) {
 	}
 	for name, count := range map[string]func(context.Context) int{
 		"campaigns": func(ctx context.Context) int { l, _ := st.ListCampaigns(ctx); return len(l) },
+		"quests":    func(ctx context.Context) int { l, _ := st.ListQuests(ctx, ""); return len(l) },
 		"monsters":  func(ctx context.Context) int { l, _ := st.ListCustomMonsters(ctx); return len(l) },
 		"classes":   func(ctx context.Context) int { l, _ := st.ListCustomHeroClasses(ctx); return len(l) },
 		"chapters": func(ctx context.Context) int {

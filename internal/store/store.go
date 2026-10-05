@@ -260,16 +260,19 @@ func (s *Store) GetQuest(ctx context.Context, id string) (Quest, error) {
 
 // ListQuests returns quests, optionally only those on one board ("" for all).
 func (s *Store) ListQuests(ctx context.Context, boardID string) ([]QuestSummary, error) {
-	query := `SELECT id::text, board_id::text, name, updated_at FROM quest`
-	var args []any
+	// Like boards, quests (every board's, when boardID is "") are kept to the
+	// viewer's own.
+	query := `SELECT q.id::text, q.board_id::text, q.name, q.updated_at FROM quest q JOIN board b ON b.id = q.board_id
+		WHERE ($1::uuid IS NULL OR b.owner_id = $1)`
+	args := []any{filterParam(ctx)}
 	if boardID != "" {
 		if !validID(boardID) {
 			return []QuestSummary{}, nil
 		}
-		query += ` WHERE board_id = $1`
+		query += ` AND q.board_id = $2`
 		args = append(args, boardID)
 	}
-	rows, err := s.pool.Query(ctx, query+` ORDER BY updated_at DESC, id`, args...)
+	rows, err := s.pool.Query(ctx, query+` ORDER BY q.updated_at DESC, q.id`, args...)
 	if err != nil {
 		return nil, err
 	}
