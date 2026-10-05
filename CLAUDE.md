@@ -59,7 +59,7 @@ Tailwind CSS v4, canvas rendering.
     monster type (Body and `content.MonsterCombat`), edited on the campaign page
     (`/campaigns/{id}/monsters...`). Session handlers use `Server.campaignCatalog(ctx,
     campaignID)` (catalogFor with the stat lines laid over), and session monsters freeze them
-    as `combat`.
+    as `combat`. A stat line's `abilities` text is shown to the players on the TV card.
   - Tracker: `/campaigns`, `/campaigns/{id}`, `/play/{id}`, `/api/campaigns...`, `/api/sessions/{id}/(commands|travel|events|complete|reopen|stream)`
   - Inventory: the party shares one purse (`campaign.gold`, the session's `State.Gold`,
     `gold.set`); campaign heroes carry `items` (name, quantity, notes, kind, stats, equipped)

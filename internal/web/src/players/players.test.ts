@@ -27,7 +27,7 @@ function view(): PlayerState {
     traps: [{ id: 'trap-1', kind: 'pit', x: 3, y: 2, state: 'triggered' }],
     monsters: [{
       id: 'monster-1', type: 'orc', name: 'Orc', x: 4, y: 1, width: 1, height: 1, body: 4, maxBody: 22, wounded: true,
-      combat: { avoidance: 8, hitDice: '2d8', damage: 9 }, effects: [{ id: 'effect-1', name: 'Poisoned', rounds: 2 }],
+      combat: { avoidance: 8, hitDice: '2d8', damage: 9, abilities: 'Calls for help when Wounded.' }, effects: [{ id: 'effect-1', name: 'Poisoned', rounds: 2 }],
     }],
     heroes: [{
       id: 'hero-1', name: 'Papi Ponzi', class: 'custom-rogue', x: 1, y: 2, placed: true, body: 20, maxBody: 28, mind: 3, maxMind: 3, status: 'active',
@@ -71,6 +71,7 @@ describe('cardFor', () => {
       title: 'Orc',
       tags: ['Wounded'],
       lines: ['Body 4 / 22', 'Avoid 8 · Hit 2d8 · Damage 9', 'Move 8'],
+      abilities: 'Calls for help when Wounded.',
       effects: ['Poisoned (2 rounds)'],
     });
   });

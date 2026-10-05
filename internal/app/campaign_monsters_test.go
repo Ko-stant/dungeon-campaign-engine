@@ -24,22 +24,25 @@ func TestCampaignMonsterStatsForms(t *testing.T) {
 	c(http.MethodPut, "/api/campaigns/"+camp.ID, map[string]any{"name": "Three Plagues", "heroes": []map[string]any{{"name": "Faelyn", "class": "elf"}}})
 	page := srv.URL + "/campaigns/" + camp.ID
 
-	resp, _ := postForm(t, client, page+"/monsters", orcStatsForm())
+	withAbilities := orcStatsForm()
+	withAbilities.Set("abilities", "  Shoots from the shadows.  ")
+	resp, _ := postForm(t, client, page+"/monsters", withAbilities)
 	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/campaigns/"+camp.ID+"#monster-stats" {
 		t.Fatalf("save stats: %d %s", resp.StatusCode, resp.Header.Get("Location"))
 	}
-	if code, body := get(t, client, page); code != http.StatusOK || !strings.Contains(body, "Avoid 8 · Hit 2d8 · Damage 9 · ranged") {
+	if code, body := get(t, client, page); code != http.StatusOK || !strings.Contains(body, "Avoid 8 · Hit 2d8 · Damage 9 · ranged") || !strings.Contains(body, "Shoots from the shadows.") {
 		t.Fatalf("campaign page: %d", code)
 	}
 
 	for name, change := range map[string][2]string{
-		"unknown type":  {"type", "dragon"},
-		"no body":       {"body", "0"},
-		"bad dice":      {"hit_dice", "1d7"},
-		"too much harm": {"damage", "100"},
-		"long line":     {"line", "4"},
-		"many targets":  {"splash_targets", "9"},
-		"bad avoidance": {"avoidance", "-2"},
+		"unknown type":   {"type", "dragon"},
+		"no body":        {"body", "0"},
+		"bad dice":       {"hit_dice", "1d7"},
+		"too much harm":  {"damage", "100"},
+		"long line":      {"line", "4"},
+		"many targets":   {"splash_targets", "9"},
+		"bad avoidance":  {"avoidance", "-2"},
+		"long abilities": {"abilities", strings.Repeat("x", 501)},
 	} {
 		form := orcStatsForm()
 		form.Set(change[0], change[1])

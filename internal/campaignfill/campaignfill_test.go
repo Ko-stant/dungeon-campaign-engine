@@ -188,6 +188,14 @@ func TestMergeMonsterStats(t *testing.T) {
 	if _, changes = MergeMonsterStats(out, want); len(changes) != 0 {
 		t.Fatalf("again: %v", changes)
 	}
+	// The GM's own abilities text survives a fill that has none.
+	gm := out["goblin"]
+	gm.Abilities = "Steals a potion on a hit."
+	out["goblin"] = gm
+	kept, changes := MergeMonsterStats(out, want)
+	if kept["goblin"].Abilities != "Steals a potion on a hit." || len(changes) != 0 {
+		t.Fatalf("abilities kept: %+v %v", kept["goblin"], changes)
+	}
 }
 
 func TestGiveKits(t *testing.T) {

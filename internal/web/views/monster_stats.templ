@@ -70,6 +70,10 @@ templ monsterStatsFields(st content.MonsterStats) {
 		<label class="flex items-center gap-2"><input type="checkbox" name="reach" checked?={ st.Reach }/> Reach (past a held doorway)</label>
 		<label class="flex items-center gap-2"><input type="checkbox" name="undead" checked?={ st.Undead }/> Undead</label>
 	</div>
+	<label class="block text-xs">
+		<span class="mb-1 block opacity-70">Abilities (shown to the players on the monster's card)</span>
+		<textarea name="abilities" maxlength="500" rows="2" placeholder="e.g. Calls for help when Wounded." class={ smallInputClass }>{ st.Abilities }</textarea>
+	</label>
 }
 
 // campaignMonsterStats is the campaign's own monster stat lines.
@@ -89,6 +93,9 @@ templ campaignMonsterStats(d CampaignPageData) {
 							<div>
 								<span class="font-semibold">{ row.Name }</span>
 								<span class="ml-2 text-sm">Body { strconv.Itoa(row.Stats.Body) } · { MonsterStatsLine(row.Stats.MonsterCombat) }</span>
+								if row.Stats.Abilities != "" {
+									<p class="text-xs opacity-70">{ row.Stats.Abilities }</p>
+								}
 							</div>
 							<form method="post" action={ monsterStatsURL(d, "/"+row.Type+"/delete") }>
 								<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove the stat line for " + row.Name }>Remove</button>

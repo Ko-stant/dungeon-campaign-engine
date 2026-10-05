@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-04 23:45 EDT
+**Last Updated**: 2026-10-05 03:40 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -34,9 +34,10 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   is in `docs/campaigns/three-plagues/MAPS.md`.
 
 **Next**
-- **Player screen (TV)**, started 2026-10-04: a live, read-only player view in a second
-  tab on the game-room TV. Decisions and phases 1-5 are in `docs/PLAYER_SCREEN_PLAN.md`
-  (resume from its phase list).
+- **Player screen (TV)**, built 2026-10-04/05 (phases 1-5 committed and pushed): a live,
+  read-only player view in a second tab on the game-room TV ("Open player screen" in the
+  tracker header). Decisions, what each phase did and what's next (player docs and polls,
+  which need the GM) are in `docs/PLAYER_SCREEN_PLAN.md`.
 0. Combat: the simulator is built (`bun scripts/combat-sim.ts`, numbers in
    `scripts/combat-config.ts`, "Simulator" in the rules doc) and calibrated to the GM's
    targets (75-80% clear Quest 1 with nobody dead; attack-only fails). Step 4 (abilities) is

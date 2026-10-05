@@ -110,6 +110,8 @@ export interface MonsterCombat {
   splashDamage?: number;
   splashTargets?: number;
   undead?: boolean;
+  /** What the monster can do, in the GM's words (shown on the player screen). */
+  abilities?: string;
 }
 
 export interface LiveDoor {

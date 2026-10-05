@@ -1,6 +1,6 @@
 # Player screen (TV) plan
 
-**Last Updated**: 2026-10-05 03:10 EDT
+**Last Updated**: 2026-10-05 03:40 EDT
 
 ## Goal
 At the table the GM runs the tracker on the laptop and opens a second Chrome tab, the
@@ -94,7 +94,20 @@ only what the heroes know.
    player API also sends a trimmed catalog (names, sizes, colors, artwork; never custom
    monsters' notes).
 5. **Polish:** monster "abilities" text on campaign monster stat lines for the cards, TV
-   sizing (large type), and then the player docs and polls.
+   sizing (large type), and then the player docs and polls. **Done 2026-10-05** except the
+   player docs and polls, which need the GM: each campaign monster stat line has an
+   "Abilities (shown to the players on the monster's card)" text (`MonsterCombat.Abilities`,
+   500 characters; the tracker's monster panel shows it too, and `make fill-campaign`
+   keeps it when `combat.json` has none). The player screen has A− / A+ text size buttons
+   (100-200%, remembered by the TV's browser).
+
+## Next (needs the GM)
+- Player docs and polls: the GM wants a players' guide to the house rules and polls for
+  the table (first: should the player screen show monsters' exact Body? The switch is in
+  the tracker header, "Players see monster Body"). Ask what the docs should cover and
+  which questions to poll before writing them.
+- Fill in abilities text for the campaign's monster stat lines (campaign page) if wanted.
+- Try the player screen on the real TV: text size, the "seen" color and the board size.
 
 ## Running log (overnight run, 2026-10-05)
 The GM asked (2026-10-05, before bed) to commit phase 3, then work through the remaining
@@ -103,3 +116,5 @@ to origin once all phases are done. Resume from the last line here after a compa
 - 81ac447 phase 3 committed (Docs ad736f3). Next: phase 4, the player screen page.
 - Phase 4 built and checked in the browser at 1920x1080 on a copy of the dev database
   (live updates, cards, feed, Body switch, Wounded). Committed ea027a1. Next: phase 5.
+- Phase 5 built and checked in the browser (abilities text on a card, A+ text size).
+  Committing next, then pushing to origin.

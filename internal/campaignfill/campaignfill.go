@@ -324,8 +324,8 @@ func orNone(s string) string {
 }
 
 // MergeMonsterStats returns the campaign's monster stat lines with want's
-// lines set (others kept) and names the lines added or updated. It never
-// modifies cur.
+// lines set (others kept; a line's abilities text stays when want has none)
+// and names the lines added or updated. It never modifies cur.
 func MergeMonsterStats(cur, want map[string]content.MonsterStats) (map[string]content.MonsterStats, []string) {
 	out := maps.Clone(cur)
 	if out == nil {
@@ -334,13 +334,18 @@ func MergeMonsterStats(cur, want map[string]content.MonsterStats) (map[string]co
 	var changes []string
 	for _, typ := range slices.Sorted(maps.Keys(want)) {
 		before, ok := out[typ]
+		next := want[typ]
+		if next.Abilities == "" {
+			// The GM's own abilities text stays when the numbers have none.
+			next.Abilities = before.Abilities
+		}
 		switch {
 		case !ok:
 			changes = append(changes, typ+" added")
-		case before != want[typ]:
+		case before != next:
 			changes = append(changes, typ+" updated")
 		}
-		out[typ] = want[typ]
+		out[typ] = next
 	}
 	return out, changes
 }

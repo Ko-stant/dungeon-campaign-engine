@@ -76,6 +76,9 @@ type MonsterCombat struct {
 	SplashDamage  int  `json:"splashDamage,omitempty"`
 	SplashTargets int  `json:"splashTargets,omitempty"`
 	Undead        bool `json:"undead,omitempty"`
+	// Abilities is what the monster can do, in the GM's words; the player
+	// screen shows it on the monster's card.
+	Abilities string `json:"abilities,omitempty"`
 }
 
 // MonsterStats is a campaign's stat line for one monster type: its Body and

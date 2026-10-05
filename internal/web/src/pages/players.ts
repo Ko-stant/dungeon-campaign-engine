@@ -9,6 +9,7 @@ import { pixelToTile } from '../board/geometry.ts';
 import { BoardRenderer } from '../board/renderer.ts';
 import { cardFor, pickAt, type Pick } from '../players/cards.ts';
 import { addEvent } from '../players/feed.ts';
+import { nextScale, parseScale } from '../players/scale.ts';
 import type { PlayerCatalog, PlayerEvent, PlayerHero, PlayerState, PlayerUpdate } from '../players/types.ts';
 import { playerBoardView } from '../players/view.ts';
 import { createTrackerApi } from '../tracker/api.ts';
@@ -16,6 +17,12 @@ import { effectLabel } from '../tracker/effects.ts';
 import { h, replaceChildren } from '../ui/dom.ts';
 
 const FEED_LENGTH = 30;
+const SCALE_KEY = 'dce.playerScale';
+
+/** Applies a text size to the whole page (Tailwind sizes are in rem). */
+function applyScale(scale: number): void {
+  document.documentElement.style.fontSize = `${String(16 * scale)}px`;
+}
 const btn = 'rounded-md border border-border/60 px-3 py-1 text-base hover:border-amber-500';
 const btnActive = 'rounded-md border border-amber-500 bg-amber-500/15 px-3 py-1 text-base';
 
@@ -40,6 +47,24 @@ async function main(): Promise<void> {
   let feedOpen = false;
   let unread = 0;
   let live = false;
+  // Text size, remembered by this browser (the TV's), so it reads from across the room.
+  let scale = 1;
+  try {
+    scale = parseScale(localStorage.getItem(SCALE_KEY));
+  } catch {
+    // storage unavailable: normal size
+  }
+  applyScale(scale);
+  const setScale = (dir: 1 | -1): void => {
+    scale = nextScale(scale, dir);
+    applyScale(scale);
+    try {
+      localStorage.setItem(SCALE_KEY, String(scale));
+    } catch {
+      // storage unavailable: the size lasts until the page reloads
+    }
+    refresh();
+  };
 
   // --- Layout ---
   const canvas = h('canvas', { class: 'block h-full w-full cursor-pointer' });
@@ -96,6 +121,8 @@ async function main(): Promise<void> {
           refresh();
         },
       }, unread > 0 && !feedOpen ? `Events (${String(unread)} new)` : 'Events'),
+      h('button', { type: 'button', class: btn, title: 'Smaller text', 'aria-label': 'Smaller text', onclick: () => { setScale(-1); } }, 'A−'),
+      h('button', { type: 'button', class: btn, title: 'Larger text', 'aria-label': 'Larger text', onclick: () => { setScale(1); } }, 'A+'),
       h('button', {
         type: 'button',
         class: btn,
@@ -155,6 +182,7 @@ async function main(): Promise<void> {
         h('button', { type: 'button', class: 'text-2xl leading-none opacity-60 hover:opacity-100', 'aria-label': 'Close', onclick: () => { pick = null; refresh(); } }, '×')),
       card.tags.length ? h('div', { class: 'flex flex-wrap gap-2' }, ...card.tags.map((t) => h('span', { class: 'rounded-full border border-danger/60 bg-danger/15 px-3 py-0.5 text-base font-semibold text-danger' }, t))) : null,
       ...card.lines.map((l) => h('p', { class: 'text-lg' }, l)),
+      card.abilities ? h('p', { class: 'whitespace-pre-wrap border-t border-border/40 pt-2 text-lg italic' }, card.abilities) : null,
       card.effects.length ? h('div', { class: 'flex flex-wrap gap-2 pt-1' }, ...card.effects.map((e) => h('span', { class: 'rounded-full border border-amber-500/60 bg-amber-500/10 px-3 py-0.5 text-base' }, e))) : null));
   }
 

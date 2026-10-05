@@ -46,6 +46,9 @@ func (s *Server) campaignCatalog(ctx context.Context, campaignID string) (*conte
 }
 
 // parseMonsterStatsForm reads one monster stat line; the type must be in cat.
+// maxMonsterAbilities bounds a stat line's abilities text.
+const maxMonsterAbilities = 500
+
 func parseMonsterStatsForm(r *http.Request, cat *content.Catalog) (string, content.MonsterStats, error) {
 	pf := r.PostForm
 	var st content.MonsterStats
@@ -77,6 +80,10 @@ func parseMonsterStatsForm(r *http.Request, cat *content.Catalog) (string, conte
 	}
 	st.HitDice = hit
 	st.Ranged, st.Reach, st.Undead = pf.Get("ranged") != "", pf.Get("reach") != "", pf.Get("undead") != ""
+	st.Abilities = strings.TrimSpace(pf.Get("abilities"))
+	if len(st.Abilities) > maxMonsterAbilities {
+		return "", st, fmt.Errorf("abilities must be at most %d characters", maxMonsterAbilities)
+	}
 	return typ, st, nil
 }
 

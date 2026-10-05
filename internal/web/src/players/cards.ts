@@ -18,6 +18,8 @@ export interface Card {
   /** Short highlighted states, e.g. "Wounded", "Triggered". */
   tags: string[];
   lines: string[];
+  /** A monster's abilities text from the campaign's stat line. */
+  abilities?: string;
   effects: string[];
 }
 
@@ -72,7 +74,11 @@ export function cardFor(pv: PlayerState, catalog: PlayerCatalog, pick: Pick): Ca
       if (move > 0) {
         lines.push(`Move ${String(move)}`);
       }
-      return { title: m.name, tags: m.wounded ? ['Wounded'] : [], lines, effects: (m.effects ?? []).map(effectLabel) };
+      const card: Card = { title: m.name, tags: m.wounded ? ['Wounded'] : [], lines, effects: (m.effects ?? []).map(effectLabel) };
+      if (m.combat?.abilities) {
+        card.abilities = m.combat.abilities;
+      }
+      return card;
     }
     case 'hero': {
       const h = pv.heroes.find((x) => x.id === pick.id);

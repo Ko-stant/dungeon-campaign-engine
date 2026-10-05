@@ -553,6 +553,7 @@ async function main(): Promise<void> {
       rows.push(
         h('p', { class: 'font-semibold' }, `${monster.name} `, h('span', { class: 'text-xs opacity-60' }, monster.id)),
         monster.combat ? h('p', { class: 'text-xs opacity-80', title: 'Combat stats from the campaign' }, monsterLine(monster.combat)) : null,
+        monster.combat?.abilities ? h('p', { class: 'whitespace-pre-wrap text-xs italic opacity-70', title: "Abilities from the campaign's stat line (on the player screen card)" }, monster.combat.abilities) : null,
         monster.combat && faltering(monster)
           ? h('p', { class: 'text-xs font-semibold text-amber-400' }, `Faltering: Avoidance ${monster.combat.avoidance - FALTER_PENALTY} (at ${falterAt(monster.maxBody)} Body or less)`)
           : null,
