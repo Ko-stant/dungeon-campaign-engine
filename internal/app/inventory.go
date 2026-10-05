@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"net/http"
 	"slices"
 	"strconv"
@@ -9,14 +10,57 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/tracker"
 )
 
-// Campaign inventory forms: a hero's gold and items between quests. During a
-// quest the tracker's item and gold commands change the session's copy,
-// which is saved back to the campaign when the quest is completed.
+// Campaign inventory forms: the party's gold and each hero's items between
+// quests. During a quest the tracker's item and gold commands change the
+// session's copy, which is saved back to the campaign when the quest is
+// completed.
 func (s *Server) registerInventoryPages(mux *http.ServeMux) {
-	mux.HandleFunc("POST /campaigns/{id}/heroes/{heroId}/gold", s.heroGoldForm)
+	mux.HandleFunc("POST /campaigns/{id}/gold", s.partyGoldForm)
 	mux.HandleFunc("POST /campaigns/{id}/heroes/{heroId}/items", s.addItemForm)
 	mux.HandleFunc("POST /campaigns/{id}/heroes/{heroId}/items/{itemId}", s.updateItemForm)
+	mux.HandleFunc("POST /campaigns/{id}/heroes/{heroId}/items/{itemId}/equip", s.equipItemForm)
 	mux.HandleFunc("POST /campaigns/{id}/heroes/{heroId}/items/{itemId}/delete", s.deleteItemForm)
+}
+
+func (s *Server) partyGoldForm(w http.ResponseWriter, r *http.Request) {
+	if !parseForm(w, r) {
+		return
+	}
+	id := r.PathValue("id")
+	c, err := s.store.GetCampaign(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	gold, err := tracker.GoldChange(c.Gold, r.PostFormValue("gold"))
+	if err != nil {
+		s.renderCampaignPage(w, r, http.StatusBadRequest, id, err.Error())
+		return
+	}
+	if err := s.store.SetCampaignGold(r.Context(), id, gold); err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/campaigns/"+id+"#inventory", http.StatusSeeOther)
+}
+
+// formItemStats reads an item's kind and stats; blank stats are 0.
+func formItemStats(r *http.Request) (string, tracker.ItemStats, error) {
+	var st tracker.ItemStats
+	for _, f := range []struct {
+		name, label string
+		into        *int
+	}{
+		{"damage", "Damage", &st.Damage}, {"accuracy", "Accuracy", &st.Accuracy}, {"avoidance", "Avoidance", &st.Avoidance},
+		{"mitigation", "Mitigation", &st.Mitigation}, {"mana", "Mana", &st.Mana}, {"mana_regen", "Mana regen", &st.ManaRegen},
+	} {
+		n, err := formInt(f.label, r.PostFormValue(f.name), -tracker.MaxItemStat, tracker.MaxItemStat, 0)
+		if err != nil {
+			return "", st, err
+		}
+		*f.into = n
+	}
+	return r.PostFormValue("kind"), st, nil
 }
 
 // changeHero applies change to one campaign hero and saves the campaign.
@@ -57,24 +101,20 @@ func formQuantity(value string) (int, error) {
 	return formInt("quantity", value, 0, tracker.MaxItemQuantity, 0)
 }
 
-func (s *Server) heroGoldForm(w http.ResponseWriter, r *http.Request) {
-	s.changeHero(w, r, func(h *tracker.CampaignHero) (bool, error) {
-		gold, err := tracker.GoldChange(h.Gold, r.PostFormValue("gold"))
-		if err != nil {
-			return false, err
-		}
-		h.Gold = gold
-		return false, nil
-	})
-}
-
 func (s *Server) addItemForm(w http.ResponseWriter, r *http.Request) {
 	s.changeHero(w, r, func(h *tracker.CampaignHero) (bool, error) {
 		qty, err := formQuantity(r.PostFormValue("quantity"))
 		if err != nil {
 			return false, err
 		}
-		items, _, err := tracker.AddItem(h.Items, r.PostFormValue("name"), qty, r.PostFormValue("notes"))
+		kind, stats, err := formItemStats(r)
+		if err != nil {
+			return false, err
+		}
+		items, _, err := tracker.AddItem(h.Items, tracker.Item{
+			Name: r.PostFormValue("name"), Quantity: qty, Notes: r.PostFormValue("notes"),
+			Kind: kind, Equipped: r.PostFormValue("equipped") != "", ItemStats: stats,
+		})
 		if err != nil {
 			return false, err
 		}
@@ -93,12 +133,31 @@ func (s *Server) updateItemForm(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			qty = -1 // UpdateItem explains the allowed range
 		}
+		kind, stats, err := formItemStats(r)
+		if err != nil {
+			return false, err
+		}
 		name, notes := r.PostFormValue("name"), r.PostFormValue("notes")
-		items, _, err := tracker.UpdateItem(h.Items, itemID, &name, &qty, &notes)
+		items, _, err := tracker.UpdateItem(h.Items, itemID, tracker.ItemPatch{Name: &name, Quantity: &qty, Notes: &notes, Kind: &kind, Stats: &stats})
 		if err != nil {
 			return false, err
 		}
 		h.Items = items
+		return false, nil
+	})
+}
+
+func (s *Server) equipItemForm(w http.ResponseWriter, r *http.Request) {
+	s.changeHero(w, r, func(h *tracker.CampaignHero) (bool, error) {
+		i := slices.IndexFunc(h.Items, func(it tracker.Item) bool { return it.ID == r.PathValue("itemId") })
+		if i < 0 {
+			return true, nil
+		}
+		on, err := strconv.ParseBool(r.PostFormValue("equipped"))
+		if err != nil {
+			return false, errors.New("equipped must be true or false")
+		}
+		h.Items[i].Equipped = on
 		return false, nil
 	})
 }

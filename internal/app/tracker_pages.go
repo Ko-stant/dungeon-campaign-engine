@@ -99,15 +99,23 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 	if err != nil {
 		return views.CampaignPageData{}, err
 	}
-	d := views.CampaignPageData{ID: c.ID, Name: c.Name}
+	d := views.CampaignPageData{ID: c.ID, Name: c.Name, Gold: c.Gold}
 	for _, h := range heroes {
-		class := h.Class
+		row := views.HeroRow{ID: h.ID, Name: h.Name, Player: h.Player, Class: h.Class, Equipment: h.Equipment, Notes: h.Notes}
 		if def, ok := cat.Hero(h.Class); ok {
-			class = def.Name
+			row.Class = def.Name
+			// The totals the hero would start a quest with.
+			hero := tracker.Hero{Combat: tracker.ClassCombat(def), Items: h.Items}
+			if tot := hero.CombatTotals(); tot != nil {
+				row.Combat = tracker.CombatLine(*tot)
+			}
 		}
-		row := views.HeroRow{ID: h.ID, Name: h.Name, Player: h.Player, Class: class, Gold: h.Gold, Equipment: h.Equipment, Notes: h.Notes}
 		for _, it := range h.Items {
-			row.Items = append(row.Items, views.ItemRow{ID: it.ID, Name: it.Name, Quantity: it.Quantity, Notes: it.Notes})
+			row.Items = append(row.Items, views.ItemRow{
+				ID: it.ID, Name: it.Name, Quantity: it.Quantity, Notes: it.Notes, Kind: it.Kind, Equipped: it.Equipped,
+				Damage: it.Damage, Accuracy: it.Accuracy, Avoidance: it.Avoidance, Mitigation: it.Mitigation, Mana: it.Mana, ManaRegen: it.ManaRegen,
+				StatsLine: it.Summary(),
+			})
 		}
 		d.Heroes = append(d.Heroes, row)
 	}

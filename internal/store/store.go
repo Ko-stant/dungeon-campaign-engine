@@ -308,18 +308,20 @@ func (s *Store) DeleteQuest(ctx context.Context, id string) error {
 
 // Campaign groups heroes and the sessions played with them.
 type Campaign struct {
-	ID        string
-	Name      string
-	Heroes    json.RawMessage
+	ID     string
+	Name   string
+	Heroes json.RawMessage
+	// Gold is the party's purse between quests.
+	Gold      int
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
-const campaignColumns = `id::text, name, heroes, created_at, updated_at`
+const campaignColumns = `id::text, name, heroes, gold, created_at, updated_at`
 
 func scanCampaign(row pgx.Row) (Campaign, error) {
 	var c Campaign
-	err := row.Scan(&c.ID, &c.Name, &c.Heroes, &c.CreatedAt, &c.UpdatedAt)
+	err := row.Scan(&c.ID, &c.Name, &c.Heroes, &c.Gold, &c.CreatedAt, &c.UpdatedAt)
 	return c, notFoundIfNoRows(err)
 }
 
@@ -364,6 +366,21 @@ func (s *Store) UpdateCampaign(ctx context.Context, id, name string, heroes json
 	return scanCampaign(s.pool.QueryRow(ctx,
 		`UPDATE campaign SET name = $2, heroes = $3, updated_at = now() WHERE id = $1 RETURNING `+campaignColumns,
 		id, name, orEmptyArray(heroes)))
+}
+
+// SetCampaignGold replaces the party's purse.
+func (s *Store) SetCampaignGold(ctx context.Context, id string, gold int) error {
+	if !validID(id) {
+		return ErrNotFound
+	}
+	tag, err := s.pool.Exec(ctx, `UPDATE campaign SET gold = $2, updated_at = now() WHERE id = $1`, id, gold)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 // --- Campaign chapters ---

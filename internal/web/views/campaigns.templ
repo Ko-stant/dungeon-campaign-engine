@@ -30,10 +30,12 @@ type HeroRow struct {
 	Name      string
 	Player    string
 	Class     string
-	Gold      int
 	Equipment string
 	Notes     string
 	Items     []ItemRow
+	// Combat is the hero's combat totals (class plus equipped items) on one
+	// line; empty for classes without combat stats.
+	Combat string
 }
 
 // QuestOption is a quest to start, labeled with its board.
@@ -71,9 +73,11 @@ type ClassOption struct {
 
 // CampaignPageData is everything the campaign page shows.
 type CampaignPageData struct {
-	ID       string
-	Name     string
-	Heroes   []HeroRow
+	ID     string
+	Name   string
+	Heroes []HeroRow
+	// Gold is the party's purse.
+	Gold     int
 	Sessions []SessionLink
 	Quests   []QuestOption
 	Classes  []ClassOption
@@ -187,7 +191,7 @@ templ CampaignPage(d CampaignPageData) {
 				} else {
 					<table class="mb-4 w-full text-sm">
 						<thead class="text-left text-xs uppercase opacity-60">
-							<tr><th class="py-1">Hero</th><th>Player</th><th>Class</th><th>Gold</th><th>Equipment</th><th>Notes</th><th></th></tr>
+							<tr><th class="py-1">Hero</th><th>Player</th><th>Class</th><th>Equipment</th><th>Notes</th><th></th></tr>
 						</thead>
 						<tbody class="divide-y divide-border/40">
 							for _, h := range d.Heroes {
@@ -195,7 +199,6 @@ templ CampaignPage(d CampaignPageData) {
 									<td class="py-2 font-semibold">{ h.Name }</td>
 									<td>{ h.Player }</td>
 									<td>{ h.Class }</td>
-									<td>{ fmt.Sprint(h.Gold) }</td>
 									<td class="max-w-48 truncate" title={ h.Equipment }>{ h.Equipment }</td>
 									<td class="max-w-48 truncate" title={ h.Notes }>{ h.Notes }</td>
 									<td class="text-right">

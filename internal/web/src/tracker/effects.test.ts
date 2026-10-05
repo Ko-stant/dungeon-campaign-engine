@@ -21,4 +21,9 @@ describe('formatEvent for fights and effects', () => {
     expect(formatEvent({ ...base, kind: 'fight.start' }).kind).toBe('round');
     expect(formatEvent({ ...base, kind: 'effect.add' }).kind).toBe('note');
   });
+
+  test('party gold and equipping style like hero changes', () => {
+    expect(formatEvent({ ...base, kind: 'gold.set' }).kind).toBe('hero');
+    expect(formatEvent({ ...base, kind: 'item.equip' }).kind).toBe('hero');
+  });
 });

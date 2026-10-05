@@ -3,24 +3,26 @@ package tracker
 import (
 	"strings"
 	"testing"
+
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 )
 
 func TestAddItemMergesByName(t *testing.T) {
-	items, it, err := AddItem(nil, "  Healing Potion ", 2, "Heals 1d6")
+	items, it, err := AddItem(nil, Item{Name: "  Healing Potion ", Quantity: 2, Notes: "Heals 1d6"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(items) != 1 || it.ID != "item-1" || it.Name != "Healing Potion" || it.Quantity != 2 || it.Notes != "Heals 1d6" {
 		t.Fatalf("first add: %+v %+v", items, it)
 	}
-	items, it, err = AddItem(items, "healing potion", 1, "")
+	items, it, err = AddItem(items, Item{Name: "healing potion", Quantity: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(items) != 1 || it.ID != "item-1" || it.Quantity != 3 || it.Notes != "Heals 1d6" {
 		t.Fatalf("merged add: %+v %+v", items, it)
 	}
-	items, it, err = AddItem(items, "Rope", 0, "")
+	items, it, err = AddItem(items, Item{Name: "Rope"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +41,7 @@ func TestAddItemMergesByName(t *testing.T) {
 		"long notes":    {"Rope", 1, strings.Repeat("x", MaxItemNotes+1)},
 		"merge too big": {"Healing Potion", MaxItemQuantity, ""},
 	} {
-		if _, _, err := AddItem(items, args.name, args.qty, args.notes); err == nil {
+		if _, _, err := AddItem(items, Item{Name: args.name, Quantity: args.qty, Notes: args.notes}); err == nil {
 			t.Errorf("%s: want an error", name)
 		}
 	}
@@ -67,7 +69,7 @@ func TestRemoveAndUpdateItem(t *testing.T) {
 	}
 
 	name, qty, notes := "Greater Healing Potion", 5, "Heals 2d6"
-	out, it, err = UpdateItem(items, "item-1", &name, &qty, &notes)
+	out, it, err = UpdateItem(items, "item-1", ItemPatch{Name: &name, Quantity: &qty, Notes: &notes})
 	if err != nil || it.Name != name || it.Quantity != 5 || it.Notes != notes || out[0] != it {
 		t.Fatalf("update: %+v %v", it, err)
 	}
@@ -75,11 +77,11 @@ func TestRemoveAndUpdateItem(t *testing.T) {
 		t.Fatal("UpdateItem modified its input")
 	}
 	zero := 0
-	if _, _, err = UpdateItem(items, "item-1", nil, &zero, nil); err == nil {
+	if _, _, err = UpdateItem(items, "item-1", ItemPatch{Quantity: &zero}); err == nil {
 		t.Fatal("quantity 0 is a removal, not an update")
 	}
 	blank := " "
-	if _, _, err = UpdateItem(items, "item-1", &blank, nil, nil); err == nil {
+	if _, _, err = UpdateItem(items, "item-1", ItemPatch{Name: &blank}); err == nil {
 		t.Fatal("blank name")
 	}
 }
@@ -167,6 +169,220 @@ func TestCarryOverKeepsItems(t *testing.T) {
 	}
 	if next.Heroes[1].Items == nil {
 		t.Fatal("heroes without items get an empty list")
+	}
+}
+
+func TestItemStats(t *testing.T) {
+	bow := Item{Name: "Wardens' Longbow", Kind: "bow", ItemStats: ItemStats{Damage: 6}}
+	items, it, err := AddItem(nil, bow)
+	if err != nil || it.Kind != "bow" || it.Damage != 6 || it.Quantity != 1 || it.Equipped {
+		t.Fatalf("add with stats: %+v %v", it, err)
+	}
+	// A plain add of the same name keeps the stats; an add with stats fills in an item without any.
+	if _, it, _ = AddItem(items, Item{Name: "wardens' longbow", Kind: "trophy", ItemStats: ItemStats{Damage: 1}}); it.Kind != "bow" || it.Damage != 6 {
+		t.Fatalf("merge keeps stats: %+v", it)
+	}
+	items, _, _ = AddItem(nil, Item{Name: "Rope"})
+	if _, it, _ = AddItem(items, Item{Name: "Rope", Kind: "tool", ItemStats: ItemStats{Avoidance: 1}}); it.Kind != "tool" || it.Avoidance != 1 || it.Quantity != 2 {
+		t.Fatalf("merge fills stats: %+v", it)
+	}
+	for name, add := range map[string]Item{
+		"long kind":      {Name: "Rope", Kind: strings.Repeat("x", MaxItemKind+1)},
+		"huge damage":    {Name: "Rope", ItemStats: ItemStats{Damage: MaxItemStat + 1}},
+		"huge curse":     {Name: "Rope", ItemStats: ItemStats{Accuracy: -MaxItemStat - 1}},
+		"huge mana":      {Name: "Rope", ItemStats: ItemStats{Mana: MaxItemStat + 1}},
+		"huge regen":     {Name: "Rope", ItemStats: ItemStats{ManaRegen: MaxItemStat + 1}},
+		"huge avoidance": {Name: "Rope", ItemStats: ItemStats{Avoidance: MaxItemStat + 1}},
+		"huge mitigaton": {Name: "Rope", ItemStats: ItemStats{Mitigation: MaxItemStat + 1}},
+	} {
+		if _, _, err := AddItem(nil, add); err == nil {
+			t.Errorf("%s: want an error", name)
+		}
+	}
+	if _, err := NormalizeItems([]Item{{Name: "Rope", ItemStats: ItemStats{Damage: 100}}}); err == nil {
+		t.Error("NormalizeItems checks stats")
+	}
+
+	kind, stats := "two-handed weapon", ItemStats{Damage: 9, Accuracy: -1}
+	out, it, err := UpdateItem([]Item{{ID: "item-1", Name: "Greatsword", Quantity: 1, Kind: "weapon"}}, "item-1", ItemPatch{Kind: &kind, Stats: &stats})
+	if err != nil || it.Kind != kind || it.ItemStats != stats || out[0] != it {
+		t.Fatalf("update stats: %+v %v", it, err)
+	}
+}
+
+func TestItemStatsSummary(t *testing.T) {
+	for want, st := range map[string]ItemStats{
+		"":                          {},
+		"damage +7":                 {Damage: 7},
+		"Accuracy +1, avoidance +2": {Accuracy: 1, Avoidance: 2},
+		"mitigation +1":             {Mitigation: 1},
+		"mana +2, mana regen +1":    {Mana: 2, ManaRegen: 1},
+		"damage -1":                 {Damage: -1},
+	} {
+		if got := st.Summary(); got != want {
+			t.Errorf("%+v: %q, want %q", st, got, want)
+		}
+	}
+}
+
+// gearHero is a hero with combat stats, an equipped greataxe and cuirass, and boots in the pack.
+func gearHero() Hero {
+	return Hero{
+		Name: "Grom", Mana: 4, MaxMana: 4,
+		Combat: &Combat{HitDice: "1d20", Accuracy: 3, CritFrom: 17, Damage: 3, DefenseDice: "1d6", Avoidance: 2, Mitigation: 1},
+		Items: []Item{
+			{ID: "item-1", Name: "Greataxe", Quantity: 1, Equipped: true, ItemStats: ItemStats{Damage: 7}},
+			{ID: "item-2", Name: "Hide Cuirass", Quantity: 1, Equipped: true, ItemStats: ItemStats{Mitigation: 1, Mana: 2, ManaRegen: 1}},
+			{ID: "item-3", Name: "Iron-shod Boots", Quantity: 1, ItemStats: ItemStats{Avoidance: 1}},
+		},
+	}
+}
+
+func TestHeroTotalsAddEquippedItems(t *testing.T) {
+	h := gearHero()
+	if g := GearBonus(h.Items); g != (ItemStats{Damage: 7, Mitigation: 1, Mana: 2, ManaRegen: 1}) {
+		t.Fatalf("gear: %+v", g)
+	}
+	tot := h.CombatTotals()
+	want := Combat{HitDice: "1d20", Accuracy: 3, CritFrom: 17, Damage: 10, DefenseDice: "1d6", Avoidance: 2, Mitigation: 2, ManaRegen: 1}
+	if tot == nil || *tot != want {
+		t.Fatalf("totals: %+v", tot)
+	}
+	if h.Combat.Damage != 3 {
+		t.Fatal("CombatTotals modified the class stats")
+	}
+	if h.ManaCap() != 6 || h.ManaRegen() != 1 {
+		t.Fatalf("mana cap %d, regen %d", h.ManaCap(), h.ManaRegen())
+	}
+	h.Combat = nil
+	if h.CombatTotals() != nil {
+		t.Fatal("a hero without combat stats has no totals")
+	}
+}
+
+func TestCombatLine(t *testing.T) {
+	c := Combat{HitDice: "1d20", Accuracy: 3, CritFrom: 17, Damage: 10, DefenseDice: "1d6", Avoidance: 3, Mitigation: 2, ManaRegen: 1}
+	if got := CombatLine(c); got != "Hit 1d20+3 · Crit 17-20 · Damage 10 · Avoid 3+1d6 · Mitigation 2 · Mana +1 a fight round" {
+		t.Fatalf("line: %q", got)
+	}
+	c = Combat{HitDice: "2d8+1", Accuracy: 4, CritFrom: 20, Damage: 5, DefenseDice: "1d6"}
+	if got := CombatLine(c); got != "Hit 2d8+1 +4 · Crit 20 · Damage 5 · Avoid 1d6" {
+		t.Fatalf("line: %q", got)
+	}
+}
+
+func TestNewSessionStartsWithGearMana(t *testing.T) {
+	ch := party()[0]
+	ch.Class = "custom-cleric"
+	ch.Items = []Item{{ID: "item-1", Name: "Prayer Beads", Quantity: 1, Equipped: true, ItemStats: ItemStats{Mana: 2}}}
+	b, q, cat := fixture()
+	cat.Heroes = append(cat.Heroes, content.HeroDef{ID: "custom-cleric", Name: "Cleric", Body: 28, Mana: 16, ManaRegen: 2, Custom: true, AttackDice: "2d8", DefenseDice: "1d6"})
+	next, err := NewSession(b, q, "Q", []CampaignHero{ch}, cat)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h := next.Heroes[0]; h.Mana != 18 || h.MaxMana != 16 || h.ManaCap() != 18 || h.Combat.ManaRegen != 2 {
+		t.Fatalf("cleric with beads: mana %d / max %d / cap %d", h.Mana, h.MaxMana, h.ManaCap())
+	}
+}
+
+func TestItemEquipCommand(t *testing.T) {
+	s := newState(t)
+	s.Heroes[0] = gearHero()
+	s.Heroes[0].ID = "hero-1"
+
+	s, ev := apply(t, s, cmd(t, "item.equip", map[string]any{"heroId": "hero-1", "itemId": "item-3", "equipped": true}))
+	if !s.Heroes[0].Items[2].Equipped || ev.Summary != "Grom equipped Iron-shod Boots (avoidance +1)" {
+		t.Fatalf("equip: %+v %q", s.Heroes[0].Items[2], ev.Summary)
+	}
+	// Taking off a mana item lowers mana to the new cap.
+	s.Heroes[0].Mana = 6
+	s, ev = apply(t, s, cmd(t, "item.equip", map[string]any{"heroId": "hero-1", "itemId": "item-2", "equipped": false}))
+	if s.Heroes[0].Items[1].Equipped || s.Heroes[0].Mana != 4 || ev.Summary != "Grom unequipped Hide Cuirass (mana 6 → 4)" {
+		t.Fatalf("unequip: %+v %d %q", s.Heroes[0].Items[1], s.Heroes[0].Mana, ev.Summary)
+	}
+	s, ev = apply(t, s, cmd(t, "item.equip", map[string]any{"heroId": "hero-1", "itemId": "item-1", "equipped": false}))
+	if ev.Summary != "Grom unequipped Greataxe" {
+		t.Fatalf("unequip plain: %q", ev.Summary)
+	}
+	for name, payload := range map[string]map[string]any{
+		"already equipped": {"heroId": "hero-1", "itemId": "item-3", "equipped": true},
+		"unknown item":     {"heroId": "hero-1", "itemId": "item-9", "equipped": true},
+		"unknown hero":     {"heroId": "hero-9", "itemId": "item-1", "equipped": true},
+	} {
+		if _, _, err := Apply(s, cmd(t, "item.equip", payload), nil); err == nil {
+			t.Errorf("%s: want an error", name)
+		}
+	}
+}
+
+func TestItemCommandsCarryStats(t *testing.T) {
+	s := newState(t)
+	s, ev := apply(t, s, cmd(t, "item.add", map[string]any{"heroId": "hero-1", "name": "Wardens' Greatsword", "kind": "two-handed weapon", "damage": 9}))
+	if it := s.Heroes[0].Items[0]; it.Damage != 9 || it.Kind != "two-handed weapon" || ev.Summary != "Grom gained Wardens' Greatsword (damage +9)" {
+		t.Fatalf("add with stats: %+v %q", it, ev.Summary)
+	}
+	s, ev = apply(t, s, cmd(t, "item.update", map[string]any{"heroId": "hero-1", "itemId": "item-1", "kind": "weapon", "stats": map[string]any{"damage": 8, "accuracy": 1}}))
+	if it := s.Heroes[0].Items[0]; it.Damage != 8 || it.Accuracy != 1 || it.Kind != "weapon" ||
+		ev.Summary != "Grom: Wardens' Greatsword kind two-handed weapon → weapon, stats damage +9 → damage +8, Accuracy +1" {
+		t.Fatalf("update stats: %+v %q", it, ev.Summary)
+	}
+	s, ev = apply(t, s, cmd(t, "item.update", map[string]any{"heroId": "hero-1", "itemId": "item-1", "kind": "", "stats": map[string]any{}}))
+	if ev.Summary != "Grom: Wardens' Greatsword kind cleared, stats cleared" {
+		t.Fatalf("clear: %q", ev.Summary)
+	}
+	s, _ = apply(t, s, cmd(t, "item.update", map[string]any{"heroId": "hero-1", "itemId": "item-1", "kind": "weapon", "stats": map[string]any{"damage": 9}}))
+	s, _ = apply(t, s, cmd(t, "item.equip", map[string]any{"heroId": "hero-1", "itemId": "item-1", "equipped": true}))
+
+	// Given away, the item keeps its kind and stats but the new owner has not equipped it.
+	s, _ = apply(t, s, cmd(t, "item.give", map[string]any{"heroId": "hero-1", "itemId": "item-1", "toHeroId": "hero-2"}))
+	if len(s.Heroes[0].Items) != 0 {
+		t.Fatalf("giver: %+v", s.Heroes[0].Items)
+	}
+	if it := s.Heroes[1].Items[0]; it.Damage != 9 || it.Kind != "weapon" || it.Equipped {
+		t.Fatalf("receiver: %+v", it)
+	}
+}
+
+func TestFightsRegenerateGearMana(t *testing.T) {
+	s, cat := fightState(t)
+	s.Heroes[0].Items = []Item{
+		{ID: "item-1", Name: "Holy Tome", Quantity: 1, Equipped: true, ItemStats: ItemStats{ManaRegen: 1}},
+		{ID: "item-2", Name: "Prayer Beads", Quantity: 1, Equipped: true, ItemStats: ItemStats{Mana: 2}},
+	}
+	s.Heroes[0].Mana = 10
+	s, _ = applyWith(t, s, cmd(t, "fight.start", map[string]any{}), cat)
+	s, ev := applyWith(t, s, cmd(t, "round.advance", map[string]any{}), cat)
+	if s.Heroes[0].Mana != 14 || !strings.Contains(ev.Summary, "Mira 10 → 14") {
+		t.Fatalf("regen 3+1: %d %q", s.Heroes[0].Mana, ev.Summary)
+	}
+	s, _ = applyWith(t, s, cmd(t, "round.advance", map[string]any{}), cat)
+	if s.Heroes[0].Mana != 18 {
+		t.Fatalf("capped at 16+2: %d", s.Heroes[0].Mana)
+	}
+}
+
+func TestPartyGold(t *testing.T) {
+	s := newState(t)
+	s, ev := apply(t, s, cmd(t, "gold.set", map[string]any{"gold": 84}))
+	if s.Gold != 84 || ev.Summary != "Party gold 0 → 84" {
+		t.Fatalf("set: %d %q", s.Gold, ev.Summary)
+	}
+	s, ev = apply(t, s, cmd(t, "gold.set", map[string]any{"gold": 60}))
+	if s.Gold != 60 || ev.Summary != "Party gold 84 → 60" {
+		t.Fatalf("spend: %d %q", s.Gold, ev.Summary)
+	}
+	for name, payload := range map[string]map[string]any{
+		"negative":       {"gold": -1},
+		"too much":       {"gold": MaxGold + 1},
+		"nothing change": {"gold": 60},
+	} {
+		if _, _, err := Apply(s, cmd(t, "gold.set", payload), nil); err == nil {
+			t.Errorf("%s: want an error", name)
+		}
+	}
+	if _, _, err := Apply(s, cmd(t, "hero.update", map[string]any{"id": "hero-1", "gold": 5}), nil); err == nil {
+		t.Error("heroes no longer carry their own gold")
 	}
 }
 

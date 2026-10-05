@@ -25,6 +25,7 @@ type CampaignResponse struct {
 	ID        string                 `json:"id"`
 	Name      string                 `json:"name"`
 	Heroes    []tracker.CampaignHero `json:"heroes"`
+	Gold      int                    `json:"gold"`
 	UpdatedAt time.Time              `json:"updatedAt"`
 }
 
@@ -89,7 +90,7 @@ func (s *Server) registerTracker(mux *http.ServeMux) {
 // --- Campaigns ---
 
 func campaignResponse(c store.Campaign) (CampaignResponse, error) {
-	resp := CampaignResponse{ID: c.ID, Name: c.Name, UpdatedAt: c.UpdatedAt}
+	resp := CampaignResponse{ID: c.ID, Name: c.Name, Gold: c.Gold, UpdatedAt: c.UpdatedAt}
 	if err := json.Unmarshal(c.Heroes, &resp.Heroes); err != nil {
 		return resp, err
 	}
@@ -179,9 +180,6 @@ func normalizeHeroes(cat *content.Catalog, heroes []tracker.CampaignHero) ([]tra
 		if _, ok := cat.Hero(h.Class); !ok {
 			return nil, fmt.Errorf("hero %q has unknown class %q", h.Name, h.Class)
 		}
-		if h.Gold < 0 {
-			return nil, fmt.Errorf("hero %q: gold must not be negative", h.Name)
-		}
 		items, err := tracker.NormalizeItems(h.Items)
 		if err != nil {
 			return nil, fmt.Errorf("hero %q: %w", h.Name, err)
@@ -209,6 +207,8 @@ func (s *Server) updateCampaign(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name   string                 `json:"name"`
 		Heroes []tracker.CampaignHero `json:"heroes"`
+		// Gold, when given, replaces the party's purse.
+		Gold *int `json:"gold"`
 	}
 	if !readJSON(w, r, &req) {
 		return
@@ -216,6 +216,10 @@ func (s *Server) updateCampaign(w http.ResponseWriter, r *http.Request) {
 	name, err := cleanName(req.Name)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "%v", err)
+		return
+	}
+	if req.Gold != nil && (*req.Gold < 0 || *req.Gold > tracker.MaxGold) {
+		writeError(w, http.StatusBadRequest, "gold must be from 0 to %d", tracker.MaxGold)
 		return
 	}
 	cat, err := s.catalogFor(r.Context())
@@ -227,6 +231,12 @@ func (s *Server) updateCampaign(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "%v", err)
 		return
+	}
+	if req.Gold != nil {
+		if err := s.store.SetCampaignGold(r.Context(), r.PathValue("id"), *req.Gold); err != nil {
+			writeStoreError(w, err)
+			return
+		}
 	}
 	c, err := s.saveCampaignHeroes(r.Context(), r.PathValue("id"), name, heroes)
 	if err != nil {
@@ -294,6 +304,7 @@ func (s *Server) newSession(ctx context.Context, campaignID, questID, name strin
 		return store.Session{}, fmt.Errorf("%w: %v", errBadInput, err)
 	}
 	state.QuestID = questRec.ID
+	state.Gold = camp.Gold
 
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -489,6 +500,10 @@ func (s *Server) completeSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := s.saveCampaignHeroes(r.Context(), camp.ID, camp.Name, state.CarryOver(heroes)); err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	if err := s.store.SetCampaignGold(r.Context(), camp.ID, state.Gold); err != nil {
 		writeStoreError(w, err)
 		return
 	}

@@ -114,17 +114,16 @@ func TestCampaignSessionAndCommandsFlow(t *testing.T) {
 		t.Fatalf("events after 1: %+v", later)
 	}
 
-	// Heroes gain gold, the quest is completed, and gold carries back to the campaign.
-	heroID := sess.State.Heroes[0].ID
-	c(http.MethodPost, "/api/sessions/"+sess.ID+"/commands", map[string]any{"type": "hero.update", "payload": map[string]any{"id": heroID, "gold": 84}})
+	// The party gains gold, the quest is completed, and the purse carries back to the campaign.
+	c(http.MethodPost, "/api/sessions/"+sess.ID+"/commands", map[string]any{"type": "gold.set", "payload": map[string]any{"gold": 84}})
 	code, data = c(http.MethodPost, "/api/sessions/"+sess.ID+"/complete", nil)
 	if code != http.StatusOK {
 		t.Fatalf("complete: %d %s", code, data)
 	}
 	_, data = c(http.MethodGet, "/api/campaigns/"+camp.ID, nil)
 	after := decodeAny[CampaignResponse](t, data)
-	if after.Heroes[0].Gold != 84 {
-		t.Fatalf("gold should carry over: %+v", after.Heroes)
+	if after.Gold != 84 {
+		t.Fatalf("gold should carry over: %+v", after)
 	}
 
 	// Completed sessions refuse commands until reopened.

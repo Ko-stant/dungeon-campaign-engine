@@ -1,13 +1,64 @@
 /** Hero combat stats for display (The Three Plagues rules; see tracker.Combat in Go). */
 
-import type { HeroCombat, MonsterCombat } from './types.ts';
+import type { Hero, HeroCombat, Item, ItemStats, MonsterCombat } from './types.ts';
 
 /** A flat bonus on a dice expression: "1d20+3", or "2d10+2 +3" when it has its own modifier or several terms. */
 function withBonus(dice: string, bonus: number): string {
   if (bonus === 0) {
     return dice;
   }
-  return /[+-]/.test(dice) ? `${dice} +${bonus}` : `${dice}+${bonus}`;
+  const signed = bonus > 0 ? `+${String(bonus)}` : String(bonus);
+  return /[+-]/.test(dice) ? `${dice} ${signed}` : `${dice}${signed}`;
+}
+
+const STAT_LABELS: [keyof ItemStats, string][] = [
+  ['damage', 'damage'], ['accuracy', 'Accuracy'], ['avoidance', 'avoidance'],
+  ['mitigation', 'mitigation'], ['mana', 'mana'], ['manaRegen', 'mana regen'],
+];
+
+/** An item's stats, e.g. "damage +7" or "mana +2, mana regen +1" ("" for none). Mirrors ItemStats.Summary (Go). */
+export function itemStatsLine(st: ItemStats): string {
+  return STAT_LABELS.filter(([k]) => (st[k] ?? 0) !== 0)
+    .map(([k, label]) => {
+      const v = st[k] ?? 0;
+      return `${label} ${v > 0 ? '+' : ''}${String(v)}`;
+    })
+    .join(', ');
+}
+
+/** The sum of the equipped items' stats (each counted once). Mirrors GearBonus (Go). */
+export function gearBonus(items: readonly Item[] | null | undefined): Required<ItemStats> {
+  const out: Required<ItemStats> = { damage: 0, accuracy: 0, avoidance: 0, mitigation: 0, mana: 0, manaRegen: 0 };
+  for (const it of items ?? []) {
+    if (it.equipped) {
+      for (const [k] of STAT_LABELS) {
+        out[k] += it[k] ?? 0;
+      }
+    }
+  }
+  return out;
+}
+
+/** The hero's class combat stats plus equipped items; null without combat stats. Mirrors Hero.CombatTotals (Go). */
+export function combatTotals(hero: Hero): HeroCombat | null {
+  if (!hero.combat) {
+    return null;
+  }
+  const g = gearBonus(hero.items);
+  const c = hero.combat;
+  return {
+    ...c,
+    accuracy: c.accuracy + g.accuracy,
+    damage: c.damage + g.damage,
+    avoidance: c.avoidance + g.avoidance,
+    mitigation: c.mitigation + g.mitigation,
+    manaRegen: (c.manaRegen ?? 0) + g.manaRegen,
+  };
+}
+
+/** The hero's maximum mana with equipped items. Mirrors Hero.ManaCap (Go). */
+export function manaCap(hero: Hero): number {
+  return Math.max(0, (hero.maxMana ?? 0) + gearBonus(hero.items).mana);
 }
 
 /** One line, e.g. "Hit 1d20+3 · Crit 17-20 · Damage 10 · Avoid 3+1d6 · Mitigation 2". */

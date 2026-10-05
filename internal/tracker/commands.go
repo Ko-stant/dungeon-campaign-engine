@@ -92,6 +92,10 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.itemRemove(c.Payload)
 	case "item.give":
 		summary, err = a.itemGive(c.Payload)
+	case "item.equip":
+		summary, err = a.itemEquip(c.Payload)
+	case "gold.set":
+		summary, err = a.goldSet(c.Payload)
 	case "passage.read":
 		summary, err = a.passageRead(c.Payload)
 	case "log.note":
@@ -275,7 +279,6 @@ func (a *applier) heroUpdate(payload json.RawMessage) (string, error) {
 		MaxMind   *int    `json:"maxMind"`
 		Mana      *int    `json:"mana"`
 		MaxMana   *int    `json:"maxMana"`
-		Gold      *int    `json:"gold"`
 		Equipment *string `json:"equipment"`
 		Notes     *string `json:"notes"`
 		Status    *string `json:"status"`
@@ -287,7 +290,7 @@ func (a *applier) heroUpdate(payload json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for name, v := range map[string]*int{"body": p.Body, "maxBody": p.MaxBody, "mind": p.Mind, "maxMind": p.MaxMind, "mana": p.Mana, "maxMana": p.MaxMana, "gold": p.Gold} {
+	for name, v := range map[string]*int{"body": p.Body, "maxBody": p.MaxBody, "mind": p.Mind, "maxMind": p.MaxMind, "mana": p.Mana, "maxMana": p.MaxMana} {
 		if err := nonNegative(name, v); err != nil {
 			return "", err
 		}
@@ -309,7 +312,6 @@ func (a *applier) heroUpdate(payload json.RawMessage) (string, error) {
 	setInt("max mind", &h.MaxMind, p.MaxMind)
 	setInt("mana", &h.Mana, p.Mana)
 	setInt("max mana", &h.MaxMana, p.MaxMana)
-	setInt("gold", &h.Gold, p.Gold)
 	if p.Equipment != nil && *p.Equipment != h.Equipment {
 		h.Equipment = *p.Equipment
 		changes = append(changes, "equipment updated")

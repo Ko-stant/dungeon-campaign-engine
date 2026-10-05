@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { combatLine, falterAt, monsterLine } from './combat.ts';
+import { combatLine, combatTotals, falterAt, gearBonus, itemStatsLine, manaCap, monsterLine } from './combat.ts';
+import type { Hero, Item } from './types.ts';
 
 describe('combatLine', () => {
   test('sums up a hero\'s attack and defense', () => {
@@ -18,6 +19,47 @@ describe('combatLine', () => {
     expect(combatLine({ hitDice: '2d10+2', accuracy: 3, critFrom: 15, damage: 6, defenseDice: '1d6', avoidance: 7, mitigation: 0 })).toBe(
       'Hit 2d10+2 +3 · Crit 15-20 · Damage 6 · Avoid 7+1d6',
     );
+  });
+
+  test('a negative bonus (a cursed item) shows its sign', () => {
+    expect(combatLine({ hitDice: '1d20', accuracy: -1, critFrom: 20, damage: 3, defenseDice: '1d6', avoidance: 0, mitigation: 0 })).toBe(
+      'Hit 1d20-1 · Crit 20 · Damage 3 · Avoid 1d6',
+    );
+  });
+});
+
+describe('item stats', () => {
+  test('itemStatsLine names each bonus, in the Go order', () => {
+    expect(itemStatsLine({ damage: 7 })).toBe('damage +7');
+    expect(itemStatsLine({ accuracy: 1, avoidance: 2 })).toBe('Accuracy +1, avoidance +2');
+    expect(itemStatsLine({ mana: 2, manaRegen: 1, mitigation: -1 })).toBe('mitigation -1, mana +2, mana regen +1');
+    expect(itemStatsLine({})).toBe('');
+  });
+
+  const items: Item[] = [
+    { id: 'item-1', name: 'Greataxe', quantity: 1, equipped: true, damage: 7 },
+    { id: 'item-2', name: 'Hide Cuirass', quantity: 1, equipped: true, mitigation: 1, mana: 2, manaRegen: 1 },
+    { id: 'item-3', name: 'Iron-shod Boots', quantity: 1, avoidance: 1 },
+  ];
+  const hero = {
+    id: 'hero-1', name: 'Grom', class: 'custom-barbarian', x: 1, y: 1, placed: true, body: 40, maxBody: 40, mind: 2, maxMind: 2,
+    status: 'active', mana: 4, maxMana: 4, items,
+    combat: { hitDice: '1d20', accuracy: 3, critFrom: 17, damage: 3, defenseDice: '1d6', avoidance: 2, mitigation: 1 },
+  } satisfies Hero;
+
+  test('gearBonus adds up equipped items only, once each', () => {
+    expect(gearBonus(items)).toEqual({ damage: 7, accuracy: 0, avoidance: 0, mitigation: 1, mana: 2, manaRegen: 1 });
+    expect(gearBonus(null)).toEqual({ damage: 0, accuracy: 0, avoidance: 0, mitigation: 0, mana: 0, manaRegen: 0 });
+  });
+
+  test('combatTotals is the class stats plus equipped items', () => {
+    expect(combatTotals(hero)).toEqual({ hitDice: '1d20', accuracy: 3, critFrom: 17, damage: 10, defenseDice: '1d6', avoidance: 2, mitigation: 2, manaRegen: 1 });
+    expect(combatTotals({ ...hero, combat: null })).toBeNull();
+  });
+
+  test('manaCap raises the class maximum by equipped mana', () => {
+    expect(manaCap(hero)).toBe(6);
+    expect(manaCap({ ...hero, items: [] })).toBe(4);
   });
 });
 

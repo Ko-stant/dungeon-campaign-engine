@@ -61,9 +61,13 @@ Tailwind CSS v4, canvas rendering.
     campaignID)` (catalogFor with the stat lines laid over), and session monsters freeze them
     as `combat`.
   - Tracker: `/campaigns`, `/campaigns/{id}`, `/play/{id}`, `/api/campaigns...`, `/api/sessions/{id}/(commands|travel|events|complete|reopen|stream)`
-  - Inventory: campaign heroes carry gold and `items` (name, quantity, notes) between quests;
-    `/campaigns/{id}/heroes/{heroId}/(gold|items...)` forms, `item.*` tracker commands.
-    Shared pure helpers in `internal/tracker/inventory.go`.
+  - Inventory: the party shares one purse (`campaign.gold`, the session's `State.Gold`,
+    `gold.set`); campaign heroes carry `items` (name, quantity, notes, kind, stats, equipped)
+    between quests. Equipped items add their stats (damage, Accuracy, avoidance, mitigation,
+    mana, mana regen) to the hero's class combat stats: totals are computed, never stored
+    (`Hero.CombatTotals`, `ManaCap`, `ManaRegen`; TS `combatTotals`, `manaCap`).
+    `/campaigns/{id}/gold` and `/campaigns/{id}/heroes/{heroId}/items...` forms, `item.*`
+    tracker commands (`item.equip` too). Shared pure helpers in `internal/tracker/inventory.go`.
   - Read-aloud script: one Markdown text per campaign (`campaign.script`) parsed by
     `internal/script`; saved with `POST /campaigns/{id}/script`, served parsed by
     `GET /api/campaigns/{id}/script`; the tracker's Read aloud panel logs `passage.read`.

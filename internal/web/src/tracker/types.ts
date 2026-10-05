@@ -18,19 +18,18 @@ export interface Hero {
   maxBody: number;
   mind: number;
   maxMind: number;
-  gold: number;
   equipment?: string;
   notes?: string;
   status: HeroStatus;
   /** Inventory; null or missing on sessions started before items existed. */
   items?: Item[] | null;
-  /** Mana and abilities copied from the hero's class when the session started. */
+  /** Mana and abilities copied from the hero's class when the session started; equipped items raise the maximum (manaCap). */
   mana?: number;
   maxMana?: number;
   abilities?: Ability[] | null;
   /** Ability id -> round it is ready again, for abilities still cooling down. */
   cooldowns?: Record<string, number> | null;
-  /** The class's combat stats, frozen at session start; missing for built-in classes and older sessions. */
+  /** The class's combat stats, frozen at session start (equipped items add to them: combatTotals); missing for built-in classes and older sessions. */
   combat?: HeroCombat | null;
   effects?: Effect[] | null;
 }
@@ -56,12 +55,25 @@ export interface HeroCombat {
   manaRegen?: number;
 }
 
-/** Something a hero carries; nothing is equipped and there are no limits. */
-export interface Item {
+/** An item's bonuses to its hero's combat stats while equipped, mirroring tracker.ItemStats (Go). */
+export interface ItemStats {
+  damage?: number;
+  accuracy?: number;
+  avoidance?: number;
+  mitigation?: number;
+  mana?: number;
+  manaRegen?: number;
+}
+
+/** Something a hero carries; no limits. An equipped item adds its stats to the hero's totals. */
+export interface Item extends ItemStats {
   id: string;
   name: string;
   quantity: number;
   notes?: string;
+  /** What it is (weapon, bow, chest...); free text, no slots. */
+  kind?: string;
+  equipped?: boolean;
 }
 
 export interface Monster {
@@ -142,6 +154,8 @@ export interface SessionState {
   quest: QuestDoc;
   questName: string;
   round: number;
+  /** The party's purse; missing on sessions saved before it existed. */
+  gold?: number;
   /** True while a fight is on: rounds then finish cooldowns, regenerate mana and count effects down. */
   fight?: boolean;
   heroes: Hero[];

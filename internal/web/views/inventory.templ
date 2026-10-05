@@ -3,6 +3,7 @@ package views
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // ItemRow is one item a campaign hero carries.
@@ -11,6 +12,11 @@ type ItemRow struct {
 	Name     string
 	Quantity int
 	Notes    string
+	Kind     string
+	Equipped bool
+	// Stats: bonuses to the hero's combat stats while equipped; StatsLine sums them up.
+	Damage, Accuracy, Avoidance, Mitigation, Mana, ManaRegen int
+	StatsLine                                                string
 }
 
 // InQuest reports whether a quest is running for the campaign: its session
@@ -31,42 +37,105 @@ func heroURL(d CampaignPageData, h HeroRow, rest string) templ.SafeURL {
 	return templ.SafeURL("/campaigns/" + d.ID + "/heroes/" + h.ID + rest)
 }
 
-// campaignInventory is each hero's gold and items between quests.
+// statValue is a stat input's value: blank for 0.
+func statValue(n int) string {
+	if n == 0 {
+		return ""
+	}
+	return strconv.Itoa(n)
+}
+
+// itemTag sums up an item's kind and stats, e.g. "bow · damage +6".
+func itemTag(it ItemRow) string {
+	parts := []string{}
+	if it.Kind != "" {
+		parts = append(parts, it.Kind)
+	}
+	if it.StatsLine != "" {
+		parts = append(parts, it.StatsLine)
+	}
+	return strings.Join(parts, " · ")
+}
+
+templ statInput(label, name string, value int) {
+	<label class="block text-xs">
+		<span class="mb-1 block opacity-70">{ label }</span>
+		<input name={ name } type="number" min="-99" max="99" value={ statValue(value) } placeholder="0" class={ inlineInputClass + " w-20" }/>
+	</label>
+}
+
+// itemStatFields is an item's kind and stat inputs (in the item's form).
+templ itemStatFields(it ItemRow) {
+	<div class="flex flex-wrap items-end gap-2">
+		<label class="block text-xs">
+			<span class="mb-1 block opacity-70">Kind</span>
+			<input name="kind" maxlength="40" value={ it.Kind } placeholder="weapon, bow, chest..." class={ inlineInputClass + " w-40" }/>
+		</label>
+		@statInput("Damage", "damage", it.Damage)
+		@statInput("Accuracy", "accuracy", it.Accuracy)
+		@statInput("Avoidance", "avoidance", it.Avoidance)
+		@statInput("Mitigation", "mitigation", it.Mitigation)
+		@statInput("Mana", "mana", it.Mana)
+		@statInput("Mana regen", "mana_regen", it.ManaRegen)
+	</div>
+}
+
+// campaignInventory is the party's gold and each hero's items between quests.
 templ campaignInventory(d CampaignPageData) {
 	<section id="inventory" class={ cardClass + " space-y-4" }>
 		<div>
 			<h2 class="text-lg font-semibold">Inventory</h2>
-			<p class="text-xs opacity-60">Gold and items each hero carries. No limits and nothing to equip; the items do what you say they do.</p>
+			<p class="text-xs opacity-60">The party's gold and the items each hero carries. No limits; an equipped item adds its stats to the hero's combat totals, and otherwise items do what you say they do.</p>
 		</div>
 		if d.InQuest() {
 			<p class="rounded-md border border-warning/60 bg-warning/10 px-3 py-2 text-sm">
 				The heroes are in a quest. Change their gold and items in the tracker; changes made here are replaced by the quest's inventory when it is completed.
 			</p>
 		}
+		<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/gold") } class="flex items-center gap-2 text-sm">
+			<span class="opacity-70">Party gold</span>
+			<span class="font-mono font-semibold text-amber-400">{ strconv.Itoa(d.Gold) }</span>
+			<input name="gold" required maxlength="12" placeholder="+25, -10 or 40" aria-label="Change the party's gold" class={ inlineInputClass + " w-32" }/>
+			<button type="submit" class={ linkButton }>Update</button>
+		</form>
 		for _, h := range d.Heroes {
 			<div class="space-y-3 rounded-lg border border-border/60 p-4">
-				<div class="flex flex-wrap items-center justify-between gap-3">
-					<div>
-						<span class="font-semibold">{ h.Name }</span>
-						<span class="ml-1 text-xs opacity-60">{ h.Class }</span>
-					</div>
-					<form method="post" action={ heroURL(d, h, "/gold") } class="flex items-center gap-2 text-sm">
-						<span class="opacity-70">Gold</span>
-						<span class="font-mono font-semibold text-amber-400">{ strconv.Itoa(h.Gold) }</span>
-						<input name="gold" required maxlength="12" placeholder="+25, -10 or 40" aria-label={ "Change " + h.Name + "'s gold" } class={ inlineInputClass + " w-32" }/>
-						<button type="submit" class={ linkButton }>Update</button>
-					</form>
+				<div>
+					<span class="font-semibold">{ h.Name }</span>
+					<span class="ml-1 text-xs opacity-60">{ h.Class }</span>
+					if h.Combat != "" {
+						<p class="text-xs opacity-80" title="Class combat stats plus equipped items">{ h.Combat }</p>
+					}
 				</div>
 				if len(h.Items) == 0 {
 					<p class="text-sm opacity-60">No items.</p>
 				}
 				for _, it := range h.Items {
-					<div class="flex flex-wrap items-center gap-2 text-sm">
+					<div class="flex flex-wrap items-start gap-2 text-sm">
 						<form method="post" action={ heroURL(d, h, "/items/"+it.ID) } class="flex flex-1 flex-wrap items-center gap-2">
 							<input name="name" required maxlength="120" value={ it.Name } aria-label="Item name" class={ inlineInputClass + " w-48 flex-none font-semibold" }/>
 							<input name="quantity" type="number" min="1" max="9999" required value={ strconv.Itoa(it.Quantity) } aria-label={ it.Name + " quantity" } class={ inlineInputClass + " w-20 flex-none" }/>
 							<input name="notes" maxlength="500" value={ it.Notes } placeholder="Notes" aria-label={ it.Name + " notes" } class={ inlineInputClass + " min-w-40 flex-1" }/>
 							<button type="submit" class={ linkButton }>Save</button>
+							<details class="w-full">
+								<summary class="cursor-pointer text-xs opacity-70">
+									if it.Equipped {
+										<span class="font-semibold text-positive">Equipped</span>
+									}
+									if tag := itemTag(it); tag != "" {
+										<span class="ml-1">{ tag }</span>
+									} else {
+										<span class="ml-1">Kind and stats</span>
+									}
+								</summary>
+								<div class="mt-2">
+									@itemStatFields(it)
+								</div>
+							</details>
+						</form>
+						<form method="post" action={ heroURL(d, h, "/items/"+it.ID+"/equip") }>
+							<input type="hidden" name="equipped" value={ strconv.FormatBool(!it.Equipped) }/>
+							<button type="submit" class={ linkButton } aria-label={ equipLabel(it) + " " + it.Name }>{ equipLabel(it) }</button>
 						</form>
 						<form method="post" action={ heroURL(d, h, "/items/"+it.ID+"/delete") }>
 							<button type="submit" class="text-xs text-danger hover:underline" aria-label={ fmt.Sprintf("Remove %s from %s", it.Name, h.Name) }>Remove</button>
@@ -78,11 +147,25 @@ templ campaignInventory(d CampaignPageData) {
 					<input name="quantity" type="number" min="1" max="9999" value="1" aria-label="Quantity" class={ inlineInputClass + " w-20 flex-none" }/>
 					<input name="notes" maxlength="500" placeholder="Notes" aria-label="Notes" class={ inlineInputClass + " min-w-40 flex-1" }/>
 					<button type="submit" class={ linkButton }>Add</button>
+					<details class="w-full">
+						<summary class="cursor-pointer text-xs opacity-70">Kind and stats</summary>
+						<div class="mt-2 space-y-2">
+							@itemStatFields(ItemRow{})
+							<label class="flex items-center gap-2 text-xs"><input type="checkbox" name="equipped"/> Equipped</label>
+						</div>
+					</details>
 				</form>
 			</div>
 		}
 		if len(d.Heroes) == 0 {
-			<p class="text-sm opacity-70">Add heroes to track their gold and items.</p>
+			<p class="text-sm opacity-70">Add heroes to track their items.</p>
 		}
 	</section>
+}
+
+func equipLabel(it ItemRow) string {
+	if it.Equipped {
+		return "Unequip"
+	}
+	return "Equip"
 }

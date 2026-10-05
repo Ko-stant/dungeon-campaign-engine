@@ -9,7 +9,7 @@ import { monsterOptionLabel, type TrapDoc } from '../maps/types.ts';
 import { BoardRenderer } from '../board/renderer.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
-import { combatLine, FALTER_PENALTY, falterAt, monsterLine } from '../tracker/combat.ts';
+import { combatLine, combatTotals, FALTER_PENALTY, falterAt, manaCap, monsterLine } from '../tracker/combat.ts';
 import { formatEvent } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
 import { clickCommand, paintPending, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
@@ -17,7 +17,7 @@ import type { Command, CommandResponse, Hero, LiveTrapState, Monster, ScriptSect
 import { trackerView } from '../tracker/view.ts';
 import { lineTiles } from '../editor/tools.ts';
 import { h, preserveFocus, replaceChildren } from '../ui/dom.ts';
-import { abilitySection, inventorySection, type SectionContext } from '../ui/heroSections.ts';
+import { abilitySection, inventorySection, purseControl, type SectionContext } from '../ui/heroSections.ts';
 import { effectSuggestions, effectsBlock } from '../ui/effects.ts';
 import { readAloudPanel, readerOverlay, type ReadAloudContext } from '../ui/readAloud.ts';
 import { currentSection, passageClips } from '../tracker/script.ts';
@@ -308,7 +308,7 @@ async function main(): Promise<void> {
         type: 'button',
         class: btn,
         disabled: busy,
-        title: 'Move the whole party to another map. Heroes keep their body, mind, gold and equipment; the map you leave is kept as it is.',
+        title: 'Move the whole party to another map. Heroes keep their body, mind and items, and the party its gold; the map you leave is kept as it is.',
         onclick: () => {
           const choice = options.find((o) => o.questId === picker.value);
           if (!choice || !confirm(`Travel the party to ${choice.label}?`)) {
@@ -486,10 +486,10 @@ async function main(): Promise<void> {
         },
           h('span', { class: 'font-semibold' }, hero.name, h('span', { class: 'ml-1 text-xs opacity-60' }, `${cls}${hero.player ? ` · ${hero.player}` : ''}`)),
           h('span', { class: 'text-xs opacity-60' }, hero.placed ? `(${hero.x}, ${hero.y})` : 'not on board')),
-        hero.combat ? h('p', { class: 'text-xs opacity-70', title: 'Combat stats from the class' }, combatLine(hero.combat)) : null,
+        totalsLine(hero),
         statControl('Body', hero.body, hero.maxBody, (v) => { heroCmd(hero, { body: v }); }),
         statControl('Mind', hero.mind, hero.maxMind, (v) => { heroCmd(hero, { mind: v }); }),
-        (hero.maxMana ?? 0) > 0 ? statControl('Mana', hero.mana ?? 0, hero.maxMana ?? 0, (v) => { heroCmd(hero, { mana: v }); }) : null,
+        manaCap(hero) > 0 ? statControl('Mana', hero.mana ?? 0, manaCap(hero), (v) => { heroCmd(hero, { mana: v }); }) : null,
         h('select', { class: field, 'aria-label': `${hero.name} status`, onchange: (e: Event) => { heroCmd(hero, { status: (e.target as HTMLSelectElement).value }); } },
           ...(['active', 'dead', 'escaped'] as const).map((s) => h('option', { value: s, selected: hero.status === s }, s))),
         effectsBlock(hero.id, hero.name, hero.effects, (c) => { void send(c); }),
@@ -500,7 +500,16 @@ async function main(): Promise<void> {
         selected ? h('p', { class: 'text-xs text-amber-400' }, hero.placed ? 'Click a square to move this hero.' : 'Click a square to place this hero.') : null,
       );
     });
-    replaceChildren(leftPanel, h('h2', { class: 'text-sm font-semibold' }, 'Heroes'), effectSuggestions(), ...cards);
+    replaceChildren(leftPanel, h('h2', { class: 'text-sm font-semibold' }, 'Heroes'), purseControl(state.gold ?? 0, sections), effectSuggestions(), ...cards);
+  }
+
+  /** The hero's combat totals (class plus equipped items); the title shows the class's own line. */
+  function totalsLine(hero: Hero): HTMLElement | null {
+    const totals = combatTotals(hero);
+    if (!totals || !hero.combat) {
+      return null;
+    }
+    return h('p', { class: 'text-xs opacity-70', title: `With equipped items. Class: ${combatLine(hero.combat)}` }, combatLine(totals));
   }
 
   /** A living monster at or below its Faltering threshold (a quarter of maximum Body). */

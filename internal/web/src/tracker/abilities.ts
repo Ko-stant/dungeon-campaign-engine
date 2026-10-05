@@ -47,7 +47,7 @@ export function abilityRows(
 
 const MAX_GOLD = 999999;
 
-/** What the GM typed into a gold box: "+25" adds, "-10" takes away, "40" sets. Mirrors tracker.GoldChange (Go). */
+/** What the GM typed into the party gold box: "+25" adds, "-10" takes away, "40" sets. Mirrors tracker.GoldChange (Go). */
 export function goldChange(current: number, input: string): { ok: true; gold: number } | { ok: false; error: string } {
   const typed = input.trim();
   let s = typed.replaceAll(' ', '');
@@ -65,7 +65,7 @@ export function goldChange(current: number, input: string): { ok: true; gold: nu
   const n = Number(s);
   const gold = sign === 0 ? n : current + sign * n;
   if (gold < 0) {
-    return { ok: false, error: `gold: taking ${String(n)} leaves less than 0 (the hero has ${String(current)})` };
+    return { ok: false, error: `gold: taking ${String(n)} leaves less than 0 (the party has ${String(current)})` };
   }
   if (gold > MAX_GOLD) {
     return { ok: false, error: `gold must be at most ${String(MAX_GOLD)}` };

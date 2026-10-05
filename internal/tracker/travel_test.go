@@ -29,7 +29,8 @@ func travelState(t *testing.T) *State {
 func TestTravelToANewMapKeepsTheHeroesAndSavesTheOldMap(t *testing.T) {
 	_, _, cat := fixture()
 	s := travelState(t)
-	s, _ = apply(t, s, cmd(t, "hero.update", map[string]any{"id": "hero-1", "body": 3, "gold": 40}))
+	s, _ = apply(t, s, cmd(t, "hero.update", map[string]any{"id": "hero-1", "body": 3}))
+	s, _ = apply(t, s, cmd(t, "gold.set", map[string]any{"gold": 40}))
 	s, _ = apply(t, s, cmd(t, "door.set", map[string]any{"id": "door-1", "state": "open"}))
 	s, _ = apply(t, s, cmd(t, "move", map[string]any{"id": "hero-1", "x": 3, "y": 3}))
 	s, _ = apply(t, s, cmd(t, "round.advance", nil))
@@ -51,7 +52,7 @@ func TestTravelToANewMapKeepsTheHeroesAndSavesTheOldMap(t *testing.T) {
 		t.Fatalf("active map: %s %s %dx%d round %d", next.QuestID, next.QuestName, next.Board.Width, next.Board.Height, next.Round)
 	}
 	grom := next.Heroes[0]
-	if grom.Body != 3 || grom.Gold != 40 || grom.X != 1 || grom.Y != 1 || !grom.Placed {
+	if next.Gold != 40 || grom.Body != 3 || grom.X != 1 || grom.Y != 1 || !grom.Placed {
 		t.Fatalf("heroes keep their stats and start on the new map's start squares: %+v", grom)
 	}
 	if next.Heroes[1].X != 1 || next.Heroes[1].Y != 2 {

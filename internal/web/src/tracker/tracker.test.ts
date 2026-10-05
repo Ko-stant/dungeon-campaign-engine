@@ -59,8 +59,8 @@ function state(): SessionState {
     questName: 'The Trial',
     round: 1,
     heroes: [
-      { id: 'hero-1', name: 'Faelyn', class: 'elf', x: 1, y: 2, placed: true, body: 6, maxBody: 6, mind: 4, maxMind: 4, gold: 0, status: 'active' },
-      { id: 'hero-2', name: 'Bram', class: 'elf', x: 1, y: 2, placed: false, body: 6, maxBody: 6, mind: 4, maxMind: 4, gold: 0, status: 'active' },
+      { id: 'hero-1', name: 'Faelyn', class: 'elf', x: 1, y: 2, placed: true, body: 6, maxBody: 6, mind: 4, maxMind: 4, status: 'active' },
+      { id: 'hero-2', name: 'Bram', class: 'elf', x: 1, y: 2, placed: false, body: 6, maxBody: 6, mind: 4, maxMind: 4, status: 'active' },
     ],
     monsters: [
       { id: 'monster-1', type: 'orc', name: 'Orc', x: 3, y: 1, body: 1, maxBody: 1, mind: 2, visibility: 'hidden', alive: true },

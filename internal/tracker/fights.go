@@ -87,17 +87,18 @@ func (a *applier) holdCooldowns() {
 	}
 }
 
-// regenerateMana gives each living hero their class's mana per fight round, up
-// to their maximum, and names the changes ("Mira 10 → 13").
+// regenerateMana gives each living hero their mana per fight round (class and
+// equipped items), up to their maximum, and names the changes ("Mira 10 → 13").
 func (a *applier) regenerateMana() []string {
 	var out []string
 	for i := range a.s.Heroes {
 		h := &a.s.Heroes[i]
-		if h.Status == HeroDead || h.Combat == nil || h.Combat.ManaRegen <= 0 || h.Mana >= h.MaxMana {
+		regen, limit := h.ManaRegen(), h.ManaCap()
+		if h.Status == HeroDead || regen <= 0 || h.Mana >= limit {
 			continue
 		}
 		before := h.Mana
-		h.Mana = min(h.MaxMana, h.Mana+h.Combat.ManaRegen)
+		h.Mana = min(limit, h.Mana+regen)
 		out = append(out, fmt.Sprintf("%s %d → %d", h.Name, before, h.Mana))
 	}
 	return out

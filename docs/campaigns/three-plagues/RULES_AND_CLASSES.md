@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 05:20 EDT
+**Last Updated**: 2026-10-04 22:20 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -455,7 +455,13 @@ dead):
      fight cooldowns stop at 1 round left (1-3) or 2 (4+) and nothing else changes. Effects
      are generic: any hero or monster can carry a named effect with an optional countdown and a
      note (`effect.add`/`effect.remove`); ending a fight ends those with a countdown.
-   - 5d. Item stats, equipped items and hero totals; the party purse.
+   - 5d. Item stats and the party purse - done 2026-10-04: items have a kind, stats (damage,
+     Accuracy, avoidance, mitigation, mana, mana regen) and an equipped flag, on the campaign
+     page and in the tracker ("Equip", "Kind and stats"). A hero's totals are the class's
+     combat stats plus equipped items (each counted once), shown on the campaign page and the
+     hero cards; equipped mana raises the mana maximum and equipped regen adds to mana per
+     fight round (taking off a mana item lowers mana to the new maximum). Gold is one party
+     purse (campaign page and tracker); migration 00007 added up each hero's gold into it.
    - 5e. A script that fills the Three Plagues campaign with the agreed classes, monster stats
      and starting kits (run only when the GM asks).
    - 5f. Odds hints (advice only).

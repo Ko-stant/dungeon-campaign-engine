@@ -37,7 +37,6 @@ type CampaignHero struct {
 	Name      string `json:"name"`
 	Player    string `json:"player,omitempty"`
 	Class     string `json:"class"`
-	Gold      int    `json:"gold"`
 	Equipment string `json:"equipment,omitempty"`
 	Notes     string `json:"notes,omitempty"`
 	// Items is the hero's inventory, carried between quests.
@@ -57,13 +56,13 @@ type Hero struct {
 	MaxBody   int    `json:"maxBody"`
 	Mind      int    `json:"mind"`
 	MaxMind   int    `json:"maxMind"`
-	Gold      int    `json:"gold"`
 	Equipment string `json:"equipment,omitempty"`
 	Notes     string `json:"notes,omitempty"`
 	Status    string `json:"status"`
 	Items     []Item `json:"items"`
 	// Mana and abilities come from the hero's class when the session starts;
 	// the session keeps its own copy so later class edits never change a game.
+	// MaxMana is the class's; equipped items raise it (see ManaCap).
 	Mana      int               `json:"mana,omitempty"`
 	MaxMana   int               `json:"maxMana,omitempty"`
 	Abilities []content.Ability `json:"abilities,omitempty"`
@@ -71,7 +70,8 @@ type Hero struct {
 	// abilities still cooling down.
 	Cooldowns map[string]int `json:"cooldowns,omitempty"`
 	// Combat is the class's combat stats, frozen like the abilities; nil for
-	// built-in classes, which roll combat dice.
+	// built-in classes, which roll combat dice. Equipped items add to them
+	// (see CombatTotals).
 	Combat *Combat `json:"combat,omitempty"`
 	// Effects are named conditions with optional countdowns (see fights.go).
 	Effects []Effect `json:"effects,omitempty"`
@@ -145,7 +145,10 @@ type State struct {
 	QuestName string     `json:"questName"`
 	Round     int        `json:"round"`
 	// Fight is true while a fight is on (see fights.go).
-	Fight    bool        `json:"fight,omitempty"`
+	Fight bool `json:"fight,omitempty"`
+	// Gold is the party's purse, taken from the campaign when the session
+	// starts and saved back when it is completed.
+	Gold     int         `json:"gold"`
 	Heroes   []Hero      `json:"heroes"`
 	Monsters []Monster   `json:"monsters"`
 	Doors    []DoorState `json:"doors"`
@@ -191,22 +194,14 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 		h := Hero{
 			ID: ch.ID, Name: ch.Name, Player: ch.Player, Class: ch.Class,
 			Body: class.Body, MaxBody: class.Body, Mind: class.Mind, MaxMind: class.Mind,
-			Gold: ch.Gold, Equipment: ch.Equipment, Notes: ch.Notes, Status: HeroActive,
-			Items: slices.Clone(ch.Items), Mana: class.Mana, MaxMana: class.Mana, Abilities: slices.Clone(class.Abilities),
+			Equipment: ch.Equipment, Notes: ch.Notes, Status: HeroActive,
+			Items: slices.Clone(ch.Items), MaxMana: class.Mana, Abilities: slices.Clone(class.Abilities),
+			Combat: ClassCombat(class),
 		}
 		if h.Items == nil {
 			h.Items = []Item{}
 		}
-		if class.Custom && class.AttackDice != "" {
-			crit := class.CritFrom
-			if crit == 0 {
-				crit = 20
-			}
-			h.Combat = &Combat{
-				HitDice: class.AttackDice, Accuracy: class.Accuracy, CritFrom: crit, Damage: class.Damage,
-				DefenseDice: class.DefenseDice, Avoidance: class.Avoidance, Mitigation: class.Mitigation, ManaRegen: class.ManaRegen,
-			}
-		}
+		h.Mana = h.ManaCap()
 		if i < len(quest.StartTiles) {
 			h.X, h.Y, h.Placed = quest.StartTiles[i].X, quest.StartTiles[i].Y, true
 		}
@@ -215,6 +210,22 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 
 	s.setUpMap(catalog)
 	return s, nil
+}
+
+// ClassCombat is a class's combat stats as a session hero carries them (nil
+// for classes without them: built-in classes roll combat dice).
+func ClassCombat(class content.HeroDef) *Combat {
+	if !class.Custom || class.AttackDice == "" {
+		return nil
+	}
+	crit := class.CritFrom
+	if crit == 0 {
+		crit = 20
+	}
+	return &Combat{
+		HitDice: class.AttackDice, Accuracy: class.Accuracy, CritFrom: crit, Damage: class.Damage,
+		DefenseDice: class.DefenseDice, Avoidance: class.Avoidance, Mitigation: class.Mitigation, ManaRegen: class.ManaRegen,
+	}
 }
 
 // combatCopy is a monster's own copy of its catalog combat stats (nil for none).
@@ -295,14 +306,14 @@ func sortedKeys(m map[int]bool) []int {
 }
 
 // CarryOver returns the campaign's heroes updated with what they carry out of
-// this session: gold, items, equipment and notes. Heroes not in the session are
-// returned unchanged. Body and mind are not carried; heroes heal between quests.
+// this session: items, equipment and notes (the party's gold is State.Gold).
+// Heroes not in the session are returned unchanged. Body and mind are not
+// carried; heroes heal between quests.
 func (s *State) CarryOver(campaign []CampaignHero) []CampaignHero {
 	out := slices.Clone(campaign)
 	for i := range out {
 		for _, h := range s.Heroes {
 			if h.ID == out[i].ID {
-				out[i].Gold = h.Gold
 				out[i].Equipment = h.Equipment
 				out[i].Notes = h.Notes
 				out[i].Items = slices.Clone(h.Items)

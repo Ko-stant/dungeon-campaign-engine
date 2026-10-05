@@ -83,12 +83,12 @@ func TestPlacingAnUnplacedHero(t *testing.T) {
 
 func TestHeroUpdateDescribesEveryChange(t *testing.T) {
 	s := newState(t)
-	s, ev := apply(t, s, cmd(t, "hero.update", map[string]any{"id": "hero-1", "body": 5, "gold": 114, "equipment": "Broadsword, Chain mail"}))
+	s, ev := apply(t, s, cmd(t, "hero.update", map[string]any{"id": "hero-1", "body": 5, "equipment": "Broadsword, Chain mail"}))
 	h := s.Heroes[0]
-	if h.Body != 5 || h.Gold != 114 || h.Equipment != "Broadsword, Chain mail" || h.Mind != 2 {
+	if h.Body != 5 || h.Equipment != "Broadsword, Chain mail" || h.Mind != 2 {
 		t.Fatalf("hero: %+v", h)
 	}
-	for _, want := range []string{"Grom", "body 8 → 5", "gold 30 → 114", "equipment"} {
+	for _, want := range []string{"Grom", "body 8 → 5", "equipment"} {
 		if !strings.Contains(ev.Summary, want) {
 			t.Errorf("summary %q is missing %q", ev.Summary, want)
 		}

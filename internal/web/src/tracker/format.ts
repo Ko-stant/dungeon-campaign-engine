@@ -16,6 +16,7 @@ const CATEGORIES: Record<string, string> = {
   hero: 'hero',
   ability: 'hero',
   item: 'hero',
+  gold: 'hero',
   monster: 'monster',
   area: 'reveal',
   tiles: 'reveal',

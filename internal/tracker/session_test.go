@@ -62,7 +62,7 @@ func fixture() (*maps.Board, *maps.Quest, *content.Catalog) {
 
 func party() []CampaignHero {
 	return []CampaignHero{
-		{ID: "hero-1", Name: "Grom", Player: "Sam", Class: "barbarian", Gold: 30, Equipment: "Broadsword"},
+		{ID: "hero-1", Name: "Grom", Player: "Sam", Class: "barbarian", Equipment: "Broadsword"},
 		{ID: "hero-2", Name: "Ilsa", Player: "Jo", Class: "wizard"},
 	}
 }
@@ -79,7 +79,7 @@ func TestNewSessionSetsUpFromQuest(t *testing.T) {
 	}
 
 	wantHeroes := []Hero{
-		{ID: "hero-1", Name: "Grom", Player: "Sam", Class: "barbarian", X: 1, Y: 4, Placed: true, Body: 8, MaxBody: 8, Mind: 2, MaxMind: 2, Gold: 30, Equipment: "Broadsword", Status: HeroActive, Items: []Item{}},
+		{ID: "hero-1", Name: "Grom", Player: "Sam", Class: "barbarian", X: 1, Y: 4, Placed: true, Body: 8, MaxBody: 8, Mind: 2, MaxMind: 2, Equipment: "Broadsword", Status: HeroActive, Items: []Item{}},
 		{ID: "hero-2", Name: "Ilsa", Player: "Jo", Class: "wizard", X: 2, Y: 4, Placed: true, Body: 4, MaxBody: 4, Mind: 6, MaxMind: 6, Status: HeroActive, Items: []Item{}},
 	}
 	if !reflect.DeepEqual(s.Heroes, wantHeroes) {
@@ -207,14 +207,14 @@ func TestCarryOverCopiesProgressBackToTheCampaign(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Heroes[0].Gold = 150
+	s.Gold = 150
 	s.Heroes[0].Equipment = "Broadsword, Helmet"
 	s.Heroes[1].Notes = "Owes the elf a favor"
 	s.Heroes[1].Status = HeroDead
-	extra := CampaignHero{ID: "hero-9", Name: "Benched", Class: "elf", Gold: 5}
+	extra := CampaignHero{ID: "hero-9", Name: "Benched", Class: "elf", Equipment: "Dagger"}
 
 	out := s.CarryOver(append(start, extra))
-	if out[0].Gold != 150 || out[0].Equipment != "Broadsword, Helmet" || out[0].Name != "Grom" {
+	if out[0].Equipment != "Broadsword, Helmet" || out[0].Name != "Grom" {
 		t.Fatalf("hero-1: %+v", out[0])
 	}
 	if out[1].Notes != "Owes the elf a favor" {
@@ -223,7 +223,7 @@ func TestCarryOverCopiesProgressBackToTheCampaign(t *testing.T) {
 	if !reflect.DeepEqual(out[2], extra) {
 		t.Fatalf("a hero who sat this quest out is unchanged: %+v", out[2])
 	}
-	if start[0].Gold != 30 {
+	if start[0].Equipment != "Broadsword" {
 		t.Fatal("CarryOver must not modify its input")
 	}
 }
