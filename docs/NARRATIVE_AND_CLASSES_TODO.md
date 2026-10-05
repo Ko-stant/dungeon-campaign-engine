@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-05 03:40 EDT
+**Last Updated**: 2026-10-05 11:40 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -34,6 +34,22 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   is in `docs/campaigns/three-plagues/MAPS.md`.
 
 **Next**
+- **Open decision (2026-10-05): can the heroes avoid elite attacks?** The GM Bestiary
+  (https://claude.ai/artifact/CoGhfTV4sUUb5uecWw36xA, GM only; `bun scripts/gm-bestiary.ts`
+  writes `docs/campaigns/three-plagues/gm/bestiary.html`) shows defense (avoidance + 1d6)
+  barely matters against elites: dread warriors/specters (2d10+2) hit 67-91% and the
+  gargoyle (2d10+3) 74-94% depending on the hero (Papi best, Brentanamo worst); orcs hit
+  30-70%, goblins 14-46%. Quest 1 finds shave a few points. Levers offered, none chosen:
+  bigger defense dice for agile classes (Rogue/Ranger 1d10), swingier lower-average elite
+  hit dice with more damage (e.g. 1d20+3), or higher starting avoidance with more elite
+  Body. Any change must be re-run in the simulator against the ~80% Quest 1 target.
+  The GM wanted to see the details first; wait for their call.
+- **Player pages** (published, private until the GM shares them): Players' Handbook
+  (https://claude.ai/artifact/C1FiMQLNVA3pw5Jmvu7Ma2, source `players/handbook.html`;
+  hero sheets now split class base / starting gear / total, card art from `cards/web/`),
+  Table Polls (https://claude.ai/artifact/LatPNDvxX5j7p3edeQgHNL, `players/polls.html`,
+  votes in the page db). The GM may edit the HTML for wording and ask to republish (same
+  file path keeps the URL; read their edits first).
 - **Player screen (TV)**, built 2026-10-04/05 (phases 1-5 committed and pushed): a live,
   read-only player view in a second tab on the game-room TV ("Open player screen" in the
   tracker header). Decisions, what each phase did and what's next (player docs and polls,

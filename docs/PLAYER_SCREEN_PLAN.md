@@ -1,6 +1,6 @@
 # Player screen (TV) plan
 
-**Last Updated**: 2026-10-05 10:30 EDT
+**Last Updated**: 2026-10-05 11:40 EDT
 
 ## Goal
 At the table the GM runs the tracker on the laptop and opens a second Chrome tab, the
@@ -127,3 +127,10 @@ to origin once all phases are done. Resume from the last line here after a compa
   (live updates, cards, feed, Body switch, Wounded). Committed ea027a1. Next: phase 5.
 - Phase 5 built and checked in the browser (abilities text on a card, A+ text size).
   Committed 427a0da. All phases done; pushed to origin (main at 2398f6e, 2026-10-05).
+- 2026-10-05 (later): b2d6247 (Docs 7b9d3df) committed the handbook, polls, web-sized
+  card art and Mind-as-Will (Barbarian 3, Ranger 4, Rogue 5, Cleric 6; the GM applied
+  `make fill-campaign` so the dev DB classes have them). Since then, uncommitted: the
+  handbook's class base / gear / total sheets (published as version 4), the GM Bestiary
+  (`scripts/gm-bestiary.ts`, `gm/bestiary.html`, published). The other session's tracker
+  changes (corridor-drag reveal, 0-size monsters selectable) landed separately as 698a46c
+  and 01ad0e0 (Docs c64f307).

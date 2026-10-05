@@ -92,6 +92,18 @@ strong { color: var(--gold-bright); font-weight: 600; }
 .stat { background: var(--stone); border: 1px solid var(--stone-line); border-radius: 4px; padding: 0.45rem 0.6rem; display: grid; gap: 0.05rem; }
 .stat b { font-family: var(--body); font-weight: 700; font-size: 1.15rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 .stat span { font-family: var(--label); font-size: 0.78rem; letter-spacing: 0.06em; color: var(--ink-muted); }
+.build-wrap { overflow-x: auto; }
+table.build { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.98rem; }
+table.build caption { text-align: left; padding-bottom: 0.35rem; }
+table.build th, table.build td { padding: 0.4rem 0.55rem; border-bottom: 1px solid var(--stone-line); text-align: left; vertical-align: top; }
+table.build thead th { font-family: var(--label); font-weight: 500; font-size: 0.8rem; letter-spacing: 0.06em; color: var(--ink-muted); }
+table.build tbody th { font-weight: 600; color: var(--ink); }
+table.build td small { display: block; font-size: 0.78rem; color: var(--ink-muted); }
+table.build .gear-cell b { color: var(--gold-bright); font-weight: 600; }
+table.build .none { color: var(--ink-muted); }
+table.build .total { font-weight: 700; color: var(--gold-bright); font-size: 1.08rem; }
+table.odds caption { text-align: left; padding-bottom: 0.35rem; }
+.kit-note { font-size: 0.98rem; color: var(--ink-muted); }
 .abilities { display: grid; gap: 0.7rem; }
 .ability { display: grid; gap: 0.15rem; }
 .ability .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.6rem; }
@@ -273,27 +285,32 @@ html { scroll-behavior: smooth; }
 
   <section id="heroes">
     <h2>Your heroes</h2>
-    <p class="intro">Numbers with your starting gear. The odds row is your chance to hit (near misses included) against each Avoidance.</p>
+    <p class="intro">Each sheet splits your hero in two: what the class is on its own, and what your starting gear adds. New gear replaces old, so the class column is what you keep no matter what you carry. The odds are your chance to hit (near misses included) with your starting gear.</p>
     <div class="sheets">
 
       <article class="sheet" style="--hero: #b91c1c" aria-labelledby="h-brentanamo">
         <div class="top">
           <img class="portrait" src="cards/brentanamo.jpg" width="800" height="1066" loading="lazy" alt="Brentanamo Bay's hero card: the barbarian raises a great axe in crumbling halls, shielding a frightened woman.">
           <div class="top-text">
-        <header><span class="label">Barbarian</span><h3 id="h-brentanamo">Brentanamo Bay</h3></header>
-        <div class="stats">
-          <div class="stat"><span>Body</span><b>40</b></div>
-          <div class="stat"><span>Mind (Will)</span><b>3</b></div>
-          <div class="stat"><span>Move</span><b>2d6</b></div>
-          <div class="stat"><span>Hit roll</span><b>1d20+3</b></div>
-          <div class="stat"><span>Crit</span><b>17-20</b></div>
-          <div class="stat"><span>Damage</span><b>10</b></div>
-          <div class="stat"><span>Defense</span><b>3+1d6</b></div>
-          <div class="stat"><span>Mitigation</span><b>2</b></div>
-        </div>
+            <header><span class="label">Barbarian</span><h3 id="h-brentanamo">Brentanamo Bay</h3></header>
+            <div class="stats"><div class="stat"><span>Body</span><b>40</b></div><div class="stat"><span>Mind (Will)</span><b>3</b></div><div class="stat"><span>Move</span><b>2d6</b></div><div class="stat"><span>Crit</span><b>17-20</b></div><div class="stat"><span>Defense dice</span><b>1d6</b></div></div>
           </div>
         </div>
+        <div class="build-wrap">
+          <table class="build">
+            <caption class="label">Class base + starting gear</caption>
+            <thead><tr><th scope="col">Stat</th><th scope="col">Class</th><th scope="col">Starting gear</th><th scope="col">Total</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Hit roll</th><td>1d20+3</td><td class="gear-cell"><span class="none">none</span></td><td class="total">1d20+3</td></tr>
+              <tr><th scope="row">Damage</th><td>3</td><td class="gear-cell">Greataxe <b>+7</b></td><td class="total">10</td></tr>
+              <tr><th scope="row">Avoidance</th><td>2</td><td class="gear-cell">Iron-shod Boots <b>+1</b></td><td class="total">3</td></tr>
+              <tr><th scope="row">Mitigation</th><td>1 <small>Tough as Nails</small></td><td class="gear-cell">Hide Cuirass <b>+1</b></td><td class="total">2</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="kit-note">The Greataxe is two-handed and the Hide Cuirass is heavy armor: both Barbarian-only. Your defense against an attack is avoidance + a 1d6 roll.</p>
         <div class="odds-wrap"><table class="odds">
+          <caption class="label">Chance to hit with starting gear</caption>
           <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
           <tr><td>To hit</td><td>92%</td><td>82%</td><td>72%</td><td>62%</td><td>52%</td><td>42%</td></tr>
         </table></div>
@@ -304,33 +321,34 @@ html { scroll-behavior: smooth; }
           <div class="ability"><div class="head"><span class="name">Tough as Nails</span><span class="kind">passive</span></div><p>+1 mitigation (already counted above). It can bring a hit to 0.</p></div>
           <div class="ability"><div class="head"><span class="name">Cleave</span><span class="kind">passive · once a turn</span></div><p>When you kill a monster, you may attack another one around you at once.</p></div>
         </div>
-        <div><span class="label">Starting gear</span>
-          <ul class="gear"><li>Greataxe (two-handed): +7 damage</li><li>Hide Cuirass (heavy): +1 mitigation</li><li>Iron-shod Boots: +1 avoidance</li></ul>
-        </div>
       </article>
 
       <article class="sheet" style="--hero: #ca8a04" aria-labelledby="h-derrick">
         <div class="top">
           <img class="portrait" src="cards/derrick.jpg" width="800" height="999" loading="lazy" alt="Derrick Rosewood's hero card: the cleric stands in a ruined chapel with a staff and a holy book, a companion at his side.">
           <div class="top-text">
-        <header><span class="label">Cleric</span><h3 id="h-derrick">Derrick Rosewood</h3></header>
-        <div class="stats">
-          <div class="stat"><span>Body</span><b>28</b></div>
-          <div class="stat"><span>Mind (Will)</span><b>6</b></div>
-          <div class="stat"><span>Move</span><b>2d6</b></div>
-          <div class="stat"><span>Hit roll</span><b>2d8+4</b></div>
-          <div class="stat"><span>Crit</span><b>20</b></div>
-          <div class="stat"><span>Damage</span><b>5</b></div>
-          <div class="stat"><span>Defense</span><b>4+1d6</b></div>
-          <div class="stat"><span>Mana</span><b>16</b></div>
-          <div class="stat"><span>Mana a round</span><b>+3</b></div>
-        </div>
+            <header><span class="label">Cleric</span><h3 id="h-derrick">Derrick Rosewood</h3></header>
+            <div class="stats"><div class="stat"><span>Body</span><b>28</b></div><div class="stat"><span>Mind (Will)</span><b>6</b></div><div class="stat"><span>Move</span><b>2d6</b></div><div class="stat"><span>Crit</span><b>20</b></div><div class="stat"><span>Defense dice</span><b>1d6</b></div><div class="stat"><span>Mana</span><b>16</b></div></div>
           </div>
         </div>
+        <div class="build-wrap">
+          <table class="build">
+            <caption class="label">Class base + starting gear</caption>
+            <thead><tr><th scope="col">Stat</th><th scope="col">Class</th><th scope="col">Starting gear</th><th scope="col">Total</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Hit roll</th><td>2d8+4</td><td class="gear-cell"><span class="none">none</span></td><td class="total">2d8+4</td></tr>
+              <tr><th scope="row">Damage</th><td>2</td><td class="gear-cell">Mace <b>+3</b></td><td class="total">5</td></tr>
+              <tr><th scope="row">Avoidance</th><td>3</td><td class="gear-cell">Padded Robes <b>+1</b></td><td class="total">4</td></tr>
+              <tr><th scope="row">Mitigation</th><td>0</td><td class="gear-cell"><span class="none">none</span></td><td class="total">0</td></tr>
+              <tr><th scope="row">Mana each fight round</th><td>2</td><td class="gear-cell">Holy Tome <b>+1</b></td><td class="total">3</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="kit-note">Smite is a spell and ignores your weapon: 1d20+5 to hit, 5 damage. Your defense against an attack is avoidance + a 1d6 roll.</p>
         <div class="odds-wrap"><table class="odds">
+          <caption class="label">Chance to hit with starting gear</caption>
           <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
-          <tr><td>Mace</td><td>&gt;99%</td><td>96%</td><td>85%</td><td>68%</td><td>45%</td><td>24%</td></tr>
-          <tr><td>Smite</td><td>&gt;99%</td><td>91%</td><td>81%</td><td>71%</td><td>61%</td><td>50%</td></tr>
+          <tr><td>Mace</td><td>&gt;99%</td><td>96%</td><td>85%</td><td>68%</td><td>45%</td><td>24%</td></tr><tr><td>Smite</td><td>&gt;99%</td><td>91%</td><td>81%</td><td>71%</td><td>61%</td><td>50%</td></tr>
         </table></div>
         <div class="abilities">
           <div class="ability"><div class="head"><span class="name">Smite</span><span class="kind">spell · 2 mana</span></div><p>Your main attack, at range (line of sight): roll 1d20+5 to hit, 5 damage, +2 against undead. With mana coming back every fight round, you can Smite every turn.</p></div>
@@ -339,29 +357,31 @@ html { scroll-behavior: smooth; }
           <div class="ability"><div class="head"><span class="name">Divining</span><span class="kind">spell · 3 mana</span></div><p>Reveal traps, hidden doors and treasure within 6 squares, through walls and doors.</p></div>
           <div class="ability"><div class="head"><span class="name">Prayer</span><span class="kind">no mana · cooldown 5</span></div><p>Restore half your maximum mana (rounded up). It takes your action, and you can't defend until your next turn. The only way to get mana back outside a fight.</p></div>
         </div>
-        <div><span class="label">Starting gear</span>
-          <ul class="gear"><li>Mace: +3 damage</li><li>Padded Robes: +1 avoidance</li><li>Holy Tome (off-hand): +1 mana each fight round</li></ul>
-        </div>
       </article>
 
       <article class="sheet" style="--hero: #15803d" aria-labelledby="h-mordecai">
         <div class="top">
           <img class="portrait" src="cards/mordecai.jpg" width="800" height="1059" loading="lazy" alt="Mordecai Muldoon's hero card: the hooded ranger crouches with a crossbow, a castle and windmill behind him.">
           <div class="top-text">
-        <header><span class="label">Ranger</span><h3 id="h-mordecai">Mordecai Muldoon</h3></header>
-        <div class="stats">
-          <div class="stat"><span>Body</span><b>30</b></div>
-          <div class="stat"><span>Mind (Will)</span><b>4</b></div>
-          <div class="stat"><span>Move</span><b>2d6</b></div>
-          <div class="stat"><span>Hit roll</span><b>2d10+5</b></div>
-          <div class="stat"><span>Crit</span><b>18-20</b></div>
-          <div class="stat"><span>Damage</span><b>7</b></div>
-          <div class="stat"><span>Defense</span><b>6+1d6</b></div>
-          <div class="stat"><span>Mitigation</span><b>0</b></div>
-        </div>
+            <header><span class="label">Ranger</span><h3 id="h-mordecai">Mordecai Muldoon</h3></header>
+            <div class="stats"><div class="stat"><span>Body</span><b>30</b></div><div class="stat"><span>Mind (Will)</span><b>4</b></div><div class="stat"><span>Move</span><b>2d6</b></div><div class="stat"><span>Crit</span><b>18-20</b></div><div class="stat"><span>Defense dice</span><b>1d6</b></div></div>
           </div>
         </div>
+        <div class="build-wrap">
+          <table class="build">
+            <caption class="label">Class base + starting gear</caption>
+            <thead><tr><th scope="col">Stat</th><th scope="col">Class</th><th scope="col">Starting gear</th><th scope="col">Total</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Hit roll</th><td>2d10+4</td><td class="gear-cell">Archer's Gloves <b>+1 Accuracy</b></td><td class="total">2d10+5</td></tr>
+              <tr><th scope="row">Damage</th><td>2</td><td class="gear-cell">Hunting Bow <b>+5</b></td><td class="total">7</td></tr>
+              <tr><th scope="row">Avoidance</th><td>4</td><td class="gear-cell">Leather Armor <b>+2</b></td><td class="total">6</td></tr>
+              <tr><th scope="row">Mitigation</th><td>0</td><td class="gear-cell"><span class="none">none</span></td><td class="total">0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="kit-note">Only the Ranger uses bows and crossbows. Your defense against an attack is avoidance + a 1d6 roll.</p>
         <div class="odds-wrap"><table class="odds">
+          <caption class="label">Chance to hit with starting gear</caption>
           <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
           <tr><td>To hit</td><td>&gt;99%</td><td>99%</td><td>95%</td><td>86%</td><td>74%</td><td>58%</td></tr>
         </table></div>
@@ -370,29 +390,31 @@ html { scroll-behavior: smooth; }
           <div class="ability"><div class="head"><span class="name">Aimed Shot</span><span class="kind">active · cooldown 5</span></div><p>A sure hit. The target is marked: every hero gets +2 Accuracy against it until it dies or the fight ends. Your movement is halved this round and next.</p></div>
           <div class="ability"><div class="head"><span class="name">Rain of Arrows</span><span class="kind">active · cooldown 7</span></div><p>Every enemy within 2 squares of a square you choose is attacked once, with half your Accuracy (rounded down). Roll 1d4 arrows once; each enemy hit takes your damage times the arrows.</p></div>
         </div>
-        <div><span class="label">Starting gear</span>
-          <ul class="gear"><li>Hunting Bow: +5 damage</li><li>Leather Armor: +2 avoidance</li><li>Archer's Gloves: +1 Accuracy</li></ul>
-        </div>
       </article>
 
       <article class="sheet" style="--hero: #6b7280" aria-labelledby="h-papi">
         <div class="top">
           <img class="portrait" src="cards/papi.jpg" width="800" height="1137" loading="lazy" alt="Papi Ponzi's hero card: the rogue in a fur-trimmed coat fans a hand of cards beside a forge.">
           <div class="top-text">
-        <header><span class="label">Rogue</span><h3 id="h-papi">Papi Ponzi</h3></header>
-        <div class="stats">
-          <div class="stat"><span>Body</span><b>28</b></div>
-          <div class="stat"><span>Mind (Will)</span><b>5</b></div>
-          <div class="stat"><span>Move</span><b>2d6</b></div>
-          <div class="stat"><span>Hit roll</span><b>2d10+2</b></div>
-          <div class="stat"><span>Crit</span><b>15-20</b></div>
-          <div class="stat"><span>Damage</span><b>6</b></div>
-          <div class="stat"><span>Defense</span><b>7+1d6</b></div>
-          <div class="stat"><span>Mitigation</span><b>0</b></div>
-        </div>
+            <header><span class="label">Rogue</span><h3 id="h-papi">Papi Ponzi</h3></header>
+            <div class="stats"><div class="stat"><span>Body</span><b>28</b></div><div class="stat"><span>Mind (Will)</span><b>5</b></div><div class="stat"><span>Move</span><b>2d6</b></div><div class="stat"><span>Crit</span><b>15-20</b></div><div class="stat"><span>Defense dice</span><b>1d6</b></div></div>
           </div>
         </div>
+        <div class="build-wrap">
+          <table class="build">
+            <caption class="label">Class base + starting gear</caption>
+            <thead><tr><th scope="col">Stat</th><th scope="col">Class</th><th scope="col">Starting gear</th><th scope="col">Total</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Hit roll</th><td>2d10+2</td><td class="gear-cell"><span class="none">none</span></td><td class="total">2d10+2</td></tr>
+              <tr><th scope="row">Damage</th><td>1</td><td class="gear-cell">Sword <b>+3</b><br>Dirk <b>+2</b></td><td class="total">6</td></tr>
+              <tr><th scope="row">Avoidance</th><td>4</td><td class="gear-cell">Leather Jerkin <b>+2</b><br>Soft Boots <b>+1</b></td><td class="total">7</td></tr>
+              <tr><th scope="row">Mitigation</th><td>0</td><td class="gear-cell"><span class="none">none</span></td><td class="total">0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="kit-note">The Rogue always fights with two weapons; both add their damage. Your defense against an attack is avoidance + a 1d6 roll.</p>
         <div class="odds-wrap"><table class="odds">
+          <caption class="label">Chance to hit with starting gear</caption>
           <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
           <tr><td>To hit</td><td>98%</td><td>92%</td><td>82%</td><td>69%</td><td>51%</td><td>33%</td></tr>
         </table></div>
@@ -403,9 +425,6 @@ html { scroll-behavior: smooth; }
           <div class="ability"><div class="head"><span class="name">Venom Vial</span><span class="kind">active · cooldown 4</span></div><p>Crack a vial over your blades and strike: a normal attack, and on a hit the target loses 3 Body at the start of each of its next 3 turns (6 on a crit). A new vial restarts the count; it doesn't stack.</p></div>
           <div class="ability"><div class="head"><span class="name">Vanish From Sight</span><span class="kind">reaction · cooldown 5</span></div><p>When attacked, vanish: that attack is canceled, and no enemy can target you until the monsters' next turn.</p></div>
           <div class="ability"><div class="head"><span class="name">Riposte</span><span class="kind">reaction · cooldown 2</span></div><p>When a monster's attack on you misses, strike back at once for half your damage (rounded down), no roll.</p></div>
-        </div>
-        <div><span class="label">Starting gear</span>
-          <ul class="gear"><li>Sword: +3 damage and Dirk: +2 damage (always both)</li><li>Leather Jerkin: +2 avoidance</li><li>Soft Boots: +1 avoidance</li></ul>
         </div>
       </article>
 
