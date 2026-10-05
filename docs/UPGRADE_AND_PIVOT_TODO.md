@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-05 11:50 EDT
+**Last Updated**: 2026-10-05 12:55 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -99,6 +99,7 @@ Commits (oldest first):
 | 698a46c | tracker: monsters saved with size 0 can be selected again |
 | 01ad0e0 | tracker: drag along a corridor to reveal it |
 | 4487a7a | handbook sheets split base stats from gear; GM bestiary |
+| 5597c02 | handbook edits (the Chronicler, attack reach); fight end drops cooldowns at once |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
