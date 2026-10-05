@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 17:47 EDT
+**Last Updated**: 2026-10-05 18:33 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -134,6 +134,18 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
    - `AUTH_MODE=none` keeps local play as it is.
    - This is the branch's first migration; renumber it after any new ones on main.
    - **Exit:** write routes are owner-checked, with tests for 401 and 403.
+   - **Done 2026-10-05.**
+     - Store (`f17788e`): migration 00011, users, identities, login sessions, owners; a
+       `store.Viewer` in the context makes new rows the viewer's and keeps lists to their own.
+     - `internal/auth` (`a31184f`): the settings, Sign in with Discord (hand-written OAuth2,
+       identify scope), tokens.
+     - App (`7ed4f8d`): every route is registered through `guard.go`, whose rule comes from the
+       route's pattern (owner or admin; a route without a rule panics). The sign-in routes,
+       Sign out in the nav, and cross-origin protection.
+     - **Real Discord sign-in works:** the GM signed in from Chrome on the worktree (port 8090)
+       and is an admin through `AUTH_ADMINS`.
+     - Reads are private too (scripts and maps are spoilers). Seats in Phase 4 will open
+       sessions to their players.
 4. **Seats, lobby, session lifecycle:**
    - a `session_seat` table (session, hero, user, invite token) and `/join/{token}`;
    - a seat command endpoint that sets the seat actor;
@@ -193,16 +205,15 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 
 ## Resume here
 - **Where things stand:**
-  - Phases 1 and 2 are done. A whole quest can be played under the rules through `Apply`, with
-    `LegalActions` listing every move for players and the GM.
-  - The code is in `internal/tracker` (`rules.go`, `turns.go`, `moves.go`, `board_rules.go`,
-    `attacks.go`, `search.go`, `outcome.go`, `legal.go`).
-- **Map editor:** the editor sets a quest's goal, objectives and door keys (`56513db`).
-- **Phase 3 (auth)** is next, with Discord as the sign-in.
-  - Before a real login works, the GM registers a free application in the Discord developer
-    portal (redirect URL `http://localhost:8090/auth/discord/callback` for the worktree), and
-    puts `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` in the worktree's `.env`.
-  - Tests use a fake OAuth server, so the code doesn't wait on that.
+  - Phases 1-3 are done: the rules engine, the map editor fields, and Discord sign-in with
+    owners.
+  - The worktree's `.env` has `AUTH_MODE=discord` and `AUTH_ADMINS` (the GM). Unowned data
+    from before sign-in is reached as an admin.
+- **Next:** Phase 4, seats and the lobby:
+  - `session_seat` (session, hero, user, invite token) and `/join/{token}`;
+  - a seat command endpoint that stamps the seat actor;
+  - access for seated players to their session's views;
+  - presence.
 - **Browser checks:** add a temporary `dce-online` entry to the main checkout's
   `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
   ./build/dungeon-campaign-engine"`, port 8090) after `make build` in the worktree. Restore the
@@ -240,3 +251,8 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   the browser on a throwaway board in `hq_online`, then deleted.
 - 2026-10-05: the GM chose Discord for sign-in (trade-offs weighed against Google, an email
   link, passkeys and passwords). Invite links gate seats.
+- 2026-10-05: Phase 3 done.
+  - `f17788e`: store.
+  - `a31184f`: auth.
+  - `7ed4f8d`: app guard and sign-in.
+  - Real Discord sign-in checked by the GM.

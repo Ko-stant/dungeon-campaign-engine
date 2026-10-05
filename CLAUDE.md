@@ -117,6 +117,16 @@ Tailwind CSS v4, canvas rendering.
   `Mulberry32`, `Script` (fixed dice), `Log`, `HeroStrike`, `MonsterStrike`. Parity fixtures
   in `internal/{combat,maps}/testdata/parity/` come from `scripts/parity/` (`bun run
   parity:gen` after changing the TS strike math or geometry; a bun test fails when stale).
+- `internal/auth` + `internal/app/guard.go`, `signin.go` (branch `online`): sign-in.
+  - `AUTH_MODE` none (the default, the table companion, nothing changes), discord, or dev
+    (any name, loopback only).
+  - Also `PUBLIC_URL`, `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET`, and `AUTH_ADMINS`
+    (`discord:<id>,dev:<name>`).
+  - Every app route is registered through the guard, which reads what the route touches from
+    its pattern (add new path shapes to `accessRule`, or registration panics).
+  - Owners are board, campaign, custom monster and custom class (quests and sessions follow
+    theirs).
+  - Handlers taking an id from a request body call `mayUseFromRequest`.
 - `internal/maps` geometry for rules (branch `online`): `Terrain` (walls, open doors, blocked
   and sight-blocking squares), `Reachable`/`Path` (orthogonal, deterministic), `LineOfSight`
   (pieces block when given; lenient corners), `VisibleTiles`, `WalkDistances`.
