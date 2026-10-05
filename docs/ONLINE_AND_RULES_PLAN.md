@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 15:50 EDT
+**Last Updated**: 2026-10-05 15:53 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -79,7 +79,8 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
      - the ruleset, its config and the RNG state;
      - the phase (heroes, monsters, over) and who has acted;
      - the active turn and the critical-miss skips;
-     - a pending reaction window (D10) and what has been searched (D9);
+     - a pending reaction window (D10) and the furniture already searched for treasure
+       (once per party, D9);
      - the objectives and the outcome.
    - **Dice:** a seeded RNG lives in the state, so `Apply` stays pure. Every die drawn is logged
      in the event payload, and replaying the commands reproduces the game. GM commands may
@@ -178,9 +179,6 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   5. `turn.attack`;
   6. `LegalActions`.
 
-  Two small rule points are still open in `ONLINE_RULES.md`: searching with monsters in view,
-  and the treasure "once per hero" reading.
-
 ## Running log
 - 2026-10-05: plan written. The online worktree has its own container, ports and `.env`.
   `docker-compose.yml` and the `Makefile` read the container name and ports from `.env`, with
@@ -189,3 +187,5 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   - `5f564e8`: geometry.
   - `f446ed7`: combat port and parity fixtures. Run `bun run parity:gen` after changing the TS
     strike math or the geometry.
+- 2026-10-05: the GM settled the last two D9 points. No search of any kind while a monster is
+  revealed (combat is active), and treasure is searched once per piece of furniture per party.

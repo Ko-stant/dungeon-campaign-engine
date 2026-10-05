@@ -1,6 +1,6 @@
 # The Three Plagues - Online rules
 
-**Last Updated**: 2026-10-05 15:40 EDT
+**Last Updated**: 2026-10-05 15:53 EDT
 
 These are the rules the online rules engine enforces for heroes played from a seat or by a
 bot (`docs/ONLINE_AND_RULES_PLAN.md`). The combat math, classes and abilities are in
@@ -61,10 +61,16 @@ touches a wall corner is still clear. There are two kinds of sight:
     - The hero must stand next to the thing searched (a chest, a cupboard, a weapons rack).
       This is the campaign's big change from the original game, which searched whole rooms:
       it makes traps more likely and more punishing.
-    - Each hero may search a given piece once.
+    - Each piece (a chest, a cupboard, a fireplace) can be searched for treasure **once per
+      party**: after any hero has searched it, nobody can search it again in that quest.
+      The original game allowed one search per hero per room.
     - A quest can switch treasure searching off.
   - **Traps** and **secret doors:** each search reveals the hidden ones of its kind in the
-    hero's view.
+    hero's view. These searches have no limit, because searching again from the same spot
+    finds nothing new.
+  - **No searching during combat.** No kind of search is allowed while any monster is
+    revealed on the board, whether or not it is in line of sight. A revealed monster means
+    combat is active (GM, 2026-10-05).
   - Some traps can't be found by searching (Quest 1's teleport trap); they are flagged
     `unsearchable`.
   - Rewards are written as data (gold or a loot-list item). Until then the GM resolves them.
@@ -92,8 +98,8 @@ touches a wall corner is still clear. There are two kinds of sight:
     likely harder than at the table. Balance is re-checked with the headless simulator once
     it exists. The table game is unaffected, because the GM runs the monsters there.
 
-## Open questions
-1. **Searching with monsters in view:** may heroes search for traps and secret doors while a
-   monster is in view? (The original game said no.) Treasure too?
-2. **Treasure "once per hero":** is this once per hero for each piece of furniture (the
-   reading above), or once per hero per room?
+## Answered
+- **Searching with monsters revealed** (2026-10-05): not allowed, for treasure, traps and
+  secret doors alike, as long as any monster is revealed on the board (see D9).
+- **Treasure searches** (2026-10-05): once per piece of furniture per party, not once per
+  hero per room (see D9).
