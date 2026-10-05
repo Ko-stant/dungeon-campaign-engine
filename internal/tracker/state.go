@@ -105,6 +105,9 @@ type Monster struct {
 	Width  int    `json:"width"`
 	Height int    `json:"height"`
 	Color  string `json:"color,omitempty"`
+	// Combat is the campaign's combat stats for this monster type, frozen when
+	// the monster is set up or added; nil when the campaign has none.
+	Combat *content.MonsterCombat `json:"combat,omitempty"`
 }
 
 // DoorState is the live state of a quest door.
@@ -208,6 +211,15 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 	return s, nil
 }
 
+// combatCopy is a monster's own copy of its catalog combat stats (nil for none).
+func combatCopy(c *content.MonsterCombat) *content.MonsterCombat {
+	if c == nil {
+		return nil
+	}
+	out := *c
+	return &out
+}
+
 // setUpMap fills the active map's live state from its frozen quest: monsters
 // hidden with catalog stats or quest overrides, doors and traps as placed,
 // nothing removed or consumed, and the starting areas discovered.
@@ -219,6 +231,7 @@ func (s *State) setUpMap(catalog *content.Catalog) {
 		if def, ok := catalog.Monster(qm.Type); ok {
 			m.Name, m.Body, m.Mind, m.Color = def.Name, def.Body, def.Mind, def.Color
 			m.Width, m.Height = def.Size()
+			m.Combat = combatCopy(def.Combat)
 		}
 		if qm.Body != nil {
 			m.Body = *qm.Body

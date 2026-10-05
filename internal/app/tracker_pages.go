@@ -115,6 +115,17 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 		d.Classes = append(d.Classes, views.ClassOption{ID: def.ID, Name: def.Name})
 	}
 
+	stats, err := s.campaignMonsterStats(ctx, c.ID)
+	if err != nil {
+		return views.CampaignPageData{}, err
+	}
+	for _, m := range cat.Monsters {
+		d.MonsterOptions = append(d.MonsterOptions, views.MonsterOption{ID: m.ID, Name: m.Name})
+		if st, ok := stats[m.ID]; ok {
+			d.MonsterStats = append(d.MonsterStats, views.MonsterStatsRow{Type: m.ID, Name: m.Name, Stats: st})
+		}
+	}
+
 	text, err := s.store.GetCampaignScript(ctx, c.ID)
 	if err != nil {
 		return views.CampaignPageData{}, err

@@ -1,0 +1,123 @@
+package views
+
+import (
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
+	"strconv"
+	"strings"
+)
+
+// MonsterStatsRow is one of a campaign's monster stat lines.
+type MonsterStatsRow struct {
+	Type  string
+	Name  string
+	Stats content.MonsterStats
+}
+
+// MonsterOption is a monster type to give a stat line.
+type MonsterOption struct {
+	ID   string
+	Name string
+}
+
+// MonsterStatsLine sums up a monster's combat stats and traits, e.g.
+// "Avoid 14 · Hit 2d10+3 · Damage 12 · strikes 2 in a line" (as the tracker shows it).
+func MonsterStatsLine(c content.MonsterCombat) string {
+	parts := []string{"Avoid " + strconv.Itoa(c.Avoidance), "Hit " + c.HitDice, "Damage " + strconv.Itoa(c.Damage)}
+	if c.Ranged {
+		parts = append(parts, "ranged")
+	}
+	if c.Reach {
+		parts = append(parts, "reach")
+	}
+	if c.Line > 0 {
+		parts = append(parts, "strikes "+strconv.Itoa(c.Line+1)+" in a line")
+	}
+	if c.SplashDamage > 0 && c.SplashTargets > 0 {
+		parts = append(parts, "blast "+strconv.Itoa(c.SplashDamage)+" to "+strconv.Itoa(c.SplashTargets)+" beside the target")
+	}
+	if c.Undead {
+		parts = append(parts, "undead")
+	}
+	return strings.Join(parts, " · ")
+}
+
+func monsterStatsURL(d CampaignPageData, rest string) templ.SafeURL {
+	return templ.SafeURL("/campaigns/" + d.ID + "/monsters" + rest)
+}
+
+func numberValue(n int) string {
+	return strconv.Itoa(n)
+}
+
+// monsterStatsFields is the stat inputs of one form; st is the line to start from.
+templ monsterStatsFields(st content.MonsterStats) {
+	<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+		@monsterNumber("Body", "body", numberValue(st.Body), 1, 999)
+		@monsterNumber("Avoidance", "avoidance", numberValue(st.Avoidance), 0, 99)
+		<label class="block text-xs">
+			<span class="mb-1 block opacity-70">Hit dice</span>
+			<input name="hit_dice" required maxlength="40" value={ st.HitDice } placeholder="e.g. 2d8+1" class={ smallInputClass }/>
+		</label>
+		@monsterNumber("Damage", "damage", numberValue(st.Damage), 0, 99)
+	</div>
+	<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+		@monsterNumber("Line (extra heroes struck)", "line", numberValue(st.Line), 0, 3)
+		@monsterNumber("Splash damage", "splash_damage", numberValue(st.SplashDamage), 0, 99)
+		@monsterNumber("Splash targets", "splash_targets", numberValue(st.SplashTargets), 0, 8)
+	</div>
+	<div class="flex flex-wrap gap-4 text-sm">
+		<label class="flex items-center gap-2"><input type="checkbox" name="ranged" checked?={ st.Ranged }/> Ranged</label>
+		<label class="flex items-center gap-2"><input type="checkbox" name="reach" checked?={ st.Reach }/> Reach (past a held doorway)</label>
+		<label class="flex items-center gap-2"><input type="checkbox" name="undead" checked?={ st.Undead }/> Undead</label>
+	</div>
+}
+
+// campaignMonsterStats is the campaign's own monster stat lines.
+templ campaignMonsterStats(d CampaignPageData) {
+	<section id="monster-stats" class={ cardClass + " space-y-4" }>
+		<div>
+			<h2 class="text-lg font-semibold">Monster stats</h2>
+			<p class="text-xs opacity-60">This campaign's own stat lines for monster types (Avoidance, hit dice, damage, traits). New sessions use them when monsters are set up or added; a quest's own Body for a monster still wins, and monsters without a line keep their usual stats.</p>
+		</div>
+		if len(d.MonsterStats) == 0 {
+			<p class="text-sm opacity-70">No stat lines yet.</p>
+		} else {
+			<ul class="divide-y divide-border/40 rounded-lg border border-border/60">
+				for _, row := range d.MonsterStats {
+					<li class="space-y-2 p-3">
+						<div class="flex flex-wrap items-baseline justify-between gap-2">
+							<div>
+								<span class="font-semibold">{ row.Name }</span>
+								<span class="ml-2 text-sm">Body { strconv.Itoa(row.Stats.Body) } · { MonsterStatsLine(row.Stats.MonsterCombat) }</span>
+							</div>
+							<form method="post" action={ monsterStatsURL(d, "/"+row.Type+"/delete") }>
+								<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove the stat line for " + row.Name }>Remove</button>
+							</form>
+						</div>
+						<details>
+							<summary class="cursor-pointer text-xs opacity-70">Edit</summary>
+							<form method="post" action={ monsterStatsURL(d, "") } class="mt-2 space-y-2">
+								<input type="hidden" name="type" value={ row.Type }/>
+								@monsterStatsFields(row.Stats)
+								<button type="submit" class={ linkButton }>Save</button>
+							</form>
+						</details>
+					</li>
+				}
+			</ul>
+		}
+		<form method="post" action={ monsterStatsURL(d, "") } class="space-y-2 rounded-md border border-border/60 p-3">
+			<h3 class="text-sm font-semibold">Add or replace a stat line</h3>
+			<label class="block text-xs">
+				<span class="mb-1 block opacity-70">Monster</span>
+				<select name="type" class={ smallInputClass }>
+					for _, m := range d.MonsterOptions {
+						<option value={ m.ID }>{ m.Name }</option>
+					}
+				</select>
+			</label>
+			@monsterStatsFields(content.MonsterStats{Body: 1, MonsterCombat: content.MonsterCombat{HitDice: "1d12"}})
+			<button type="submit" class={ buttonClass }>Save stat line</button>
+		</form>
+	</section>
+}

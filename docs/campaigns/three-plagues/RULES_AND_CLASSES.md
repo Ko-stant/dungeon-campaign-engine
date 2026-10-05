@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 03:30 EDT
+**Last Updated**: 2026-10-05 04:30 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -444,8 +444,11 @@ dead):
    - 5a. Class combat stats - done 2026-10-05: hit dice, Accuracy, crit range, damage,
      defense dice, avoidance, mitigation and mana per fight round on the class form; sessions
      keep a frozen copy, shown on the hero cards.
-   - 5b. Monster combat stats per campaign (Body, Avoidance, hit dice, damage, traits), shown
-     in the tracker, with a Faltering badge.
+   - 5b. Monster combat stats per campaign - done 2026-10-05: the campaign page's "Monster
+     stats" section keeps a stat line per monster type (Body, Avoidance, hit dice, damage,
+     ranged, reach, line, splash, undead); sessions freeze them into their monsters when set
+     up or added (a quest's own Body still wins); the tracker shows them, with a Faltering
+     badge at a quarter of Body.
    - 5c. Fights in the tracker: start/end, mana regeneration each fight round, the cooldown
      floor out of a fight, effects with countdowns.
    - 5d. Item stats, equipped items and hero totals; the party purse.

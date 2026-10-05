@@ -9,7 +9,7 @@ import { monsterOptionLabel, type TrapDoc } from '../maps/types.ts';
 import { BoardRenderer } from '../board/renderer.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
-import { combatLine } from '../tracker/combat.ts';
+import { combatLine, FALTER_PENALTY, falterAt, monsterLine } from '../tracker/combat.ts';
 import { formatEvent } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
 import { clickCommand, paintPending, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
@@ -491,6 +491,11 @@ async function main(): Promise<void> {
     replaceChildren(leftPanel, h('h2', { class: 'text-sm font-semibold' }, 'Heroes'), ...cards);
   }
 
+  /** A living monster at or below its Faltering threshold (a quarter of maximum Body). */
+  function faltering(m: Monster): boolean {
+    return m.alive && m.body > 0 && m.body <= falterAt(m.maxBody);
+  }
+
   function renderSelection(): HTMLElement | null {
     if (!selectedId) {
       return null;
@@ -505,6 +510,10 @@ async function main(): Promise<void> {
     if (monster) {
       rows.push(
         h('p', { class: 'font-semibold' }, `${monster.name} `, h('span', { class: 'text-xs opacity-60' }, monster.id)),
+        monster.combat ? h('p', { class: 'text-xs opacity-80', title: 'Combat stats from the campaign' }, monsterLine(monster.combat)) : null,
+        monster.combat && faltering(monster)
+          ? h('p', { class: 'text-xs font-semibold text-amber-400' }, `Faltering: Avoidance ${monster.combat.avoidance - FALTER_PENALTY} (at ${falterAt(monster.maxBody)} Body or less)`)
+          : null,
         statControl('Body', monster.body, monster.maxBody, (v) => { monsterCmd(monster, { body: v }); }),
         h('div', { class: 'flex flex-wrap gap-2' },
           h('button', { type: 'button', class: btn, onclick: () => { monsterCmd(monster, { visibility: monster.visibility === 'hidden' ? 'seen' : 'hidden' }); } },
@@ -669,7 +678,8 @@ async function main(): Promise<void> {
     const monsters = state.monsters.map((m) =>
       h('li', { class: 'flex items-center justify-between gap-2 text-sm' },
         h('button', { type: 'button', class: `text-left ${m.alive ? '' : 'line-through opacity-50'}`, onclick: () => { selectedId = m.id; refresh(); } },
-          `${m.name} `, h('span', { class: 'text-xs opacity-60' }, `${m.id}${m.visibility === 'hidden' ? ' · hidden' : ''}`)),
+          `${m.name} `, h('span', { class: 'text-xs opacity-60' }, `${m.id}${m.visibility === 'hidden' ? ' · hidden' : ''}`),
+          m.combat && faltering(m) ? h('span', { class: 'ml-1 text-xs font-semibold text-amber-400' }, 'faltering') : null),
         h('span', { class: 'font-mono text-xs' }, `${m.body}/${m.maxBody}`)));
     const traps = state.quest.traps.map((t) => {
       const at = trapPosition(t);

@@ -149,6 +149,38 @@ func TestNewSessionRejectsUnknownHeroClass(t *testing.T) {
 	}
 }
 
+func TestMonstersCarryCampaignCombatStats(t *testing.T) {
+	b, q, cat := fixture()
+	orc := content.MonsterCombat{Avoidance: 8, HitDice: "2d8", Damage: 9}
+	cat = cat.WithMonsterStats(map[string]content.MonsterStats{"orc": {Body: 22, MonsterCombat: orc}})
+	s, err := NewSession(b, q, "Q", party(), cat)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m1, m2 := s.Monsters[0], s.Monsters[1]
+	if m1.Body != 22 || m1.MaxBody != 22 || m1.Combat == nil || *m1.Combat != orc {
+		t.Fatalf("orc with campaign stats: %+v", m1)
+	}
+	// The quest's own Body for one monster still wins.
+	if m2.Body != 5 || m2.Combat == nil {
+		t.Fatalf("orc with a quest Body: %+v", m2)
+	}
+	next, _ := applyWith(t, s, cmd(t, "monster.add", map[string]any{"type": "orc", "x": 3, "y": 2}), cat)
+	added := next.Monsters[len(next.Monsters)-1]
+	if added.Body != 22 || added.Combat == nil || added.Combat.HitDice != "2d8" {
+		t.Fatalf("added orc: %+v", added)
+	}
+	next, _ = applyWith(t, s, cmd(t, "monster.add", map[string]any{"type": "custom-ogre", "x": 3, "y": 2}), cat)
+	if ogre := next.Monsters[len(next.Monsters)-1]; ogre.Combat != nil {
+		t.Fatalf("a monster without campaign stats has no combat stats: %+v", ogre)
+	}
+	// Each monster keeps its own copy, apart from the catalog and the other monsters.
+	s.Monsters[0].Combat.Damage = 99
+	if def, _ := cat.Monster("orc"); def.Combat.Damage != 9 || s.Monsters[1].Combat.Damage != 9 {
+		t.Fatal("monsters must not share combat stats with the catalog or each other")
+	}
+}
+
 func TestStateJSONRoundTrip(t *testing.T) {
 	b, q, cat := fixture()
 	s, err := NewSession(b, q, "Q", party(), cat)

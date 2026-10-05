@@ -285,7 +285,7 @@ func (s *Server) newSession(ctx context.Context, campaignID, questID, name strin
 	if err != nil {
 		return store.Session{}, err
 	}
-	cat, err := s.catalogFor(ctx)
+	cat, err := s.campaignCatalog(ctx, campaignID)
 	if err != nil {
 		return store.Session{}, err
 	}
@@ -431,7 +431,7 @@ func (s *Server) sessionCommand(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "this session is completed; reopen it to make changes")
 		return
 	}
-	cat, err := s.catalogFor(r.Context())
+	cat, err := s.campaignCatalog(r.Context(), ss.CampaignID)
 	if err != nil {
 		writeStoreError(w, err)
 		return

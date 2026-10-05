@@ -70,6 +70,23 @@ export interface Monster {
   width?: number;
   height?: number;
   color?: string;
+  /** The campaign's combat stats for this monster type, frozen when set up or added; missing when the campaign has none. */
+  combat?: MonsterCombat | null;
+}
+
+/** A monster's combat stats (The Three Plagues rules), mirroring content.MonsterCombat (Go). */
+export interface MonsterCombat {
+  avoidance: number;
+  hitDice: string;
+  damage: number;
+  ranged?: boolean;
+  reach?: boolean;
+  /** Each attack also strikes this many more heroes in a straight line. */
+  line?: number;
+  /** Each attack also blasts splashTargets heroes beside the target for splashDamage. */
+  splashDamage?: number;
+  splashTargets?: number;
+  undead?: boolean;
 }
 
 export interface LiveDoor {

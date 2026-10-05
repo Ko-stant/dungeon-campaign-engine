@@ -54,6 +54,54 @@ type MonsterDef struct {
 	Color  string `json:"color,omitempty"`
 	Notes  string `json:"notes,omitempty"`
 	Custom bool   `json:"custom,omitempty"`
+	// Combat holds a campaign's combat stats for this monster (see
+	// Catalog.WithMonsterStats); nil when the campaign has none for it.
+	Combat *MonsterCombat `json:"combat,omitempty"`
+}
+
+// MonsterCombat is a monster's combat stats under The Three Plagues rules (see
+// docs/campaigns/three-plagues/RULES_AND_CLASSES.md): heroes hit when they meet
+// or beat Avoidance; the monster rolls HitDice against a hero's avoidance and
+// deals Damage. The traits change who it can reach.
+type MonsterCombat struct {
+	Avoidance int    `json:"avoidance"`
+	HitDice   string `json:"hitDice"`
+	Damage    int    `json:"damage"`
+	// Ranged monsters attack from range; reaching ones strike past heroes holding a doorway.
+	Ranged bool `json:"ranged,omitempty"`
+	Reach  bool `json:"reach,omitempty"`
+	// Line: each attack also strikes this many more heroes in a straight line.
+	Line int `json:"line,omitempty"`
+	// Splash: each attack also blasts SplashTargets heroes beside the target for SplashDamage.
+	SplashDamage  int  `json:"splashDamage,omitempty"`
+	SplashTargets int  `json:"splashTargets,omitempty"`
+	Undead        bool `json:"undead,omitempty"`
+}
+
+// MonsterStats is a campaign's stat line for one monster type: its Body and
+// combat stats.
+type MonsterStats struct {
+	Body int `json:"body"`
+	MonsterCombat
+}
+
+// WithMonsterStats returns a copy of the catalog whose monsters use a
+// campaign's stat lines (Body and combat stats), keyed by monster type. Types
+// the catalog lacks are ignored; with no stats the catalog itself is returned.
+func (c *Catalog) WithMonsterStats(stats map[string]MonsterStats) *Catalog {
+	if len(stats) == 0 {
+		return c
+	}
+	out := *c
+	out.Monsters = make([]MonsterDef, len(c.Monsters))
+	for i, m := range c.Monsters {
+		if st, ok := stats[m.ID]; ok {
+			combat := st.MonsterCombat
+			m.Body, m.Combat = st.Body, &combat
+		}
+		out.Monsters[i] = m
+	}
+	return &out
 }
 
 // Size returns the monster's footprint in squares (at least 1x1).

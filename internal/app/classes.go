@@ -115,7 +115,7 @@ func parseClassForm(r *http.Request, next int) (views.ClassForm, string, customC
 		Body: pf.Get("body"), Mind: pf.Get("mind"), Attack: pf.Get("attack"), Defense: pf.Get("defense"),
 		Movement: pf.Get("movement"), Accuracy: pf.Get("accuracy"), Mana: pf.Get("mana"),
 		Exclusives: pf["exclusives"],
-		CritFrom: pf.Get("crit_from"), Damage: pf.Get("damage"), Avoidance: pf.Get("avoidance"),
+		CritFrom:   pf.Get("crit_from"), Damage: pf.Get("damage"), Avoidance: pf.Get("avoidance"),
 		Mitigation: pf.Get("mitigation"), ManaRegen: pf.Get("mana_regen"),
 	}
 	ids, names, kinds, manas, cooldowns, texts := pf["ability_id"], pf["ability_name"], pf["ability_kind"], pf["ability_mana"], pf["ability_cooldown"], pf["ability_text"]

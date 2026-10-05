@@ -55,6 +55,11 @@ Tailwind CSS v4, canvas rendering.
     combat stats (hit dice, crit range, damage, avoidance, mitigation, mana per fight round),
     frozen into session heroes as `Combat`. Merged into the catalog's `heroes` as
     `custom-<uuid>` by `catalogFor` too; look classes up there.
+  - Campaign monster stats (column `campaign.monster_stats`): a campaign's own stat line per
+    monster type (Body and `content.MonsterCombat`), edited on the campaign page
+    (`/campaigns/{id}/monsters...`). Session handlers use `Server.campaignCatalog(ctx,
+    campaignID)` (catalogFor with the stat lines laid over), and session monsters freeze them
+    as `combat`.
   - Tracker: `/campaigns`, `/campaigns/{id}`, `/play/{id}`, `/api/campaigns...`, `/api/sessions/{id}/(commands|travel|events|complete|reopen|stream)`
   - Inventory: campaign heroes carry gold and `items` (name, quantity, notes) between quests;
     `/campaigns/{id}/heroes/{heroId}/(gold|items...)` forms, `item.*` tracker commands.

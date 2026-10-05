@@ -157,3 +157,30 @@ func TestLoadRejectsBadFiles(t *testing.T) {
 		})
 	}
 }
+
+func TestWithMonsterStats(t *testing.T) {
+	cat := &Catalog{Monsters: []MonsterDef{
+		{ID: "orc", Name: "Orc", Body: 1, Attack: 3},
+		{ID: "goblin", Name: "Goblin", Body: 1},
+	}}
+	patched := cat.WithMonsterStats(map[string]MonsterStats{
+		"orc":    {Body: 22, MonsterCombat: MonsterCombat{Avoidance: 8, HitDice: "2d8", Damage: 9, Ranged: true}},
+		"dragon": {Body: 500},
+	})
+	orc, _ := patched.Monster("orc")
+	if orc.Body != 22 || orc.Combat == nil || *orc.Combat != (MonsterCombat{Avoidance: 8, HitDice: "2d8", Damage: 9, Ranged: true}) || orc.Attack != 3 {
+		t.Fatalf("orc with campaign stats: %+v", orc)
+	}
+	if goblin, _ := patched.Monster("goblin"); goblin.Body != 1 || goblin.Combat != nil {
+		t.Fatalf("goblin without campaign stats: %+v", goblin)
+	}
+	if _, ok := patched.Monster("dragon"); ok {
+		t.Fatal("stats for a type the catalog lacks add nothing")
+	}
+	if orc, _ := cat.Monster("orc"); orc.Body != 1 || orc.Combat != nil {
+		t.Fatalf("the original catalog must not change: %+v", orc)
+	}
+	if cat.WithMonsterStats(nil) != cat {
+		t.Fatal("no stats: the same catalog")
+	}
+}

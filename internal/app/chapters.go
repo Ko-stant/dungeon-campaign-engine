@@ -314,7 +314,7 @@ func (s *Server) sessionTravel(w http.ResponseWriter, r *http.Request) {
 		}
 		dest = tracker.Destination{QuestID: questRec.ID, QuestName: questRec.Name, Board: board, Quest: &quest}
 	}
-	cat, err := s.catalogFor(r.Context())
+	cat, err := s.campaignCatalog(r.Context(), ss.CampaignID)
 	if err != nil {
 		writeStoreError(w, err)
 		return

@@ -1,6 +1,6 @@
 /** Hero combat stats for display (The Three Plagues rules; see tracker.Combat in Go). */
 
-import type { HeroCombat } from './types.ts';
+import type { HeroCombat, MonsterCombat } from './types.ts';
 
 /** A flat bonus on a dice expression: "1d20+3", or "2d10+2 +3" when it has its own modifier or several terms. */
 function withBonus(dice: string, bonus: number): string {
@@ -25,4 +25,32 @@ export function combatLine(c: HeroCombat): string {
     parts.push(`Mana +${c.manaRegen ?? 0} a fight round`);
   }
   return parts.join(' · ');
+}
+
+/** One line, e.g. "Avoid 14 · Hit 2d10+3 · Damage 12 · strikes 2 in a line" (as the campaign page shows it). */
+export function monsterLine(c: MonsterCombat): string {
+  const parts = [`Avoid ${c.avoidance}`, `Hit ${c.hitDice}`, `Damage ${c.damage}`];
+  if (c.ranged) {
+    parts.push('ranged');
+  }
+  if (c.reach) {
+    parts.push('reach');
+  }
+  if ((c.line ?? 0) > 0) {
+    parts.push(`strikes ${(c.line ?? 0) + 1} in a line`);
+  }
+  if ((c.splashDamage ?? 0) > 0 && (c.splashTargets ?? 0) > 0) {
+    parts.push(`blast ${c.splashDamage ?? 0} to ${c.splashTargets ?? 0} beside the target`);
+  }
+  if (c.undead) {
+    parts.push('undead');
+  }
+  return parts.join(' · ');
+}
+
+/** Faltering: at or below a quarter of maximum Body (rounded down, at least 1) a monster has Avoidance -4. */
+export const FALTER_PENALTY = 4;
+
+export function falterAt(maxBody: number): number {
+  return Math.max(1, Math.floor(maxBody / 4));
 }

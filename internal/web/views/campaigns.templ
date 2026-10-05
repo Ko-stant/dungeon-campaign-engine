@@ -91,6 +91,9 @@ type CampaignPageData struct {
 	AudioDir     string
 	AudioClips   []AudioClipRow
 	AudioError   string
+	// The campaign's own monster stat lines, and every monster type to give one.
+	MonsterStats   []MonsterStatsRow
+	MonsterOptions []MonsterOption
 }
 
 func chapterStatusClass(status string) string {
@@ -220,6 +223,7 @@ templ CampaignPage(d CampaignPageData) {
 				</form>
 			</section>
 			@campaignInventory(d)
+			@campaignMonsterStats(d)
 			<section class={ cardClass }>
 				<h2 class="mb-1 text-lg font-semibold">Chapters</h2>
 				<p class="mb-4 text-xs opacity-60">The campaign's quests in play order. Each chapter is a quest on its own map.</p>

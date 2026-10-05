@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { combatLine } from './combat.ts';
+import { combatLine, falterAt, monsterLine } from './combat.ts';
 
 describe('combatLine', () => {
   test('sums up a hero\'s attack and defense', () => {
@@ -18,5 +18,23 @@ describe('combatLine', () => {
     expect(combatLine({ hitDice: '2d10+2', accuracy: 3, critFrom: 15, damage: 6, defenseDice: '1d6', avoidance: 7, mitigation: 0 })).toBe(
       'Hit 2d10+2 +3 · Crit 15-20 · Damage 6 · Avoid 7+1d6',
     );
+  });
+});
+
+describe('monsterLine', () => {
+  test('sums up a monster\'s combat stats and traits', () => {
+    expect(monsterLine({ avoidance: 14, hitDice: '2d10+3', damage: 12, line: 1 })).toBe('Avoid 14 · Hit 2d10+3 · Damage 12 · strikes 2 in a line');
+    expect(monsterLine({ avoidance: 6, hitDice: '1d12', damage: 5, ranged: true, splashDamage: 2, splashTargets: 2 })).toBe(
+      'Avoid 6 · Hit 1d12 · Damage 5 · ranged · blast 2 to 2 beside the target',
+    );
+    expect(monsterLine({ avoidance: 12, hitDice: '2d8+1', damage: 10, undead: true, reach: true })).toBe('Avoid 12 · Hit 2d8+1 · Damage 10 · reach · undead');
+  });
+});
+
+describe('falterAt', () => {
+  test('a quarter of maximum Body, rounded down, and at least 1', () => {
+    expect(falterAt(109)).toBe(27);
+    expect(falterAt(5)).toBe(1);
+    expect(falterAt(3)).toBe(1);
   });
 });

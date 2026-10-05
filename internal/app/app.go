@@ -57,6 +57,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	s.registerMonsterPages(mux)
 	s.registerClassPages(mux)
 	s.registerInventoryPages(mux)
+	s.registerCampaignMonsterPages(mux)
 	s.registerScript(mux)
 	s.registerAudio(mux)
 	s.registerChapterPages(mux)
