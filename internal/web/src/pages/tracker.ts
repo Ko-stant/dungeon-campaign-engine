@@ -12,7 +12,7 @@ import { createTrackerApi } from '../tracker/api.ts';
 import { combatLine, combatTotals, FALTER_PENALTY, falterAt, manaCap, monsterLine } from '../tracker/combat.ts';
 import { formatEvent } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
-import { clickCommand, paintPending, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
+import { clickCommand, corridorPath, paintPending, revealPathCommand, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
 import { triggerButton } from '../tracker/traps.ts';
 import { shownToPlayers } from '../tracker/visibility.ts';
 import type { Command, CommandResponse, Hero, LiveTrapState, Monster, ScriptSection, SessionEvent, SessionState } from '../tracker/types.ts';
@@ -71,6 +71,10 @@ async function main(): Promise<void> {
   let revealSeen = true;
   let pending: TileCoord[] = [];
   let painting: { add: boolean; last: TileCoord } | null = null;
+  // A drag in Reveal mode: the squares passed over (revealPathCommand keeps the new corridor ones).
+  let revealDrag: { path: TileCoord[]; last: TileCoord; moved: boolean } | null = null;
+  // The click that ends a reveal drag must not also reveal the square it ends on.
+  let swallowClick = false;
   let busy = false;
   let message = '';
   let live = false;
@@ -112,7 +116,8 @@ async function main(): Promise<void> {
   const requestDraw = (): void => {
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
-      renderer.draw(trackerView(state, catalog, { fog }), { selectedId, tiles: mode.kind === 'pickSquares' ? pending : null });
+      const tiles = mode.kind === 'pickSquares' ? pending : revealDrag?.moved ? corridorPath(state, revealDrag.path) : null;
+      renderer.draw(trackerView(state, catalog, { fog }), { selectedId, tiles });
     });
   };
   const renderer = new BoardRenderer(canvas, requestDraw);
@@ -176,6 +181,10 @@ async function main(): Promise<void> {
   }
 
   canvas.addEventListener('click', (ev) => {
+    if (swallowClick) {
+      swallowClick = false;
+      return;
+    }
     const result = clickCommand(state, mode, selectedId, targetAt(ev), catalog);
     if (!result) {
       return;
@@ -191,6 +200,11 @@ async function main(): Promise<void> {
   // Picking squares to reveal: press on a square to add it (or remove it if picked), drag to paint more.
   canvas.addEventListener('mousedown', (ev) => {
     const t = targetAt(ev).tile;
+    swallowClick = false;
+    if (mode.kind === 'reveal' && t) {
+      revealDrag = { path: [t], last: t, moved: false };
+      return;
+    }
     if (mode.kind !== 'pickSquares' || !t) {
       return;
     }
@@ -208,16 +222,39 @@ async function main(): Promise<void> {
     painting.last = t;
     refresh();
   }
+  /** Extends a reveal drag to t, through every square in between. */
+  function dragTo(t: TileCoord | null): void {
+    if (!revealDrag || !t || (t.x === revealDrag.last.x && t.y === revealDrag.last.y)) {
+      return;
+    }
+    revealDrag.path.push(...lineTiles(revealDrag.last, t));
+    revealDrag.last = t;
+    revealDrag.moved = true;
+    requestDraw();
+  }
   window.addEventListener('mouseup', (ev) => {
     if (ev.target === canvas) {
       paintTo(targetAt(ev).tile);
+      dragTo(targetAt(ev).tile);
     }
     painting = null;
+    if (revealDrag?.moved) {
+      // A drag reveals the corridor it crossed; a press without a drag is a click (a room or one square).
+      swallowClick = ev.target === canvas;
+      const command = revealPathCommand(state, revealDrag.path, revealSeen);
+      revealDrag = null;
+      requestDraw();
+      if (command) {
+        void send(command);
+      }
+    }
+    revealDrag = null;
   });
 
   canvas.addEventListener('mousemove', (ev) => {
     const t = targetAt(ev).tile;
     paintTo(t);
+    dragTo(t);
     if (!t) {
       hoverInfo.textContent = '';
       return;
@@ -257,6 +294,9 @@ async function main(): Promise<void> {
       return;
     }
     if (ev.key === 'Escape') {
+      // Cancels a reveal drag in progress: letting go then reveals nothing.
+      swallowClick = revealDrag !== null;
+      revealDrag = null;
       selectedId = null;
       mode = { kind: 'select' };
       pending = [];
@@ -445,8 +485,8 @@ async function main(): Promise<void> {
     const hint: Record<Mode['kind'], string> = {
       select: 'Click a hero, monster or movable trap (boulder), then a square to move it. Click a door to select it, then open, close or lock it from the Selected panel. Click furniture or blocked squares to show them to the players.',
       reveal: revealSeen
-        ? 'Click a room to reveal it and show the players what is in it: monsters, furniture, blocked squares and its doors (never traps or unfound secret doors).'
-        : 'Click a room to reveal it (or a corridor square). What is in it stays hidden from the players.',
+        ? 'Click a room to reveal it, or drag along a corridor to reveal its squares, and show the players what is there: monsters, furniture, blocked squares and doors (never traps or unfound secret doors).'
+        : 'Click a room to reveal it, or drag along a corridor to reveal its squares. What is there stays hidden from the players.',
       pickSquares: 'Click or drag across squares to pick them, then reveal them all at once.',
       hide: 'Click a square to hide it again.',
       block: 'Click a square to block it (a falling block, where a boulder stopped). Select an added block to clear it.',

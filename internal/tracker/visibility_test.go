@@ -78,6 +78,9 @@ func TestRevealCanShowARoomsContents(t *testing.T) {
 	if s.Traps[0].State != "hidden" {
 		t.Fatal("revealing never touches traps")
 	}
+	if pv := PlayerView(s); len(pv.Traps) != 0 {
+		t.Fatalf("the players see a trap on a revealed square: %+v", pv.Traps)
+	}
 
 	// A plain reveal shows nothing but the squares.
 	plain, _ := apply(t, newState(t), cmd(t, "area.reveal", map[string]any{"x": 6, "y": 1}))

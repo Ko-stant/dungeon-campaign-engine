@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { DOC_VERSION, type Catalog } from '../maps/types.ts';
 import { formatEvent } from './format.ts';
-import { clickCommand, doorAt, paintPending, pieceAt, revealSquaresCommand, type Mode } from './interaction.ts';
+import { clickCommand, corridorPath, doorAt, paintPending, pieceAt, revealPathCommand, revealSquaresCommand, type Mode } from './interaction.ts';
 import type { SessionState } from './types.ts';
 import { trackerView } from './view.ts';
 import { shownToPlayers } from './visibility.ts';
@@ -308,6 +308,22 @@ describe('interaction', () => {
     expect(revealSquaresCommand([], true)).toBeNull();
     expect(revealSquaresCommand(pending, true)).toEqual({ type: 'tiles.reveal', payload: { tiles: [{ x: 1, y: 1 }, { x: 2, y: 1 }], seen: true } });
     expect(revealSquaresCommand(pending, false)).toEqual({ type: 'tiles.reveal', payload: { tiles: [{ x: 1, y: 1 }, { x: 2, y: 1 }] } });
+  });
+
+  test('a reveal drag reveals the undiscovered corridor squares along it, never room squares or solid rock', () => {
+    const s = state();
+    // (4,1) and (4,2) are a room, (1,2) is solid rock; (1,1) and (2,1) are already discovered.
+    s.board.regions = [0, 0, 0, 1, -1, 0, 0, 1];
+    const path = [
+      { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }, { x: 4, y: 2 },
+      { x: 3, y: 2 }, { x: 2, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 },
+    ];
+    expect(corridorPath(s, path)).toEqual([{ x: 3, y: 1 }, { x: 3, y: 2 }, { x: 2, y: 2 }]);
+    // The trap on (2,2) is only a square to reveal: trap states change by trap.set alone.
+    expect(revealPathCommand(s, path, true)).toEqual({ type: 'tiles.reveal', payload: { tiles: [{ x: 3, y: 1 }, { x: 3, y: 2 }, { x: 2, y: 2 }], seen: true } });
+    expect(revealPathCommand(s, path, false)).toEqual({ type: 'tiles.reveal', payload: { tiles: [{ x: 3, y: 1 }, { x: 3, y: 2 }, { x: 2, y: 2 }] } });
+    // Nothing new along the drag: no command.
+    expect(revealPathCommand(s, [{ x: 1, y: 1 }, { x: 4, y: 1 }], true)).toBeNull();
   });
 
   test('select mode: clicking a trap or note square selects it when no piece is there', () => {

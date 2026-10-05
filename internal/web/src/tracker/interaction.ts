@@ -1,13 +1,14 @@
 /** What a click on the tracker board means in each mode. */
 import { doorCovers, footprintTiles, type Edge, type TileCoord } from '../board/geometry.ts';
-import { covers } from '../board/model.ts';
+import { covers, tileIndex } from '../board/model.ts';
 import { trapTiles } from '../editor/model.ts';
 import type { Catalog, TrapDoc } from '../maps/types.ts';
 import type { Command, SessionState } from './types.ts';
 
 /**
- * What board clicks do. Reveal (a room, or one corridor square) and picked
- * squares can also mark the monsters there as seen. In 'pickSquares' the page
+ * What board clicks do. Reveal (a room, one corridor square, or the corridor
+ * squares along a drag: see revealPathCommand) and picked squares can also
+ * mark the monsters there as seen. In 'pickSquares' the page
  * collects squares (see paintPending) and reveals them with one command.
  */
 export type Mode =
@@ -94,6 +95,33 @@ export function revealSquaresCommand(pending: readonly TileCoord[], seen: boolea
   }
   const tiles = pending.map((p) => ({ x: p.x, y: p.y }));
   return { type: 'tiles.reveal', payload: seen ? { tiles, seen: true } : { tiles } };
+}
+
+/**
+ * The corridor squares along a reveal drag that the heroes have not discovered
+ * yet, in path order without repeats. Room squares and solid rock are skipped:
+ * a click reveals a whole room.
+ */
+export function corridorPath(s: SessionState, path: readonly TileCoord[]): TileCoord[] {
+  const { width, height, regions } = s.board;
+  const done = new Set(s.discovered);
+  const out: TileCoord[] = [];
+  for (const t of path) {
+    if (t.x < 1 || t.y < 1 || t.x > width || t.y > height) {
+      continue;
+    }
+    const i = tileIndex(width, t);
+    if (regions[i] === 0 && !done.has(i)) {
+      done.add(i);
+      out.push({ x: t.x, y: t.y });
+    }
+  }
+  return out;
+}
+
+/** One command revealing the new corridor squares along a drag (null when there are none). */
+export function revealPathCommand(s: SessionState, path: readonly TileCoord[], seen: boolean): Command | null {
+  return revealSquaresCommand(corridorPath(s, path), seen);
 }
 
 /** The catalog (optional) gives multi-square traps their footprint; without it every trap is one square. */
