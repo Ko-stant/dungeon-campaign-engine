@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 19:09 EDT
+**Last Updated**: 2026-10-05 19:18 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -199,8 +199,18 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
          ("Attack the Goblin to the east"), never by id (`tracker/names.go`).
        - `playerSafe` drops door, furniture and trap ids and the GM's "(seen: ...)" counts.
        - The seat page stacks at phone width (board, then turn and feed, then sheet).
-     - **Not yet done:**
-       - **5c:** the GM rules console.
+     - **5c** (`9ddc831`): the GM rules console in the tracker's right column.
+       - `GET /api/sessions/{id}/actions` (GM only) gives `tracker.LegalActions` for the GM;
+         `tracker/rules.ts` (tested) sorts them for `ui/rulesConsole.ts`.
+       - It shows where the round stands, "The monsters' turn" / "End the round", and an
+         "End <hero>'s turn" override. In the monsters' phase each monster lists its attacks;
+         selecting one highlights its moves, and clicking a highlighted square moves it by
+         the rules.
+       - The header's "Next round" (`round.advance`) in rules mode starts the next heroes'
+         phase and closes an open turn (it had left the rules state in the old round).
+       - Checked in the browser with a GM tab and a seat tab: live updates both ways, a
+         goblin moved into a doorway and attacked, rounds ended both ways.
+     - **Not yet done:** the Phase 5 exit.
 6. **Hosting and the content boundary:**
    - a multi-stage Dockerfile running a single instance, since session locks are in memory;
    - Postgres, Caddy for TLS, and backups (a small VPS with docker compose is the likely fit);
@@ -255,27 +265,20 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 
 ## Resume here
 - **Where things stand (2026-10-05, end of a long session):**
-  - Phases 1-4 are done, and Phase 5 is through 5b plus the seat page's browser check. All
-    committed on `online`; the last code commit is `43f3384`.
-  - Tests: 406 Go (`make test-db`) and 336 bun, with `make lint` clean.
+  - Phases 1-4 are done, and Phase 5 is built through 5c; only its exit (a whole quest
+    online) is left. All committed on `online`; the last code commit is `9ddc831`.
+  - Tests: 408 Go (`make test-db`) and 340 bun, with `make lint` clean.
   - The worktree's `.env` has `AUTH_MODE=discord` and `AUTH_ADMINS=discord:<the GM's id>`.
   - Main and the GM's `hq` database were never touched. Main's `.claude/launch.json` is
     restored.
 - **Next, in order:**
-  1. **5c, the GM rules console:**
-     - A `ui/rulesConsole.ts` panel in the tracker's right column, above `renderSelection`.
-     - It shows the phase, whose turn, and "The monsters' turn" / "End the round" buttons.
-     - It lists the monsters' moves and attacks from `LegalActions` for the GM. That needs a
-       new GM endpoint returning `tracker.LegalActions(state, Actor{}, cat)`, since the
-       rules live only in Go.
-     - Pure logic goes in `tracker/rules.ts` with tests. `presence` is already in
-       `pages/tracker.ts`.
-  2. **The Phase 5 exit:** play a whole small quest online (GM tracker plus two seat tabs).
-     The classes in `hq_online` were copied before class reach existed, so every hero has
-     adjacent reach there until `make fill-campaign CAMPAIGN="Three Plagues" APPLY=1` runs
-     against the worktree's database (ask the GM first). The catalog classes (Barbarian,
-     Elf...) have no combat stats, so their heroes can't attack in rules mode.
-  3. **Phase 6, hosting:** see its hosting notes (`kostant.dev`, containers, a members
+  1. **The Phase 5 exit:** play a whole small quest online (the GM tracker plus seat tabs),
+     ideally with the GM and friends signed in with Discord. The GM ran `make fill-campaign`
+     on `hq_online`, so its Three Plagues classes have their reach. The catalog classes
+     (Barbarian, Elf...) have no combat stats, so their heroes can't attack in rules mode.
+     Known gaps to expect: ability effects, trap effects and search rewards are resolved by
+     the GM (Phase 7); no reaction prompts yet (D10).
+  2. **Phase 6, hosting:** see its hosting notes (`kostant.dev`, containers, a members
      allowlist).
 - **Open decisions:** none pending.
 - **Devices (GM, 2026-10-05):** desktop and laptop browsers only; phones aren't supported, so
@@ -344,6 +347,8 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 - 2026-10-05: Phase 5a and 5b.
 - 2026-10-05: `43f3384`, the seat page's browser check and its fixes: player wording for
   actions and the feed, and a phone layout.
+- 2026-10-05: the GM ran `make fill-campaign` on `hq_online` (class reach now there).
+  `9ddc831`, Phase 5c: the GM rules console; "Next round" ends the round by the rules.
   - `a3c9caf`: seats, the seat stream, presence.
   - `569d23b`: the seat page and player lines for rules commands.
   - The seat page's browser check is still to do.

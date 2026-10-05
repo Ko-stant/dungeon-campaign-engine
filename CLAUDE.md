@@ -127,6 +127,12 @@ Tailwind CSS v4, canvas rendering.
   - Owners are board, campaign, custom monster and custom class (quests and sessions follow
     theirs).
   - Handlers taking an id from a request body call `mayUseFromRequest`.
+- Online play in the app (branch `online`): `/lobby`, `/join/{id}`, the seat page
+  `/play/{id}/seat` (`pages/seat.ts`, `seat/model.ts`; `tracker.SeatView`, seat API and
+  stream in `internal/app/seat.go`), and the GM's rules console in the tracker
+  (`ui/rulesConsole.ts`, `tracker/rules.ts`, from `GET /api/sessions/{id}/actions`). Hero
+  action labels and the players' feed name pieces as the players see them, never by id
+  (`tracker/names.go`, `playerSafe`). Desktop browsers only; phones aren't supported.
 - `internal/maps` geometry for rules (branch `online`): `Terrain` (walls, open doors, blocked
   and sight-blocking squares), `Reachable`/`Path` (orthogonal, deterministic), `LineOfSight`
   (pieces block when given; lenient corners), `VisibleTiles`, `WalkDistances`.
