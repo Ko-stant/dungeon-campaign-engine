@@ -48,3 +48,32 @@ func TestAHiddenMonsterMovesUnheard(t *testing.T) {
 		t.Errorf("a new round: %q", ev.PlayerSummary)
 	}
 }
+
+func TestThePlayersLinesNameNoPiecesByID(t *testing.T) {
+	s := hallTurn(t, 3, 3)
+	s, _ = hallApply(t, s, moveTo(t, 2, 2))
+	if _, ev := hallApply(t, s, openDoor(t, "d1")); ev.PlayerSummary != "Grom (Barbarian) opens a door" {
+		t.Errorf("a door: %q", ev.PlayerSummary)
+	}
+	s = searchState(t, nil)
+	if _, ev := hallApply(t, s, search(t, "hero-1", "treasure", "chest")); ev.PlayerSummary != "Grom (Barbarian) searches the Chest for treasure" {
+		t.Errorf("treasure: %q", ev.PlayerSummary)
+	}
+	s = searchState(t, func(q *maps.Quest) {
+		q.Traps = append(q.Traps, maps.Trap{ID: "room-pit", Kind: "pit", X: 4, Y: 3, State: maps.TrapHidden})
+	})
+	if _, ev := hallApply(t, s, search(t, "hero-1", "traps", "")); ev.PlayerSummary != "Grom (Barbarian) searches for traps: found Pit Trap" {
+		t.Errorf("traps: %q", ev.PlayerSummary)
+	}
+	if _, ev := hallApply(t, rogueState(t), disarm(t, 1)); ev.PlayerSummary != "Ilsa (Rogue) steps onto (3,3) and fails to disarm Pit Trap (1d8: 1); Pit Trap triggered: it stays on the board" {
+		t.Errorf("a failed disarm: %q", ev.PlayerSummary)
+	}
+	s = searchState(t, func(q *maps.Quest) {
+		q.Doors[1].Kind, q.Doors[1].Locked, q.Doors[1].Key = maps.DoorGate, true, "Iron Key"
+		q.StartTiles[0] = maps.Tile{X: 4, Y: 2}
+	})
+	s.Heroes[0].Items = []Item{{Name: "Iron Key", Quantity: 1}}
+	if _, ev := hallApply(t, s, openDoor(t, "d2")); ev.PlayerSummary != "Grom (Barbarian) unlocks a gate with the Iron Key and opens it" {
+		t.Errorf("a gate: %q", ev.PlayerSummary)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math/rand/v2"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
@@ -22,9 +23,33 @@ func hallLegal(s *State, actor Actor) []Action {
 	return LegalActions(s, actor, cat)
 }
 
+// A player's buttons name pieces as the players see them, with the way to
+// them from the hero, never by the GM's ids.
+func TestHeroActionsNamePiecesAsThePlayersSeeThem(t *testing.T) {
+	has := func(actions []Action, label string) bool {
+		return slices.Contains(labels(actions), label)
+	}
+	s := searchState(t, nil)
+	if got := hallLegal(s, seat("hero-1")); !has(got, "Search the Chest to the east for treasure") {
+		t.Errorf("Grom beside the chest: %v", labels(got))
+	}
+	s = rogueState(t)
+	if got := hallLegal(s, seat("hero-2")); !has(got, "Disarm the Pit Trap to the north") || !has(got, "Open the door to the east") {
+		t.Errorf("Ilsa beside the pit and door d2: %v", labels(got))
+	}
+	s = searchState(t, func(q *maps.Quest) {
+		q.Doors[1].Kind, q.Doors[1].Locked, q.Doors[1].Key = maps.DoorGate, true, "Iron Key"
+		q.StartTiles[0] = maps.Tile{X: 4, Y: 2}
+	})
+	s.Heroes[0].Items = []Item{{Name: "Iron Key", Quantity: 1}}
+	if got := hallLegal(s, seat("hero-1")); !has(got, "Unlock the gate to the west with the Iron Key") {
+		t.Errorf("a locked gate: %v", labels(got))
+	}
+}
+
 func TestLegalActionsOnAHeroTurn(t *testing.T) {
 	s := duelState(t)
-	want := []string{"Roll for movement", "Open d2", "Attack Orc (orc)", "End the turn"}
+	want := []string{"Roll for movement", "Open the door to the west", "Attack the Orc to the northeast", "End the turn"}
 	if got := labels(hallLegal(s, seat("hero-1"))); !reflect.DeepEqual(got, want) {
 		t.Errorf("Grom's turn: %v, want %v", got, want)
 	}

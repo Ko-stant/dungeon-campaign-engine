@@ -184,7 +184,7 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 	if err != nil {
 		return nil, Event{}, err
 	}
-	return next, Event{Round: next.Round, Kind: c.Type, Summary: summary, Payload: payload, PlayerSummary: PlayerSummary(s, next, c, summary),
+	return next, Event{Round: next.Round, Kind: c.Type, Summary: summary, Payload: payload, PlayerSummary: PlayerSummary(s, next, c, summary, catalog),
 		PlayerSpotted: PlayerSpotted(s, next, c), PlayerRetract: PlayerRetract(s, c)}, nil
 }
 

@@ -158,7 +158,7 @@ templ JoinPage(d JoinData) {
 // SeatPage is the shell for a player's game screen (pages/seat.ts).
 templ SeatPage(sessionID string, title string) {
 	@components.Page(title, "seat") {
-		<div id="seat" data-session-id={ sessionID } class="flex h-screen flex-col overflow-hidden">
+		<div id="seat" data-session-id={ sessionID } class="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
 			<noscript class="p-6">The game needs JavaScript.</noscript>
 		</div>
 	}

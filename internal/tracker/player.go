@@ -198,7 +198,7 @@ func PlayerView(s *State) PlayerState {
 // PlayerSummary is the player-safe line for a change (empty: the players
 // hear nothing). It compares the state before and after the command;
 // gmSummary is reused only for commands that concern the heroes alone.
-func PlayerSummary(before, after *State, c Command, gmSummary string) string {
+func PlayerSummary(before, after *State, c Command, gmSummary string, catalog *content.Catalog) string {
 	switch c.Type {
 	case "item.add", "item.remove", "item.give", "item.update", "item.equip", "item.use", "gold.set", "ability.use", "ability.reset":
 		return gmSummary
@@ -221,7 +221,7 @@ func PlayerSummary(before, after *State, c Command, gmSummary string) string {
 	case "phase.monsters":
 		return "The monsters' turn"
 	case "phase.end", "hero.join", "quest.end":
-		return playerSafe(before, after, gmSummary)
+		return playerSafe(before, after, gmSummary, catalog)
 	case "monster.move", "monster.attack":
 		// A monster the heroes can't see acts unheard.
 		var p struct {
@@ -231,10 +231,10 @@ func PlayerSummary(before, after *State, c Command, gmSummary string) string {
 		if m := findMonster(after, p.Monster); m == nil || m.Visibility != MonsterSeen {
 			return ""
 		}
-		return playerSafe(before, after, gmSummary)
+		return playerSafe(before, after, gmSummary, catalog)
 	}
 	if strings.HasPrefix(c.Type, "turn.") {
-		return playerSafe(before, after, gmSummary)
+		return playerSafe(before, after, gmSummary, catalog)
 	}
 	return ""
 }
@@ -243,10 +243,17 @@ func PlayerSummary(before, after *State, c Command, gmSummary string) string {
 // searched piece ("; note A is here").
 var notesMentioned = regexp.MustCompile(`; note [^;]+ is here`)
 
+// seenMentioned matches the GM's count of what a reveal showed
+// (" (seen: 2 monsters, 1 door)"); the players see the pieces themselves.
+var seenMentioned = regexp.MustCompile(` \(seen: [^)]*\)`)
+
 // playerSafe is a rules command's GM line as the players may hear it: no
-// quest notes, and monsters by name without their ids.
-func playerSafe(before, after *State, line string) string {
+// quest notes or reveal counts, and monsters, doors, furniture and traps by
+// name without their ids.
+func playerSafe(before, after *State, line string, catalog *content.Catalog) string {
 	line = notesMentioned.ReplaceAllString(line, "")
+	line = seenMentioned.ReplaceAllString(line, "")
+	line = (&applier{s: after, catalog: catalog}).pieceIDs(line)
 	for _, st := range []*State{after, before} {
 		for _, m := range st.Monsters {
 			line = strings.ReplaceAll(line, monsterLabel(&m), m.Name)

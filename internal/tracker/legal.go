@@ -97,9 +97,10 @@ func (l *legal) hero() {
 	if !turn.MoveDone {
 		for _, d := range s.Doors {
 			if door, key, err := a.checkDoor(h, d.ID); err == nil {
-				label := "Open " + a.doorLabel(door.ID)
+				qd := a.questDoor(door.ID)
+				label := fmt.Sprintf("Open the %s %s", doorNoun(qd), towardDoor(h, qd))
 				if key != nil {
-					label = fmt.Sprintf("Unlock %s with the %s", a.doorLabel(door.ID), key.Name)
+					label = fmt.Sprintf("Unlock the %s %s with the %s", doorNoun(qd), towardDoor(h, qd), key.Name)
 				}
 				l.add(label, "turn.door", map[string]any{"door": door.ID})
 			}
@@ -109,7 +110,7 @@ func (l *legal) hero() {
 		for i := range s.Monsters {
 			m := &s.Monsters[i]
 			if m.Alive && m.Visibility == MonsterSeen && a.checkAttack(h, m) == nil {
-				l.add("Attack "+monsterLabel(m), "turn.attack", map[string]any{"target": m.ID})
+				l.add(fmt.Sprintf("Attack the %s %s", m.Name, towardTiles(h, rectTiles(m.X, m.Y, m.Width, m.Height))), "turn.attack", map[string]any{"target": m.ID})
 			}
 		}
 		if !s.revealedMonster() {
@@ -117,13 +118,13 @@ func (l *legal) hero() {
 			l.add("Search for secret doors", "turn.search", map[string]any{"kind": SearchDoors})
 			for _, f := range s.Quest.Furniture {
 				if _, _, err := a.checkTreasure(h, f.ID); err == nil {
-					l.add("Search the "+a.furnitureLabel(f)+" for treasure", "turn.search", map[string]any{"kind": SearchTreasure, "furniture": f.ID})
+					l.add(fmt.Sprintf("Search the %s %s for treasure", a.furnitureName(f), towardTiles(h, a.furnitureTiles(f))), "turn.search", map[string]any{"kind": SearchTreasure, "furniture": f.ID})
 				}
 			}
 		}
 		for _, t := range s.Traps {
-			if _, qt, _, err := a.checkDisarm(h, t.ID); err == nil {
-				l.add("Disarm "+a.trapKindLabel(qt)+" "+t.ID, "turn.disarm", map[string]any{"trap": t.ID})
+			if ts, qt, _, err := a.checkDisarm(h, t.ID); err == nil {
+				l.add(fmt.Sprintf("Disarm the %s %s", a.trapKindLabel(qt), towardTiles(h, a.trapTiles(ts, qt))), "turn.disarm", map[string]any{"trap": t.ID})
 			}
 		}
 	}

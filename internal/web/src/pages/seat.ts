@@ -48,9 +48,12 @@ async function main(): Promise<void> {
   // --- Layout ---
   const canvas = h('canvas', { class: 'block h-full w-full cursor-pointer' });
   const header = h('header', { class: 'flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/60 px-4 py-2' });
-  const left = h('aside', { class: 'w-80 shrink-0 space-y-3 overflow-y-auto border-r border-border/60 p-3' });
-  const right = h('aside', { class: 'flex w-96 shrink-0 flex-col gap-3 overflow-hidden border-l border-border/60 p-3' });
-  replaceChildren(root, header, h('div', { class: 'flex min-h-0 flex-1' }, left, h('main', { class: 'relative min-w-0 flex-1 p-3' }, canvas), right));
+  // Three columns on a wide screen; on a phone the board comes first, then
+  // the turn and the feed, then the sheet and the party.
+  const left = h('aside', { class: 'order-3 space-y-3 border-t border-border/60 p-3 lg:order-1 lg:w-80 lg:shrink-0 lg:overflow-y-auto lg:border-t-0 lg:border-r' });
+  const right = h('aside', { class: 'order-2 flex flex-col gap-3 border-t border-border/60 p-3 lg:order-3 lg:w-96 lg:shrink-0 lg:overflow-hidden lg:border-t-0 lg:border-l' });
+  const board = h('main', { class: 'relative order-1 h-[60vh] min-w-0 p-3 lg:order-2 lg:h-auto lg:flex-1' }, canvas);
+  replaceChildren(root, header, h('div', { class: 'flex min-h-0 flex-1 flex-col lg:flex-row' }, left, board, right));
 
   // --- Board ---
   let frame = 0;
@@ -191,7 +194,7 @@ async function main(): Promise<void> {
         message ? h('p', { class: 'rounded-md border border-danger/60 bg-danger/10 px-2 py-1 text-sm text-danger', role: 'alert' }, message) : null),
       h('section', { class: 'flex min-h-0 flex-1 flex-col' },
         h('h2', { class: 'mb-1 text-sm font-semibold uppercase tracking-wide opacity-60' }, 'What happened'),
-        h('ul', { class: 'min-h-0 flex-1 space-y-1 overflow-y-auto text-sm' },
+        h('ul', { class: 'max-h-80 min-h-0 flex-1 space-y-1 overflow-y-auto text-sm lg:max-h-none' },
           ...lines.map((e) => h('li', { class: 'flex gap-2' }, h('span', { class: 'w-8 shrink-0 font-mono text-xs opacity-60' }, `R${String(e.round)}`), h('span', {}, e.summary))))));
   }
 
