@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 18:45 EDT
+**Last Updated**: 2026-10-05 18:55 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -179,6 +179,23 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
    - a GM rules console (phase, pending items, the monsters' turn).
    - Ability effects are resolved by the GM in this phase.
    - **Exit:** a whole quest is played online.
+   - **Progress (2026-10-05):**
+     - **5a** (`a3c9caf`):
+       - `tracker.SeatView` (the seat's hero sheets and legal actions, the phase, whose turn).
+       - The seat API returns the player view, feed and catalog, plus the seat and presence.
+       - The `seat-stream` WebSocket pushes each player their own seat after every change, and
+         presence. The GM tracker shows "Online: ..."; `tracker/stream.ts` tells changes from
+         presence.
+     - **5b** (`569d23b`):
+       - `/play/{id}/seat` and `pages/seat.ts`: the board with reachable squares highlighted
+         (click to move or attack), the hero sheet, action buttons, party, presence, and a
+         "What happened" feed with dice.
+       - `seat/model.ts` (tested).
+       - The players' feed hears rules commands, sanitized in `tracker/player.go`
+         `playerSafe`: no monster ids, no quest notes, nothing from unseen monsters.
+     - **Not yet done:**
+       - A browser check of the seat page (see Resume here).
+       - **5c:** the GM rules console.
 6. **Hosting and the content boundary:**
    - a multi-stage Dockerfile running a single instance, since session locks are in memory;
    - Postgres, Caddy for TLS, and backups (a small VPS with docker compose is the likely fit);
@@ -186,6 +203,14 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
      shapes;
    - invite-only, shipping only original Three Plagues text and data;
    - legal advice before anything public.
+   - **Hosting notes (GM, 2026-10-05):**
+     - The GM owns `kostant.dev`. Candidates: a subdomain such as `dce.kostant.dev`, with
+       `PUBLIC_URL` set to it and a second Discord redirect URL added in the portal.
+     - Containerize the whole app. Candidates: Fly.io, Render or Railway (managed Postgres,
+       WebSockets, a Dockerfile deploy), Heroku's container stack, or a small VPS (e.g.
+       Hetzner) running docker compose (app, Postgres, Caddy for TLS).
+     - Needs: a single app instance (the session locks are in memory), Postgres 18, persistent
+       storage for the audio clips (`AUDIO_DIR`), backups, and the members allowlist before going public.
    - **Exit:** the instance is deployed, and `/assets/` returns 404 there.
 7. **Structured rules data:**
    - ability effects (ported from `simulate.ts`), trap effects, search rewards and reactions
@@ -224,24 +249,42 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 13. **Generated campaigns:** packs generated against the same validators.
 
 ## Resume here
-- **Where things stand:** Phases 1-4 are done.
-  - Friends sign in with Discord, see open games at `/lobby`, pick or make a hero, and join.
-  - The GM opens a session and starts online play from the campaign page.
-  - Players read their seat (`GET /api/sessions/{id}/seat`) and send their heroes' turn
-    commands (`POST .../seat-commands`).
-- **Next:** Phase 5, the online player client.
-  - `tracker.SeatView` (the player view plus the seat's own hero sheets) and a per-seat stream
-    with presence.
-  - A `pages/seat.ts` game screen: board, buttons from legal actions, move highlighting, a
-    dice log.
-  - A GM rules console in the tracker (phase, the monsters' turn, reactions).
-- **Checking as a pretend user:** set `AUTH_MODE=dev` in the worktree's `.env`
-  temporarily (any name signs in, from this machine), then restore `discord` and delete what
-  was made (`provider = 'dev'` users and `zz` records).
+- **Where things stand (2026-10-05, end of a long session):**
+  - Phases 1-4 are done, and Phase 5 is through 5b. All committed on `online`; the last code
+    commit is `569d23b`.
+  - Tests: about 404 Go (`make test-db`) and 336 bun, with `make lint` clean.
+  - The worktree's `.env` has `AUTH_MODE=discord` and `AUTH_ADMINS=discord:<the GM's id>`.
+  - Main and the GM's `hq` database were never touched. Main's `.claude/launch.json` is
+    restored.
+- **Next, in order:**
+  1. **Browser-check the seat page** (built and unit-tested, not yet seen in a browser).
+     1. Set `AUTH_MODE=dev` in the worktree's `.env`, `make build`, and add a temporary
+        `dce-online` launch entry (below).
+     2. Sign in as a pretend GM (`POST /auth/dev`), make a `zz` board (corridor plus a
+        room), a quest with two start squares, a campaign with a hero, and a session.
+     3. Open it to players and start online play.
+     4. Sign in as a pretend player, claim the hero, and open `/play/{id}/seat`.
+     5. Start a turn, roll, click a highlighted square, and check the board, buttons, feed
+        and presence.
+     6. Clean up: delete the `zz` rows and the `provider = 'dev'` users, then set
+        `AUTH_MODE=discord` again.
+  2. **5c, the GM rules console:**
+     - A `ui/rulesConsole.ts` panel in the tracker's right column, above `renderSelection`.
+     - It shows the phase, whose turn, and "The monsters' turn" / "End the round" buttons.
+     - It lists the monsters' moves and attacks from `LegalActions` for the GM. That needs a
+       new GM endpoint returning `tracker.LegalActions(state, Actor{}, cat)`, since the
+       rules live only in Go.
+     - Pure logic goes in `tracker/rules.ts` with tests. `presence` is already in
+       `pages/tracker.ts`.
+  3. **The Phase 5 exit:** play a whole small quest online (GM tracker plus two seat tabs).
+  4. **Phase 6, hosting:** see its hosting notes (`kostant.dev`, containers, a members
+     allowlist).
+- **Open decisions:** none pending.
 - **Browser checks:** add a temporary `dce-online` entry to the main checkout's
   `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
   ./build/dungeon-campaign-engine"`, port 8090) after `make build` in the worktree. Restore the
-  file afterward.
+  file afterward. The GM signs in with Discord from their own browser at
+  http://localhost:8090; the in-app browser pane is often hidden.
 
 ## Running log
 - 2026-10-05: plan written. The online worktree has its own container, ports and `.env`.
@@ -284,3 +327,8 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   - `f7c45db`, `e3b3dd4`, `81c436e`.
   - A browser check as a pretend GM and player in dev mode, cleaned up afterward. It found
     and fixed a quest-list leak.
+- 2026-10-05: Phase 5a and 5b.
+  - `a3c9caf`: seats, the seat stream, presence.
+  - `569d23b`: the seat page and player lines for rules commands.
+  - The seat page's browser check is still to do.
+  - The GM noted the `kostant.dev` domain for hosting.
