@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { DOC_VERSION, type Catalog } from '../maps/types.ts';
-import { formatEvent } from './format.ts';
+import { formatEvent, searchEvents } from './format.ts';
 import { clickCommand, corridorPath, doorAt, hotkey, paintPending, pieceAt, revealPathCommand, revealSquaresCommand, type Mode } from './interaction.ts';
 import type { SessionState } from './types.ts';
 import { trackerView } from './view.ts';
@@ -367,6 +367,19 @@ describe('formatEvent', () => {
     expect(formatEvent({ seq: 1, round: 1, kind: 'log.note', summary: 'x', payload: {}, createdAt: '' }).kind).toBe('note');
     expect(formatEvent({ seq: 1, round: 1, kind: 'session.start', summary: 'x', payload: {}, createdAt: '' }).kind).toBe('session');
     expect(formatEvent({ seq: 1, round: 1, kind: 'weird', summary: 'x', payload: {}, createdAt: 'not a date' }).time).toBe('');
+  });
+});
+
+describe('searchEvents', () => {
+  const ev = (seq: number, round: number, summary: string) => ({ seq, round, kind: 'log.note', summary, payload: {}, createdAt: '' });
+  const events = [ev(1, 1, 'Opened door-1'), ev(2, 2, 'Orc (monster-3): body 22 → 15'), ev(3, 12, 'Vex used Healing Potion'), ev(4, 2, 'Fight over')];
+  test('matches words in any order, ignoring case; "r2" picks a round', () => {
+    expect(searchEvents(events, '').map((e) => e.seq)).toEqual([1, 2, 3, 4]);
+    expect(searchEvents(events, 'ORC').map((e) => e.seq)).toEqual([2]);
+    expect(searchEvents(events, 'potion vex').map((e) => e.seq)).toEqual([3]);
+    expect(searchEvents(events, 'r2').map((e) => e.seq)).toEqual([2, 4]);
+    expect(searchEvents(events, 'r2 orc').map((e) => e.seq)).toEqual([2]);
+    expect(searchEvents(events, 'dragon')).toEqual([]);
   });
 });
 

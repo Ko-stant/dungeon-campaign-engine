@@ -153,13 +153,14 @@ delete protection).
 ## 3. Inventory and special items
 - [x] Hero inventory (done 2026-09-28): gold plus items (name, quantity, notes). No size
       limit, nothing equipped; the GM decides what items do. Carried between quests.
-- [x] Campaign page "Inventory" section: gold (`+25`, `-10` or `40`), add / edit / remove
+- [x] Campaign page "Inventory" section: gold (`+25`, `-10` or `=40`), add / edit / remove
       items. Warns that a running quest's inventory replaces these edits when completed.
 - [x] Tracker: gold box, item +/-, remove, give one to another hero, add item. Commands
       `item.add` (merges by name), `item.update`, `item.remove`, `item.give`; gold via
       `hero.update`.
-- [ ] Special item library (optional): reusable item definitions with text and counters
-      ("every 3rd shot"). Starting gear and the secret vendor stay in the GM's hands.
+- [x] Item library (done 2026-10-05): each campaign's loot list (kind, stats, healing,
+      notes), filled from combat.json and handed out from the tracker's loot picker;
+      potions are used with one click. Counters ("every 3rd shot") are still open (section 4).
 
 How: pure `tracker.AddItem/RemoveItem/UpdateItem/NormalizeItems/GoldChange`
 (`internal/tracker/inventory.go`, shared by the tracker commands and the campaign forms in
@@ -180,9 +181,9 @@ Tests: `internal/tracker/inventory_test.go`, `internal/app/inventory_test.go`,
 - [x] Hero card: Mana control, collapsible Abilities (ready / rounds left, Use / Cast,
       Ready, Make all ready; passives as reminders) and Inventory sections.
 - [x] Live updates no longer wipe what the GM is typing (`preserveFocus` in `ui/dom.ts`).
-- [ ] Effects: `effect.add` / `effect.remove` on a hero or monster, with an optional end
-      round (Holy Blessing, Turn Evil, Vanished, Raging, Aimed Shot slowed, cannot defend);
-      `round.advance` lists effects that ended; monster panel and board badges.
+- [x] Effects (done 2026-10-05, step 5c): `effect.add` / `effect.remove` on a hero or
+      monster with an optional countdown in fight rounds; `round.advance` lists effects that
+      ended, a fight's end clears timed ones, and the TV shows them on the cards.
 - [ ] Item counters (Aggamand's Quiver "every 3rd shot").
 
 How: `internal/tracker/abilities.go` (+ `abilities_test.go`); TS `abilityRows`,
@@ -190,9 +191,11 @@ How: `internal/tracker/abilities.go` (+ `abilities_test.go`); TS `abilityRows`,
 abilities or mana on their heroes; start a new session to get them.
 
 ## 5. Stronger monsters
-- [ ] Custom monsters: Avoidance (even number), hit dice (dice expression), fixed damage,
-      larger Body (see "Combat" in the rules doc; combat roadmap step 5).
-- [ ] Monster abilities (bosses) with the same ability model and cooldowns.
+- [x] Monster combat stats (done 2026-10-04, step 5b): per-campaign stat lines (Body,
+      Avoidance, hit dice, damage, traits, abilities text; Body-only lines for monsters
+      that don't fight), filled from combat.json.
+- [ ] Monster abilities (bosses) with the same ability model and cooldowns (Quests 2-3;
+      today a stat line's abilities text is shown on the TV card).
 
 ## 6. Campaign and quest story
 - [ ] Campaign: intro, closing, GM secret notes.

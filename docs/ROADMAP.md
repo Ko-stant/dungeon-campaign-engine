@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last Updated**: 2026-10-03 16:01 EDT
+**Last Updated**: 2026-10-05 19:30 EDT
 
 The engine is a single-GM companion for in-person HeroQuest: build maps, run a
 quest at the table, and keep a resumable record of what happened. It never
@@ -33,7 +33,8 @@ enforces rules; the GM decides, and the app remembers.
   marker for the GM's own effects.
 - Reveal a room with its monsters (everything but traps); pick squares and reveal them
   (and the monsters on them) in one step.
-- [ ] Enter stats for the new monsters (their files say 0 = not entered yet).
+- [ ] Enter stats for the new monsters (their files say 0 = not entered yet). (The Three
+      Plagues campaign gives its monsters stat lines on the campaign page instead.)
 - Dice expressions (`2d6+1`, d4..d20) in Go and TypeScript.
 - Custom hero classes (`/classes`): dice stats, accuracy, mana, class exclusives and
   abilities with cooldowns and mana costs. Next steps for the "Three Plagues" campaign are
@@ -49,9 +50,12 @@ enforces rules; the GM decides, and the app remembers.
 
 ## Next
 ### Table polish
-- [ ] Tracker layout for smaller screens (collapsible side panels, bigger board).
+- [ ] Tracker layout for smaller screens (collapsible side panels, bigger board). (Not yet:
+      the GM's laptop is small, but the layout waits.)
 - [ ] Drag to move pieces; keyboard nudges for the selected piece.
-- [ ] Event log filters (round, hero, monster) and search.
+- [x] Event log search (2026-10-05): a magnifying-glass button above the log opens a
+      search bar (words in any order; "r3" for round 3). Filters by hero or monster are
+      covered by typing their name.
 - [ ] Monster detail panel with catalog stats (attack/defend/move) and notes.
 - [ ] Map checks for multi-square monsters: `Quest.Check` only checks a monster's
       anchor square, so a 2x2 custom monster hanging off the board or into rock is
@@ -60,25 +64,32 @@ enforces rules; the GM decides, and the app remembers.
 - [ ] Friendlier advisory messages in the map creator (names instead of ids).
 
 ### Player TV view (read-only)
-- [ ] `/table/{sessionId}`: heroes' view only (discovered squares, seen monsters,
-      found doors, revealed traps), driven by the existing session stream.
-- [ ] Optional big-screen mode (no side panels, large board).
+- [x] Heroes' view only (discovered squares, seen monsters, found doors, revealed traps),
+      live: done 2026-10-05 as `/play/{id}/players` (docs/PLAYER_SCREEN_PLAN.md).
+- [x] Big-screen mode: the player screen's Full screen button and text size (A-/A+).
 
 ### Helping the GM remember
 - [ ] "Already searched" markers per room (treasure / traps / secret doors), per
-      hero if wanted. (From the old roadmap's search tracking.)
-- [ ] Line-of-sight suggestions when a door opens (must treat drawn walls as walls): offer to reveal what the
+      hero if wanted. (Not for The Three Plagues: treasure comes from searching furniture,
+      and the GM tracks secret doors by hand.)
+- [ ] (Not for now: the GM reveals by hand, keeping control of what tall furniture or a
+      corner hides.) Line-of-sight suggestions when a door opens (must treat drawn walls as walls): offer to reveal what the
       heroes can see. The legacy LOS code is in git history (`cmd/server/visibility.go`
       before commit "Phase 8"), and would be ported into `internal/maps`.
-- [ ] Wandering monster reminder from the quest's wandering monster type.
+- [ ] Wandering monster reminder from the quest's wandering monster type. (Not for The
+      Three Plagues: no wandering monsters.)
 
 ### Heroes and campaigns
 - [ ] Structured equipment and artifacts (from `content/equipment`, `content/artifacts`)
-      instead of free text; show stat modifiers as reminders, not enforcement.
+      instead of free text; show stat modifiers as reminders, not enforcement. (Items now
+      have kind and stats, and each campaign has a loot list with stats ready; the base
+      game's equipment catalog isn't imported.)
 - [ ] Spell tracking per hero (spells chosen, used this quest).
-- [ ] Potions and consumables with a "used" toggle.
+- [x] Potions and consumables: usable items (heal Body, restore mana) with a Use button
+      (`item.use`), done 2026-10-05.
 - [ ] Hero death and replacement across a campaign (new hero, TPK handling,
-      replaying a quest). (From the old roadmap's hero death section.)
+      replaying a quest). (The Three Plagues keeps it simple: a fallen hero starts the next
+      quest fresh, and the GM narrates the rescue.)
 - [x] Campaign quest list and progress (which quests are done). (Chapters.)
 - [ ] Per-hero travel: today the whole party travels together; splitting the party
       across maps is not modeled.
@@ -89,6 +100,10 @@ enforces rules; the GM decides, and the app remembers.
 - [ ] Duplicate a board or quest.
 - [ ] Import the remaining original quests (`make import-content QUEST=...`) once
       their JSON exists.
+
+### Remote play (later)
+- [ ] Players joining from their own devices; an on-screen dice roller belongs to that pass
+      (physical dice at the table until then).
 
 ### GM house rules (optional reminders, never enforced)
 - [ ] Per-campaign notes on house rules (e.g. doubles on dice, bargains) shown in

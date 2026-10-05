@@ -38,3 +38,18 @@ export function formatEvent(e: SessionEvent): EventLine {
   const prefix = e.kind.split('.')[0] ?? e.kind;
   return { round: `R${e.round}`, time, summary: e.summary, kind: CATEGORIES[prefix] ?? 'other' };
 }
+
+/**
+ * The log entries matching what the GM typed in the log search: every word must appear in
+ * the summary (any order, ignoring case), and a word like "r2" picks round 2 instead.
+ */
+export function searchEvents<T extends Pick<SessionEvent, 'round' | 'summary'>>(events: readonly T[], query: string): T[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return [...events];
+  }
+  return events.filter((e) => {
+    const text = e.summary.toLowerCase();
+    return words.every((w) => (/^r\d+$/.test(w) ? e.round === Number(w.slice(1)) : text.includes(w)));
+  });
+}

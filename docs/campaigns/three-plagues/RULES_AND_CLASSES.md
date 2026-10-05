@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 17:50 EDT
+**Last Updated**: 2026-10-05 19:50 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -644,6 +644,15 @@ of Arrows). Nothing to count: the charge reads the crit die already rolled. With
 crit range of 18-20, a shot is charged 20% of the time and a crit 15%.
 
 ## Campaign notes
+
+### Table decisions (2026-10-05)
+- **A fallen hero comes back for the next quest.** If the rest of the party gets through,
+  the GM narrates how they saved their comrade; the app already starts every hero fresh.
+- **No wandering monsters** in this campaign, to see how it plays.
+- **Searching for treasure**: the GM is leaning toward searching only furniture directly
+  (chests, cupboards and the like) instead of whole rooms; not final.
+- **Secret doors and line of sight** are the GM's to track by hand (things hidden behind
+  tall furniture or around corners stay the GM's call); no app support planned for now.
 **Items and treasure**
 - Items are made to fit the balance: simulations set target damage and mitigation for the
   starting kit, the end of Quest 1, the end of Quest 2 and the Quest 3 vendor, then items

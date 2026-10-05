@@ -10,7 +10,7 @@ import { BoardRenderer } from '../board/renderer.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
 import { combatLine, combatTotals, determinationAfter, FALTER_PENALTY, falterAt, manaCap, monsterLine, statChange } from '../tracker/combat.ts';
-import { formatEvent } from '../tracker/format.ts';
+import { formatEvent, searchEvents } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
 import { clickCommand, corridorPath, hotkey, paintPending, revealPathCommand, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
 import { triggerButton } from '../tracker/traps.ts';
@@ -81,6 +81,9 @@ async function main(): Promise<void> {
   let swallowClick = false;
   let busy = false;
   let message = '';
+  // The log search: a magnifying-glass button opens the bar (the panel has little room).
+  let logSearchOpen = false;
+  let logQuery = '';
   let live = false;
   // The passage open in the reader, and script sections the GM opened or closed.
   let readerId: string | null = null;
@@ -880,11 +883,57 @@ async function main(): Promise<void> {
       h('li', { class: 'flex items-start justify-between gap-2 text-sm' },
         h('span', { class: state.consumedNotes.includes(n.id) ? 'line-through opacity-50' : '' }, h('strong', {}, `${n.label}: `), n.text || '(no text)'),
         noteButton(n.id)));
-    const eventItems = [...events].reverse().slice(0, 300).map((e) => {
-      const line = formatEvent(e);
-      return h('li', { class: `border-l-2 pl-2 text-sm ${KIND_STYLES[line.kind] ?? KIND_STYLES.other}` },
-        h('div', { class: 'text-xs opacity-60' }, `${line.round} · ${line.time}`), line.summary);
-    });
+    const logItems = (query: string): HTMLElement[] => {
+      const found = searchEvents([...events].reverse(), query);
+      const items = found.slice(0, 300).map((e) => {
+        const line = formatEvent(e);
+        return h('li', { class: `border-l-2 pl-2 text-sm ${KIND_STYLES[line.kind] ?? KIND_STYLES.other}` },
+          h('div', { class: 'text-xs opacity-60' }, `${line.round} · ${line.time}`), line.summary);
+      });
+      if (query.trim()) {
+        items.unshift(h('li', { class: 'text-xs opacity-60' }, found.length ? `${String(found.length)} of ${String(events.length)} entries` : 'No entries match.'));
+      }
+      return items;
+    };
+    const logList = h('ol', { class: 'max-h-80 space-y-2 overflow-y-auto' }, ...logItems(logSearchOpen ? logQuery : ''));
+    let logSearch: HTMLInputElement | null = null;
+    if (logSearchOpen) {
+      const input = h('input', {
+        class: `${field} h-7 w-full text-xs`,
+        type: 'search',
+        value: logQuery,
+        placeholder: 'Search: words, or r3 for round 3',
+        'aria-label': 'Search the log',
+      });
+      // Typing only redraws the list, so the box keeps its focus.
+      input.addEventListener('input', () => {
+        logQuery = input.value;
+        replaceChildren(logList, ...logItems(logQuery));
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          logSearchOpen = false;
+          logQuery = '';
+          refresh();
+        }
+      });
+      logSearch = input;
+    }
+    const searchToggle = h('button', {
+      type: 'button',
+      class: `rounded p-1 hover:text-amber-400 ${logSearchOpen ? 'text-amber-400' : 'opacity-70'}`,
+      'aria-label': logSearchOpen ? 'Close the log search' : 'Search the log',
+      'aria-expanded': logSearchOpen ? 'true' : 'false',
+      title: logSearchOpen ? 'Close the search (Esc)' : 'Search the log',
+      onclick: () => {
+        logSearchOpen = !logSearchOpen;
+        logQuery = '';
+        refresh();
+        if (logSearchOpen) {
+          rightPanel.querySelector<HTMLInputElement>('input[aria-label="Search the log"]')?.focus();
+        }
+      },
+    }, magnifierIcon());
 
     replaceChildren(
       rightPanel,
@@ -892,7 +941,8 @@ async function main(): Promise<void> {
       renderSelection(),
       readAloudPanel(readAloudContext()),
       h('section', { class: 'space-y-2' },
-        h('h2', { class: 'text-sm font-semibold' }, 'Log'),
+        h('div', { class: 'flex items-center justify-between gap-2' }, h('h2', { class: 'text-sm font-semibold' }, 'Log'), searchToggle),
+        logSearch,
         logInput,
         h('button', {
           type: 'button',
@@ -904,7 +954,7 @@ async function main(): Promise<void> {
             }
           },
         }, 'Add to log'),
-        h('ol', { class: 'max-h-80 space-y-2 overflow-y-auto' }, ...eventItems)),
+        logList),
       h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, `Monsters (${state.monsters.filter((m) => m.alive).length} alive)`), h('ul', { class: 'space-y-1' }, ...monsters)),
       traps.length ? h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, 'Traps'), h('ul', { class: 'space-y-2' }, ...traps)) : null,
       blocks.length ? h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, 'Blocked squares'), h('ul', { class: 'space-y-2' }, ...blocks)) : null,
@@ -935,3 +985,25 @@ void main().catch((err: unknown) => {
   }
   console.error(err);
 });
+
+/** A small magnifying-glass icon (currentColor), for the log search button. */
+function magnifierIcon(): SVGSVGElement {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 20 20');
+  svg.setAttribute('width', '16');
+  svg.setAttribute('height', '16');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  const circle = document.createElementNS(ns, 'circle');
+  circle.setAttribute('cx', '8.5');
+  circle.setAttribute('cy', '8.5');
+  circle.setAttribute('r', '5.5');
+  const handle = document.createElementNS(ns, 'path');
+  handle.setAttribute('d', 'M13 13l4.5 4.5');
+  svg.append(circle, handle);
+  return svg;
+}
