@@ -13,6 +13,7 @@ import { combatLine, combatTotals, FALTER_PENALTY, falterAt, manaCap, monsterLin
 import { formatEvent } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
 import { clickCommand, paintPending, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
+import { triggerButton } from '../tracker/traps.ts';
 import type { Command, CommandResponse, Hero, LiveTrapState, Monster, ScriptSection, SessionEvent, SessionState } from '../tracker/types.ts';
 import { trackerView } from '../tracker/view.ts';
 import { lineTiles } from '../editor/tools.ts';
@@ -433,6 +434,7 @@ async function main(): Promise<void> {
         : 'Click a room to reveal it (or a corridor square). Monsters stay hidden.',
       pickSquares: 'Click or drag across squares to pick them, then reveal them all at once.',
       hide: 'Click a square to hide it again.',
+      block: 'Click a square to block it (a falling block, where a boulder stopped). Select an added block to clear it.',
       addMonster: 'Click a square to place the monster.',
     };
     replaceChildren(
@@ -441,6 +443,7 @@ async function main(): Promise<void> {
       modeBtn({ kind: 'reveal', seen: revealSeen }, 'Reveal', 'Mark areas the heroes have discovered', revealing),
       ...revealOptions,
       modeBtn({ kind: 'hide' }, 'Hide', 'Un-discover a square'),
+      modeBtn({ kind: 'block' }, 'Block square', 'Put a blocked square down during play'),
       modeBtn({ kind: 'addMonster', monsterType }, 'Add monster', 'Place a new monster'),
       monsterSelect,
       h('span', { class: 'text-xs opacity-60' }, hint[mode.kind]),
@@ -528,6 +531,7 @@ async function main(): Promise<void> {
     const trap = state.quest.traps.find((t) => t.id === id);
     const note = state.quest.notes.find((n) => n.id === id);
     const block = state.quest.blockedSquares.find((r) => r.id === id);
+    const added = (state.addedBlocks ?? []).find((r) => r.id === id);
     const rows: (Node | null)[] = [];
     if (monster) {
       rows.push(
@@ -568,6 +572,11 @@ async function main(): Promise<void> {
         trapButtons(trap.id),
         movable && trapLiveState(trap.id) !== 'removed' ? h('p', { class: 'text-xs opacity-70' }, 'Click a square to move it there.') : null,
       );
+    } else if (added) {
+      rows.push(
+        h('p', { class: 'font-semibold' }, 'Blocked squares (added during play) ', h('span', { class: 'text-xs opacity-60' }, `${added.id} (${added.x}, ${added.y})`)),
+        h('button', { type: 'button', class: btn, onclick: () => { selectedId = null; void send({ type: 'block.remove', payload: { id: added.id } }); } }, 'Clear'),
+      );
     } else if (block) {
       rows.push(
         h('p', { class: 'font-semibold' }, block.hiddenDoor ? 'Blocked square (hides a secret door) ' : 'Blocked squares ', h('span', { class: 'text-xs opacity-60' }, `${block.id} (${block.x}, ${block.y})`)),
@@ -602,13 +611,26 @@ async function main(): Promise<void> {
 
   function trapButtons(trapId: string): HTMLElement {
     const current = trapLiveState(trapId);
-    return h('div', { class: 'flex flex-wrap gap-1' },
-      ...TRAP_STATES.map((s) => h('button', {
-        type: 'button',
-        title: s === 'removed' ? 'Take it off the board (pick another state to bring it back)' : `Set to ${s}`,
-        class: current === s ? btnActive : s === 'removed' ? `${btn} text-danger` : btn,
-        onclick: () => { if (current !== s) { void send({ type: 'trap.set', payload: { id: trapId, state: s } }); } },
-      }, s === 'removed' ? 'remove' : s)));
+    const kind = state.quest.traps.find((t) => t.id === trapId)?.kind ?? '';
+    const trigger = triggerButton(kind);
+    return h('div', { class: 'space-y-1' },
+      current !== 'removed'
+        ? h('div', { class: 'flex flex-wrap gap-1' },
+          h('button', { type: 'button', class: `${btn} border-danger/60`, title: trigger.title, onclick: () => { void send({ type: 'trap.trigger', payload: { id: trapId } }); } }, trigger.label),
+          h('button', {
+            type: 'button',
+            class: btn,
+            title: 'Take the trap off and block the squares it covers where it is now (a boulder where it stopped)',
+            onclick: () => { void send({ type: 'trap.block', payload: { id: trapId } }); },
+          }, 'Turn into blocked squares'))
+        : null,
+      h('div', { class: 'flex flex-wrap gap-1' },
+        ...TRAP_STATES.map((s) => h('button', {
+          type: 'button',
+          title: s === 'removed' ? 'Take it off the board (pick another state to bring it back)' : `Set to ${s}`,
+          class: current === s ? btnActive : s === 'removed' ? `${btn} text-danger` : btn,
+          onclick: () => { if (current !== s) { void send({ type: 'trap.set', payload: { id: trapId, state: s } }); } },
+        }, s === 'removed' ? 'remove' : s))));
   }
 
   function blockButton(blockId: string, hiddenDoor: boolean): HTMLElement {

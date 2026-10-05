@@ -23,6 +23,9 @@ type MapState struct {
 	RemovedBlocks []string       `json:"removedBlocks"`
 	ConsumedNotes []string       `json:"consumedNotes"`
 	Discovered    []int          `json:"discovered"`
+	SeenFurniture []string       `json:"seenFurniture,omitempty"`
+	SeenBlocks    []string       `json:"seenBlocks,omitempty"`
+	AddedBlocks   []maps.Rect    `json:"addedBlocks,omitempty"`
 	HeroPositions []HeroPosition `json:"heroPositions"`
 }
 
@@ -100,6 +103,7 @@ func (s *State) saveMap() MapState {
 		QuestID: s.QuestID, QuestName: s.QuestName, Board: s.Board, Quest: s.Quest,
 		Monsters: s.Monsters, Doors: s.Doors, Traps: s.Traps,
 		RemovedBlocks: s.RemovedBlocks, ConsumedNotes: s.ConsumedNotes, Discovered: s.Discovered,
+		SeenFurniture: s.SeenFurniture, SeenBlocks: s.SeenBlocks, AddedBlocks: s.AddedBlocks,
 		HeroPositions: make([]HeroPosition, 0, len(s.Heroes)),
 	}
 	for _, h := range s.Heroes {
@@ -114,6 +118,7 @@ func (s *State) restoreMap(m MapState) {
 	s.QuestID, s.QuestName, s.Board, s.Quest = m.QuestID, m.QuestName, m.Board, m.Quest
 	s.Monsters, s.Doors, s.Traps = m.Monsters, m.Doors, m.Traps
 	s.RemovedBlocks, s.ConsumedNotes, s.Discovered = m.RemovedBlocks, m.ConsumedNotes, m.Discovered
+	s.SeenFurniture, s.SeenBlocks, s.AddedBlocks = m.SeenFurniture, m.SeenBlocks, m.AddedBlocks
 	for i := range s.Heroes {
 		h := &s.Heroes[i]
 		h.X, h.Y, h.Placed = 0, 0, false

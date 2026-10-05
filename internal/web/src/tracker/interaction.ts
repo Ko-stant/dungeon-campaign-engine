@@ -15,6 +15,7 @@ export type Mode =
   | { kind: 'reveal'; seen?: boolean }
   | { kind: 'pickSquares'; seen?: boolean }
   | { kind: 'hide' }
+  | { kind: 'block' }
   | { kind: 'addMonster'; monsterType: string };
 
 export interface ClickTarget {
@@ -106,6 +107,8 @@ export function clickCommand(s: SessionState, mode: Mode, selectedId: string | n
       return null; // the page collects the squares
     case 'hide':
       return { command: { type: 'tiles.hide', payload: { tiles: [{ x: t.x, y: t.y }] } }, select: selectedId };
+    case 'block':
+      return { command: { type: 'block.add', payload: { x: t.x, y: t.y } }, select: null };
     case 'addMonster':
       return { command: { type: 'monster.add', payload: { type: mode.monsterType, x: t.x, y: t.y } }, select: null };
     case 'select': {
@@ -119,7 +122,8 @@ export function clickCommand(s: SessionState, mode: Mode, selectedId: string | n
       const trap = trapAt(s, t, catalog);
       const note = s.quest.notes.find((n) => at(n.x, n.y, t) && !s.consumedNotes.includes(n.id));
       const removed = new Set(s.removedBlocks ?? []);
-      const block = s.quest.blockedSquares.find((r) => !removed.has(r.id) && t.x >= r.x && t.x < r.x + r.w && t.y >= r.y && t.y < r.y + r.h);
+      const inside = (r: { x: number; y: number; w: number; h: number }): boolean => t.x >= r.x && t.x < r.x + r.w && t.y >= r.y && t.y < r.y + r.h;
+      const block = (s.addedBlocks ?? []).find(inside) ?? s.quest.blockedSquares.find((r) => !removed.has(r.id) && inside(r));
       return { command: null, select: trap ?? note?.id ?? block?.id ?? null };
     }
   }

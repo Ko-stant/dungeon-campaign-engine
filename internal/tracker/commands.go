@@ -92,6 +92,18 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.itemRemove(c.Payload)
 	case "item.give":
 		summary, err = a.itemGive(c.Payload)
+	case "trap.trigger":
+		summary, err = a.trapTrigger(c.Payload)
+	case "trap.block":
+		summary, err = a.trapBlock(c.Payload)
+	case "block.add":
+		summary, err = a.blockAdd(c.Payload)
+	case "block.remove":
+		summary, err = a.blockRemove(c.Payload)
+	case "seen.set":
+		summary, err = a.seenSet(c.Payload)
+	case "players.set":
+		summary, err = a.playersSet(c.Payload)
 	case "item.equip":
 		summary, err = a.itemEquip(c.Payload)
 	case "gold.set":
@@ -473,15 +485,7 @@ func (a *applier) doorSet(payload json.RawMessage) (string, error) {
 	if p.State == nil && p.Found == nil && p.Locked == nil {
 		return "", errors.New("nothing to change")
 	}
-	label := door.ID
-	for _, qd := range a.s.Quest.Doors {
-		if qd.ID == door.ID && qd.Kind == maps.DoorGate {
-			label = "gate " + door.ID
-		}
-		if qd.ID == door.ID && qd.Kind == maps.DoorExit {
-			label = "exit door " + door.ID
-		}
-	}
+	label := a.doorLabel(door.ID)
 	var parts []string
 	if p.Found != nil {
 		door.Found = *p.Found
@@ -581,40 +585,6 @@ func squares(n int) string {
 	return fmt.Sprintf("%d squares", n)
 }
 
-// showMonstersOn marks every living, hidden monster with a square among the
-// board indexes as seen, and describes how many there were (or "").
-func (a *applier) showMonstersOn(indexes []int) string {
-	on := make(map[int]bool, len(indexes))
-	for _, i := range indexes {
-		on[i] = true
-	}
-	n := 0
-	for i := range a.s.Monsters {
-		m := &a.s.Monsters[i]
-		if !m.Alive || m.Visibility == MonsterSeen {
-			continue
-		}
-		w, h := max(m.Width, 1), max(m.Height, 1)
-	footprint:
-		for y := m.Y; y < m.Y+h; y++ {
-			for x := m.X; x < m.X+w; x++ {
-				if a.s.Board.OnBoard(x, y) && on[a.s.Board.Index(x, y)] {
-					m.Visibility = MonsterSeen
-					n++
-					break footprint
-				}
-			}
-		}
-	}
-	switch n {
-	case 0:
-		return ""
-	case 1:
-		return " (1 monster seen)"
-	}
-	return fmt.Sprintf(" (%d monsters seen)", n)
-}
-
 func (a *applier) areaReveal(payload json.RawMessage) (string, error) {
 	p, err := decode[struct {
 		X    int  `json:"x"`
@@ -631,7 +601,7 @@ func (a *applier) areaReveal(payload json.RawMessage) (string, error) {
 	a.setDiscovered(tiles, true)
 	shown := ""
 	if p.Seen {
-		shown = a.showMonstersOn(tiles)
+		shown = a.showContentsOn(tiles)
 	}
 	region := a.s.Board.RegionAt(p.X, p.Y)
 	for _, r := range a.s.Board.Rooms {
@@ -663,7 +633,7 @@ func (a *applier) tilesSet(payload json.RawMessage, discovered bool) (string, er
 	if discovered {
 		shown := ""
 		if p.Seen {
-			shown = a.showMonstersOn(indexes)
+			shown = a.showContentsOn(indexes)
 		}
 		return "Revealed " + squares(len(indexes)) + shown, nil
 	}

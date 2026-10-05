@@ -78,6 +78,13 @@ function state(): SessionState {
 }
 
 describe('trackerView', () => {
+  test('blocked squares added during play are drawn with the quest ones', () => {
+    const s = state();
+    s.addedBlocks = [{ id: 'added-1', x: 2, y: 1, w: 1, h: 1 }];
+    const view = trackerView(s, catalog, { fog: false });
+    expect(view.blockedSquares.map((b) => b.id)).toContain('added-1');
+  });
+
   test('removed traps are not drawn; moved traps are drawn where they are now', () => {
     const s = withBoulder();
     s.traps = [{ id: 'trap-1', state: 'removed' }, { id: 'trap-3', state: 'triggered', at: { x: 4, y: 2 } }];
@@ -173,6 +180,15 @@ describe('trackerView', () => {
 });
 
 describe('interaction', () => {
+  test('block mode blocks the clicked square; select picks an added block', () => {
+    expect(clickCommand(state(), { kind: 'block' }, null, { tile: { x: 2, y: 2 }, edge: null })).toEqual({
+      command: { type: 'block.add', payload: { x: 2, y: 2 } }, select: null,
+    });
+    const s = state();
+    s.addedBlocks = [{ id: 'added-1', x: 4, y: 1, w: 1, h: 1 }];
+    expect(clickCommand(s, { kind: 'select' }, null, { tile: { x: 4, y: 1 }, edge: null })).toEqual({ command: null, select: 'added-1' });
+  });
+
   test('pieceAt prefers heroes, ignores unplaced heroes and dead monsters', () => {
     const s = state();
     expect(pieceAt(s, { x: 1, y: 2 })).toBe('hero-1');

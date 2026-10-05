@@ -121,6 +121,8 @@ type DoorState struct {
 	// Found is false for a secret door the heroes have not discovered yet.
 	Found  bool `json:"found"`
 	Locked bool `json:"locked"`
+	// Seen: the GM has shown the door on the player screen.
+	Seen bool `json:"seen,omitempty"`
 }
 
 // TrapState is the live state of a quest trap. At is set once the trap has
@@ -158,6 +160,15 @@ type State struct {
 	RemovedBlocks []string `json:"removedBlocks"`
 	ConsumedNotes []string `json:"consumedNotes"`
 	Discovered    []int    `json:"discovered"`
+	// SeenFurniture and SeenBlocks list the quest furniture and blocked
+	// squares the GM has shown on the player screen (see visibility.go).
+	SeenFurniture []string `json:"seenFurniture,omitempty"`
+	SeenBlocks    []string `json:"seenBlocks,omitempty"`
+	// AddedBlocks are blocked squares put down during play (a falling block,
+	// where a boulder stopped; see traps.go). The players always see them.
+	AddedBlocks []maps.Rect `json:"addedBlocks,omitempty"`
+	// Players holds the player screen's settings.
+	Players PlayerSettings `json:"players,omitzero"`
 	// OtherMaps holds every map the session has left, exactly as it was left,
 	// so traveling back restores it. The fields above are the active map.
 	OtherMaps []MapState `json:"otherMaps,omitempty"`
@@ -243,6 +254,7 @@ func combatCopy(c *content.MonsterCombat) *content.MonsterCombat {
 func (s *State) setUpMap(catalog *content.Catalog) {
 	s.Monsters, s.Doors, s.Traps = []Monster{}, []DoorState{}, []TrapState{}
 	s.RemovedBlocks, s.ConsumedNotes = []string{}, []string{}
+	s.SeenFurniture, s.SeenBlocks, s.AddedBlocks = nil, nil, nil
 	for _, qm := range s.Quest.Monsters {
 		m := Monster{ID: qm.ID, Type: qm.Type, Name: qm.Type, X: qm.X, Y: qm.Y, Visibility: MonsterHidden, Alive: true, Notes: qm.Notes, Width: 1, Height: 1}
 		if def, ok := catalog.Monster(qm.Type); ok {

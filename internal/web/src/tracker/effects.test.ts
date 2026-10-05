@@ -26,4 +26,10 @@ describe('formatEvent for fights and effects', () => {
     expect(formatEvent({ ...base, kind: 'gold.set' }).kind).toBe('hero');
     expect(formatEvent({ ...base, kind: 'item.equip' }).kind).toBe('hero');
   });
+
+  test('blocking and showing pieces to the players', () => {
+    expect(formatEvent({ ...base, kind: 'block.add' }).kind).toBe('trap');
+    expect(formatEvent({ ...base, kind: 'seen.set' }).kind).toBe('reveal');
+    expect(formatEvent({ ...base, kind: 'players.set' }).kind).toBe('note');
+  });
 });

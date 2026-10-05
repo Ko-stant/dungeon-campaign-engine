@@ -37,7 +37,7 @@ export function trackerView(s: SessionState, catalog: Catalog, opts: ViewOptions
   const removed = new Set(s.removedBlocks ?? []);
   const view: BoardView = {
     ...base,
-    blockedSquares: base.blockedSquares.filter((b) => !removed.has(b.id)),
+    blockedSquares: [...base.blockedSquares.filter((b) => !removed.has(b.id)), ...(s.addedBlocks ?? [])],
     doors: s.quest.doors.map((d) => {
       const live = liveDoors.get(d.id);
       const hiddenSecret = d.kind === 'secret' && !(live?.found ?? false);

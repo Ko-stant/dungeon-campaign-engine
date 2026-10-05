@@ -1,7 +1,7 @@
 /** Session state and API shapes, mirroring internal/tracker and internal/app (Go). */
 import type { TileCoord } from '../board/geometry.ts';
 import type { DoorState, TrapState } from '../board/model.ts';
-import type { Ability, BoardDoc, QuestDoc } from '../maps/types.ts';
+import type { Ability, BoardDoc, QuestDoc, RectDoc } from '../maps/types.ts';
 
 export type HeroStatus = 'active' | 'dead' | 'escaped';
 export type Visibility = 'hidden' | 'seen';
@@ -117,6 +117,8 @@ export interface LiveDoor {
   state: DoorState;
   found: boolean;
   locked: boolean;
+  /** Shown on the player screen. */
+  seen?: boolean;
 }
 
 /** A trap's live state: a quest state, or removed from the board during play. */
@@ -164,6 +166,13 @@ export interface SessionState {
   traps: LiveTrap[];
   /** Quest blocked squares removed during play. Missing on sessions started before this existed. */
   removedBlocks?: string[];
+  /** Quest furniture and blocked squares shown on the player screen. */
+  seenFurniture?: string[] | null;
+  seenBlocks?: string[] | null;
+  /** Blocked squares put down during play (a falling block, a stopped boulder). */
+  addedBlocks?: RectDoc[] | null;
+  /** Player screen settings. */
+  players?: { hideMonsterBody?: boolean };
   consumedNotes: string[];
   discovered: number[];
   /** Read-aloud passage ids already read at the table. */

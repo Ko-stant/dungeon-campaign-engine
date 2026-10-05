@@ -358,7 +358,7 @@ func TestRevealCanShowTheMonstersThere(t *testing.T) {
 	if seen.Monsters[0].Visibility != MonsterSeen || seen.Monsters[1].Visibility != MonsterSeen {
 		t.Fatalf("both Lair monsters should be seen: %+v", seen.Monsters)
 	}
-	if ev.Summary != "Revealed Lair (2 monsters seen)" {
+	if ev.Summary != "Revealed Lair (seen: 2 monsters, 1 piece of furniture)" {
 		t.Fatalf("summary: %q", ev.Summary)
 	}
 	if seen.Traps[0].State != maps.TrapHidden {
@@ -378,7 +378,7 @@ func TestRevealSquaresCanShowMonstersOnThem(t *testing.T) {
 	if byID["monster-1"] != MonsterSeen || byID["monster-2"] != MonsterHidden || byID["monster-3"] != MonsterSeen {
 		t.Fatalf("visibility: %+v", byID)
 	}
-	if ev.Summary != "Revealed 2 squares (2 monsters seen)" {
+	if ev.Summary != "Revealed 2 squares (seen: 2 monsters, 1 door)" {
 		t.Fatalf("summary: %q", ev.Summary)
 	}
 }

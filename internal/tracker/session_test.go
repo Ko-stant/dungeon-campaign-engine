@@ -46,11 +46,19 @@ func fixture() (*maps.Board, *maps.Quest, *content.Catalog) {
 		{ID: "monster-2", Type: "orc", X: 6, Y: 1, Body: &body},
 	}
 	q.Notes = []maps.Note{{ID: "note-A", Label: "A", X: 6, Y: 2, Text: "84 gold"}}
+	q.Furniture = []maps.Furniture{
+		{ID: "furniture-1", Type: "chest", X: 6, Y: 2},
+		{ID: "furniture-2", Type: "table", X: 3, Y: 2, Rotation: 90},
+	}
 	q.StartTiles = []maps.Tile{{X: 1, Y: 4}, {X: 2, Y: 4}, {X: 1, Y: 3}}
 	cat := &content.Catalog{
 		Monsters: []content.MonsterDef{
 			{ID: "orc", Name: "Orc", Body: 1, Mind: 2, Attack: 3, Defense: 2, Movement: 8},
 			{ID: "custom-ogre", Name: "Cave Ogre", Body: 6, Mind: 1, Width: 2, Height: 2, Color: "#aa3300", Custom: true},
+		},
+		Furniture: []content.FurnitureDef{
+			{ID: "chest", Name: "Chest", Width: 1, Height: 1},
+			{ID: "table", Name: "Table", Width: 2, Height: 1},
 		},
 		Heroes: []content.HeroDef{
 			{ID: "barbarian", Name: "Barbarian", Body: 8, Mind: 2},
