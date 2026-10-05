@@ -23,6 +23,13 @@ Tailwind CSS v4, canvas rendering.
 - `make import-content [QUEST=base/quests/quest-01.json]` - Import the legacy base board + a quest (idempotent)
 - `make build` - Production build to `./build/dungeon-campaign-engine`
 
+### Hosting (branch `online`, docs/ONLINE_AND_RULES_PLAN.md Phase 6)
+- `make image` - Build the app image locally (`Dockerfile`); `content/` and `assets/` go in as
+  named build contexts, only the folders the app reads. Needs `DOCKER_IMAGE` in `.env`.
+- `make push` / `make deploy` - Push the tag to the private Docker Hub repo, then start the
+  Render deploy (`RENDER_DEPLOY_HOOK` in `.env`, a secret). The image holds HeroQuest
+  material: never push it to GitHub or anywhere public.
+
 ### Testing and quality
 - `make test` - Go tests (database tests skip without a URL)
 - `make test-db` - Go tests including database tests (each uses a throwaway schema)

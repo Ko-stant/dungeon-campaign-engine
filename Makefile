@@ -34,7 +34,7 @@ define with_dotenv
 bash -lc 'set -a; [ -f .env ] && source ./.env; set +a; $$1'
 endef
 
-.PHONY: all tools dev build run test test-race cover lint fmt tidy clean \
+.PHONY: all tools dev build run test test-race cover lint fmt tidy clean image push deploy \
         test-db test-js test-all \
         db-up db-up-all db-down db-destroy db-logs db-psql \
         db-migrate-new db-migrate-up db-migrate-down db-backup db-restore import-content \
@@ -176,3 +176,30 @@ build: tailwind-build
 	@bun run build:web
 	@$(GO) tool templ generate -path=./internal/web/views
 	@$(GO) build -trimpath -ldflags="-s -w" -o $(BINARY_OUTPUT_PATH) ./cmd/server
+# --- Hosting (docs/ONLINE_AND_RULES_PLAN.md, Phase 6) ---
+# The image carries content/ and assets/ (HeroQuest material, passed in as named build
+# contexts). Build it here and push it only to the private registry in DOCKER_IMAGE
+# (.env, e.g. youruser/dce), never to GitHub. Render pulls it; RENDER_DEPLOY_HOOK (.env,
+# a secret) starts the deploy.
+DOCKER_IMAGE ?= $(call dotenv,DOCKER_IMAGE)
+IMAGE_TAG ?= $(shell git describe --always --dirty --abbrev=7)
+IMAGE_PLATFORM ?= linux/amd64
+CONTENT_SRC ?= $(realpath content)
+ASSETS_SRC ?= $(realpath assets)
+
+image:
+	@test -n "$(DOCKER_IMAGE)" || { echo "Set DOCKER_IMAGE in .env (e.g. youruser/dce)."; exit 1; }
+	@test -d "$(CONTENT_SRC)" && test -d "$(ASSETS_SRC)" || { echo "content/ and assets/ are needed (see CLAUDE.md)."; exit 1; }
+	docker buildx build --platform $(IMAGE_PLATFORM) \
+		--build-context content=$(CONTENT_SRC) --build-context assets=$(ASSETS_SRC) \
+		-t $(DOCKER_IMAGE):$(IMAGE_TAG) --load .
+
+push: image
+	@case "$(IMAGE_TAG)" in *-dirty) echo "Commit first: $(IMAGE_TAG) has uncommitted changes."; exit 1;; esac
+	docker push $(DOCKER_IMAGE):$(IMAGE_TAG)
+
+# Deploys the pushed tag. The hook URL holds a key, so it is never printed.
+deploy: push
+	@hook="$(call dotenv,RENDER_DEPLOY_HOOK)"; test -n "$$hook" || { echo "Set RENDER_DEPLOY_HOOK in .env."; exit 1; }; \
+		curl -fsS -o /dev/null -G --data-urlencode "imgURL=docker.io/$(DOCKER_IMAGE):$(IMAGE_TAG)" "$$hook" \
+		&& echo "Render is deploying $(DOCKER_IMAGE):$(IMAGE_TAG)."

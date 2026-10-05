@@ -1,0 +1,19 @@
+# Only what the image build needs (see Dockerfile). Everything else stays out,
+# above all content/, assets/, audio/, .env and database backups.
+*
+!go.mod
+!go.sum
+!cmd/
+!db/
+!internal/
+!package.json
+!bun.lock
+!tsconfig.json
+!scripts/build.ts
+
+# Built inside the image instead.
+internal/web/static/dist/
+internal/web/static/styles/app.css
+db/backups/
+**/*_test.go
+**/testdata/
