@@ -41,6 +41,10 @@ type CampaignHero struct {
 	Notes     string `json:"notes,omitempty"`
 	// Items is the hero's inventory, carried between quests.
 	Items []Item `json:"items,omitempty"`
+	// UserID is the signed-in player who plays the hero online (see
+	// internal/app, the lobby); empty for a hero the GM runs. The server sets
+	// it, never a client.
+	UserID string `json:"userId,omitempty"`
 }
 
 // Hero is a hero during a session.
@@ -212,21 +216,10 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 	}
 
 	for i, ch := range party {
-		class, ok := catalog.Hero(ch.Class)
-		if !ok {
-			return nil, fmt.Errorf("hero %q has unknown class %q", ch.Name, ch.Class)
+		h, err := sessionHero(ch, catalog)
+		if err != nil {
+			return nil, err
 		}
-		h := Hero{
-			ID: ch.ID, Name: ch.Name, Player: ch.Player, Class: ch.Class,
-			Body: class.Body, MaxBody: class.Body, Mind: class.Mind, MaxMind: class.Mind,
-			Equipment: ch.Equipment, Notes: ch.Notes, Status: HeroActive,
-			Items: slices.Clone(ch.Items), MaxMana: class.Mana, Abilities: slices.Clone(class.Abilities),
-			Combat: ClassCombat(class),
-		}
-		if h.Items == nil {
-			h.Items = []Item{}
-		}
-		h.Mana = h.ManaCap()
 		if i < len(quest.StartTiles) {
 			h.X, h.Y, h.Placed = quest.StartTiles[i].X, quest.StartTiles[i].Y, true
 		}
@@ -235,6 +228,27 @@ func NewSession(board *maps.Board, quest *maps.Quest, questName string, party []
 
 	s.setUpMap(catalog)
 	return s, nil
+}
+
+// sessionHero is a campaign hero entering a session: their class's Body,
+// Mind, mana, abilities and combat stats, and what they carry.
+func sessionHero(ch CampaignHero, catalog *content.Catalog) (Hero, error) {
+	class, ok := catalog.Hero(ch.Class)
+	if !ok {
+		return Hero{}, fmt.Errorf("hero %q has unknown class %q", ch.Name, ch.Class)
+	}
+	h := Hero{
+		ID: ch.ID, Name: ch.Name, Player: ch.Player, Class: ch.Class,
+		Body: class.Body, MaxBody: class.Body, Mind: class.Mind, MaxMind: class.Mind,
+		Equipment: ch.Equipment, Notes: ch.Notes, Status: HeroActive,
+		Items: slices.Clone(ch.Items), MaxMana: class.Mana, Abilities: slices.Clone(class.Abilities),
+		Combat: ClassCombat(class),
+	}
+	if h.Items == nil {
+		h.Items = []Item{}
+	}
+	h.Mana = h.ManaCap()
+	return h, nil
 }
 
 // ClassCombat is a class's combat stats as a session hero carries them (nil

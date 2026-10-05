@@ -97,11 +97,13 @@ func TestPartyGoldMigration(t *testing.T) {
 	if e, _ := s.GetCampaign(ctx, empty.ID); e.Gold != 0 || string(e.Heroes) != "[]" {
 		t.Fatalf("empty campaign: %+v", e)
 	}
-	ss, err := s.GetSession(ctx, sess.ID)
-	if err != nil {
+	// Read the state with SQL: the store's session columns are those of the
+	// latest migration, not version 7.
+	var midState string
+	if err := sqlDB.QueryRowContext(ctx, `SELECT state::text FROM game_session WHERE id = $1`, sess.ID).Scan(&midState); err != nil {
 		t.Fatal(err)
 	}
-	jsonEqual(t, ss.State, json.RawMessage(`{"round":1,"gold":57,"heroes":[{"id":"hero-1"},{"id":"hero-2"}]}`))
+	jsonEqual(t, json.RawMessage(midState), json.RawMessage(`{"round":1,"gold":57,"heroes":[{"id":"hero-1"},{"id":"hero-2"}]}`))
 
 	// Down gives the purse to the first hero.
 	if _, err := provider.DownTo(ctx, 6); err != nil {

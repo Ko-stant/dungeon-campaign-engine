@@ -132,6 +132,8 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.passageRead(c.Payload)
 	case "log.note":
 		summary, err = a.logNote(c.Payload)
+	case "hero.join":
+		summary, err = a.heroJoin(c.Payload)
 	case "rules.enable":
 		summary, err = a.rulesEnable(c.Payload)
 	case "rules.disable":

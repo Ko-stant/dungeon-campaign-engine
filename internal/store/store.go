@@ -545,6 +545,8 @@ type Session struct {
 	EventSeq   int64
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+	// Open sessions are listed in the lobby for players to join.
+	Open bool
 }
 
 // SessionSummary is a session without its state document.
@@ -560,13 +562,14 @@ type SessionSummary struct {
 	EventSeq        int64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+	Open            bool
 }
 
-const sessionColumns = `id::text, campaign_id::text, quest_id::text, name, status, state, event_seq, created_at, updated_at`
+const sessionColumns = `id::text, campaign_id::text, quest_id::text, name, status, state, event_seq, created_at, updated_at, open`
 
 func scanSession(row pgx.Row) (Session, error) {
 	var ss Session
-	err := row.Scan(&ss.ID, &ss.CampaignID, &ss.QuestID, &ss.Name, &ss.Status, &ss.State, &ss.EventSeq, &ss.CreatedAt, &ss.UpdatedAt)
+	err := row.Scan(&ss.ID, &ss.CampaignID, &ss.QuestID, &ss.Name, &ss.Status, &ss.State, &ss.EventSeq, &ss.CreatedAt, &ss.UpdatedAt, &ss.Open)
 	return ss, notFoundIfNoRows(err)
 }
 
@@ -604,7 +607,7 @@ func (s *Store) ListSessions(ctx context.Context, campaignID string) ([]SessionS
 	rows, err := s.pool.Query(ctx,
 		`SELECT id::text, campaign_id::text, quest_id::text,
 		        jsonb_path_query_array(state, '$.questId') || jsonb_path_query_array(state, '$.otherMaps[*].questId'),
-		        name, status, event_seq, created_at, updated_at
+		        name, status, event_seq, created_at, updated_at, open
 		 FROM game_session WHERE campaign_id = $1
 		 ORDER BY (status = 'active') DESC, updated_at DESC, id`, campaignID)
 	if err != nil {
@@ -612,8 +615,56 @@ func (s *Store) ListSessions(ctx context.Context, campaignID string) ([]SessionS
 	}
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (SessionSummary, error) {
 		var ss SessionSummary
-		err := row.Scan(&ss.ID, &ss.CampaignID, &ss.QuestID, &ss.VisitedQuestIDs, &ss.Name, &ss.Status, &ss.EventSeq, &ss.CreatedAt, &ss.UpdatedAt)
+		err := row.Scan(&ss.ID, &ss.CampaignID, &ss.QuestID, &ss.VisitedQuestIDs, &ss.Name, &ss.Status, &ss.EventSeq, &ss.CreatedAt, &ss.UpdatedAt, &ss.Open)
 		return ss, err
+	})
+}
+
+// SetSessionOpen opens a session to players (it shows in the lobby) or
+// closes it.
+func (s *Store) SetSessionOpen(ctx context.Context, id string, open bool) error {
+	if !validID(id) {
+		return ErrNotFound
+	}
+	tag, err := s.pool.Exec(ctx, `UPDATE game_session SET open = $2, updated_at = now() WHERE id = $1`, id, open)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// OpenSession is a game in the lobby.
+type OpenSession struct {
+	ID           string
+	Name         string
+	CampaignID   string
+	CampaignName string
+	// GMName is the campaign owner's name ("" for a campaign from before
+	// sign-in).
+	GMName string
+	// Started: the GM has started online play (the rules are on).
+	Started   bool
+	UpdatedAt time.Time
+}
+
+// ListOpenSessions lists the active sessions open to players, for everyone
+// signed in, most recently updated first.
+func (s *Store) ListOpenSessions(ctx context.Context) ([]OpenSession, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT g.id::text, g.name, c.id::text, c.name, coalesce(u.display_name, ''), g.state ? 'rules', g.updated_at
+		 FROM game_session g JOIN campaign c ON c.id = g.campaign_id LEFT JOIN app_user u ON u.id = c.owner_id
+		 WHERE g.open AND g.status = 'active'
+		 ORDER BY g.updated_at DESC, g.id`)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (OpenSession, error) {
+		var o OpenSession
+		err := row.Scan(&o.ID, &o.Name, &o.CampaignID, &o.CampaignName, &o.GMName, &o.Started, &o.UpdatedAt)
+		return o, err
 	})
 }
 
