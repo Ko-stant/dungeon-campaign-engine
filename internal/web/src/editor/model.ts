@@ -6,6 +6,7 @@
 import { doorCovers, doorEdges, edgeTiles, footprintTiles, isInteriorEdge, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
 import { VOID, covers, withShape, onBoard as squareOnBoard, regionAt, tileIndex, type BlockedSquareView, type BoardView, type DoorKind, type FurnitureView, type PieceView, type TrapState, type TrapView } from '../board/model.ts';
 import { DOC_VERSION, MAX_TRAP_LABEL, type BoardDoc, type Catalog, type DoorDoc, type QuestDoc, type RectDoc, type Room, type TeleportDoc, type TrapDoc } from '../maps/types.ts';
+import { pruneKillTargets } from './objectives.ts';
 
 export const MAX_BOARD_SIZE = 200;
 
@@ -466,7 +467,7 @@ export function moveItem(q: QuestDoc, id: string, to: TileCoord): QuestDoc {
 }
 
 export function removeItem(q: QuestDoc, id: string): QuestDoc {
-  return {
+  return pruneKillTargets({
     ...q,
     doors: q.doors.filter((d) => d.id !== id),
     blockedSquares: q.blockedSquares.filter((r) => r.id !== id),
@@ -476,7 +477,7 @@ export function removeItem(q: QuestDoc, id: string): QuestDoc {
     // Removing a note moves the letters after it up, so they stay A, B, C ...
     notes: q.notes.some((n) => n.id === id) ? relabelNotes(q.notes.filter((n) => n.id !== id)) : q.notes,
     teleports: (q.teleports ?? []).filter((t) => t.id !== id),
-  };
+  });
 }
 
 /** The quest id in a "?quest=" URL query, if it is one of the board's quests. */

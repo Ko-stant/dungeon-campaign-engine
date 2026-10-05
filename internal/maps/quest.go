@@ -439,6 +439,9 @@ func (q *Quest) Check(b *Board, sizes, trapSizes SizeLookup) []Issue {
 			add("exit-on-void", "", "exit tile (%d,%d) is on solid rock", s.X, s.Y)
 		}
 	}
+	if len(q.ExitTiles) == 0 && slices.ContainsFunc(q.Objectives, func(o Objective) bool { return o.Kind == ObjectiveEscape }) {
+		add("escape-without-exit", "", "an objective asks the heroes to escape, but the quest has no exit squares")
+	}
 	return issues
 }
 

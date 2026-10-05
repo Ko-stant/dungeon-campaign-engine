@@ -29,10 +29,11 @@ import {
   trapKindOptions,
   updateDoor,
 } from '../editor/model.ts';
+import { addObjective, MAX_GOAL, MAX_KEY_NAME, objectiveText, removeObjective, setCollectItem, setDoorKey, setGoal, setKillTargets } from '../editor/objectives.ts';
 import { activeOnSquare, describeItem, squareStack } from '../editor/selection.ts';
 import { applyClick, applyDrag, isDragTool, lineTiles, type ClickTarget, type EditorDoc, type Tool } from '../editor/tools.ts';
 import { ApiError, createApi } from '../maps/api.ts';
-import { MAX_TRAP_LABEL, monsterOptionLabel, type Issue, type QuestDoc, type QuestSummary } from '../maps/types.ts';
+import { MAX_TRAP_LABEL, monsterOptionLabel, type Issue, type ObjectiveDoc, type QuestDoc, type QuestSummary } from '../maps/types.ts';
 import { h, replaceChildren } from '../ui/dom.ts';
 import { piecePreview } from '../ui/piecePreview.ts';
 
@@ -808,8 +809,12 @@ async function main(): Promise<void> {
       ),
     );
 
-    // Selection: everything on the clicked square when several things share it.
     const q = doc().quest;
+    if (questId && q) {
+      children.push(objectivesSection(q));
+    }
+
+    // Selection: everything on the clicked square when several things share it.
     const stack = q && shown ? squareStack(q, catalog, shown.tile, shown.edge) : [];
     if (shown && stack.length > 1 && (selectedId === null || stack.includes(selectedId))) {
       children.push(renderStack(shown.tile, stack));
@@ -837,6 +842,83 @@ async function main(): Promise<void> {
       ),
     );
     replaceChildren(rightPanel, ...children);
+  }
+
+  /**
+   * The quest's goal (what the players see) and its objectives (what the
+   * rules engine checks to end the quest online; ONLINE_RULES.md).
+   */
+  function objectivesSection(q: QuestDoc): HTMLElement {
+    const update = (change: (current: QuestDoc) => QuestDoc): void => {
+      const current = doc().quest;
+      if (current) {
+        commit({ ...doc(), quest: change(current) });
+        refresh();
+      }
+    };
+    const monsterName = (type: string): string => catalog.monsters.find((d) => d.id === type)?.name ?? type;
+    const exits = (q.exitTiles ?? []).length;
+    const rows = (q.objectives ?? []).map((o, i) => {
+      const controls: (Node | null)[] = [];
+      if (o.kind === 'kill') {
+        const chosen = new Set(o.monsters ?? []);
+        controls.push(
+          h('p', { class: 'text-xs opacity-60' }, 'Tick the monsters that must die; none ticked means every monster.'),
+          q.monsters.length
+            ? h('div', { class: 'max-h-40 space-y-1 overflow-y-auto' }, ...q.monsters.map((m) => checkbox(`${monsterName(m.type)} (${m.id})`, chosen.has(m.id), (v) => {
+              if (v) {
+                chosen.add(m.id);
+              } else {
+                chosen.delete(m.id);
+              }
+              update((current) => setKillTargets(current, i, current.monsters.map((x) => x.id).filter((id) => chosen.has(id))));
+            })))
+            : h('p', { class: 'text-xs opacity-60' }, 'No monsters placed yet.'),
+        );
+      } else if (o.kind === 'collect') {
+        controls.push(h('label', { class: 'block space-y-1 text-sm' }, h('span', { class: 'opacity-80' }, 'Item a hero must carry'),
+          h('input', { class: input, value: o.item ?? '', maxlength: MAX_KEY_NAME, onchange: (e: Event) => { update((current) => setCollectItem(current, i, (e.target as HTMLInputElement).value)); } })));
+      } else {
+        controls.push(exits
+          ? h('p', { class: 'text-xs opacity-60' }, `${String(exits)} exit square${exits === 1 ? '' : 's'} placed; a hero on one leaves the board.`)
+          : h('p', { class: 'rounded-md border border-warning/50 bg-warning/10 p-1 text-xs' }, 'No exit squares yet: place them with the Exit tool.'));
+      }
+      return h('li', { class: 'space-y-1 rounded-md border border-border/60 p-2' },
+        h('div', { class: 'flex items-center justify-between gap-2' },
+          h('span', { class: 'min-w-0 text-sm font-semibold' }, objectiveText(o, q, catalog)),
+          h('button', { type: 'button', class: 'shrink-0 px-1 text-sm text-danger hover:underline', 'aria-label': `Remove objective ${String(i + 1)}`, onclick: () => { update((current) => removeObjective(current, i)); } }, '×')),
+        ...controls);
+    });
+
+    let kind: ObjectiveDoc['kind'] = 'kill';
+    const item = h('input', { class: `${input} hidden`, placeholder: 'Item name', maxlength: MAX_KEY_NAME, 'aria-label': 'Item to carry' });
+    const kindSelect = h('select', {
+      class: input,
+      'aria-label': 'Objective kind',
+      onchange: (e: Event) => {
+        kind = (e.target as HTMLSelectElement).value as ObjectiveDoc['kind'];
+        item.classList.toggle('hidden', kind !== 'collect');
+      },
+    }, h('option', { value: 'kill' }, 'Kill monsters'), h('option', { value: 'collect' }, 'Carry an item'), h('option', { value: 'escape' }, 'Leave by the exits'));
+    const addButton = h('button', {
+      type: 'button',
+      class: btn,
+      onclick: () => {
+        if (kind === 'collect' && !item.value.trim()) {
+          item.focus();
+          return;
+        }
+        update((current) => addObjective(current, kind === 'collect' ? { kind, item: item.value } : { kind }));
+      },
+    }, 'Add');
+
+    return h('section', { class: 'space-y-2' },
+      h('h2', { class: 'text-sm font-semibold' }, 'Goal and objectives'),
+      h('label', { class: 'block space-y-1 text-sm' }, h('span', { class: 'opacity-80' }, 'Goal (the players see this)'),
+        h('textarea', { class: input, rows: 2, maxlength: MAX_GOAL, placeholder: 'e.g. Slay the Witch Lord and escape', onchange: (e: Event) => { update((current) => setGoal(current, (e.target as HTMLTextAreaElement).value)); } }, q.goal ?? '')),
+      rows.length ? h('ul', { class: 'space-y-2' }, ...rows) : null,
+      h('div', { class: 'flex flex-wrap gap-2' }, kindSelect, item, addButton),
+      h('p', { class: 'text-xs opacity-60' }, 'Online (rules mode) the quest is won when every objective is met; without any, clearing every monster completes it. Never say where things are in the goal. At the table nothing here is enforced.'));
   }
 
   /** The quest's notes in letter order: click one to select it on the board, × to remove it (later letters move up). */
@@ -938,6 +1020,10 @@ async function main(): Promise<void> {
         select('Kind', DOOR_KINDS.map(([k, label]) => [k, label]), door.kind, (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { kind: v as DoorKind }) }); }),
         select('Width', DOOR_SPANS, String(door.span ?? 1), (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { span: Number(v) }) }); }),
         checkbox('Locked', door.locked ?? false, (v) => { commit({ ...doc(), quest: updateDoor(q, door.id, { locked: v }) }); }),
+        door.locked
+          ? h('label', { class: 'block space-y-1 text-sm' }, h('span', { class: 'opacity-80' }, 'Key item (a hero carrying it opens the door online)'),
+            h('input', { class: input, value: door.key ?? '', maxlength: MAX_KEY_NAME, placeholder: 'e.g. Iron Key', onchange: (e: Event) => { commit({ ...doc(), quest: setDoorKey(q, door.id, (e.target as HTMLInputElement).value) }); } }))
+          : null,
         h('button', { type: 'button', class: btn, onclick: () => { commit({ ...doc(), quest: toggleDoorState(q, door.id) }); } }, `Starts ${door.state} (toggle)`),
       );
     } else if (furniture && q) {

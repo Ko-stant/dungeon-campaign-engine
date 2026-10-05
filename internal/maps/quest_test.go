@@ -284,3 +284,17 @@ func TestQuestObjectivesAreValidated(t *testing.T) {
 		t.Errorf("a long key name: %v", err)
 	}
 }
+
+func TestCheckFlagsAnEscapeWithoutExits(t *testing.T) {
+	b := testBoard()
+	q := validQuest(b)
+	q.ExitTiles = nil
+	q.Objectives = []Objective{{Kind: ObjectiveEscape}}
+	if codes := issueCodes(q.Check(b, sizes, trapSizes)); !slices.Contains(codes, "escape-without-exit:") {
+		t.Errorf("issues %v", codes)
+	}
+	q.ExitTiles = []Tile{{X: 1, Y: 1}}
+	if codes := issueCodes(q.Check(b, sizes, trapSizes)); slices.Contains(codes, "escape-without-exit:") {
+		t.Errorf("with an exit: %v", codes)
+	}
+}
