@@ -85,3 +85,9 @@ only what the heroes know.
    feed toggle, a full-screen button, and reconnection.
 5. **Polish:** monster "abilities" text on campaign monster stat lines for the cards, TV
    sizing (large type), and then the player docs and polls.
+
+## Running log (overnight run, 2026-10-05)
+The GM asked (2026-10-05, before bed) to commit phase 3, then work through the remaining
+phases committing after each ("the same way": work commit + Docs hash commit), and push
+to origin once all phases are done. Resume from the last line here after a compaction.
+- 81ac447 phase 3 committed (Docs ad736f3). Next: phase 4, the player screen page.
