@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-05 01:25 EDT
+**Last Updated**: 2026-10-05 01:55 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -90,6 +90,7 @@ Commits (oldest first):
 | 7715e32 | campaign fill: combat.json as the one source, make fill-campaign (step 5e) |
 | f3f64ae | tracker odds hints in the monster panel (step 5f) |
 | a45cfbe | player screen phases 1 and 1b: what the players see, trap mechanics and added blocked squares |
+| 896e010 | player screen phase 2: tracker controls for what the players see |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
