@@ -3,6 +3,7 @@ package maps
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 // Door kinds and states. A gate (portcullis) opens and closes like a door.
@@ -152,6 +153,22 @@ type Quest struct {
 	ExitTiles []Tile `json:"exitTiles"`
 	// Teleports are teleport squares.
 	Teleports []Teleport `json:"teleports"`
+	// Objectives win the quest in rules mode once all are met (see
+	// internal/tracker, outcome.go); none means the GM decides.
+	Objectives []Objective `json:"objectives,omitempty"`
+}
+
+// Objective kinds: kill the named monsters (all of them when none are
+// named), or every living hero on an exit square.
+const (
+	ObjectiveKill   = "kill"
+	ObjectiveEscape = "escape"
+)
+
+// Objective is one thing the heroes must do to win a quest.
+type Objective struct {
+	Kind     string   `json:"kind"`
+	Monsters []string `json:"monsters,omitempty"`
 }
 
 // NewQuest returns an empty quest bound to the board's current layout.
@@ -260,6 +277,22 @@ func (q *Quest) Validate() error {
 		id("teleport", tp.ID)
 		if len([]rune(tp.Label)) > MaxTeleportLabel {
 			errs = append(errs, fmt.Errorf("teleport %q: label must be at most %d characters", tp.ID, MaxTeleportLabel))
+		}
+	}
+	for i, o := range q.Objectives {
+		switch o.Kind {
+		case ObjectiveKill:
+			for _, id := range o.Monsters {
+				if !slices.ContainsFunc(q.Monsters, func(m Monster) bool { return m.ID == id }) {
+					errs = append(errs, fmt.Errorf("objective %d: no monster %q in the quest", i+1, id))
+				}
+			}
+		case ObjectiveEscape:
+			if len(o.Monsters) > 0 {
+				errs = append(errs, fmt.Errorf("objective %d: an escape names no monsters", i+1))
+			}
+		default:
+			errs = append(errs, fmt.Errorf("objective %d: kind must be %s or %s, got %q", i+1, ObjectiveKill, ObjectiveEscape, o.Kind))
 		}
 	}
 	return errors.Join(errs...)

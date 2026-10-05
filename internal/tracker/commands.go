@@ -142,6 +142,12 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.turnMove(c.Payload)
 	case "turn.door":
 		summary, err = a.turnDoor(c.Payload)
+	case "turn.search":
+		summary, err = a.turnSearch(c.Payload)
+	case "turn.disarm":
+		summary, err = a.turnDisarm(c.Payload)
+	case "quest.end":
+		summary, err = a.questEnd(c.Payload)
 	case "turn.attack":
 		summary, err = a.turnAttack(c.Payload)
 	case "monster.move":
@@ -167,6 +173,7 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 	}
 	if next.Rules != nil && rulesCommand(c.Type) {
 		summary += a.syncFight()
+		summary += a.checkOutcome()
 	}
 
 	payload, err := eventPayload(c, a.dice.log.Rolls)

@@ -339,6 +339,12 @@ describe('quest items', () => {
     expect(toggleExitTile(older, { x: 1, y: 1 }).exitTiles).toEqual([{ x: 1, y: 1 }]);
   });
 
+  test('editing a quest keeps its rules-mode objectives', () => {
+    const q: QuestDoc = { ...emptyQuest(), objectives: [{ kind: 'kill', monsters: ['boss'] }, { kind: 'escape' }] };
+    const edited = toggleExitTile(placeMonster(q, 'orc', { x: 2, y: 3 }), { x: 1, y: 1 });
+    expect(edited.objectives).toEqual([{ kind: 'kill', monsters: ['boss'] }, { kind: 'escape' }]);
+  });
+
   test('itemsAt finds items covering a tile, including rotated furniture footprints', () => {
     let q = placeFurniture(emptyQuest(), 'table', { x: 1, y: 1 }, 90); // 2 wide x 3 tall: x 1..2, y 1..3 (up from the anchor)
     q = placeMonster(q, 'orc', { x: 2, y: 3 });

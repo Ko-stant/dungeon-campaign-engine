@@ -43,6 +43,7 @@ func hallBoard() (*maps.Board, *maps.Quest, *content.Catalog) {
 	_, _, cat := fixture()
 	cat.Furniture = append(cat.Furniture, content.FurnitureDef{ID: "bookcase", Name: "Bookcase", Width: 1, Height: 1, BlocksMovement: true, BlocksLineOfSight: true})
 	cat.Traps = []content.TrapDef{{ID: "pit", Name: "Pit Trap", Width: 1, Height: 1}}
+	cat.Heroes = append(cat.Heroes, content.HeroDef{ID: "rogue", Name: "Rogue", Body: 6, Mind: 3, Exclusives: []string{content.ExclusiveDisarm}})
 	return b, q, cat
 }
 

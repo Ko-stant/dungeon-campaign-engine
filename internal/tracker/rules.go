@@ -46,6 +46,11 @@ type RulesState struct {
 	// attacked in this round's monsters' phase.
 	MonstersMoved []string `json:"monstersMoved,omitempty"`
 	MonstersActed []string `json:"monstersActed,omitempty"`
+	// Searched lists the furniture the party has searched for treasure
+	// (once per piece, D9).
+	Searched []string `json:"searched,omitempty"`
+	// Outcome is OutcomeWon or OutcomeLost once the quest is over.
+	Outcome string `json:"outcome,omitempty"`
 }
 
 // Turn is one hero's turn: Move then Action, or Action then Move (online
@@ -105,6 +110,8 @@ var playerCommands = map[string]bool{
 	"turn.move":      true,
 	"turn.door":      true,
 	"turn.attack":    true,
+	"turn.search":    true,
+	"turn.disarm":    true,
 	"turn.end":       true,
 }
 

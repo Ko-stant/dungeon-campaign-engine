@@ -115,6 +115,14 @@ export interface QuestDoc {
   exitTiles?: TileCoord[] | null;
   /** Teleport squares. Missing or null on quests saved before teleports existed. */
   teleports?: TeleportDoc[] | null;
+  /** What wins the quest in rules mode (internal/maps Objective); omitted when none. */
+  objectives?: ObjectiveDoc[];
+}
+
+/** One objective: kill the named monsters (all when none are named), or escape by the exits. */
+export interface ObjectiveDoc {
+  kind: 'kill' | 'escape';
+  monsters?: string[];
 }
 
 export interface Issue {

@@ -249,3 +249,24 @@ func TestDoorInsideARoomIsFlaggedUnlessAWallIsDrawnThere(t *testing.T) {
 		t.Fatalf("a door on a drawn wall inside a room is fine: %+v", issues)
 	}
 }
+
+func TestQuestObjectivesAreValidated(t *testing.T) {
+	b := testBoard()
+	q := validQuest(b)
+	q.Objectives = []Objective{{Kind: ObjectiveKill}, {Kind: ObjectiveEscape}}
+	if err := q.Validate(); err != nil {
+		t.Fatalf("valid objectives: %v", err)
+	}
+	q.Objectives = []Objective{{Kind: "find"}}
+	if err := q.Validate(); err == nil || !strings.Contains(err.Error(), "objective") {
+		t.Errorf("an unknown kind: %v", err)
+	}
+	q.Objectives = []Objective{{Kind: ObjectiveKill, Monsters: []string{"nobody"}}}
+	if err := q.Validate(); err == nil || !strings.Contains(err.Error(), "nobody") {
+		t.Errorf("an unknown monster: %v", err)
+	}
+	q.Objectives = []Objective{{Kind: ObjectiveEscape, Monsters: []string{q.Monsters[0].ID}}}
+	if err := q.Validate(); err == nil {
+		t.Error("an escape names no monsters")
+	}
+}

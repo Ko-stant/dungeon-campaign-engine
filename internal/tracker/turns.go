@@ -70,6 +70,8 @@ func (a *applier) turnStart(payload json.RawMessage) (string, error) {
 		return "", err
 	}
 	switch {
+	case r.Phase == PhaseOver:
+		return "", errors.New("the quest is over")
 	case r.Phase != PhaseHeroes:
 		return "", fmt.Errorf("it is the %s' phase, not the heroes'", r.Phase)
 	case r.Turn != nil:
