@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 04:30 EDT
+**Last Updated**: 2026-10-05 05:20 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -449,8 +449,12 @@ dead):
      ranged, reach, line, splash, undead); sessions freeze them into their monsters when set
      up or added (a quest's own Body still wins); the tracker shows them, with a Faltering
      badge at a quarter of Body.
-   - 5c. Fights in the tracker: start/end, mana regeneration each fight round, the cooldown
-     floor out of a fight, effects with countdowns.
+   - 5c. Fights in the tracker - done 2026-10-05: "Start fight" / "End fight" by "Next
+     round" (a "Fight" badge while one is on). In a fight each new round finishes cooldowns,
+     regenerates mana (the class's mana per fight round) and counts effects down; out of a
+     fight cooldowns stop at 1 round left (1-3) or 2 (4+) and nothing else changes. Effects
+     are generic: any hero or monster can carry a named effect with an optional countdown and a
+     note (`effect.add`/`effect.remove`); ending a fight ends those with a countdown.
    - 5d. Item stats, equipped items and hero totals; the party purse.
    - 5e. A script that fills the Three Plagues campaign with the agreed classes, monster stats
      and starting kits (run only when the GM asks).

@@ -90,6 +90,8 @@ func TestNewSessionCopiesClassCombatStats(t *testing.T) {
 func TestAbilityCooldowns(t *testing.T) {
 	s, cat := abilityState(t)
 	s.Round = 4
+	// Cooldowns finish in fight rounds (out of a fight they stop short; see fights_test.go).
+	s.Fight = true
 
 	s, ev := applyWith(t, s, cmd(t, "ability.use", map[string]any{"heroId": "hero-2", "abilityId": "ability-1"}), cat)
 	if s.Heroes[1].Cooldowns["ability-1"] != 10 || ev.Summary != "Vex used Rain of Arrows: ready again in round 10" {

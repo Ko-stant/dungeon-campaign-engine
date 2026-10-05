@@ -73,6 +73,8 @@ type Hero struct {
 	// Combat is the class's combat stats, frozen like the abilities; nil for
 	// built-in classes, which roll combat dice.
 	Combat *Combat `json:"combat,omitempty"`
+	// Effects are named conditions with optional countdowns (see fights.go).
+	Effects []Effect `json:"effects,omitempty"`
 }
 
 // Combat is a hero's combat stats (see content.HeroDef and the Three Plagues rules).
@@ -108,6 +110,8 @@ type Monster struct {
 	// Combat is the campaign's combat stats for this monster type, frozen when
 	// the monster is set up or added; nil when the campaign has none.
 	Combat *content.MonsterCombat `json:"combat,omitempty"`
+	// Effects are named conditions with optional countdowns (see fights.go).
+	Effects []Effect `json:"effects,omitempty"`
 }
 
 // DoorState is the live state of a quest door.
@@ -135,15 +139,17 @@ type State struct {
 	Version int `json:"version"`
 	// QuestID identifies the active map's quest (empty on sessions started
 	// before travel between maps existed; the server fills it in).
-	QuestID   string      `json:"questId,omitempty"`
-	Board     maps.Board  `json:"board"`
-	Quest     maps.Quest  `json:"quest"`
-	QuestName string      `json:"questName"`
-	Round     int         `json:"round"`
-	Heroes    []Hero      `json:"heroes"`
-	Monsters  []Monster   `json:"monsters"`
-	Doors     []DoorState `json:"doors"`
-	Traps     []TrapState `json:"traps"`
+	QuestID   string     `json:"questId,omitempty"`
+	Board     maps.Board `json:"board"`
+	Quest     maps.Quest `json:"quest"`
+	QuestName string     `json:"questName"`
+	Round     int        `json:"round"`
+	// Fight is true while a fight is on (see fights.go).
+	Fight    bool        `json:"fight,omitempty"`
+	Heroes   []Hero      `json:"heroes"`
+	Monsters []Monster   `json:"monsters"`
+	Doors    []DoorState `json:"doors"`
+	Traps    []TrapState `json:"traps"`
 	// RemovedBlocks lists quest blocked squares taken off the board during
 	// play (for example a found secret door).
 	RemovedBlocks []string `json:"removedBlocks"`

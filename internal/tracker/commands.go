@@ -70,6 +70,14 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.noteConsume(c.Payload)
 	case "round.advance":
 		summary = a.roundAdvance()
+	case "fight.start":
+		summary, err = a.fightStart(c.Payload)
+	case "fight.end":
+		summary, err = a.fightEnd(c.Payload)
+	case "effect.add":
+		summary, err = a.effectAdd(c.Payload)
+	case "effect.remove":
+		summary, err = a.effectRemove(c.Payload)
 	case "round.set":
 		summary, err = a.roundSet(c.Payload)
 	case "ability.use":

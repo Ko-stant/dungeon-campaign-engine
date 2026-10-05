@@ -76,6 +76,10 @@ Tailwind CSS v4, canvas rendering.
     `GET /audio/{campaign}/{file}`, upload/delete forms on the campaign page.
   - Abilities in play: session heroes copy mana and abilities from their class;
     `ability.use` / `ability.reset` track cooldowns (`cooldowns`: ability id -> ready round).
+  - Fights (`internal/tracker/fights.go`): `fight.start`/`fight.end` set `State.Fight`. In a
+    fight `round.advance` finishes cooldowns, regenerates mana (`Combat.ManaRegen`) and counts
+    effects down; out of a fight cooldowns stop at 1-2 rounds left. Generic effects
+    (`effect.add`/`effect.remove`, `Effects` on heroes and monsters) only count down and remind.
   - Campaign chapters (table `campaign_chapter`): ordered quests, each on its own board;
     `/campaigns/{id}/chapters...` and `/campaigns/{id}/maps` forms, `GET /api/campaigns/{id}/chapters`.
   - Multi-map sessions: the `State` top-level fields are the active map; `OtherMaps` keeps maps

@@ -32,6 +32,16 @@ export interface Hero {
   cooldowns?: Record<string, number> | null;
   /** The class's combat stats, frozen at session start; missing for built-in classes and older sessions. */
   combat?: HeroCombat | null;
+  effects?: Effect[] | null;
+}
+
+/** A named condition with an optional countdown in fight rounds, mirroring tracker.Effect (Go). */
+export interface Effect {
+  id: string;
+  name: string;
+  /** Rounds left, counted down each fight round; missing or 0 lasts until removed. */
+  rounds?: number;
+  note?: string;
 }
 
 /** A hero's combat stats (The Three Plagues rules), mirroring tracker.Combat (Go). */
@@ -72,6 +82,7 @@ export interface Monster {
   color?: string;
   /** The campaign's combat stats for this monster type, frozen when set up or added; missing when the campaign has none. */
   combat?: MonsterCombat | null;
+  effects?: Effect[] | null;
 }
 
 /** A monster's combat stats (The Three Plagues rules), mirroring content.MonsterCombat (Go). */
@@ -131,6 +142,8 @@ export interface SessionState {
   quest: QuestDoc;
   questName: string;
   round: number;
+  /** True while a fight is on: rounds then finish cooldowns, regenerate mana and count effects down. */
+  fight?: boolean;
   heroes: Hero[];
   monsters: Monster[];
   doors: LiveDoor[];

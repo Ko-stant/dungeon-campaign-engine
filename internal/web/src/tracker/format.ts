@@ -20,6 +20,8 @@ const CATEGORIES: Record<string, string> = {
   area: 'reveal',
   tiles: 'reveal',
   round: 'round',
+  fight: 'round',
+  effect: 'note',
   log: 'note',
   passage: 'note',
   note: 'note',

@@ -18,6 +18,7 @@ import { trackerView } from '../tracker/view.ts';
 import { lineTiles } from '../editor/tools.ts';
 import { h, preserveFocus, replaceChildren } from '../ui/dom.ts';
 import { abilitySection, inventorySection, type SectionContext } from '../ui/heroSections.ts';
+import { effectSuggestions, effectsBlock } from '../ui/effects.ts';
 import { readAloudPanel, readerOverlay, type ReadAloudContext } from '../ui/readAloud.ts';
 import { currentSection, passageClips } from '../tracker/script.ts';
 
@@ -339,7 +340,17 @@ async function main(): Promise<void> {
       travelControl(completed),
       h('span', { class: 'mx-2 h-6 w-px bg-border/60' }),
       h('span', { class: 'text-lg font-bold text-amber-400', 'aria-live': 'polite' }, `Round ${state.round}`),
+      state.fight
+        ? h('span', { class: 'rounded-full border border-danger/60 bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger', title: 'Rounds finish cooldowns, regenerate mana and count effects down' }, 'Fight')
+        : null,
       h('button', { type: 'button', class: btn, disabled: completed || busy, onclick: () => { void send({ type: 'round.advance', payload: {} }); } }, 'Next round'),
+      h('button', {
+        type: 'button',
+        class: btn,
+        disabled: completed || busy,
+        title: state.fight ? 'End the fight: effects with a countdown end; out of a fight cooldowns stop at 1-2 rounds left' : 'Start a fight: rounds finish cooldowns, regenerate mana and count effects down',
+        onclick: () => { void send({ type: state.fight ? 'fight.end' : 'fight.start', payload: {} }); },
+      }, state.fight ? 'End fight' : 'Start fight'),
       h('label', { class: 'flex items-center gap-1 text-sm' },
         h('input', { type: 'checkbox', checked: fog, onchange: (e: Event) => { fog = (e.target as HTMLInputElement).checked; requestDraw(); } }),
         'Show what the heroes have seen'),
@@ -481,6 +492,7 @@ async function main(): Promise<void> {
         (hero.maxMana ?? 0) > 0 ? statControl('Mana', hero.mana ?? 0, hero.maxMana ?? 0, (v) => { heroCmd(hero, { mana: v }); }) : null,
         h('select', { class: field, 'aria-label': `${hero.name} status`, onchange: (e: Event) => { heroCmd(hero, { status: (e.target as HTMLSelectElement).value }); } },
           ...(['active', 'dead', 'escaped'] as const).map((s) => h('option', { value: s, selected: hero.status === s }, s))),
+        effectsBlock(hero.id, hero.name, hero.effects, (c) => { void send(c); }),
         abilitySection(hero, state.round, sections),
         inventorySection(hero, state.heroes, sections),
         hero.equipment ? h('textarea', { class: `${field} h-14 w-full`, placeholder: 'Equipment', title: 'Equipment notes (items are tracked in the inventory)', onchange: (e: Event) => { heroCmd(hero, { equipment: (e.target as HTMLTextAreaElement).value }); } }, hero.equipment) : null,
@@ -488,7 +500,7 @@ async function main(): Promise<void> {
         selected ? h('p', { class: 'text-xs text-amber-400' }, hero.placed ? 'Click a square to move this hero.' : 'Click a square to place this hero.') : null,
       );
     });
-    replaceChildren(leftPanel, h('h2', { class: 'text-sm font-semibold' }, 'Heroes'), ...cards);
+    replaceChildren(leftPanel, h('h2', { class: 'text-sm font-semibold' }, 'Heroes'), effectSuggestions(), ...cards);
   }
 
   /** A living monster at or below its Faltering threshold (a quarter of maximum Body). */
@@ -515,6 +527,7 @@ async function main(): Promise<void> {
           ? h('p', { class: 'text-xs font-semibold text-amber-400' }, `Faltering: Avoidance ${monster.combat.avoidance - FALTER_PENALTY} (at ${falterAt(monster.maxBody)} Body or less)`)
           : null,
         statControl('Body', monster.body, monster.maxBody, (v) => { monsterCmd(monster, { body: v }); }),
+        effectsBlock(monster.id, monster.name, monster.effects, (c) => { void send(c); }),
         h('div', { class: 'flex flex-wrap gap-2' },
           h('button', { type: 'button', class: btn, onclick: () => { monsterCmd(monster, { visibility: monster.visibility === 'hidden' ? 'seen' : 'hidden' }); } },
             monster.visibility === 'hidden' ? 'Mark seen' : 'Mark hidden'),

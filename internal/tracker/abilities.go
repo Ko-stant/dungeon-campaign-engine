@@ -143,11 +143,25 @@ func (a *applier) readyAgain() []string {
 	return out
 }
 
+// roundAdvance starts the next round. In a fight, cooldowns finish, mana
+// regenerates and effects count down; out of a fight, cooldowns stop short
+// (see fights.go).
 func (a *applier) roundAdvance() string {
 	a.s.Round++
+	if !a.s.Fight {
+		a.holdCooldowns()
+	}
 	summary := fmt.Sprintf("Round %d begins", a.s.Round)
 	if ready := a.readyAgain(); len(ready) > 0 {
 		summary += "; ready again: " + strings.Join(ready, ", ")
+	}
+	if a.s.Fight {
+		if mana := a.regenerateMana(); len(mana) > 0 {
+			summary += "; mana: " + strings.Join(mana, ", ")
+		}
+		if ended := a.tickEffects(); len(ended) > 0 {
+			summary += "; ended: " + strings.Join(ended, ", ")
+		}
 	}
 	return summary
 }
