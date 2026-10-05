@@ -138,6 +138,10 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.rulesDisable(c.Payload)
 	case "turn.start":
 		summary, err = a.turnStart(c.Payload)
+	case "turn.move":
+		summary, err = a.turnMove(c.Payload)
+	case "turn.door":
+		summary, err = a.turnDoor(c.Payload)
 	case "turn.roll-move":
 		summary, err = a.turnRollMove(c.Payload)
 	case "turn.end":

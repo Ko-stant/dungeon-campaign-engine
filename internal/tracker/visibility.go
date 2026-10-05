@@ -174,6 +174,24 @@ func counted(n int, one, many string) string {
 // edges (secret doors only once found; traps never). It describes what
 // became seen, e.g. " (seen: 2 monsters, 1 door)", or "".
 func (a *applier) showContentsOn(indexes []int) string {
+	return a.showContents(indexes).String()
+}
+
+// seenCount counts the pieces a reveal showed.
+type seenCount struct {
+	monsters, furniture, doors, blocks int
+}
+
+func (c *seenCount) add(o seenCount) {
+	c.monsters += o.monsters
+	c.furniture += o.furniture
+	c.doors += o.doors
+	c.blocks += o.blocks
+}
+
+// showContents shows the pieces on the given squares (see showContentsOn)
+// and counts what became seen.
+func (a *applier) showContents(indexes []int) seenCount {
 	on := make(map[int]bool, len(indexes))
 	for _, i := range indexes {
 		on[i] = true
@@ -213,18 +231,23 @@ func (a *applier) showContentsOn(indexes []int) string {
 			}
 		}
 	}
+	return seenCount{monsters: monsters, furniture: furniture, doors: doors, blocks: blocks}
+}
+
+// String is " (seen: 2 monsters, 1 door)", or "" when nothing was seen.
+func (c seenCount) String() string {
 	var parts []string
-	if monsters > 0 {
-		parts = append(parts, counted(monsters, "monster", "monsters"))
+	if c.monsters > 0 {
+		parts = append(parts, counted(c.monsters, "monster", "monsters"))
 	}
-	if furniture > 0 {
-		parts = append(parts, counted(furniture, "piece of furniture", "pieces of furniture"))
+	if c.furniture > 0 {
+		parts = append(parts, counted(c.furniture, "piece of furniture", "pieces of furniture"))
 	}
-	if doors > 0 {
-		parts = append(parts, counted(doors, "door", "doors"))
+	if c.doors > 0 {
+		parts = append(parts, counted(c.doors, "door", "doors"))
 	}
-	if blocks > 0 {
-		parts = append(parts, counted(blocks, "blocked square", "blocked squares"))
+	if c.blocks > 0 {
+		parts = append(parts, counted(c.blocks, "blocked square", "blocked squares"))
 	}
 	if len(parts) == 0 {
 		return ""

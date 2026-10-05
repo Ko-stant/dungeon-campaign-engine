@@ -361,7 +361,7 @@ func PlayerLine(spotted []SpottedMonster, rest string) string {
 // PlayerSpotted lists the living monsters that a command shows the players.
 func PlayerSpotted(before, after *State, c Command) []SpottedMonster {
 	switch c.Type {
-	case "monster.update", "monster.add", "seen.set", "area.reveal", "tiles.reveal":
+	case "monster.update", "monster.add", "seen.set", "area.reveal", "tiles.reveal", "rules.enable", "turn.move", "turn.door":
 	default:
 		return nil
 	}

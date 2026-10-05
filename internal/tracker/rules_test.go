@@ -46,7 +46,7 @@ func TestRulesEnableStartsTheHeroesPhase(t *testing.T) {
 	if s.Monsters[0].Movement != 8 {
 		t.Errorf("monster movement frozen from the catalog: %d", s.Monsters[0].Movement)
 	}
-	if ev.Summary != "Rules on (three-plagues/1): the heroes' turns" {
+	if ev.Summary != "Rules on (three-plagues/1): the heroes' turns (seen: 1 door)" {
 		t.Errorf("summary %q", ev.Summary)
 	}
 	if !strings.Contains(applyErr(t, s, cmd(t, "rules.enable", map[string]any{"seed": 1})), "already on") {

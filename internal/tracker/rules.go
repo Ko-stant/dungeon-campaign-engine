@@ -98,6 +98,8 @@ func (a Actor) validate() error {
 var playerCommands = map[string]bool{
 	"turn.start":     true,
 	"turn.roll-move": true,
+	"turn.move":      true,
+	"turn.door":      true,
 	"turn.end":       true,
 }
 
@@ -197,7 +199,7 @@ func (a *applier) rulesEnable(payload json.RawMessage) (string, error) {
 			m.Movement = def.Movement
 		}
 	}
-	return fmt.Sprintf("Rules on (%s): the heroes' turns", RulesetThreePlagues), nil
+	return fmt.Sprintf("Rules on (%s): the heroes' turns%s", RulesetThreePlagues, a.revealFromHeroes()), nil
 }
 
 // heroMovement is a class's movement dice: its own expression, the original

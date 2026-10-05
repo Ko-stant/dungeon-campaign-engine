@@ -57,23 +57,28 @@ func (a *applier) trapTrigger(payload json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return a.triggerTrap(t, qt), nil
+}
+
+// triggerTrap sets a trap off as its kind says and describes it.
+func (a *applier) triggerTrap(t *TrapState, qt maps.Trap) string {
 	label := a.trapKindLabel(qt) + " " + t.ID
 	switch trapTriggers[qt.Kind] {
 	case onTriggerStay:
 		t.State = maps.TrapTriggered
-		return label + " triggered: it stays on the board", nil
+		return label + " triggered: it stays on the board"
 	case onTriggerBlock:
 		r := a.blockTrap(t, qt)
-		return fmt.Sprintf("%s triggered: %s blocked now", label, squaresAt(r)), nil
+		return fmt.Sprintf("%s triggered: %s blocked now", label, squaresAt(r))
 	case onTriggerRemove:
 		t.State = maps.TrapRemoved
-		return label + " triggered and is gone", nil
+		return label + " triggered and is gone"
 	case onTriggerRoll:
 		t.State = maps.TrapTriggered
-		return label + " triggered: block the square where it stops", nil
+		return label + " triggered: block the square where it stops"
 	}
 	t.State = maps.TrapTriggered
-	return label + " triggered", nil
+	return label + " triggered"
 }
 
 func (a *applier) trapBlock(payload json.RawMessage) (string, error) {
