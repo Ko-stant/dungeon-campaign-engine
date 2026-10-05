@@ -96,6 +96,8 @@ Commits (oldest first):
 | 427a0da | player screen phase 5: monster abilities text, TV text size |
 | 9660186 | tracker: clicking a door selects it (open/close from the panel) |
 | b2d6247 | players' handbook and table polls; Mind becomes Will |
+| 698a46c | tracker: monsters saved with size 0 can be selected again |
+| 01ad0e0 | tracker: drag along a corridor to reveal it |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
