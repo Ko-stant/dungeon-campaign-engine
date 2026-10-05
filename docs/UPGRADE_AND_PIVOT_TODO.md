@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-04 22:15 EDT
+**Last Updated**: 2026-10-05 00:35 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -79,6 +79,7 @@ Commits (oldest first):
 | 8cabe59 | Quest 1 encounters regenerated: Room 8 is a line gargoyle and 2 warlocks |
 | b39a157 | Three Plagues step 4: ability proposal with the GM's notes |
 | 5ff09e0 | Three Plagues step 4: ability kit (merged, pruned, Venom Vial) simulated and Quest 1 recalibrated |
+| 9a7b2ad | Three Plagues gear: starting kit, approved Quest 1 finds, upgrade tiers in the simulator |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
