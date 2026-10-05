@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/combat"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
 )
@@ -15,10 +16,16 @@ import (
 // MaxLogNoteLength bounds free-text log notes.
 const MaxLogNoteLength = 2000
 
-// Command is one GM change, as sent by the tracker page.
+// Command is one change, as sent by the tracker page (the GM) or, in rules
+// mode, by a player's seat or a bot.
 type Command struct {
 	Type    string          `json:"type"`
 	Payload json.RawMessage `json:"payload"`
+	// Actor is who sent it; the zero value is the GM. The server sets it.
+	Actor Actor `json:"actor,omitzero"`
+	// Dice are dice the GM rolled at the table, used in order instead of the
+	// session's seeded roller.
+	Dice []int `json:"dice,omitempty"`
 }
 
 // Event describes an applied command for the session log.
@@ -44,11 +51,14 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 	if s.Version != StateVersion {
 		return nil, Event{}, fmt.Errorf("session state version %d is not the current version %d (squares now count from the bottom-left); start a new session", s.Version, StateVersion)
 	}
+	if err := checkActor(s, c); err != nil {
+		return nil, Event{}, fmt.Errorf("%s: %w", c.Type, err)
+	}
 	next, err := clone(s)
 	if err != nil {
 		return nil, Event{}, err
 	}
-	a := applier{s: next, catalog: catalog}
+	a := applier{s: next, catalog: catalog, actor: c.Actor, dice: newDice(next, c.Dice)}
 
 	var summary string
 	switch c.Type {
@@ -122,23 +132,57 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.passageRead(c.Payload)
 	case "log.note":
 		summary, err = a.logNote(c.Payload)
+	case "rules.enable":
+		summary, err = a.rulesEnable(c.Payload)
+	case "rules.disable":
+		summary, err = a.rulesDisable(c.Payload)
+	case "turn.start":
+		summary, err = a.turnStart(c.Payload)
+	case "turn.roll-move":
+		summary, err = a.turnRollMove(c.Payload)
+	case "turn.end":
+		summary, err = a.turnEnd(c.Payload)
+	case "phase.monsters":
+		summary, err = a.phaseMonsters(c.Payload)
+	case "phase.end":
+		summary, err = a.phaseEnd(c.Payload)
 	default:
 		err = fmt.Errorf("unknown command %q", c.Type)
+	}
+	if err == nil {
+		err = a.dice.finish(next)
 	}
 	if err != nil {
 		return nil, Event{}, fmt.Errorf("%s: %w", c.Type, err)
 	}
-
-	cmdPayload := c.Payload
-	if len(cmdPayload) == 0 {
-		cmdPayload = json.RawMessage(`{}`)
+	if next.Rules != nil && rulesCommand(c.Type) {
+		summary += a.syncFight()
 	}
-	payload, err := json.Marshal(map[string]json.RawMessage{"command": cmdPayload})
+
+	payload, err := eventPayload(c, a.dice.log.Rolls)
 	if err != nil {
 		return nil, Event{}, err
 	}
 	return next, Event{Round: next.Round, Kind: c.Type, Summary: summary, Payload: payload, PlayerSummary: PlayerSummary(s, next, c, summary),
 		PlayerSpotted: PlayerSpotted(s, next, c), PlayerRetract: PlayerRetract(s, c)}, nil
+}
+
+// eventPayload is what an event stores: the command's payload, plus who sent
+// it (players and the AI GM only) and every die thrown, when there were any.
+func eventPayload(c Command, rolls []combat.Die) (json.RawMessage, error) {
+	cmdPayload := c.Payload
+	if len(cmdPayload) == 0 {
+		cmdPayload = json.RawMessage(`{}`)
+	}
+	p := struct {
+		Command json.RawMessage `json:"command"`
+		Actor   *Actor          `json:"actor,omitempty"`
+		Rolls   []combat.Die    `json:"rolls,omitempty"`
+	}{Command: cmdPayload, Rolls: rolls}
+	if c.Actor.Kind != "" && c.Actor.Kind != ActorGM {
+		p.Actor = &c.Actor
+	}
+	return json.Marshal(p)
 }
 
 func clone(s *State) (*State, error) {
@@ -156,6 +200,8 @@ func clone(s *State) (*State, error) {
 type applier struct {
 	s       *State
 	catalog *content.Catalog
+	actor   Actor
+	dice    *diceSource
 }
 
 func decode[T any](payload json.RawMessage) (T, error) {

@@ -54,6 +54,11 @@ func (a *applier) fightEnd(payload json.RawMessage) (string, error) {
 	if !a.s.Fight {
 		return "", errors.New("there is no fight to end")
 	}
+	return a.endFight(), nil
+}
+
+// endFight ends the fight and describes what that changed.
+func (a *applier) endFight() string {
 	a.s.Fight = false
 	summary := "Fight over"
 	if dropped := a.dropCooldowns(); len(dropped) > 0 {
@@ -72,7 +77,7 @@ func (a *applier) fightEnd(payload json.RawMessage) (string, error) {
 	if ended := a.removeEffects(func(e *Effect) bool { return e.Rounds > 0 }); len(ended) > 0 {
 		summary += "; ended: " + strings.Join(ended, ", ")
 	}
-	return summary, nil
+	return summary
 }
 
 // cooldownFloor is how many rounds an ability's cooldown keeps out of a fight:

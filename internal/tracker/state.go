@@ -78,6 +78,9 @@ type Hero struct {
 	Combat *Combat `json:"combat,omitempty"`
 	// Effects are named conditions with optional countdowns (see fights.go).
 	Effects []Effect `json:"effects,omitempty"`
+	// Movement is the hero's movement dice, frozen from the class when the
+	// rules are switched on (see rules.go).
+	Movement string `json:"movement,omitempty"`
 }
 
 // Combat is a hero's combat stats (see content.HeroDef and the Three Plagues rules).
@@ -115,6 +118,9 @@ type Monster struct {
 	Combat *content.MonsterCombat `json:"combat,omitempty"`
 	// Effects are named conditions with optional countdowns (see fights.go).
 	Effects []Effect `json:"effects,omitempty"`
+	// Movement is how many squares the monster moves, frozen from its type
+	// when the rules are switched on (see rules.go).
+	Movement int `json:"movement,omitempty"`
 }
 
 // DoorState is the live state of a quest door.
@@ -178,6 +184,9 @@ type State struct {
 	// ReadPassages lists the read-aloud passages (ids from the campaign's
 	// script) already read at the table, across every map of the session.
 	ReadPassages []string `json:"readPassages,omitempty"`
+	// Rules is the rules engine's state; nil while the rules are off (the
+	// table companion; see rules.go).
+	Rules *RulesState `json:"rules,omitempty"`
 }
 
 // NewSession sets up round 1 of a quest: heroes on the start squares in

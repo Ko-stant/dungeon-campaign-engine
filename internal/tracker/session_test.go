@@ -62,7 +62,7 @@ func fixture() (*maps.Board, *maps.Quest, *content.Catalog) {
 		},
 		Heroes: []content.HeroDef{
 			{ID: "barbarian", Name: "Barbarian", Body: 8, Mind: 2},
-			{ID: "wizard", Name: "Wizard", Body: 4, Mind: 6},
+			{ID: "wizard", Name: "Wizard", Body: 4, Mind: 6, Movement: "1d6+2"},
 		},
 	}
 	return b, q, cat

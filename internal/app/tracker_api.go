@@ -442,6 +442,9 @@ func (s *Server) sessionCommand(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &cmd) {
 		return
 	}
+	// This is the GM's endpoint: whoever the client claims to be, the
+	// command is the GM's.
+	cmd.Actor = tracker.Actor{}
 	id := r.PathValue("id")
 	unlock := s.lockSession(id)
 	defer unlock()
