@@ -20,8 +20,10 @@ import (
 // PlayerState is what the player screen shows.
 type PlayerState struct {
 	QuestName string `json:"questName"`
-	Round     int    `json:"round"`
-	Fight     bool   `json:"fight,omitempty"`
+	// Goal is the quest's aim as the players hear it.
+	Goal  string `json:"goal,omitempty"`
+	Round int    `json:"round"`
+	Fight bool   `json:"fight,omitempty"`
 	// The map layout (rooms and corridors, walls); room names are left out.
 	Width      int         `json:"width"`
 	Height     int         `json:"height"`
@@ -117,7 +119,7 @@ func wounded(m *Monster) bool {
 // PlayerView filters a session down to what the players may see.
 func PlayerView(s *State) PlayerState {
 	pv := PlayerState{
-		QuestName: s.QuestName, Round: s.Round, Fight: s.Fight,
+		QuestName: s.QuestName, Goal: s.Quest.Goal, Round: s.Round, Fight: s.Fight,
 		Width: s.Board.Width, Height: s.Board.Height, Regions: slices.Clone(s.Board.Regions), DrawnWalls: slices.Clone(s.Board.DrawnWalls),
 		Discovered: slices.Clone(s.Discovered),
 		Doors:      []PlayerDoor{}, Furniture: []maps.Furniture{}, Blocks: []PlayerBlock{}, Traps: []PlayerTrap{},

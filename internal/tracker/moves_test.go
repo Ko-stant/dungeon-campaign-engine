@@ -138,6 +138,36 @@ func TestClosedDoorsWallsAndOccupiedSquaresStopAMove(t *testing.T) {
 	}
 }
 
+func TestAllFurnitureBlocksMovement(t *testing.T) {
+	s := hallTurn(t, 6, 6)
+	s.Heroes[0].X, s.Heroes[0].Y = 4, 1
+	// The chest has no blocking flag in the catalog; furniture blocks anyway.
+	if msg := hallErr(t, s, moveTo(t, 5, 1)); !strings.Contains(msg, "no way") {
+		t.Errorf("onto the chest: %q", msg)
+	}
+}
+
+func TestALockedDoorOpensWithItsKey(t *testing.T) {
+	b, q, cat := hallBoard()
+	q.Doors[0].Locked = true
+	q.Doors[0].Key = "Iron Key"
+	s, _ := NewSession(b, q, "Hall", party(), cat)
+	s.Heroes[0].X, s.Heroes[0].Y = 2, 2
+	s, _ = hallApply(t, s, cmd(t, "rules.enable", map[string]any{"seed": 7}))
+	s, _ = hallApply(t, s, as(seat("hero-1"), cmd(t, "turn.start", map[string]any{"hero": "hero-1"})))
+	if msg := hallErr(t, s, openDoor(t, "d1")); !strings.Contains(msg, "locked") || !strings.Contains(msg, "Iron Key") {
+		t.Errorf("without the key: %q", msg)
+	}
+	s.Heroes[0].Items = append(s.Heroes[0].Items, Item{ID: "item-1", Name: "iron key", Quantity: 1})
+	s, ev := hallApply(t, s, openDoor(t, "d1"))
+	if s.Doors[0].State != maps.DoorOpen || s.Doors[0].Locked {
+		t.Fatalf("door %+v", s.Doors[0])
+	}
+	if !strings.HasPrefix(ev.Summary, "Grom (Barbarian) unlocks d1 with the iron key and opens it") {
+		t.Errorf("summary %q", ev.Summary)
+	}
+}
+
 func TestHeroesPassThroughAllies(t *testing.T) {
 	b, q, cat := hallBoard()
 	q.StartTiles = []maps.Tile{{X: 1, Y: 1}, {X: 1, Y: 2}}

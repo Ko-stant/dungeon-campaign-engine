@@ -253,7 +253,7 @@ func TestDoorInsideARoomIsFlaggedUnlessAWallIsDrawnThere(t *testing.T) {
 func TestQuestObjectivesAreValidated(t *testing.T) {
 	b := testBoard()
 	q := validQuest(b)
-	q.Objectives = []Objective{{Kind: ObjectiveKill}, {Kind: ObjectiveEscape}}
+	q.Objectives = []Objective{{Kind: ObjectiveKill}, {Kind: ObjectiveCollect, Item: "Soul Gem"}, {Kind: ObjectiveEscape}}
 	if err := q.Validate(); err != nil {
 		t.Fatalf("valid objectives: %v", err)
 	}
@@ -268,5 +268,19 @@ func TestQuestObjectivesAreValidated(t *testing.T) {
 	q.Objectives = []Objective{{Kind: ObjectiveEscape, Monsters: []string{q.Monsters[0].ID}}}
 	if err := q.Validate(); err == nil {
 		t.Error("an escape names no monsters")
+	}
+	q.Objectives = []Objective{{Kind: ObjectiveCollect}}
+	if err := q.Validate(); err == nil || !strings.Contains(err.Error(), "item") {
+		t.Errorf("a collect objective names its item: %v", err)
+	}
+	q.Objectives = nil
+	q.Goal = strings.Repeat("x", MaxGoal+1)
+	if err := q.Validate(); err == nil || !strings.Contains(err.Error(), "goal") {
+		t.Errorf("a long goal: %v", err)
+	}
+	q.Goal = ""
+	q.Doors[0].Key = strings.Repeat("k", MaxKeyName+1)
+	if err := q.Validate(); err == nil || !strings.Contains(err.Error(), "key") {
+		t.Errorf("a long key name: %v", err)
 	}
 }

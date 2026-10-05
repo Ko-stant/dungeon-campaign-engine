@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
 )
@@ -192,6 +193,19 @@ func (a *applier) walk(turn *Turn, h *Hero, path []maps.Tile) string {
 	return summary
 }
 
+// carried returns the hero's item with the given name (any case), or nil.
+func carried(h *Hero, name string) *Item {
+	if name == "" {
+		return nil
+	}
+	for i := range h.Items {
+		if strings.EqualFold(strings.TrimSpace(h.Items[i].Name), strings.TrimSpace(name)) && h.Items[i].Quantity > 0 {
+			return &h.Items[i]
+		}
+	}
+	return nil
+}
+
 // beside reports whether a hero stands on either side of one of a door's edges.
 func beside(h *Hero, d maps.Door) bool {
 	at := maps.Tile{X: h.X, Y: h.Y}
@@ -225,14 +239,25 @@ func (a *applier) turnDoor(payload json.RawMessage) (string, error) {
 		return "", fmt.Errorf("no door %q", p.Door)
 	}
 	d := &a.s.Doors[i]
+	qd := a.s.Quest.Doors[qi]
 	switch {
 	case d.State == maps.DoorOpen:
 		return "", fmt.Errorf("%s is open already", a.doorLabel(d.ID))
-	case !beside(h, a.s.Quest.Doors[qi]):
+	case !beside(h, qd):
 		return "", fmt.Errorf("%s is not beside %s", h.Name, a.doorLabel(d.ID))
-	case d.Locked:
-		return "", fmt.Errorf("%s is locked", a.doorLabel(d.ID))
+	}
+	verb := "opens " + a.doorLabel(d.ID)
+	if d.Locked {
+		key := carried(h, qd.Key)
+		if key == nil {
+			if qd.Key != "" {
+				return "", fmt.Errorf("%s is locked; it opens with the %s", a.doorLabel(d.ID), qd.Key)
+			}
+			return "", fmt.Errorf("%s is locked", a.doorLabel(d.ID))
+		}
+		d.Locked = false
+		verb = fmt.Sprintf("unlocks %s with the %s and opens it", a.doorLabel(d.ID), key.Name)
 	}
 	d.State, d.Seen = maps.DoorOpen, true
-	return fmt.Sprintf("%s opens %s%s", a.heroLabel(h), a.doorLabel(d.ID), a.revealFrom(maps.Tile{X: h.X, Y: h.Y}).String()), nil
+	return fmt.Sprintf("%s %s%s", a.heroLabel(h), verb, a.revealFrom(maps.Tile{X: h.X, Y: h.Y}).String()), nil
 }

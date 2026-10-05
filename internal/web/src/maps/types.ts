@@ -38,6 +38,8 @@ export interface DoorDoc {
   state: DoorState;
   /** 2 for a two-wide door or gate: the edge and the next one along the wall. Omitted when 1. */
   span?: number;
+  /** The item that unlocks it in rules mode (internal/maps Door.Key). Omitted when none. */
+  key?: string;
 }
 
 export interface RectDoc {
@@ -115,14 +117,17 @@ export interface QuestDoc {
   exitTiles?: TileCoord[] | null;
   /** Teleport squares. Missing or null on quests saved before teleports existed. */
   teleports?: TeleportDoc[] | null;
+  /** The quest's aim as the players hear it. Omitted when none. */
+  goal?: string;
   /** What wins the quest in rules mode (internal/maps Objective); omitted when none. */
   objectives?: ObjectiveDoc[];
 }
 
-/** One objective: kill the named monsters (all when none are named), or escape by the exits. */
+/** One objective: kill the named monsters (all when none are named), carry an item, or escape by the exits. */
 export interface ObjectiveDoc {
-  kind: 'kill' | 'escape';
+  kind: 'kill' | 'collect' | 'escape';
   monsters?: string[];
+  item?: string;
 }
 
 export interface Issue {

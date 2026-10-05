@@ -47,6 +47,9 @@ type Door struct {
 	State  string `json:"state"`
 	Locked bool   `json:"locked,omitempty"`
 	Span   int    `json:"span,omitempty"`
+	// Key names the item that unlocks the door in rules mode (a hero carrying
+	// it opens the door); empty means only the GM can unlock it.
+	Key string `json:"key,omitempty"`
 }
 
 // Edges lists the wall edges the door covers, first to last.
@@ -153,22 +156,36 @@ type Quest struct {
 	ExitTiles []Tile `json:"exitTiles"`
 	// Teleports are teleport squares.
 	Teleports []Teleport `json:"teleports"`
+	// Goal is the quest's aim as the players hear it ("Slay the Witch Lord
+	// and escape"); it never says where things are.
+	Goal string `json:"goal,omitempty"`
 	// Objectives win the quest in rules mode once all are met (see
-	// internal/tracker, outcome.go); none means the GM decides.
+	// internal/tracker, outcome.go); without any, clearing every monster
+	// completes it.
 	Objectives []Objective `json:"objectives,omitempty"`
 }
 
 // Objective kinds: kill the named monsters (all of them when none are
-// named), or every living hero on an exit square.
+// named), carry the named item (any hero), or leave by the exits (every
+// hero still standing).
 const (
-	ObjectiveKill   = "kill"
-	ObjectiveEscape = "escape"
+	ObjectiveKill    = "kill"
+	ObjectiveCollect = "collect"
+	ObjectiveEscape  = "escape"
+)
+
+// Length limits for quest text.
+const (
+	MaxGoal    = 500
+	MaxKeyName = 80
 )
 
 // Objective is one thing the heroes must do to win a quest.
 type Objective struct {
 	Kind     string   `json:"kind"`
 	Monsters []string `json:"monsters,omitempty"`
+	// Item is what a collect objective needs a hero to carry (by name).
+	Item string `json:"item,omitempty"`
 }
 
 // NewQuest returns an empty quest bound to the board's current layout.
@@ -279,6 +296,14 @@ func (q *Quest) Validate() error {
 			errs = append(errs, fmt.Errorf("teleport %q: label must be at most %d characters", tp.ID, MaxTeleportLabel))
 		}
 	}
+	if len([]rune(q.Goal)) > MaxGoal {
+		errs = append(errs, fmt.Errorf("the goal must be at most %d characters", MaxGoal))
+	}
+	for _, d := range q.Doors {
+		if len([]rune(d.Key)) > MaxKeyName {
+			errs = append(errs, fmt.Errorf("door %q: the key name must be at most %d characters", d.ID, MaxKeyName))
+		}
+	}
 	for i, o := range q.Objectives {
 		switch o.Kind {
 		case ObjectiveKill:
@@ -287,12 +312,19 @@ func (q *Quest) Validate() error {
 					errs = append(errs, fmt.Errorf("objective %d: no monster %q in the quest", i+1, id))
 				}
 			}
+		case ObjectiveCollect:
+			if o.Item == "" || len([]rune(o.Item)) > MaxKeyName {
+				errs = append(errs, fmt.Errorf("objective %d: a collect objective names its item (at most %d characters)", i+1, MaxKeyName))
+			}
 		case ObjectiveEscape:
-			if len(o.Monsters) > 0 {
-				errs = append(errs, fmt.Errorf("objective %d: an escape names no monsters", i+1))
+			if len(o.Monsters) > 0 || o.Item != "" {
+				errs = append(errs, fmt.Errorf("objective %d: an escape names no monsters or items", i+1))
 			}
 		default:
-			errs = append(errs, fmt.Errorf("objective %d: kind must be %s or %s, got %q", i+1, ObjectiveKill, ObjectiveEscape, o.Kind))
+			errs = append(errs, fmt.Errorf("objective %d: kind must be %s, %s or %s, got %q", i+1, ObjectiveKill, ObjectiveCollect, ObjectiveEscape, o.Kind))
+		}
+		if o.Kind == ObjectiveKill && o.Item != "" {
+			errs = append(errs, fmt.Errorf("objective %d: only a collect objective names an item", i+1))
 		}
 	}
 	return errors.Join(errs...)

@@ -238,6 +238,13 @@ describe('quest items', () => {
     expect(updateDoor(q, 'door-1', { locked: false }).doors[0]).toEqual({ id: 'door-1', edge: { x: 2, y: 1, orientation: 'vertical' }, kind: 'gate', state: 'closed' });
   });
 
+  test('updateDoor keeps a locked door\'s key and drops it once unlocked', () => {
+    let q = placeDoor(emptyQuest(), { x: 2, y: 1, orientation: 'vertical' }, 'gate', true);
+    q = { ...q, doors: q.doors.map((d) => ({ ...d, key: 'Iron Key' })) };
+    expect(updateDoor(q, 'door-1', { span: 2 }).doors[0]?.key).toBe('Iron Key');
+    expect(updateDoor(q, 'door-1', { locked: false }).doors[0]?.key).toBeUndefined();
+  });
+
   test('toggleDoorState flips the initial state', () => {
     let q = placeDoor(emptyQuest(), { x: 2, y: 1, orientation: 'vertical' }, 'normal', false);
     q = toggleDoorState(q, 'door-1');

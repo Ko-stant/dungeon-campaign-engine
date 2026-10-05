@@ -50,8 +50,9 @@ func (a *applier) trapTiles(t *TrapState, qt maps.Trap) []maps.Tile {
 
 // terrain is the board now: open doors (found ones only), blocked squares
 // (the quest's not yet removed, including those hiding a secret door, and
-// those added in play), and furniture by its catalog flags. Blocked squares
-// block sight as well as movement.
+// those added in play) and furniture. Blocked squares block sight as well
+// as movement; every piece of furniture blocks movement, and tall ones
+// (the catalog's flag) block sight.
 func (a *applier) terrain() *maps.Terrain {
 	var spec maps.TerrainSpec
 	for _, qd := range a.s.Quest.Doors {
@@ -73,18 +74,14 @@ func (a *applier) terrain() *maps.Terrain {
 	for _, r := range a.s.AddedBlocks {
 		block(rectTiles(r.X, r.Y, r.W, r.H))
 	}
-	if a.catalog != nil {
-		for _, f := range a.s.Quest.Furniture {
-			def, ok := a.catalog.FurnitureByID(f.Type)
-			if !ok {
-				continue
-			}
-			if def.BlocksMovement {
-				spec.Blocked = append(spec.Blocked, a.furnitureTiles(f)...)
-			}
-			if def.BlocksLineOfSight {
-				spec.SightBlocked = append(spec.SightBlocked, a.furnitureTiles(f)...)
-			}
+	for _, f := range a.s.Quest.Furniture {
+		tiles := a.furnitureTiles(f)
+		spec.Blocked = append(spec.Blocked, tiles...)
+		if a.catalog == nil {
+			continue
+		}
+		if def, ok := a.catalog.FurnitureByID(f.Type); ok && def.BlocksLineOfSight {
+			spec.SightBlocked = append(spec.SightBlocked, tiles...)
 		}
 	}
 	return maps.NewTerrain(&a.s.Board, spec)

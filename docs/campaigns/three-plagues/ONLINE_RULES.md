@@ -1,6 +1,6 @@
 # The Three Plagues - Online rules
 
-**Last Updated**: 2026-10-05 16:19 EDT
+**Last Updated**: 2026-10-05 16:42 EDT
 
 These are the rules the online rules engine enforces for heroes played from a seat or by a
 bot (`docs/ONLINE_AND_RULES_PLAN.md`). The combat math, classes and abilities are in
@@ -99,24 +99,43 @@ touches a wall corner is still clear. There are two kinds of sight:
     `unsearchable`.
   - Rewards are written as data (gold or a loot-list item). Until then the GM resolves them.
 
-### How searching and disarming play out (engine, 2026-10-05)
-These are the engine's choices; the GM can change any of them.
+### Furniture, searching and disarming (GM, 2026-10-05)
+- **All furniture blocks movement:** nobody stands on a chest or a table. Tall pieces block
+  sight too.
 - **Searching for treasure:**
-  - The hero stands on or orthogonally beside the piece, with no wall between.
-  - A trap set on the piece (a chest trap) goes off when it is searched.
+  - The hero must stand orthogonally beside the piece, with no wall between.
+  - Searching a trapped piece that hasn't been disarmed sets the trap off. A disarmed trap
+    stays quiet.
   - The GM's event line names any quest note on the piece, so the GM can read out the reward.
 - **Searching for traps** never reveals the GM's own trigger markers.
 - **Searching for secret doors** also opens blocked squares that hide a secret door.
 - **Disarming:**
-  - It needs the class's "disarm" exclusive (the Rogue) and a known trap on or beside the hero.
-  - The roll is Nimble Fingers: 1d8, failing only on a 1, which sets the trap off.
-  - It takes the action.
-- **Quest objectives:**
-  - A quest may list them: kill (named monsters, or all) and escape (every living hero on an
-    exit square). The quest is won when all are met.
-  - It is lost when no hero is left standing (or escaped).
-  - The GM can end the quest either way at any time.
-  - The map editor does not set objectives yet.
+  - The player announces it.
+  - A trap on the floor is disarmed by stepping onto its square from beside it. The step is
+    part of the action and costs no movement.
+  - A trap on furniture (a chest) is disarmed from beside the piece.
+  - It needs the class's "disarm" exclusive (the Rogue), and the trap must be known.
+  - The roll is Nimble Fingers: 1d8, failing only on a 1. A failure sets the trap off, under
+    the hero for a floor trap.
+
+### Locked doors and keys
+- A locked door may name its key (an item). A hero carrying an item of that name (any case)
+  unlocks and opens it for free while moving. Without the key only the GM can open it.
+
+### Quest goals and objectives
+- A quest has a **goal** the players see ("Slay the Witch Lord and escape"). It never says
+  where anything is, so a goal behind a hidden door stays hidden.
+- It may list **objectives**, and all of them must be met:
+  - **kill** the named monsters, or all of them;
+  - **collect** an item by name: any hero carries it, whether found in a chest or dropped by
+    the main enemy (the GM hands it out until rewards are data);
+  - **escape:** every hero still standing has left the board.
+- A hero on an exit square leaves with `turn.exit`, which ends their turn.
+- **A quest without objectives is completed once every monster is dead.**
+- **Lost** when no hero is left standing, or when everyone has left before the quest was won.
+- The GM can end a quest either way at any time.
+- The map editor can't set goals, objectives or door keys yet. The editor keeps them through
+  edits.
 
 ### Reactions
 - **D10. A prompt with a timer.**

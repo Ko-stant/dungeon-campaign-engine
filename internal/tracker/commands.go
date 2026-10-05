@@ -142,6 +142,8 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.turnMove(c.Payload)
 	case "turn.door":
 		summary, err = a.turnDoor(c.Payload)
+	case "turn.exit":
+		summary, err = a.turnExit(c.Payload)
 	case "turn.search":
 		summary, err = a.turnSearch(c.Payload)
 	case "turn.disarm":
@@ -173,8 +175,8 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 	}
 	if next.Rules != nil && rulesCommand(c.Type) {
 		summary += a.syncFight()
-		summary += a.checkOutcome()
 	}
+	summary += a.checkOutcome()
 
 	payload, err := eventPayload(c, a.dice.log.Rolls)
 	if err != nil {

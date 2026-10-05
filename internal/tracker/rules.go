@@ -112,6 +112,7 @@ var playerCommands = map[string]bool{
 	"turn.attack":    true,
 	"turn.search":    true,
 	"turn.disarm":    true,
+	"turn.exit":      true,
 	"turn.end":       true,
 }
 

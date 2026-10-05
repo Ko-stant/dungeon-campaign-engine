@@ -159,22 +159,49 @@ func disarm(t *testing.T, die int) Command {
 	return c
 }
 
-func TestARogueDisarmsATrap(t *testing.T) {
+func TestARogueStepsOntoATrapToDisarmIt(t *testing.T) {
 	s, ev := hallApply(t, rogueState(t), disarm(t, 5))
 	if s.Traps[0].State != maps.TrapDisarmed || !s.Rules.Turn.Acted {
 		t.Fatalf("trap %+v", s.Traps[0])
 	}
-	if ev.Summary != "Ilsa (Rogue) disarms Pit Trap pit (1d8: 5)" {
+	if h := s.Heroes[1]; h.X != 3 || h.Y != 3 {
+		t.Errorf("Ilsa should stand on the trap's square: (%d,%d)", h.X, h.Y)
+	}
+	if ev.Summary != "Ilsa (Rogue) steps onto (3,3) and disarms Pit Trap pit (1d8: 5)" {
 		t.Errorf("summary %q", ev.Summary)
 	}
 }
 
-func TestAFailedDisarmSetsTheTrapOff(t *testing.T) {
+func TestAFailedDisarmSetsTheTrapOffUnderTheHero(t *testing.T) {
 	s, ev := hallApply(t, rogueState(t), disarm(t, 1))
-	if s.Traps[0].State != maps.TrapTriggered {
-		t.Fatalf("trap %+v", s.Traps[0])
+	if s.Traps[0].State != maps.TrapTriggered || s.Heroes[1].Y != 3 {
+		t.Fatalf("trap %+v, Ilsa at (%d,%d)", s.Traps[0], s.Heroes[1].X, s.Heroes[1].Y)
 	}
-	if ev.Summary != "Ilsa (Rogue) fails to disarm Pit Trap pit (1d8: 1); Pit Trap pit triggered: it stays on the board" {
+	if ev.Summary != "Ilsa (Rogue) steps onto (3,3) and fails to disarm Pit Trap pit (1d8: 1); Pit Trap pit triggered: it stays on the board" {
+		t.Errorf("summary %q", ev.Summary)
+	}
+}
+
+func TestATrapOnFurnitureIsDisarmedFromBeside(t *testing.T) {
+	s := searchState(t, func(q *maps.Quest) {
+		q.Traps = append(q.Traps, maps.Trap{ID: "needle", Kind: "pit", X: 5, Y: 1, FurnitureID: "chest", State: maps.TrapRevealed})
+	})
+	s.Heroes[0].X, s.Heroes[0].Y = 4, 3
+	s.Heroes[1].Class = "rogue"
+	s.Heroes[1].X, s.Heroes[1].Y = 4, 1
+	s, _ = hallApply(t, s, as(seat("hero-1"), cmd(t, "turn.end", map[string]any{})))
+	s, _ = hallApply(t, s, as(seat("hero-2"), cmd(t, "turn.start", map[string]any{"hero": "hero-2"})))
+	c := cmd(t, "turn.disarm", map[string]any{"trap": "needle"})
+	c.Dice = []int{4}
+	s, ev := hallApply(t, s, c)
+	if h := s.Heroes[1]; h.X != 4 || h.Y != 1 || ev.Summary != "Ilsa (Rogue) disarms Pit Trap needle (1d8: 4)" {
+		t.Fatalf("Ilsa at (%d,%d), %q", h.X, h.Y, ev.Summary)
+	}
+	// Searching the chest once its trap is disarmed sets nothing off.
+	s, _ = hallApply(t, s, as(seat("hero-2"), cmd(t, "turn.end", map[string]any{})))
+	s, _ = hallApply(t, s, cmd(t, "phase.end", map[string]any{}))
+	s, _ = hallApply(t, s, as(seat("hero-2"), cmd(t, "turn.start", map[string]any{"hero": "hero-2"})))
+	if _, ev := hallApply(t, s, search(t, "hero-2", "treasure", "chest")); ev.Summary != "Ilsa (Rogue) searches the Chest (chest) for treasure" {
 		t.Errorf("summary %q", ev.Summary)
 	}
 }
@@ -194,5 +221,10 @@ func TestOnlyADisarmingClassDisarmsAKnownTrapBeside(t *testing.T) {
 	s.Heroes[1].X, s.Heroes[1].Y = 3, 1
 	if msg := hallErr(t, s, disarm(t, 5)); !strings.Contains(msg, "beside") {
 		t.Errorf("two squares away: %q", msg)
+	}
+	s = rogueState(t)
+	s.Heroes[0].X, s.Heroes[0].Y = 3, 3
+	if msg := hallErr(t, s, disarm(t, 5)); !strings.Contains(msg, "Grom") {
+		t.Errorf("someone stands on the trap: %q", msg)
 	}
 }

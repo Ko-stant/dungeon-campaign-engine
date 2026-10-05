@@ -167,7 +167,7 @@ function sameEdge(a: Edge, b: Edge): boolean {
   return a.x === b.x && a.y === b.y && a.orientation === b.orientation;
 }
 
-/** Sets a door's kind, lock and width; `locked: false` drops the flag and span 1 drops the span. */
+/** Sets a door's kind, lock and width; `locked: false` drops the flag (and the key) and span 1 drops the span. */
 export function updateDoor(q: QuestDoc, doorId: string, change: { kind?: DoorKind; locked?: boolean; span?: number }): QuestDoc {
   return {
     ...q,
@@ -178,6 +178,9 @@ export function updateDoor(q: QuestDoc, doorId: string, change: { kind?: DoorKin
       const next: DoorDoc = { id: d.id, edge: d.edge, kind: change.kind ?? d.kind, state: d.state };
       if (change.locked ?? d.locked) {
         next.locked = true;
+        if (d.key) {
+          next.key = d.key;
+        }
       }
       const span = change.span ?? d.span ?? 1;
       if (span > 1) {
