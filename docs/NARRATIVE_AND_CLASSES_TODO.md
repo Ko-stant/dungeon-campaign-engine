@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-04 23:05 EDT
+**Last Updated**: 2026-10-04 23:45 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -56,7 +56,10 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
    simulator reads too) is built, and the GM ran it on the Three Plagues campaign
    (2026-10-04): the four classes, 12 monster stat lines, and the party (Mordecai Muldoon,
    Ranger; Derrick Rosewood, Cleric; Brentanamo Bay, Barbarian; Papi Ponzi, Rogue) with
-   their starting kits equipped. Next: 5f (odds hints).
+   their starting kits equipped (committed 7715e32). 5f (odds hints in the monster panel) is
+   done and checked in the browser, which completes step 5. Next for combat: play Quest 1
+   with the new rules and tune from the table (Smite odds, effects such as Raging and the
+   Quiver could join the hints later).
 1. Maps for Quests 2 and 3, checked against `MAPS.md` and the script checklists (the GM
    builds; keep the story and the maps in step).
 2. Script: Quest 3 (`04-quest-3-the-wardens-rise.md`): drop the up-front Ogre Lord names,

@@ -84,6 +84,9 @@ Tailwind CSS v4, canvas rendering.
     fight `round.advance` finishes cooldowns, regenerates mana (`Combat.ManaRegen`) and counts
     effects down; out of a fight cooldowns stop at 1-2 rounds left. Generic effects
     (`effect.add`/`effect.remove`, `Effects` on heroes and monsters) only count down and remind.
+  - Odds hints (`internal/web/src/tracker/odds.ts`, `ui/odds.ts`): the selected monster's
+    panel shows each hero's chance to hit it and attacks to finish it, and its chance to hit
+    each hero, from the exact combat math in `internal/web/src/combat/odds.ts`. Advice only.
   - Campaign fill (`internal/campaignfill`, `cmd/fill-campaign`): `make fill-campaign
     CAMPAIGN="Three Plagues" [APPLY=1]` loads `docs/campaigns/three-plagues/combat.json`
     (class stats and abilities, monster stat lines, starting kits; the simulator's

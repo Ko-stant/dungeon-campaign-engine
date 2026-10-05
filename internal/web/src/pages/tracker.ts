@@ -18,6 +18,7 @@ import { trackerView } from '../tracker/view.ts';
 import { lineTiles } from '../editor/tools.ts';
 import { h, preserveFocus, replaceChildren } from '../ui/dom.ts';
 import { abilitySection, inventorySection, purseControl, type SectionContext } from '../ui/heroSections.ts';
+import { oddsBlock } from '../ui/odds.ts';
 import { effectSuggestions, effectsBlock } from '../ui/effects.ts';
 import { readAloudPanel, readerOverlay, type ReadAloudContext } from '../ui/readAloud.ts';
 import { currentSection, passageClips } from '../tracker/script.ts';
@@ -536,6 +537,7 @@ async function main(): Promise<void> {
           ? h('p', { class: 'text-xs font-semibold text-amber-400' }, `Faltering: Avoidance ${monster.combat.avoidance - FALTER_PENALTY} (at ${falterAt(monster.maxBody)} Body or less)`)
           : null,
         statControl('Body', monster.body, monster.maxBody, (v) => { monsterCmd(monster, { body: v }); }),
+        oddsBlock(monster, state.heroes, sections.isOpen('odds'), (open) => { sections.setOpen('odds', open); }),
         effectsBlock(monster.id, monster.name, monster.effects, (c) => { void send(c); }),
         h('div', { class: 'flex flex-wrap gap-2' },
           h('button', { type: 'button', class: btn, onclick: () => { monsterCmd(monster, { visibility: monster.visibility === 'hidden' ? 'seen' : 'hidden' }); } },

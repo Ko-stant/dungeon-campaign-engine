@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-04 23:05 EDT
+**Last Updated**: 2026-10-04 23:45 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -472,7 +472,12 @@ dead):
      monster stat lines, and each hero's starting kit, equipped. A hero who already carries
      any starting-kit item is left alone, and kits wait while a quest is running. Classes are
      shared by every campaign.
-   - 5f. Odds hints (advice only).
+   - 5f. Odds hints - done 2026-10-04: a selected monster with combat stats shows an "Odds"
+     block (advice only): for each active hero with combat stats, the chance to hit and to
+     crit and about how many of that hero's attacks finish the monster (class plus equipped
+     items, its current Body, Faltering, Determination over misses); and the monster's chance
+     to hit each hero with its damage a hit after mitigation. Effects, abilities and spells
+     are not counted (`internal/web/src/tracker/odds.ts`, exact math from `combat/odds.ts`).
 
 ## Abilities (step 4)
 Agreed 2026-10-04 from the GM's notes on the proposal (commit b39a157 has the full proposal
