@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 16:13 EDT
+**Last Updated**: 2026-10-05 16:20 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -111,8 +111,10 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
        view reveals after every step, traps that stop the move.
      - **Class reach** (`6a65785`): the class form, combat.json and `make fill-campaign`.
      - **2c, attacks** (`44113ba`): `turn.attack`, `monster.attack`, `monster.move`.
-     - **Left:** 2d (`turn.search`, `turn.disarm`, quest objectives and `CheckOutcome`) and 2e
-       (`LegalActions` with its property test).
+     - **Monster reach ruling** (`5fbe435`).
+     - **2d, searching, disarming, outcomes** (`bdaf658`): `turn.search`, `turn.disarm`,
+       `quest.end`, quest `objectives`.
+     - **Left:** 2e (`LegalActions` with its property test).
 3. **Auth, users, ownership:**
    - `internal/auth` behind an `Authenticator` interface;
    - `app_user` and `user_session` tables, and `owner_id` on campaigns, boards, quests, custom
@@ -180,15 +182,14 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 ## Resume here
 - **Where things stand:**
   - Phase 1 is done.
-  - Phase 2 is through 2c: a hero turn can be played under the rules (roll, move with reveals
-    and traps, open doors, attack). The GM runs the monsters' phase with `monster.move` and
-    `monster.attack`.
+  - Phase 2 is through 2d: a whole quest can be played under the rules through `Apply`.
+    Players roll, move with reveals and traps, open doors, attack, search and disarm. The GM
+    runs the monsters' phase, and objectives or a total party loss end the quest.
   - All of it is in `internal/tracker` (`rules.go`, `turns.go`, `moves.go`, `board_rules.go`,
-    `attacks.go`).
-- **Next:**
-  1. 2d: searching (three kinds; none while a monster is revealed; treasure once per piece per
-     party), disarming (the Rogue's exclusive), quest objectives and the outcome.
-  2. 2e: `LegalActions` shared with the checks, plus the property test.
+    `attacks.go`, `search.go`, `outcome.go`).
+- **Next:** 2e, `LegalActions(s, actor, catalog)` sharing its predicates with the checks, plus
+  a property test (every listed action applies; unlisted seat commands are refused). That ends
+  Phase 2. Phase 3 (auth) needs the sign-in method decided.
 - **Browser checks:** add a temporary `dce-online` entry to the main checkout's
   `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
   ./build/dungeon-campaign-engine"`, port 8090) after `make build` in the worktree. Restore the
@@ -211,3 +212,6 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   - `44113ba`: attacks.
   - Ranged attacks have no range limit (GM). The GM endpoint always stamps the GM as the
     actor.
+- 2026-10-05: Phase 2d.
+  - `5fbe435`: monster reach is 2 squares in a straight line and never diagonal (GM).
+  - `bdaf658`: searching, disarming, objectives and outcomes.
