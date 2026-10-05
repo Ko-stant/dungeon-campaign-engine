@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 19:18 EDT
+**Last Updated**: 2026-10-05 19:55 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -211,22 +211,47 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
        - Checked in the browser with a GM tab and a seat tab: live updates both ways, a
          goblin moved into a doorway and attacked, rounds ended both ways.
      - **Not yet done:** the Phase 5 exit.
-6. **Hosting and the content boundary:**
-   - a multi-stage Dockerfile running a single instance, since session locks are in memory;
-   - Postgres, Caddy for TLS, and backups (a small VPS with docker compose is the likely fit);
-   - `CONTENT_MODE=online`: no `content/` or `assets/` are mounted, and pieces are drawn as
-     shapes;
-   - invite-only, shipping only original Three Plagues text and data;
-   - legal advice before anything public.
-   - **Hosting notes (GM, 2026-10-05):**
-     - The GM owns `kostant.dev`. Candidates: a subdomain such as `dce.kostant.dev`, with
-       `PUBLIC_URL` set to it and a second Discord redirect URL added in the portal.
-     - Containerize the whole app. Candidates: Fly.io, Render or Railway (managed Postgres,
-       WebSockets, a Dockerfile deploy), Heroku's container stack, or a small VPS (e.g.
-       Hetzner) running docker compose (app, Postgres, Caddy for TLS).
-     - Needs: a single app instance (the session locks are in memory), Postgres 18, persistent
-       storage for the audio clips (`AUDIO_DIR`), backups, and the members allowlist before going public.
-   - **Exit:** the instance is deployed, and `/assets/` returns 404 there.
+6. **Hosting** (decisions by the GM, 2026-10-05):
+   - **Host: Render** (a web service from a prebuilt image, plus Render Postgres 18). The image
+     is built on the GM's machine and pushed to a **private Docker Hub repository** (the free
+     plan's one private repo; each version is a tag). Render pulls it with a read-only Docker
+     Hub token and deploys on a deploy hook (`make deploy`).
+     - The database must be a **paid** instance (free Render Postgres is deleted after 30
+       days); paid instances and the Starter web service never sleep, so a month between
+       sessions is fine. The 3-day point-in-time restore of a Hobby workspace is enough, with
+       our own dumps downloaded to the GM's machine.
+     - Rough cost: web $7 + database about $6-10 (check the price when creating it).
+     - Weighed and set aside: DigitalOcean (App Platform, its registry, Managed Postgres;
+       about $32), Fly.io (no managed Postgres 18), Railway (private images need Pro; no
+       managed Postgres), Heroku (frozen since February 2026; no disks), a VPS (we would run
+       the OS, Postgres and backups), Supabase (no Postgres 18).
+   - **Content: the image carries `content/` and `assets/`.** The Dockerfile in git has no
+     content: `make image` passes them from the main checkout as named build contexts. The
+     image never goes to GitHub, and the site is for the GM's group only: every page,
+     `/assets/` included, needs a signed-in, approved member. (`CONTENT_MODE=online`, an
+     image without HeroQuest material, is dropped for now; it comes back before anything
+     public, with legal advice first.)
+   - **Members: approved on first sign-in.** Anyone may sign in with Discord but waits on
+     "Waiting for the GM" until an admin approves them on an admin page; admins
+     (`AUTH_ADMINS`) are members already.
+   - **Audio clips move into Postgres**, so no disk is needed and one backup covers all.
+   - Postgres 18 is required: the schema uses `uuidv7()`.
+   - **Steps:**
+     1. Dockerfile (multi-stage, non-root, static files and migrations inside), `make image`
+        and `make deploy`.
+     2. Members: an approval table, the waiting page, the admin page; `/assets/` behind the
+        guard.
+     3. Audio in Postgres.
+     4. Hosting housekeeping: `/healthz`, WebSocket keepalive pings (proxies close idle
+        sockets), `PORT` as well as `APP_PORT`.
+     5. Render setup (the GM creates the accounts, service and database; we write the
+        settings and commands): `dce.kostant.dev`, `PUBLIC_URL`, the second Discord
+        redirect, `AUTH_MODE=discord`, `AUTH_ADMINS`.
+     6. The GM's data: a one-way copy of the Three Plagues campaign, boards and quests,
+        owned by the GM's Discord user.
+     7. Backups: `make` targets to download a dump and to restore one; one practice restore.
+   - **Exit:** live at `dce.kostant.dev`; anyone not approved is refused everywhere,
+     `/assets/` included.
 7. **Structured rules data:**
    - ability effects (ported from `simulate.ts`), trap effects, search rewards and reactions
      become data plus Go;
@@ -273,13 +298,14 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
     restored.
 - **Next, in order:**
   1. **The Phase 5 exit:** play a whole small quest online (the GM tracker plus seat tabs),
-     ideally with the GM and friends signed in with Discord. The GM ran `make fill-campaign`
+     ideally with the GM and friends signed in with Discord. The GM started Phase 6 first,
+     so this can be played on the hosted site once it is up. The GM ran `make fill-campaign`
      on `hq_online`, so its Three Plagues classes have their reach. The catalog classes
      (Barbarian, Elf...) have no combat stats, so their heroes can't attack in rules mode.
      Known gaps to expect: ability effects, trap effects and search rewards are resolved by
      the GM (Phase 7); no reaction prompts yet (D10).
-  2. **Phase 6, hosting:** see its hosting notes (`kostant.dev`, containers, a members
-     allowlist).
+  2. **Phase 6, hosting:** decided (Render, a private Docker Hub image, members approved
+     on first sign-in, audio in Postgres); start with its step 1, the Dockerfile.
 - **Open decisions:** none pending.
 - **Devices (GM, 2026-10-05):** desktop and laptop browsers only; phones aren't supported, so
   browser checks skip phone widths.
@@ -349,6 +375,8 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   actions and the feed, and a phone layout.
 - 2026-10-05: the GM ran `make fill-campaign` on `hq_online` (class reach now there).
   `9ddc831`, Phase 5c: the GM rules console; "Next round" ends the round by the rules.
+- 2026-10-05: Phase 6 decided: Render with a private Docker Hub image that carries the
+  content, members approved on first sign-in, audio in Postgres.
   - `a3c9caf`: seats, the seat stream, presence.
   - `569d23b`: the seat page and player lines for rules commands.
   - The seat page's browser check is still to do.
