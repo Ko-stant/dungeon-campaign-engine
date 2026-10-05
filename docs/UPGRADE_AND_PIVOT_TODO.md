@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-05 01:45 EDT
+**Last Updated**: 2026-10-05 02:05 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -81,6 +81,7 @@ Commits (oldest first):
 | 5ff09e0 | Three Plagues step 4: ability kit (merged, pruned, Venom Vial) simulated and Quest 1 recalibrated |
 | 9a7b2ad | Three Plagues gear: starting kit, approved Quest 1 finds, upgrade tiers in the simulator |
 | a5ec457 | Rules doc: hallway monsters tried in the simulator and removed |
+| ad4a3c2 | Docs: note L on the Quest 1 board holds the prayer beads |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
