@@ -85,6 +85,8 @@ func (a *applier) planPath(h *Hero, to maps.Tile, left int) ([]maps.Tile, error)
 		path, ok = maps.Path(t, a.heroMove(h, unlimited, nil), to)
 	}
 	switch {
+	case ok && len(path) == 0:
+		return nil, fmt.Errorf("%s is at (%d,%d) already", h.Name, to.X, to.Y)
 	case !ok:
 		return nil, fmt.Errorf("there is no way to (%d,%d) from (%d,%d)", to.X, to.Y, h.X, h.Y)
 	case len(path) > left:
@@ -217,6 +219,32 @@ func beside(h *Hero, d maps.Door) bool {
 	return false
 }
 
+// checkDoor checks a hero can open a found, closed door beside them: an
+// unlocked one, or a locked one whose key they carry (returned).
+func (a *applier) checkDoor(h *Hero, id string) (*DoorState, *Item, error) {
+	i := slices.IndexFunc(a.s.Doors, func(d DoorState) bool { return d.ID == id })
+	qi := slices.IndexFunc(a.s.Quest.Doors, func(d maps.Door) bool { return d.ID == id })
+	if i < 0 || qi < 0 || !a.s.Doors[i].Found {
+		return nil, nil, fmt.Errorf("no door %q", id)
+	}
+	d, qd := &a.s.Doors[i], a.s.Quest.Doors[qi]
+	switch {
+	case d.State == maps.DoorOpen:
+		return nil, nil, fmt.Errorf("%s is open already", a.doorLabel(d.ID))
+	case !beside(h, qd):
+		return nil, nil, fmt.Errorf("%s is not beside %s", h.Name, a.doorLabel(d.ID))
+	case !d.Locked:
+		return d, nil, nil
+	}
+	if key := carried(h, qd.Key); key != nil {
+		return d, key, nil
+	}
+	if qd.Key != "" {
+		return nil, nil, fmt.Errorf("%s is locked; it opens with the %s", a.doorLabel(d.ID), qd.Key)
+	}
+	return nil, nil, fmt.Errorf("%s is locked", a.doorLabel(d.ID))
+}
+
 // turnDoor opens a door beside the hero, for free, during their movement
 // (online rules D5), and reveals what they now see.
 func (a *applier) turnDoor(payload json.RawMessage) (string, error) {
@@ -233,28 +261,12 @@ func (a *applier) turnDoor(payload json.RawMessage) (string, error) {
 	if turn.MoveDone {
 		return "", fmt.Errorf("%s's movement is over this turn", h.Name)
 	}
-	i := slices.IndexFunc(a.s.Doors, func(d DoorState) bool { return d.ID == p.Door })
-	qi := slices.IndexFunc(a.s.Quest.Doors, func(d maps.Door) bool { return d.ID == p.Door })
-	if i < 0 || qi < 0 || !a.s.Doors[i].Found {
-		return "", fmt.Errorf("no door %q", p.Door)
-	}
-	d := &a.s.Doors[i]
-	qd := a.s.Quest.Doors[qi]
-	switch {
-	case d.State == maps.DoorOpen:
-		return "", fmt.Errorf("%s is open already", a.doorLabel(d.ID))
-	case !beside(h, qd):
-		return "", fmt.Errorf("%s is not beside %s", h.Name, a.doorLabel(d.ID))
+	d, key, err := a.checkDoor(h, p.Door)
+	if err != nil {
+		return "", err
 	}
 	verb := "opens " + a.doorLabel(d.ID)
-	if d.Locked {
-		key := carried(h, qd.Key)
-		if key == nil {
-			if qd.Key != "" {
-				return "", fmt.Errorf("%s is locked; it opens with the %s", a.doorLabel(d.ID), qd.Key)
-			}
-			return "", fmt.Errorf("%s is locked", a.doorLabel(d.ID))
-		}
+	if key != nil {
 		d.Locked = false
 		verb = fmt.Sprintf("unlocks %s with the %s and opens it", a.doorLabel(d.ID), key.Name)
 	}

@@ -124,6 +124,25 @@ func (a *applier) seenMonster(id string) (*Monster, error) {
 	return m, nil
 }
 
+// checkAttack checks a hero can make a basic attack on a monster in view:
+// both have combat stats and the monster is within the hero's reach.
+func (a *applier) checkAttack(h *Hero, m *Monster) error {
+	totals := h.CombatTotals()
+	switch {
+	case totals == nil:
+		return fmt.Errorf("%s's class has no combat stats", h.Name)
+	case m.Combat == nil:
+		return fmt.Errorf("%s has no combat stats", monsterLabel(m))
+	}
+	if !a.reaches([]maps.Tile{{X: h.X, Y: h.Y}}, m.footprint(), totals.Reach, a.piecesBut(h.ID, m.ID)) {
+		if totals.Reach == content.ReachSight {
+			return fmt.Errorf("%s has no line of sight to %s", h.Name, monsterLabel(m))
+		}
+		return fmt.Errorf("%s is out of reach of %s", monsterLabel(m), h.Name)
+	}
+	return nil
+}
+
 func (a *applier) turnAttack(payload json.RawMessage) (string, error) {
 	p, err := decode[struct {
 		Target string `json:"target"`
@@ -142,20 +161,10 @@ func (a *applier) turnAttack(payload json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if err := a.checkAttack(h, m); err != nil {
+		return "", err
+	}
 	totals := h.CombatTotals()
-	switch {
-	case totals == nil:
-		return "", fmt.Errorf("%s's class has no combat stats", h.Name)
-	case m.Combat == nil:
-		return "", fmt.Errorf("%s has no combat stats", monsterLabel(m))
-	}
-	from := []maps.Tile{{X: h.X, Y: h.Y}}
-	if !a.reaches(from, m.footprint(), totals.Reach, a.piecesBut(h.ID, m.ID)) {
-		if totals.Reach == content.ReachSight {
-			return "", fmt.Errorf("%s has no line of sight to %s", h.Name, monsterLabel(m))
-		}
-		return "", fmt.Errorf("%s is out of reach of %s", monsterLabel(m), h.Name)
-	}
 	hitDice, err := dice.Parse(totals.HitDice)
 	if err != nil {
 		return "", fmt.Errorf("%s's hit dice: %w", h.Name, err)
@@ -184,10 +193,7 @@ func (a *applier) turnAttack(payload json.RawMessage) (string, error) {
 	summary := fmt.Sprintf("%s attacks %s: %d vs %d%s (%s%s%s; crit die %d)", a.heroLabel(h), monsterLabel(m), total, avoidance, faltering,
 		detail, signed("Accuracy", totals.Accuracy), signed("Determination", h.Determination), critDie)
 
-	turn.Acted = true
-	if turn.MoveRoll > 0 {
-		turn.MoveDone = true
-	}
+	turn.takeAction()
 	if !res.Hit {
 		h.Determination = min(h.Determination+determinationStep, determinationCap)
 		if res.CriticalMiss {
@@ -232,6 +238,32 @@ func (a *applier) monsterTurn(id string) (*RulesState, *Monster, error) {
 	return r, m, nil
 }
 
+// checkMonsterAttack checks a monster can attack a hero on the board: both
+// have combat stats and the hero is within the monster's reach (melee
+// orthogonal, reach two squares in a line, ranged by attack sight).
+func (a *applier) checkMonsterAttack(m *Monster, h *Hero) error {
+	if h.Status != HeroActive || !h.Placed {
+		return fmt.Errorf("%s is not on the board", h.Name)
+	}
+	switch {
+	case m.Combat == nil:
+		return fmt.Errorf("%s has no combat stats", monsterLabel(m))
+	case h.CombatTotals() == nil:
+		return fmt.Errorf("%s's class has no combat stats", h.Name)
+	}
+	reach := content.ReachAdjacent
+	switch {
+	case m.Combat.Ranged:
+		reach = content.ReachSight
+	case m.Combat.Reach:
+		reach = reachLine
+	}
+	if !a.reaches(m.footprint(), []maps.Tile{{X: h.X, Y: h.Y}}, reach, a.piecesBut(h.ID, m.ID)) {
+		return fmt.Errorf("%s is out of reach of %s", h.Name, monsterLabel(m))
+	}
+	return nil
+}
+
 func (a *applier) monsterAttack(payload json.RawMessage) (string, error) {
 	p, err := decode[struct {
 		Monster string `json:"monster"`
@@ -251,26 +283,10 @@ func (a *applier) monsterAttack(payload json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if h.Status != HeroActive || !h.Placed {
-		return "", fmt.Errorf("%s is not on the board", h.Name)
+	if err := a.checkMonsterAttack(m, h); err != nil {
+		return "", err
 	}
 	totals := h.CombatTotals()
-	switch {
-	case m.Combat == nil:
-		return "", fmt.Errorf("%s has no combat stats", monsterLabel(m))
-	case totals == nil:
-		return "", fmt.Errorf("%s's class has no combat stats", h.Name)
-	}
-	reach := content.ReachAdjacent
-	switch {
-	case m.Combat.Ranged:
-		reach = content.ReachSight
-	case m.Combat.Reach:
-		reach = reachLine
-	}
-	if !a.reaches(m.footprint(), []maps.Tile{{X: h.X, Y: h.Y}}, reach, a.piecesBut(h.ID, m.ID)) {
-		return "", fmt.Errorf("%s is out of reach of %s", h.Name, monsterLabel(m))
-	}
 	hitDice, err := dice.Parse(m.Combat.HitDice)
 	if err != nil {
 		return "", fmt.Errorf("%s's hit dice: %w", monsterLabel(m), err)
@@ -311,6 +327,17 @@ func (a *applier) monsterAttack(payload json.RawMessage) (string, error) {
 	return summary + fmt.Sprintf(" (%s %d/%d)", h.Name, h.Body, h.MaxBody), nil
 }
 
+// monsterMoveSpec is how a monster moves: through other monsters, never
+// through heroes, with its whole footprint.
+func (a *applier) monsterMoveSpec(m *Monster, budget int) maps.Move {
+	other := func(t maps.Tile) bool { return a.monsterAt(t, m.ID) != nil }
+	return maps.Move{
+		From: maps.Tile{X: m.X, Y: m.Y}, Width: m.Width, Height: m.Height, Budget: budget,
+		Occupied: func(t maps.Tile) bool { return a.heroAt(t, "") != nil || other(t) },
+		Through:  other,
+	}
+}
+
 // monsterMove moves a monster up to its movement, through other monsters
 // but not heroes, to a square where it fits. Monsters don't set off traps.
 // A monster coming into the heroes' view is revealed.
@@ -340,14 +367,10 @@ func (a *applier) monsterMove(payload json.RawMessage) (string, error) {
 			return "", fmt.Errorf("%s is at (%d,%d)", h.Name, t.X, t.Y)
 		}
 	}
-	other := func(t maps.Tile) bool { return a.monsterAt(t, m.ID) != nil }
-	move := maps.Move{
-		From: maps.Tile{X: m.X, Y: m.Y}, Width: m.Width, Height: m.Height, Budget: a.s.Board.Width * a.s.Board.Height,
-		Occupied: func(t maps.Tile) bool { return a.heroAt(t, "") != nil || other(t) },
-		Through:  other,
-	}
-	path, ok := maps.Path(a.terrain(), move, p.To)
+	path, ok := maps.Path(a.terrain(), a.monsterMoveSpec(m, a.s.Board.Width*a.s.Board.Height), p.To)
 	switch {
+	case len(path) == 0 && ok:
+		return "", fmt.Errorf("%s is at (%d,%d) already", monsterLabel(m), p.To.X, p.To.Y)
 	case !ok:
 		return "", fmt.Errorf("there is no way to (%d,%d) for %s", p.To.X, p.To.Y, monsterLabel(m))
 	case len(path) > m.Movement:

@@ -87,21 +87,31 @@ func (a *applier) turnSearch(payload json.RawMessage) (string, error) {
 	return summary, nil
 }
 
-func (a *applier) searchTreasure(h *Hero, id string) (string, error) {
+// checkTreasure checks a hero can search a piece of furniture in view for
+// treasure: nobody has yet, and the hero stands beside it.
+func (a *applier) checkTreasure(h *Hero, id string) (maps.Furniture, []maps.Tile, error) {
 	if id == "" {
-		return "", errors.New("which piece of furniture? Treasure is searched beside one")
+		return maps.Furniture{}, nil, errors.New("which piece of furniture? Treasure is searched beside one")
 	}
 	i := slices.IndexFunc(a.s.Quest.Furniture, func(f maps.Furniture) bool { return f.ID == id })
 	if i < 0 || !slices.Contains(a.s.SeenFurniture, id) {
-		return "", fmt.Errorf("no furniture in view called %q", id)
+		return maps.Furniture{}, nil, fmt.Errorf("no furniture in view called %q", id)
 	}
 	f := a.s.Quest.Furniture[i]
 	tiles := a.furnitureTiles(f)
 	switch {
 	case slices.Contains(a.s.Rules.Searched, id):
-		return "", fmt.Errorf("the %s has already been searched for treasure", a.furnitureLabel(f))
+		return f, nil, fmt.Errorf("the %s has already been searched for treasure", a.furnitureLabel(f))
 	case !a.besideTiles(h, tiles):
-		return "", fmt.Errorf("%s is not beside the %s", h.Name, a.furnitureLabel(f))
+		return f, nil, fmt.Errorf("%s is not beside the %s", h.Name, a.furnitureLabel(f))
+	}
+	return f, tiles, nil
+}
+
+func (a *applier) searchTreasure(h *Hero, id string) (string, error) {
+	f, tiles, err := a.checkTreasure(h, id)
+	if err != nil {
+		return "", err
 	}
 	a.s.Rules.Searched = append(a.s.Rules.Searched, id)
 	summary := fmt.Sprintf("%s searches the %s for treasure", a.heroLabel(h), a.furnitureLabel(f))
@@ -186,6 +196,44 @@ func (a *applier) canDisarm(h *Hero) bool {
 	return ok && slices.Contains(def.Exclusives, content.ExclusiveDisarm)
 }
 
+// checkDisarm checks a hero can disarm a known trap: their class can, and
+// they stand beside the piece it is set on, or beside a free square of a
+// floor trap (returned: the square they step onto).
+func (a *applier) checkDisarm(h *Hero, id string) (*TrapState, maps.Trap, *maps.Tile, error) {
+	if !a.canDisarm(h) {
+		return nil, maps.Trap{}, nil, fmt.Errorf("only a class that can disarm traps may disarm one, and %s's cannot", h.Name)
+	}
+	ts, qt, err := a.trap(id)
+	if err != nil || ts.State != maps.TrapRevealed {
+		return nil, maps.Trap{}, nil, fmt.Errorf("no known trap called %q", id)
+	}
+	tiles := a.trapTiles(ts, qt)
+	onFurniture := slices.ContainsFunc(a.s.Quest.Furniture, func(f maps.Furniture) bool { return f.ID == qt.FurnitureID })
+	if !onFurniture {
+		// Only the squares the hero could step onto count.
+		open := a.terrain()
+		tiles = slices.DeleteFunc(slices.Clone(tiles), func(tile maps.Tile) bool { return !open.Open(tile) })
+	}
+	if !a.besideTiles(h, tiles) {
+		return nil, maps.Trap{}, nil, fmt.Errorf("%s is not beside %s", h.Name, a.trapKindLabel(qt))
+	}
+	if onFurniture {
+		return ts, qt, nil, nil
+	}
+	from, t := maps.Tile{X: h.X, Y: h.Y}, a.terrain()
+	at := tiles[slices.IndexFunc(tiles, func(tile maps.Tile) bool {
+		e, ok := maps.EdgeBetween(from, tile)
+		return ok && t.Passable(e)
+	})]
+	if other := a.heroAt(at, h.ID); other != nil {
+		return nil, maps.Trap{}, nil, fmt.Errorf("%s stands on %s", other.Name, a.trapKindLabel(qt))
+	}
+	if m := a.monsterAt(at, ""); m != nil {
+		return nil, maps.Trap{}, nil, fmt.Errorf("%s stands on %s", monsterLabel(m), a.trapKindLabel(qt))
+	}
+	return ts, qt, &at, nil
+}
+
 // turnDisarm disarms a known trap (ONLINE_RULES.md): a trap on the floor by
 // stepping onto its square from beside it, a trap on furniture from beside
 // the piece. The roll is a d8, failing only on a 1, which sets the trap off
@@ -205,32 +253,12 @@ func (a *applier) turnDisarm(payload json.RawMessage) (string, error) {
 	if turn.Acted {
 		return "", fmt.Errorf("%s has already acted this turn", h.Name)
 	}
-	if !a.canDisarm(h) {
-		return "", fmt.Errorf("only a class that can disarm traps may disarm one, and %s's cannot", h.Name)
-	}
-	ts, qt, err := a.trap(p.Trap)
-	if err != nil || ts.State != maps.TrapRevealed {
-		return "", fmt.Errorf("no known trap called %q", p.Trap)
-	}
-	tiles := a.trapTiles(ts, qt)
-	onFurniture := slices.ContainsFunc(a.s.Quest.Furniture, func(f maps.Furniture) bool { return f.ID == qt.FurnitureID })
-	if !onFurniture {
-		// Only the squares the hero could step onto count.
-		t := a.terrain()
-		tiles = slices.DeleteFunc(slices.Clone(tiles), func(tile maps.Tile) bool { return !t.Open(tile) })
-	}
-	if !a.besideTiles(h, tiles) {
-		return "", fmt.Errorf("%s is not beside %s", h.Name, a.trapKindLabel(qt))
+	ts, qt, at, err := a.checkDisarm(h, p.Trap)
+	if err != nil {
+		return "", err
 	}
 	step := ""
-	if !onFurniture {
-		at := tiles[slices.IndexFunc(tiles, func(tile maps.Tile) bool { return maps.Adjacent(tile, maps.Tile{X: h.X, Y: h.Y}, false) })]
-		if other := a.heroAt(at, h.ID); other != nil {
-			return "", fmt.Errorf("%s stands on %s", other.Name, a.trapKindLabel(qt))
-		}
-		if m := a.monsterAt(at, ""); m != nil {
-			return "", fmt.Errorf("%s stands on %s", monsterLabel(m), a.trapKindLabel(qt))
-		}
+	if at != nil {
 		h.X, h.Y = at.X, at.Y
 		step = fmt.Sprintf(" steps onto (%d,%d) and", at.X, at.Y)
 	}
