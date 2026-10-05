@@ -42,6 +42,10 @@ type RulesState struct {
 	Turn *Turn `json:"turn,omitempty"`
 	// SkipNext lists heroes who lose their next turn (a critical miss).
 	SkipNext []string `json:"skipNext,omitempty"`
+	// MonstersMoved and MonstersActed list the monsters that have moved or
+	// attacked in this round's monsters' phase.
+	MonstersMoved []string `json:"monstersMoved,omitempty"`
+	MonstersActed []string `json:"monstersActed,omitempty"`
 }
 
 // Turn is one hero's turn: Move then Action, or Action then Move (online
@@ -100,13 +104,14 @@ var playerCommands = map[string]bool{
 	"turn.roll-move": true,
 	"turn.move":      true,
 	"turn.door":      true,
+	"turn.attack":    true,
 	"turn.end":       true,
 }
 
 // rulesCommands change the game under the rules; a fight starts or ends after
 // them as monsters are revealed or killed.
 func rulesCommand(kind string) bool {
-	return strings.HasPrefix(kind, "turn.") || strings.HasPrefix(kind, "phase.") || kind == "rules.enable"
+	return strings.HasPrefix(kind, "turn.") || strings.HasPrefix(kind, "phase.") || strings.HasPrefix(kind, "monster.") && kind != "monster.add" && kind != "monster.update" && kind != "monster.remove" || kind == "rules.enable"
 }
 
 // checkActor refuses what the actor may not send at all.

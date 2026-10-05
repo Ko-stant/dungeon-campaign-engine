@@ -142,6 +142,12 @@ func Apply(s *State, c Command, catalog *content.Catalog) (*State, Event, error)
 		summary, err = a.turnMove(c.Payload)
 	case "turn.door":
 		summary, err = a.turnDoor(c.Payload)
+	case "turn.attack":
+		summary, err = a.turnAttack(c.Payload)
+	case "monster.move":
+		summary, err = a.monsterMove(c.Payload)
+	case "monster.attack":
+		summary, err = a.monsterAttack(c.Payload)
 	case "turn.roll-move":
 		summary, err = a.turnRollMove(c.Payload)
 	case "turn.end":

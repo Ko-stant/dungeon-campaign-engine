@@ -1,6 +1,6 @@
 # The Three Plagues - Online rules
 
-**Last Updated**: 2026-10-05 15:53 EDT
+**Last Updated**: 2026-10-05 16:13 EDT
 
 These are the rules the online rules engine enforces for heroes played from a seat or by a
 bot (`docs/ONLINE_AND_RULES_PLAN.md`). The combat math, classes and abilities are in
@@ -48,6 +48,28 @@ touches a wall corner is still clear. There are two kinds of sight:
     of it.
   - A piece (monster, furniture, door) is revealed when any of its squares is in view.
   - Hidden traps and unfound secret doors stay hidden until searched for, triggered or found.
+
+### Attacks
+- **Basic attack reach** follows the class's reach (`RULES_AND_CLASSES.md`, "Who a basic attack
+  reaches"), set on the class form:
+  - **Adjacent:** orthogonally beside, with no wall or closed door between.
+  - **Diagonal:** adjacent or diagonal. A diagonal only counts around a corner that leaves a
+    gap.
+  - **Line of sight:** attack sight (D6).
+- **Ranged attacks have no range limit** (GM, 2026-10-05). The Ranger's bow, Smite, Multi-Shot
+  and ranged monsters reach anything in attack sight, however far away, as the original
+  crossbow did.
+- **The engine rolls.** The hero's hit dice plus Accuracy plus Determination are rolled
+  against the monster's Avoidance (minus 4 while it falters), with the d20 crit die, a
+  near-miss bonus of +2, and doubled damage on a crit. A miss adds +2 Determination (up to
+  +4), and a hit resets it. A critical miss costs the hero's next turn.
+- **An attack is the turn's action.** After moving, acting ends the movement step (D4).
+- **Monsters** attack once and move once per round, in the monsters' phase, in either order.
+  They pass through other monsters but not heroes, don't set off traps, and are revealed
+  when they step into the heroes' view. A hero brought to 0 Body falls.
+  - Melee monsters reach orthogonally adjacent squares.
+  - Monsters marked `reach` add the diagonals.
+  - Monsters marked `ranged` attack anything in attack sight (see the open question below).
 
 ### Traps
 - **D8. Stepping on a hidden trap triggers it, and the move ends there.** The Rogue's
@@ -98,7 +120,13 @@ touches a wall corner is still clear. There are two kinds of sight:
     likely harder than at the table. Balance is re-checked with the headless simulator once
     it exists. The table game is unaffected, because the GM runs the monsters there.
 
+## Open questions
+1. **Melee monsters and diagonals:** may an ordinary melee monster attack a hero diagonally?
+   For now it may not (the original game's rule), while monsters marked `reach` may. The
+   tactical AI will lean on whatever is decided here.
+
 ## Answered
+- **Ranged range** (2026-10-05): no limit, only line of sight, for heroes and monsters alike.
 - **Searching with monsters revealed** (2026-10-05): not allowed, for treasure, traps and
   secret doors alike, as long as any monster is revealed on the board (see D9).
 - **Treasure searches** (2026-10-05): once per piece of furniture per party, not once per

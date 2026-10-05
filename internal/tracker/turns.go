@@ -159,7 +159,7 @@ func (a *applier) phaseEnd(payload json.RawMessage) (string, error) {
 		return "", fmt.Errorf("%s's turn is still under way", h.Name)
 	}
 	summary := a.roundAdvance()
-	r.Phase, r.Acted = PhaseHeroes, nil
+	r.Phase, r.Acted, r.MonstersMoved, r.MonstersActed = PhaseHeroes, nil, nil, nil
 	// "Round 2 begins; ready again: ..." becomes "Round 2 begins: the heroes' turns; ready again: ...".
 	head, rest, _ := strings.Cut(summary, ";")
 	summary = head + ": the heroes' turns"
