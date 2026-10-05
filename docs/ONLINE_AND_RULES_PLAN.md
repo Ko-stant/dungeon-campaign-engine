@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 15:53 EDT
+**Last Updated**: 2026-10-05 16:13 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -103,6 +103,16 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
      `{command, actor, rolls, result}`.
    - **Exit:** a whole fight can be played through `Apply` with seat actors from a fixture
      state, and replayed from its seed.
+   - **Progress (2026-10-05):**
+     - **2a, rules state and turns** (`5b9da83`): `rules.enable`/`rules.disable`, `Command.Actor`
+       and `Command.Dice`, `turn.start`/`turn.roll-move`/`turn.end`, `phase.monsters`/`phase.end`.
+       Rolls are logged in event payloads, and fights follow revealed monsters.
+     - **2b, movement** (`703cc7b`): `turn.move` (a square or a checked path) and `turn.door`,
+       view reveals after every step, traps that stop the move.
+     - **Class reach** (`6a65785`): the class form, combat.json and `make fill-campaign`.
+     - **2c, attacks** (`44113ba`): `turn.attack`, `monster.attack`, `monster.move`.
+     - **Left:** 2d (`turn.search`, `turn.disarm`, quest objectives and `CheckOutcome`) and 2e
+       (`LegalActions` with its property test).
 3. **Auth, users, ownership:**
    - `internal/auth` behind an `Authenticator` interface;
    - `app_user` and `user_session` tables, and `owner_id` on campaigns, boards, quests, custom
@@ -168,16 +178,23 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
 13. **Generated campaigns:** packs generated against the same validators.
 
 ## Resume here
-- **Where things stand:** the worktree, the `hq_online` database (a copy of the GM's data) and
-  the plan are set up. Phase 1 is done: Go geometry (paths, line of sight) and strike math,
-  parity-tested against TS.
-- **Next:** Phase 2, the rules engine core in `internal/tracker`, built test-first:
-  1. `RulesState` and `Command.Actor`;
-  2. `rules.enable` with the seed;
-  3. the turn and phase commands;
-  4. `turn.move` with view reveals;
-  5. `turn.attack`;
-  6. `LegalActions`.
+- **Where things stand:**
+  - Phase 1 is done.
+  - Phase 2 is through 2c: a hero turn can be played under the rules (roll, move with reveals
+    and traps, open doors, attack). The GM runs the monsters' phase with `monster.move` and
+    `monster.attack`.
+  - All of it is in `internal/tracker` (`rules.go`, `turns.go`, `moves.go`, `board_rules.go`,
+    `attacks.go`).
+- **Next:**
+  1. 2d: searching (three kinds; none while a monster is revealed; treasure once per piece per
+     party), disarming (the Rogue's exclusive), quest objectives and the outcome.
+  2. 2e: `LegalActions` shared with the checks, plus the property test.
+- **Open for the GM:** may ordinary melee monsters attack diagonally? (`ONLINE_RULES.md`, "Open
+  questions"; for now they may not.)
+- **Browser checks:** add a temporary `dce-online` entry to the main checkout's
+  `.claude/launch.json` (`bash -c "cd ../dungeon-campaign-engine-online && exec
+  ./build/dungeon-campaign-engine"`, port 8090) after `make build` in the worktree. Restore the
+  file afterward.
 
 ## Running log
 - 2026-10-05: plan written. The online worktree has its own container, ports and `.env`.
@@ -189,3 +206,10 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
     strike math or the geometry.
 - 2026-10-05: the GM settled the last two D9 points. No search of any kind while a monster is
   revealed (combat is active), and treasure is searched once per piece of furniture per party.
+- 2026-10-05: Phase 2a-2c.
+  - `5b9da83`: rules state, actors, turns, seeded dice.
+  - `703cc7b`: movement, doors, reveals.
+  - `6a65785`: class reach.
+  - `44113ba`: attacks.
+  - Ranged attacks have no range limit (GM). The GM endpoint always stamps the GM as the
+    actor.
