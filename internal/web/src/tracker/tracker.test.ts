@@ -230,9 +230,11 @@ describe('interaction', () => {
 
   const select: Mode = { kind: 'select' };
 
-  test('select mode: a door edge toggles the door', () => {
+  test('select mode: a door edge selects the door without opening or closing it', () => {
     const r = clickCommand(state(), select, null, { tile: null, edge: { x: 3, y: 2, orientation: 'vertical' } });
-    expect(r).toEqual({ command: { type: 'door.set', payload: { id: 'door-1', state: 'closed' } }, select: 'door-1' });
+    expect(r).toEqual({ command: null, select: 'door-1' });
+    // Even with a movable piece selected, a door click only selects the door.
+    expect(clickCommand(state(), select, 'hero-1', { tile: { x: 3, y: 2 }, edge: { x: 3, y: 2, orientation: 'vertical' } })).toEqual({ command: null, select: 'door-1' });
   });
 
   test('select mode: clicking a piece selects it; clicking a square moves the selection there', () => {

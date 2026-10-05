@@ -443,7 +443,7 @@ async function main(): Promise<void> {
       },
     }, ...catalog.monsters.map((m) => h('option', { value: m.id, selected: m.id === monsterType }, monsterOptionLabel(m))));
     const hint: Record<Mode['kind'], string> = {
-      select: 'Click a hero, monster or movable trap (boulder), then a square to move it. Click a door to open or close it. Click furniture or blocked squares to show them to the players.',
+      select: 'Click a hero, monster or movable trap (boulder), then a square to move it. Click a door to select it, then open, close or lock it from the Selected panel. Click furniture or blocked squares to show them to the players.',
       reveal: revealSeen
         ? 'Click a room to reveal it and show the players what is in it: monsters, furniture, blocked squares and its doors (never traps or unfound secret doors).'
         : 'Click a room to reveal it (or a corridor square). What is in it stays hidden from the players.',

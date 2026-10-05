@@ -101,8 +101,8 @@ export function clickCommand(s: SessionState, mode: Mode, selectedId: string | n
   if (mode.kind === 'select' && target.edge) {
     const doorId = doorAt(s, target.edge);
     if (doorId) {
-      const open = s.doors.find((d) => d.id === doorId)?.state === 'open';
-      return { command: { type: 'door.set', payload: { id: doorId, state: open ? 'closed' : 'open' } }, select: doorId };
+      // Selecting only; the Selected panel opens, closes, locks or shows it.
+      return { command: null, select: doorId };
     }
   }
   const t = target.tile;

@@ -468,7 +468,7 @@ same 19, no new failures.
     - Round counter and next round.
     - A fog toggle showing what the heroes have discovered.
     - Hero cards: body/mind ± buttons, gold, status, equipment and notes.
-    - Board modes: select/move (click a door to open or close it), reveal area,
+    - Board modes: select/move (click a door to select it; open/close it from the panel), reveal area,
       hide square, add monster.
     - A selection panel for monsters (body, seen/hidden, kill/revive, remove),
       doors (open/close, found) and traps (4 states).
