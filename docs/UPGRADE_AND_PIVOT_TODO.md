@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-05 19:15 EDT
+**Last Updated**: 2026-10-05 20:05 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -103,6 +103,7 @@ Commits (oldest first):
 | 6f91d5b | tracker hotkeys 1/2/3, sightings taken back on removal, corridor color; poll screenshots |
 | 750c71c | loot list and potions, Determination, damage/heal box, custom tags; Smite on Mind |
 | 478c945 | air: build.entrypoint instead of the deprecated build.bin |
+| a5d60d2 | tracker log search; table decisions recorded |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
