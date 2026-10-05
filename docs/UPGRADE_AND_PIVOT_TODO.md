@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-05 03:35 EDT
+**Last Updated**: 2026-10-05 04:35 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -84,6 +84,7 @@ Commits (oldest first):
 | ad4a3c2 | Docs: note L on the Quest 1 board holds the prayer beads |
 | 5eabf2d | Three Plagues potions: a free action at any time, healing potions 8 Body |
 | 5b195eb | classes: Three Plagues combat stats on the class form and hero cards (step 5a) |
+| 4b63244 | campaign monster stats, shown in the tracker with Faltering (step 5b) |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
