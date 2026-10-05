@@ -16,6 +16,7 @@ import { clickCommand, corridorPath, hotkey, paintPending, revealPathCommand, re
 import { triggerButton } from '../tracker/traps.ts';
 import { shownToPlayers } from '../tracker/visibility.ts';
 import type { Command, CommandResponse, Hero, Item, LiveTrapState, Monster, ScriptSection, SessionEvent, SessionState } from '../tracker/types.ts';
+import { parseStreamMessage, type Present } from '../tracker/stream.ts';
 import { trackerView } from '../tracker/view.ts';
 import { lineTiles } from '../editor/tools.ts';
 import { h, preserveFocus, replaceChildren } from '../ui/dom.ts';
@@ -85,6 +86,8 @@ async function main(): Promise<void> {
   let logSearchOpen = false;
   let logQuery = '';
   let live = false;
+  /** Players connected online (sign-in on); empty at the table. */
+  let presence: Present[] = [];
   // The passage open in the reader, and script sections the GM opened or closed.
   let readerId: string | null = null;
   const scriptSectionOpen = new Map<number, boolean>();
@@ -341,8 +344,12 @@ async function main(): Promise<void> {
       refresh();
     });
     ws.addEventListener('message', (ev) => {
-      if (typeof ev.data === 'string') {
-        applyResponse(JSON.parse(ev.data) as CommandResponse);
+      const msg = typeof ev.data === 'string' ? parseStreamMessage(ev.data) : null;
+      if (msg?.kind === 'change') {
+        applyResponse(msg.response);
+        refresh();
+      } else if (msg?.kind === 'presence') {
+        presence = msg.presence;
         refresh();
       }
     });
@@ -427,6 +434,9 @@ async function main(): Promise<void> {
           onchange: (e: Event) => { void send({ type: 'players.set', payload: { hideMonsterBody: !(e.target as HTMLInputElement).checked } }); },
         }),
         'Players see monster Body'),
+      presence.length
+        ? h('span', { class: 'text-xs text-positive', title: 'Players connected online' }, `Online: ${presence.map((p) => `${p.name} (${p.heroes.join(', ')})`).join(' · ')}`)
+        : null,
       h('span', { class: `ml-auto text-xs ${message ? 'text-danger' : 'opacity-60'}`, role: 'status' }, message || (busy ? 'Saving…' : `Saved · ${lastSeq} events`)),
       h('span', { class: `h-2 w-2 rounded-full ${live ? 'bg-positive' : 'bg-danger'}`, title: live ? 'Live' : 'Reconnecting…' }),
       completed

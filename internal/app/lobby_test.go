@@ -1,11 +1,15 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/coder/websocket"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/tracker"
 )
@@ -118,7 +122,7 @@ func TestFriendsJoinFromTheLobbyAndPlayATurn(t *testing.T) {
 	}
 
 	// Each player sees only their own heroes; outsiders see nothing.
-	if code, seat := seatView(t, sam, sessionID); code != http.StatusOK || len(seat.Heroes) != 1 || seat.Heroes[0].ID != vex.ID {
+	if code, seat := seatView(t, sam, sessionID); code != http.StatusOK || len(seat.Seat.Heroes) != 1 || seat.Seat.Heroes[0].ID != vex.ID {
 		t.Fatalf("Sam's seat: %d %+v", code, seat)
 	}
 	if code, _ := seatView(t, pat, sessionID); code != http.StatusForbidden {
@@ -136,7 +140,7 @@ func TestFriendsJoinFromTheLobbyAndPlayATurn(t *testing.T) {
 		t.Fatalf("start: %d", resp.StatusCode)
 	}
 	code, seat := seatView(t, jo, sessionID)
-	if code != http.StatusOK || seat.Phase != tracker.PhaseHeroes || len(seat.Heroes) != 1 || len(seat.Heroes[0].Actions) != 1 || seat.Heroes[0].Actions[0].Label != "Start Grom's turn" {
+	if code != http.StatusOK || seat.Seat.Phase != tracker.PhaseHeroes || len(seat.Seat.Heroes) != 1 || len(seat.Seat.Heroes[0].Actions) != 1 || seat.Seat.Heroes[0].Actions[0].Label != "Start Grom's turn" {
 		t.Fatalf("Jo's seat after the start: %d %+v", code, seat)
 	}
 
@@ -193,5 +197,82 @@ func TestTheLobbyAndSeatsNeedSignInOn(t *testing.T) {
 	}
 	if resp, _ := b.sendJSON(http.MethodPost, "/api/sessions/0190c6a0-0000-7000-8000-000000000000/seat-commands", map[string]any{"hero": "hero-1", "type": "turn.end"}); resp.StatusCode != http.StatusNotFound {
 		t.Errorf("a seat command with sign-in off: %d", resp.StatusCode)
+	}
+}
+
+// seatSocket opens a player's seat stream with their browser's cookies.
+func seatSocket(t *testing.T, b *browser, sessionID string) *websocket.Conn {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(b.base, "http")+"/api/sessions/"+sessionID+"/seat-stream",
+		&websocket.DialOptions{HTTPClient: b.client})
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	t.Cleanup(func() { _ = conn.Close(websocket.StatusNormalClosure, "") })
+	return conn
+}
+
+func readSeatUpdate(t *testing.T, conn *websocket.Conn) SeatUpdate {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, data, err := conn.Read(ctx)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	var u SeatUpdate
+	if err := json.Unmarshal(data, &u); err != nil {
+		t.Fatal(err)
+	}
+	return u
+}
+
+func TestSeatsGetTheirOwnUpdatesAndSeeWhoIsHere(t *testing.T) {
+	base, gm, campaignID, sessionID := lobbyGame(t)
+	gm.postForm("/play/"+sessionID+"/open", url.Values{"open": {"1"}})
+	jo, sam := newBrowser(t, base), newBrowser(t, base)
+	jo.signInAs("Jo")
+	sam.signInAs("Sam")
+	grom := campaignHeroes(t, gm, campaignID)[0]
+	jo.postForm("/join/"+sessionID+"/claim/"+grom.ID, nil)
+	sam.postForm("/join/"+sessionID+"/hero", url.Values{"name": {"Vex"}, "class": {"elf"}})
+
+	joConn := seatSocket(t, jo, sessionID)
+	if u := readSeatUpdate(t, joConn); len(u.Presence) != 1 || u.Presence[0].Name != "Jo" || u.Presence[0].Heroes[0] != "Grom" {
+		t.Fatalf("Jo arrives: %+v", u)
+	}
+	samConn := seatSocket(t, sam, sessionID)
+	if u := readSeatUpdate(t, joConn); len(u.Presence) != 2 || u.Presence[1].Name != "Sam" {
+		t.Fatalf("Sam arrives: %+v", u)
+	}
+	readSeatUpdate(t, samConn) // Sam's own arrival
+
+	// A change reaches each seat with that player's own heroes.
+	gm.postForm("/play/"+sessionID+"/start", nil)
+	joUpdate, samUpdate := readSeatUpdate(t, joConn), readSeatUpdate(t, samConn)
+	if joUpdate.Seat == nil || joUpdate.Player == nil || len(joUpdate.Seat.Heroes) != 1 || joUpdate.Seat.Heroes[0].Name != "Grom" || joUpdate.Seat.Phase != tracker.PhaseHeroes {
+		t.Fatalf("Jo's update: %+v", joUpdate)
+	}
+	if samUpdate.Seat == nil || len(samUpdate.Seat.Heroes) != 1 || samUpdate.Seat.Heroes[0].Name != "Vex" {
+		t.Fatalf("Sam's update: %+v", samUpdate)
+	}
+
+	// The GM sees who is here; an outsider can't open a seat stream.
+	_, body := gm.get("/api/sessions/" + sessionID + "/presence")
+	if !strings.Contains(body, `"name":"Jo"`) || !strings.Contains(body, `"name":"Sam"`) {
+		t.Errorf("presence: %s", body)
+	}
+	pat := newBrowser(t, base)
+	pat.signInAs("Pat")
+	if resp, _ := pat.get("/api/sessions/" + sessionID + "/seat-stream"); resp.StatusCode != http.StatusForbidden {
+		t.Errorf("an outsider's seat stream: %d", resp.StatusCode)
+	}
+
+	// Leaving is announced.
+	_ = samConn.Close(websocket.StatusNormalClosure, "")
+	if u := readSeatUpdate(t, joConn); len(u.Presence) != 1 || u.Presence[0].Name != "Jo" {
+		t.Errorf("Sam leaves: %+v", u)
 	}
 }

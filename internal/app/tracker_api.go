@@ -436,6 +436,7 @@ func (s *Server) record(ctx context.Context, sessionID string, state *tracker.St
 		}
 	}
 	s.playerStreams.broadcast(sessionID, update)
+	s.pushSeats(ctx, sessionID, state, update)
 	return resp, nil
 }
 

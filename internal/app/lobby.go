@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
-	"strings"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/tracker"
@@ -29,7 +28,9 @@ func (s *Server) registerLobby(mux routeMux) {
 	mux.HandleFunc("POST /play/{id}/open", s.openSessionForm)
 	mux.HandleFunc("POST /play/{id}/start", s.startOnlineForm)
 	mux.HandleFunc("GET /api/sessions/{id}/seat", s.getSeat)
+	mux.HandleFunc("GET /api/sessions/{id}/seat-stream", s.seatStream)
 	mux.HandleFunc("POST /api/sessions/{id}/seat-commands", s.seatCommand)
+	mux.HandleFunc("GET /api/sessions/{id}/presence", s.getPresence)
 }
 
 // signedInUser is the request's user. The lobby and seats exist only with
@@ -258,109 +259,4 @@ func (s *Server) startOnlineForm(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	http.Redirect(w, r, "/campaigns/"+ss.CampaignID, http.StatusSeeOther)
-}
-
-// SeatHero is one of the player's heroes in a session, with what they may
-// do now.
-type SeatHero struct {
-	ID      string           `json:"id"`
-	Name    string           `json:"name"`
-	Placed  bool             `json:"placed"`
-	Actions []tracker.Action `json:"actions"`
-}
-
-// SeatResponse is a player's seat: the game as the players see it and
-// their heroes' legal actions. (Phase 5 adds each hero's own sheet.)
-type SeatResponse struct {
-	Round  int                 `json:"round"`
-	Phase  string              `json:"phase,omitempty"`
-	Heroes []SeatHero          `json:"heroes"`
-	Player tracker.PlayerState `json:"player"`
-}
-
-// seat builds a user's seat in a session.
-func (s *Server) seat(ctx context.Context, sessionID, userID string) (SeatResponse, error) {
-	ss, state, err := s.loadSessionState(ctx, sessionID)
-	if err != nil {
-		return SeatResponse{}, err
-	}
-	_, heroes, err := s.loadCampaign(ctx, ss.CampaignID)
-	if err != nil {
-		return SeatResponse{}, err
-	}
-	cat, err := s.campaignCatalog(ctx, ss.CampaignID)
-	if err != nil {
-		return SeatResponse{}, err
-	}
-	resp := SeatResponse{Round: state.Round, Heroes: []SeatHero{}, Player: tracker.PlayerView(state)}
-	if state.Rules != nil {
-		resp.Phase = state.Rules.Phase
-	}
-	for _, h := range state.Heroes {
-		if !slices.ContainsFunc(heroes, func(ch tracker.CampaignHero) bool { return ch.ID == h.ID && ch.UserID == userID }) {
-			continue
-		}
-		actions := tracker.LegalActions(state, tracker.Actor{Kind: tracker.ActorSeat, HeroID: h.ID}, cat)
-		if actions == nil {
-			actions = []tracker.Action{}
-		}
-		resp.Heroes = append(resp.Heroes, SeatHero{ID: h.ID, Name: h.Name, Placed: h.Placed, Actions: actions})
-	}
-	return resp, nil
-}
-
-func (s *Server) getSeat(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.signedInUser(w, r)
-	if !ok {
-		return
-	}
-	resp, err := s.seat(r.Context(), r.PathValue("id"), user.ID)
-	if err != nil {
-		writeStoreError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, resp)
-}
-
-// seatCommand applies a player's command for one of their heroes; the
-// actor is that hero's seat, whatever the client says.
-func (s *Server) seatCommand(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Hero    string          `json:"hero"`
-		Type    string          `json:"type"`
-		Payload json.RawMessage `json:"payload"`
-	}
-	user, ok := s.signedInUser(w, r)
-	if !ok {
-		return
-	}
-	if !readJSON(w, r, &req) {
-		return
-	}
-	ctx := r.Context()
-	ss, err := s.store.GetSession(ctx, r.PathValue("id"))
-	if err != nil {
-		writeStoreError(w, err)
-		return
-	}
-	_, heroes, err := s.loadCampaign(ctx, ss.CampaignID)
-	if err != nil {
-		writeStoreError(w, err)
-		return
-	}
-	if !slices.ContainsFunc(heroes, func(h tracker.CampaignHero) bool { return h.ID == req.Hero && h.UserID == user.ID }) {
-		writeError(w, http.StatusForbidden, "you don't play that hero")
-		return
-	}
-	cmd := tracker.Command{Type: strings.TrimSpace(req.Type), Payload: req.Payload, Actor: tracker.Actor{Kind: tracker.ActorSeat, HeroID: req.Hero}}
-	if _, err := s.applyCommand(ctx, ss.ID, cmd); err != nil {
-		writeCommandError(w, err)
-		return
-	}
-	seat, err := s.seat(ctx, ss.ID, user.ID)
-	if err != nil {
-		writeStoreError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, seat)
 }

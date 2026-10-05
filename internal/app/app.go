@@ -33,6 +33,8 @@ type Server struct {
 	playerStreams streams
 	// auth is how people sign in; the zero value (no mode) is treated as none.
 	auth auth.Config
+	// seats are the players connected online (see seat.go).
+	seats seatHub
 }
 
 // New creates the app server.

@@ -48,6 +48,7 @@ func accessRule(pattern string) (owned []ownedParam, ok bool) {
 		// Player-safe session routes: the player view and the seat.
 		{"/api/sessions/{id}/seat", []ownedParam{{"id", store.OwnedSession, true}}},
 		{"/api/sessions/{id}/seat-commands", []ownedParam{{"id", store.OwnedSession, true}}},
+		{"/api/sessions/{id}/seat-stream", []ownedParam{{"id", store.OwnedSession, true}}},
 		{"/api/sessions/{id}/player", []ownedParam{{"id", store.OwnedSession, true}}},
 		{"/api/sessions/{id}/player-stream", []ownedParam{{"id", store.OwnedSession, true}}},
 		{"/play/{id}/players", []ownedParam{{"id", store.OwnedSession, true}}},
