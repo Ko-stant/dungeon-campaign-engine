@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-04 23:45 EDT
+**Last Updated**: 2026-10-05 10:50 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -41,7 +41,8 @@ Agreed 2026-10-03, refined 2026-10-04. Numbers are still to be tuned (steps 2 an
 - **Hero class**: Body, **hit dice** (a dice expression, different per class; a weapon may
   replace them, see "Equipment"), **Accuracy** (a flat bonus to the hit roll, any whole
   number), **crit range** on a d20, **base damage**, **base avoidance**, **defense dice**,
-  **mitigation**, Mana (Cleric), Mind, Movement.
+  **mitigation**, Mana (Cleric), **Mind** (Will, the defense against magic and fear; see
+  "Mind and magic"), Movement.
 - **Monster**: Body, **Avoidance**, **hit dice**, **damage**, Mind, Movement. Monsters have
   no armor or mitigation: their toughness is Avoidance and Body.
 - **Avoidance** (monsters) is always an even number: a sum of die sizes, from 4 (d4) to 20
@@ -99,6 +100,21 @@ Monsters only, never heroes. The threshold is to be set by simulation, somewhere
 - A **monster** that cannot defend is hit automatically: the hero rolls only the crit die, for
   double damage. Seasoned veterans don't miss a target that isn't moving.
 
+### Mind and magic
+Adopted 2026-10-05 (the GM). Mind is the heroes' **Will**: the defense against magic and
+fear, where armor doesn't help.
+- A **mental attack** (a spell, a curse, a fear effect, a Specter's wail, the Cloud of Dread)
+  is an opposed roll like any monster attack: the monster rolls its hit dice; the hero
+  rolls their **defense dice + Mind** instead of defense dice + avoidance. Ties go to the hero.
+- It usually lands a **condition** rather than Body damage, tracked as an effect, for
+  example **Frightened** (can't attack that monster on their next turn), **Dazed** (loses
+  their next action) or **Cursed** (-2 Accuracy for 2 rounds). The monster's abilities text
+  says which attacks are mental and what they do.
+- Mind is a fixed stat, not a pool that spells wear down.
+- Mental attacks stay rare; the simulator doesn't model conditions, so no numbers are tuned
+  around them.
+- Monsters keep a Mind value for flavor (later, perhaps, how hard they are to Turn).
+
 ### Abilities and the basic attack
 - Abilities are usually better than a basic attack; the cooldown is the decision (when to
   spend it), not whether it's worth using.
@@ -137,12 +153,12 @@ Direction for the step 2 numbers.
 **Class base stats** (before gear; 2026-10-04, backfilled so the starting kit gives the step 2
 totals):
 
-| Class | Body | Hit dice + Accuracy | Crit | Damage | Avoidance | Defense dice | Mitigation | Mana |
-|---|---|---|---|---|---|---|---|---|
-| Barbarian | 40 | 1d20+3 | 17-20 | 3 | 2 | 1d6 | 1 (Tough as Nails) | - |
-| Ranger | 30 | 2d10+4 | 18-20 | 2 | 4 | 1d6 | 0 | - |
-| Rogue | 28 | 2d10+2 | 15-20 | 1 | 4 | 1d6 | 0 | - |
-| Cleric | 28 | 2d8+4 | 20 | 2 | 3 | 1d6 | 0 | 16, regenerating 2 |
+| Class | Body | Mind | Hit dice + Accuracy | Crit | Damage | Avoidance | Defense dice | Mitigation | Mana |
+|---|---|---|---|---|---|---|---|---|---|
+| Barbarian | 40 | 3 | 1d20+3 | 17-20 | 3 | 2 | 1d6 | 1 (Tough as Nails) | - |
+| Ranger | 30 | 4 | 2d10+4 | 18-20 | 2 | 4 | 1d6 | 0 | - |
+| Rogue | 28 | 5 | 2d10+2 | 15-20 | 1 | 4 | 1d6 | 0 | - |
+| Cleric | 28 | 6 | 2d8+4 | 20 | 2 | 3 | 1d6 | 0 | 16, regenerating 2 |
 
 **Starting kit**:
 
@@ -677,6 +693,10 @@ crit range of 18-20, a shot is charged 20% of the time and a crit 15%.
    tier of finds, to check per quest).
 
 ## Answered
+- **Mind** (2026-10-05): kept as Will, the defense against mental attacks (defense dice +
+  Mind, armor doesn't count), which usually land conditions; Barbarian 3, Ranger 4, Rogue 5,
+  Cleric 6. Not tied to the Cleric's mana (it would mean nothing for the others and double
+  up with the Holy Tome).
 - **Quest 1 finds** (2026-10-05): approved (see "Campaign notes"); Pilgrim's Prayer Beads +2
   mana (18 in all); trap G's dread warrior scales with the torches (27 Body per hero inside);
   the dread warrior stays at 15 damage.

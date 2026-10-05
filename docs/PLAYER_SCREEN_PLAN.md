@@ -1,6 +1,6 @@
 # Player screen (TV) plan
 
-**Last Updated**: 2026-10-05 03:40 EDT
+**Last Updated**: 2026-10-05 10:30 EDT
 
 ## Goal
 At the table the GM runs the tracker on the laptop and opens a second Chrome tab, the
@@ -102,10 +102,19 @@ only what the heroes know.
    (100-200%, remembered by the TV's browser).
 
 ## Next (needs the GM)
-- Player docs and polls: the GM wants a players' guide to the house rules and polls for
-  the table (first: should the player screen show monsters' exact Body? The switch is in
-  the tracker header, "Players see monster Body"). Ask what the docs should cover and
-  which questions to poll before writing them.
+- Player docs and polls (2026-10-05, done as published pages; sources in
+  `docs/campaigns/three-plagues/players/`): the Players' Handbook
+  (https://claude.ai/artifact/C1FiMQLNVA3pw5Jmvu7Ma2, `handbook.html`: the house rules,
+  monster mechanics without per-monster numbers or spoilers, the TV, a sheet per hero with
+  hit odds at Avoidance 6-16, a glossary) and Table Polls
+  (https://claude.ai/artifact/LatPNDvxX5j7p3edeQgHNL, `polls.html`: narration audio vs
+  the GM, monster Body on the TV, critical misses, monster crits, who tracks cooldowns
+  and Determination, who describes special crits, the TV log open or closed; votes in the
+  page's `db` under `votes/<viewer id>`, each player writes only their own). Players need
+  claude.ai accounts and an email invite as Editor (no public link) to vote. Hero card
+  art: the GM's originals are in `players/cards/*.png` (not in git, about 11 MB); the
+  handbook publishes 800 px copies from `players/cards/web/`. Mind became Will
+  (2026-10-05): the handbook has "Mind and magic" and the TV hero card a Will line.
 - Fill in abilities text for the campaign's monster stat lines (campaign page) if wanted.
 - Try the player screen on the real TV: text size, the "seen" color and the board size.
 

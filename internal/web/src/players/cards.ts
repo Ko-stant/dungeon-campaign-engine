@@ -92,6 +92,8 @@ export function cardFor(pv: PlayerState, catalog: PlayerCatalog, pick: Pick): Ca
       const lines = [stats.join(' · ')];
       if (h.combat) {
         lines.push(combatLine(h.combat));
+        // Mind is the heroes' Will: defense dice + Mind against mental attacks.
+        lines.push(`Will ${String(h.mind)}+${h.combat.defenseDice} against magic and fear`);
       }
       const card: Card = { title: h.name, tags: h.status === 'dead' ? ['Fallen'] : h.status === 'escaped' ? ['Escaped'] : [], lines, effects: (h.effects ?? []).map(effectLabel) };
       const cls = catalog.heroes.find((c) => c.id === h.class)?.name;

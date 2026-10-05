@@ -1,0 +1,347 @@
+<title>Table Polls</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Alegreya:ital,wght@0,400;0,600;0,700;1,400&family=Alegreya+Sans+SC:wght@500;700&display=swap">
+<style>
+/* Layout: one column; the hero picker, then each question with its choices and the table's live tally beneath. */
+:root {
+  color-scheme: dark;
+  --stone: #141619;
+  --stone-raised: #1c2024;
+  --stone-line: #353b40;
+  --gold: #d6a24a;
+  --gold-bright: #f0c46c;
+  --moss-line: #4b6b4f;
+  --ink: #ebe4d4;
+  --ink-muted: #aaa293;
+  --blood: #d0614b;
+  --display: "Pirata One", "UnifrakturCook", Georgia, serif;
+  --body: "Alegreya", Georgia, "Times New Roman", serif;
+  --label: "Alegreya Sans SC", "Alegreya", Georgia, serif;
+}
+* { box-sizing: border-box; }
+body { background: var(--stone); color: var(--ink); font-family: var(--body); font-size: 1.08rem; line-height: 1.55; padding-inline: 16px; padding-block: 0 4rem; }
+.wrap { max-width: 44rem; margin-inline: auto; display: grid; gap: 2rem; }
+h1, h2 { font-family: var(--display); font-weight: 400; color: var(--gold-bright); line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(2.4rem, 8vw, 3.6rem); }
+h2 { font-size: 1.6rem; }
+p { margin: 0; }
+.label { font-family: var(--label); font-size: 0.85rem; letter-spacing: 0.08em; color: var(--ink-muted); }
+header.masthead { padding-block: 2.6rem 0; display: grid; gap: 0.7rem; }
+header.masthead .label { color: var(--gold); }
+.notice { border: 1px solid var(--stone-line); border-left: 3px solid var(--gold); background: var(--stone-raised); padding: 0.8rem 1rem; }
+.notice.warn { border-left-color: var(--blood); }
+
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 0.7rem; min-width: 0; }
+legend { padding: 0; margin-bottom: 0.4rem; }
+.question { display: grid; gap: 0.8rem; padding-bottom: 1.6rem; border-bottom: 1px solid var(--stone-line); }
+.question .why { color: var(--ink-muted); }
+.choices { display: grid; gap: 0.5rem; }
+.choice { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.7rem; align-items: start; padding: 0.7rem 0.9rem; border: 1px solid var(--stone-line); border-radius: 6px; background: var(--stone-raised); cursor: pointer; }
+.choice input { margin-top: 0.35rem; accent-color: var(--gold); }
+.choice .text { display: grid; gap: 0.1rem; min-width: 0; }
+.choice .title { font-weight: 700; }
+.choice .detail { color: var(--ink-muted); font-size: 0.98rem; }
+.choice:has(input:checked) { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.choice:has(input:focus-visible) { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+.choice:has(input:disabled) { cursor: default; opacity: 0.8; }
+.tally { display: grid; grid-template-columns: 1fr auto; gap: 0.35rem 0.8rem; align-items: center; font-size: 0.95rem; }
+.tally .bar { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--stone-line); overflow: hidden; }
+.tally .bar span { display: block; height: 100%; background: var(--gold); }
+.tally .who { color: var(--ink-muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; text-align: right; }
+.tally-block { display: grid; gap: 0.5rem; padding: 0.7rem 0.9rem; border: 1px dashed var(--stone-line); border-radius: 6px; }
+
+.heroes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: 0.5rem; }
+.hero { border-top: 3px solid var(--hero); }
+.hero .title { font-family: var(--display); font-weight: 400; font-size: 1.35rem; color: var(--gold-bright); }
+
+textarea { width: 100%; min-height: 5rem; font: inherit; color: var(--ink); background: var(--stone-raised); border: 1px solid var(--stone-line); border-radius: 6px; padding: 0.6rem 0.8rem; }
+textarea:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; }
+button.primary { font-family: var(--label); font-size: 1.05rem; letter-spacing: 0.06em; color: var(--stone); background: var(--gold); border: 0; border-radius: 6px; padding: 0.6rem 1.4rem; cursor: pointer; }
+button.primary:hover { background: var(--gold-bright); }
+button.primary:disabled { opacity: 0.5; cursor: default; }
+button.primary:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+.status { color: var(--ink-muted); }
+.status.error { color: var(--blood); }
+.comments { display: grid; gap: 0.7rem; }
+.comment { border-left: 3px solid var(--moss-line); padding-left: 0.8rem; display: grid; gap: 0.1rem; }
+.comment .label { color: var(--gold); }
+.comment p { white-space: pre-wrap; }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <span class="label">Hero Quest · for our table</span>
+    <h1>Table Polls</h1>
+    <p>A few choices about how we play. Pick your hero, answer what you have an opinion on, and save. You can change your answers any time; the tallies update live for everyone.</p>
+  </header>
+
+  <div id="notice" class="notice" hidden></div>
+
+  <form id="poll" novalidate>
+    <div class="question">
+      <fieldset>
+        <legend><h2>Who are you?</h2></legend>
+        <div class="heroes" id="heroes"></div>
+      </fieldset>
+    </div>
+    <div id="questions"></div>
+    <div class="question">
+      <fieldset>
+        <legend><h2>Anything else?</h2></legend>
+        <p class="why">Ideas, worries, house rules you'd like to try.</p>
+        <textarea id="comment" maxlength="1000" placeholder="Optional"></textarea>
+      </fieldset>
+    </div>
+    <div class="actions" style="margin-top: 1.4rem">
+      <button type="submit" class="primary" id="save">Save my answers</button>
+      <span class="status" id="status" role="status"></span>
+    </div>
+  </form>
+
+  <section id="comments-section" hidden>
+    <h2>What the table said</h2>
+    <div class="comments" id="comments"></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const HEROES = [
+    { id: 'brentanamo', name: 'Brentanamo Bay', cls: 'Barbarian', color: '#b91c1c' },
+    { id: 'derrick', name: 'Derrick Rosewood', cls: 'Cleric', color: '#ca8a04' },
+    { id: 'mordecai', name: 'Mordecai Muldoon', cls: 'Ranger', color: '#15803d' },
+    { id: 'papi', name: 'Papi Ponzi', cls: 'Rogue', color: '#6b7280' },
+  ];
+  const QUESTIONS = [
+    {
+      id: 'narration',
+      title: 'How should the story be told?',
+      why: 'The read-aloud scenes can play as voiced audio clips, or the GM can narrate everything live.',
+      options: [
+        { id: 'audio', title: 'Voiced audio', detail: 'Play the recorded clips for the read-aloud scenes.' },
+        { id: 'gm', title: 'The GM narrates', detail: 'Everything read live at the table.' },
+        { id: 'mix', title: 'A mix', detail: 'Audio for the big moments, the GM for the rest.' },
+      ],
+    },
+    {
+      id: 'monsterBody',
+      title: "Should the TV show monsters' exact Body?",
+      why: "When the GM shows a monster's card, it can list its Body, or keep you guessing until it's badly hurt.",
+      options: [
+        { id: 'exact', title: 'Exact Body', detail: 'For example "Body 64 / 109", always.' },
+        { id: 'wounded', title: 'Only "Wounded"', detail: 'No numbers; a tag appears once it is down to a quarter of its Body.' },
+      ],
+    },
+    {
+      id: 'criticalMiss',
+      title: 'Critical misses: lose your next turn?',
+      why: 'When every die shows 1 (very rare), the rules say you miss and lose your next turn.',
+      options: [
+        { id: 'keep', title: 'Keep it', detail: 'Lose your next turn. Rare, painful, memorable.' },
+        { id: 'soften', title: 'Soften it', detail: 'Just a miss, with a blunder the GM describes.' },
+      ],
+    },
+    {
+      id: 'monsterCrit',
+      title: 'Monster crits: double damage on double 20s?',
+      why: 'Monsters roll 2d20 with each attack; double 20s (1 in 400) double their damage.',
+      options: [
+        { id: 'keep', title: 'Keep it', detail: 'Danger should be real.' },
+        { id: 'drop', title: 'Drop it', detail: 'Monsters never crit.' },
+      ],
+    },
+    {
+      id: 'tracking',
+      title: 'Who keeps track of cooldowns and Determination?',
+      why: 'Abilities have cooldowns in rounds, and Determination adds +2 Accuracy per miss in a row.',
+      options: [
+        { id: 'players', title: 'Each player', detail: 'Dice or tokens beside your hero card.' },
+        { id: 'gm', title: 'The GM', detail: 'In the app; the TV shows what matters.' },
+        { id: 'both', title: 'Both', detail: 'You track at the table, the GM double-checks in the app.' },
+      ],
+    },
+    {
+      id: 'specialCrit',
+      title: 'Who describes a special crit?',
+      why: 'When every die shows its highest face, the hit deserves a flourish.',
+      options: [
+        { id: 'player', title: 'The player', detail: 'You rolled it, you tell us what happens.' },
+        { id: 'gm', title: 'The GM', detail: 'The GM narrates the moment.' },
+      ],
+    },
+    {
+      id: 'feed',
+      title: 'Should the TV\'s "What happened" log stay open?',
+      why: 'The TV can show a running log of recent events beside the map.',
+      options: [
+        { id: 'open', title: 'Always open', detail: 'Easy to catch up after a bathroom break.' },
+        { id: 'closed', title: 'Closed', detail: 'Open it only when we lose track; more room for the map.' },
+      ],
+    },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const form = $('poll');
+  const notice = $('notice');
+  const statusEl = $('status');
+  const saveBtn = $('save');
+
+  let votes = new Map(); // viewer id -> vote body
+  let myId = null;
+  let db = null;
+  let canWrite = true;
+  let dirty = false;
+  let saving = false;
+
+  function el(tag, attrs = {}, ...children) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v === null || v === undefined || v === false) continue;
+      if (k === 'text') e.textContent = v;
+      else if (k === 'style') e.setAttribute('style', v);
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? '' : String(v));
+    }
+    for (const c of children) if (c) e.append(c);
+    return e;
+  }
+
+  function showNotice(text, warn) {
+    notice.hidden = !text;
+    notice.textContent = text || '';
+    notice.classList.toggle('warn', !!warn);
+  }
+
+  // Build the form once; the tallies are refreshed on every change.
+  const heroesBox = $('heroes');
+  for (const h of HEROES) {
+    heroesBox.append(el('label', { class: 'choice hero', style: `--hero: ${h.color}` },
+      el('input', { type: 'radio', name: 'hero', value: h.id, id: `hero-${h.id}` }),
+      el('span', { class: 'text' }, el('span', { class: 'title', text: h.name }), el('span', { class: 'detail', text: h.cls }), el('span', { class: 'detail', id: `hero-taken-${h.id}` }))));
+  }
+  const questionsBox = $('questions');
+  for (const q of QUESTIONS) {
+    const choices = el('div', { class: 'choices' });
+    for (const o of q.options) {
+      choices.append(el('label', { class: 'choice' },
+        el('input', { type: 'radio', name: q.id, value: o.id, id: `${q.id}-${o.id}` }),
+        el('span', { class: 'text' }, el('span', { class: 'title', text: o.title }), el('span', { class: 'detail', text: o.detail }))));
+    }
+    questionsBox.append(el('div', { class: 'question' },
+      el('fieldset', {},
+        el('legend', {}, el('h2', { text: q.title })),
+        el('p', { class: 'why', text: q.why }),
+        choices,
+        el('div', { class: 'tally-block', id: `tally-${q.id}`, 'aria-live': 'polite' }))));
+  }
+  form.addEventListener('change', () => { dirty = true; statusEl.textContent = 'Not saved yet'; statusEl.classList.remove('error'); });
+  $('comment').addEventListener('input', () => { dirty = true; statusEl.textContent = 'Not saved yet'; statusEl.classList.remove('error'); });
+
+  function heroName(id) { return HEROES.find((h) => h.id === id)?.name || 'Someone'; }
+
+  function renderTallies() {
+    const all = [...votes.values()];
+    for (const q of QUESTIONS) {
+      const box = $(`tally-${q.id}`);
+      const answered = all.filter((v) => v.answers && v.answers[q.id]);
+      box.replaceChildren(el('span', { class: 'label', text: answered.length ? `The table so far · ${answered.length} ${answered.length === 1 ? 'answer' : 'answers'}` : 'No answers yet' }));
+      if (!answered.length) continue;
+      const tally = el('div', { class: 'tally' });
+      for (const o of q.options) {
+        const picked = answered.filter((v) => v.answers[q.id] === o.id);
+        const pct = Math.round((picked.length / answered.length) * 100);
+        tally.append(
+          el('span', { text: `${o.title} · ${picked.length}` }),
+          el('span', { class: 'who', text: picked.map((v) => heroName(v.hero)).join(', ') }),
+          el('span', { class: 'bar' }, el('span', { style: `width: ${pct}%` })));
+      }
+      box.append(tally);
+    }
+    for (const h of HEROES) {
+      const taken = [...votes.entries()].some(([id, v]) => v.hero === h.id && id !== myId);
+      $(`hero-taken-${h.id}`).textContent = taken ? 'Has answered' : '';
+    }
+    const withComments = all.filter((v) => typeof v.comment === 'string' && v.comment.trim());
+    $('comments-section').hidden = withComments.length === 0;
+    $('comments').replaceChildren(...withComments.map((v) => el('div', { class: 'comment' }, el('span', { class: 'label', text: heroName(v.hero) }), el('p', { text: v.comment }))));
+  }
+
+  function fillMine() {
+    if (dirty || !myId) return;
+    const mine = votes.get(myId);
+    if (!mine) return;
+    if (mine.hero) { const r = $(`hero-${mine.hero}`); if (r) r.checked = true; }
+    for (const q of QUESTIONS) {
+      const a = mine.answers && mine.answers[q.id];
+      const r = a ? $(`${q.id}-${a}`) : null;
+      if (r) r.checked = true;
+    }
+    $('comment').value = typeof mine.comment === 'string' ? mine.comment : '';
+    statusEl.textContent = 'Your saved answers';
+  }
+
+  function setReadOnly(text) {
+    canWrite = false;
+    for (const input of form.querySelectorAll('input, textarea')) input.disabled = true;
+    saveBtn.disabled = true;
+    showNotice(text, true);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!db || !myId || !canWrite || saving) return;
+    const hero = form.elements.hero.value;
+    if (!hero) { statusEl.textContent = 'Pick your hero first, at the top.'; statusEl.classList.add('error'); return; }
+    const answers = {};
+    for (const q of QUESTIONS) { const v = form.elements[q.id].value; if (v) answers[q.id] = v; }
+    saving = true;
+    saveBtn.disabled = true;
+    statusEl.classList.remove('error');
+    statusEl.textContent = 'Saving…';
+    try {
+      await db.doc(`votes/${myId}`).set({ hero, answers, comment: $('comment').value.trim().slice(0, 1000), updatedAt: new Date().toISOString() });
+      dirty = false;
+      statusEl.textContent = 'Saved. Thanks!';
+    } catch (err) {
+      const code = err && err.code;
+      if (code === 'invalid_argument' || code === 'not_granted' || code === 'revoked') {
+        setReadOnly("You can see the results, but this invite can't save answers. Ask the GM to invite you as an Editor, or tell them your answers.");
+        statusEl.textContent = '';
+      } else {
+        statusEl.textContent = code === 'resource_exhausted' ? 'Too many saves at once. Try again in a moment.' : 'Could not save. Check your connection and try again.';
+        statusEl.classList.add('error');
+      }
+    } finally {
+      saving = false;
+      if (canWrite) saveBtn.disabled = false;
+    }
+  });
+
+  async function start() {
+    renderTallies();
+    const claude = window.claude;
+    if (!claude || typeof claude.use !== 'function') {
+      setReadOnly('Open this page from its claude.ai link to answer.');
+      return;
+    }
+    const [dbNs, userNs] = await Promise.all([claude.use('db'), claude.use('user')]);
+    db = dbNs;
+    myId = userNs ? await userNs.id() : null;
+    if (!db || !myId) {
+      setReadOnly('Sign in to claude.ai with the invite the GM sent to answer and see the results.');
+      if (!db) return;
+    }
+    db.collection('votes').onSnapshot((snap) => {
+      votes = new Map(snap.docs.filter((d) => d.exists).map((d) => [d.id, d.data()]));
+      renderTallies();
+      fillMine();
+    }, () => {
+      showNotice('The live results stopped updating. Reload the page to reconnect.', true);
+    });
+  }
+
+  start();
+})();
+</script>

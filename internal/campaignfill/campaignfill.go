@@ -29,12 +29,13 @@ type Data struct {
 	Monsters    map[string]content.MonsterStats `json:"monsters"`
 }
 
-// Class is a hero class's combat stats and abilities. Mind, movement and the
-// description are left to the GM.
+// Class is a hero class's combat stats and abilities. Movement and the
+// description are left to the GM; Mind (the heroes' Will) is set when given.
 type Class struct {
 	Name        string    `json:"name"`
 	Color       string    `json:"color"`
 	Body        int       `json:"body"`
+	Mind        int       `json:"mind,omitempty"`
 	HitDice     string    `json:"hitDice"`
 	Accuracy    int       `json:"accuracy"`
 	CritFrom    int       `json:"critFrom"`
@@ -135,7 +136,7 @@ func checkClass(c *Class) error {
 		v      int
 		lo, hi int
 	}{
-		{"body", c.Body, 1, 999}, {"accuracy", c.Accuracy, 0, 99}, {"crit", c.CritFrom, 2, 20}, {"damage", c.Damage, 0, 99},
+		{"body", c.Body, 1, 999}, {"mind", c.Mind, 0, 999}, {"accuracy", c.Accuracy, 0, 99}, {"crit", c.CritFrom, 2, 20}, {"damage", c.Damage, 0, 99},
 		{"avoidance", c.Avoidance, 0, 99}, {"mitigation", c.Mitigation, 0, 99}, {"mana", c.Mana, 0, 999}, {"mana regen", c.ManaRegen, 0, 99},
 	} {
 		if f.v < f.lo || f.v > f.hi {
@@ -206,7 +207,8 @@ func (d classDoc) setInt(key string, n int, omitZero bool) {
 
 // MergeClass sets a class's combat stats and abilities on its stored doc
 // (nil for a new class) and describes what changed. The doc's other fields
-// (description, mind, movement, color once set) stay as the GM left them.
+// (description, movement, color once set, and mind when c has none) stay as
+// the GM left them.
 // Abilities keep their ids when their name, or a former name, matches.
 func MergeClass(old json.RawMessage, c Class) (json.RawMessage, []string, error) {
 	doc := classDoc{}
@@ -239,6 +241,9 @@ func MergeClass(old json.RawMessage, c Class) (json.RawMessage, []string, error)
 		doc.set(key, v)
 	}
 	setInt("body", "body", c.Body, 0, false)
+	if c.Mind > 0 {
+		setInt("mind", "mind", c.Mind, 0, false)
+	}
 	setDice("hit dice", "attack", c.HitDice)
 	setInt("accuracy", "accuracy", c.Accuracy, 0, false)
 	setInt("crit", "critFrom", c.CritFrom, 20, true)

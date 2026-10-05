@@ -15,3 +15,6 @@ docs/baseline/
 
 # TypeScript client build output (bun scripts/build.ts)
 internal/web/static/dist/
+
+# Original hero card art (large; the handbook publishes the web-sized copies in cards/web/)
+docs/campaigns/three-plagues/players/cards/*.png

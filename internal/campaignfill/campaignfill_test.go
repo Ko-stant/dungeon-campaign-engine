@@ -99,6 +99,13 @@ func TestCampaignFileLoads(t *testing.T) {
 	if len(d.Classes) != 4 || len(d.StartingKit) != 13 || len(d.Monsters) != 12 {
 		t.Fatalf("combat.json: %d classes, %d kit items, %d monsters", len(d.Classes), len(d.StartingKit), len(d.Monsters))
 	}
+	minds := map[string]int{}
+	for _, c := range d.Classes {
+		minds[c.Name] = c.Mind
+	}
+	if minds["Barbarian"] != 3 || minds["Ranger"] != 4 || minds["Rogue"] != 5 || minds["Cleric"] != 6 {
+		t.Fatalf("Mind (Will): %v", minds)
+	}
 }
 
 func decodeDoc(t *testing.T, raw json.RawMessage) map[string]any {
@@ -160,6 +167,14 @@ func TestMergeClass(t *testing.T) {
 	again, changes, err := MergeClass(doc, rogue)
 	if err != nil || len(changes) != 0 || !reflect.DeepEqual(decodeDoc(t, again), m) {
 		t.Fatalf("second merge: %v %v", changes, err)
+	}
+
+	// Mind, when given, is set too (it is the heroes' Will).
+	withMind := rogue
+	withMind.Mind = 5
+	minded, changes, err := MergeClass(doc, withMind)
+	if err != nil || decodeDoc(t, minded)["mind"] != 5.0 || !strings.Contains(strings.Join(changes, "; "), "mind 3 → 5") {
+		t.Fatalf("mind: %v %v", changes, err)
 	}
 
 	// A new class gets the defaults the class form uses.

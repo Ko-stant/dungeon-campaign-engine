@@ -92,7 +92,7 @@ describe('cardFor', () => {
       title: 'Papi Ponzi',
       subtitle: 'Rogue',
       tags: [],
-      lines: ['Body 20 / 28 · Mind 3 / 3', 'Hit 2d10+2 · Crit 15-20 · Damage 6 · Avoid 7+1d6'],
+      lines: ['Body 20 / 28 · Mind 3 / 3', 'Hit 2d10+2 · Crit 15-20 · Damage 6 · Avoid 7+1d6', 'Will 3+1d6 against magic and fear'],
       effects: [],
     });
   });

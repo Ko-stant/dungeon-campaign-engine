@@ -1,8 +1,9 @@
 {
-  "about": "The Three Plagues combat numbers, one source for the simulator (scripts/combat-config.ts) and the app (make fill-campaign). See RULES_AND_CLASSES.md: class bases are backfilled so the starting kit gives the step 2 totals (2026-10-04); abilities are the step 4 kit (2026-10-04); monsters are the third calibration (2026-10-04).",
+  "about": "The Three Plagues combat numbers, one source for the simulator (scripts/combat-config.ts) and the app (make fill-campaign). See RULES_AND_CLASSES.md: class bases are backfilled so the starting kit gives the step 2 totals (2026-10-04); abilities are the step 4 kit (2026-10-04); Mind is the heroes' Will against magic and fear (2026-10-05); monsters are the third calibration (2026-10-04).",
   "classes": [
     {
       "name": "Barbarian",
+      "mind": 3,
       "color": "#b91c1c",
       "body": 40,
       "hitDice": "1d20",
@@ -46,6 +47,7 @@
     },
     {
       "name": "Ranger",
+      "mind": 4,
       "color": "#15803d",
       "body": 30,
       "hitDice": "2d10",
@@ -79,6 +81,7 @@
     },
     {
       "name": "Rogue",
+      "mind": 5,
       "color": "#4b5563",
       "body": 28,
       "hitDice": "2d10",
@@ -129,6 +132,7 @@
     },
     {
       "name": "Cleric",
+      "mind": 6,
       "color": "#ca8a04",
       "body": 28,
       "hitDice": "2d8",

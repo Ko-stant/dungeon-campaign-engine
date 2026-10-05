@@ -1,0 +1,436 @@
+<title>Players' Handbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Alegreya:ital,wght@0,400;0,600;0,700;1,400&family=Alegreya+Sans+SC:wght@500;700&display=swap">
+<style>
+/* Layout: one reading column on dark stone, gilded headings, hero sheets as plaques in a two-up grid (one column on phones). */
+:root {
+  color-scheme: dark;
+  --stone: #141619;
+  --stone-raised: #1c2024;
+  --stone-line: #353b40;
+  --gold: #d6a24a;
+  --gold-bright: #f0c46c;
+  --moss: #2c4532;
+  --moss-line: #4b6b4f;
+  --ink: #ebe4d4;
+  --ink-muted: #aaa293;
+  --blood: #d0614b;
+  --display: "Pirata One", "UnifrakturCook", Georgia, serif;
+  --body: "Alegreya", Georgia, "Times New Roman", serif;
+  --label: "Alegreya Sans SC", "Alegreya", Georgia, serif;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--stone);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 1.08rem;
+  line-height: 1.6;
+  padding-inline: 16px;
+  padding-block: 0 4rem;
+}
+.wrap { max-width: 68rem; margin-inline: auto; }
+.prose { max-width: 42rem; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; color: var(--gold-bright); text-wrap: balance; line-height: 1.1; margin: 0; }
+h1 { font-size: clamp(2.6rem, 8vw, 4.4rem); letter-spacing: 0.01em; }
+h2 { font-size: clamp(1.9rem, 5vw, 2.5rem); }
+h3 { font-size: 1.5rem; }
+p { margin: 0; }
+a { color: var(--gold-bright); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+.label { font-family: var(--label); font-size: 0.85rem; letter-spacing: 0.08em; color: var(--ink-muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Masthead */
+.masthead { padding-block: 3rem 2rem; border-bottom: 1px solid var(--stone-line); display: grid; gap: 1rem; }
+.masthead .label { color: var(--gold); }
+.masthead p.lede { font-size: 1.25rem; max-width: 40rem; color: var(--ink); }
+
+/* Contents */
+nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: color-mix(in srgb, var(--stone) 92%, transparent); backdrop-filter: blur(4px); border-bottom: 1px solid var(--stone-line); }
+nav.toc ul { list-style: none; margin: 0; padding: 0.6rem 0; display: flex; gap: 0.4rem 1.1rem; flex-wrap: wrap; }
+nav.toc a { font-family: var(--label); font-size: 0.95rem; letter-spacing: 0.05em; text-decoration: none; color: var(--ink-muted); }
+nav.toc a:hover { color: var(--gold-bright); }
+
+section { padding-block: 2.6rem 0.5rem; display: grid; gap: 1.1rem; scroll-margin-top: 3.5rem; }
+section > .intro { color: var(--ink-muted); font-size: 1.1rem; max-width: 42rem; }
+
+ol.steps, ul.points { margin: 0; padding-left: 1.4rem; display: grid; gap: 0.55rem; max-width: 42rem; }
+ol.steps li::marker { font-family: var(--display); color: var(--gold); font-size: 1.2rem; }
+ul.points li::marker { color: var(--gold); }
+strong { color: var(--gold-bright); font-weight: 600; }
+
+/* A worked example, set off like a margin note */
+.example { border-left: 3px solid var(--moss-line); background: var(--stone-raised); padding: 0.9rem 1.1rem; max-width: 42rem; display: grid; gap: 0.4rem; }
+.example .label { color: var(--moss-line); }
+
+/* Two-column facts */
+.pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0.8rem 1.4rem; }
+.pair { display: grid; gap: 0.15rem; min-width: 0; }
+.pair h3 { font-size: 1.3rem; }
+.pair p { color: var(--ink); }
+
+/* Monster traits, as they read on the TV card */
+.traits { display: grid; gap: 0.6rem; max-width: 42rem; }
+.trait { display: grid; grid-template-columns: 11rem 1fr; gap: 1rem; align-items: baseline; border-bottom: 1px solid var(--stone-line); padding-bottom: 0.6rem; }
+.trait code { font-family: var(--body); font-style: italic; color: var(--gold-bright); }
+@media (max-width: 34rem) { .trait { grid-template-columns: 1fr; gap: 0.1rem; } }
+.tag { display: inline-block; font-family: var(--label); font-size: 0.85rem; letter-spacing: 0.05em; padding: 0.05rem 0.6rem; border-radius: 999px; border: 1px solid var(--blood); color: var(--blood); }
+
+/* Hero sheets */
+.sheets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr)); gap: 1.4rem; }
+.sheet { background: var(--stone-raised); border: 1px solid var(--stone-line); border-top: 4px solid var(--hero, var(--gold)); border-radius: 6px; padding: 1.2rem 1.2rem 1.3rem; display: grid; gap: 1rem; min-width: 0; }
+.sheet header { display: grid; gap: 0.1rem; }
+.sheet header h3 { font-size: 2rem; }
+.sheet header .label { color: var(--hero, var(--gold)); filter: brightness(1.6); }
+.sheet .top { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.sheet .top-text { display: grid; gap: 0.8rem; min-width: 0; }
+.portrait { width: 100%; height: auto; border-radius: 4px; border: 1px solid var(--stone-line); box-shadow: 0 6px 18px rgb(0 0 0 / 0.45); }
+@media (max-width: 30rem) { .sheet .top { grid-template-columns: 1fr; } .portrait { max-width: 15rem; justify-self: center; } }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.2rem, 1fr)); gap: 0.5rem; }
+.stat { background: var(--stone); border: 1px solid var(--stone-line); border-radius: 4px; padding: 0.45rem 0.6rem; display: grid; gap: 0.05rem; }
+.stat b { font-family: var(--body); font-weight: 700; font-size: 1.15rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat span { font-family: var(--label); font-size: 0.78rem; letter-spacing: 0.06em; color: var(--ink-muted); }
+.abilities { display: grid; gap: 0.7rem; }
+.ability { display: grid; gap: 0.15rem; }
+.ability .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.6rem; }
+.ability .name { font-weight: 700; color: var(--gold-bright); }
+.ability .kind { font-family: var(--label); font-size: 0.8rem; letter-spacing: 0.06em; color: var(--ink-muted); border: 1px solid var(--stone-line); border-radius: 999px; padding: 0 0.5rem; }
+.ability p { font-size: 1rem; }
+.gear { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.2rem; font-size: 1rem; }
+.odds-wrap { overflow-x: auto; }
+table.odds { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
+table.odds th, table.odds td { padding: 0.25rem 0.6rem; text-align: center; border-bottom: 1px solid var(--stone-line); }
+table.odds th { font-family: var(--label); font-weight: 500; letter-spacing: 0.05em; color: var(--ink-muted); }
+table.odds th:first-child, table.odds td:first-child { text-align: left; padding-left: 0; }
+
+/* Glossary */
+dl.glossary { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.4rem; max-width: 46rem; margin: 0; }
+dl.glossary dt { font-weight: 700; color: var(--gold-bright); }
+dl.glossary dd { margin: 0; }
+@media (max-width: 34rem) { dl.glossary { grid-template-columns: 1fr; gap: 0.1rem; } dl.glossary dd { margin-bottom: 0.6rem; } }
+
+footer { margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--stone-line); color: var(--ink-muted); font-size: 0.95rem; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <span class="label">Hero Quest · house rules for our table</span>
+    <h1>Players' Handbook</h1>
+    <p class="lede">Our quests use new rules: real dice instead of skulls and shields, bigger Body pools, abilities you'll use every fight, and monsters that hit hard. This is everything you need at the table. The rest you'll find out in the dark.</p>
+  </header>
+
+  <nav class="toc" aria-label="Contents">
+    <ul>
+      <li><a href="#changed">What's new</a></li>
+      <li><a href="#turn">Your turn</a></li>
+      <li><a href="#attack">Attacking</a></li>
+      <li><a href="#defend">Being attacked</a></li>
+      <li><a href="#mind">Mind &amp; magic</a></li>
+      <li><a href="#monsters">Monsters</a></li>
+      <li><a href="#fights">Fights &amp; cooldowns</a></li>
+      <li><a href="#gear">Gear &amp; gold</a></li>
+      <li><a href="#tv">The TV</a></li>
+      <li><a href="#heroes">Your heroes</a></li>
+      <li><a href="#glossary">Glossary</a></li>
+    </ul>
+  </nav>
+
+  <section id="changed">
+    <h2>What's new</h2>
+    <p class="intro">If you've played HeroQuest before, these are the big changes.</p>
+    <div class="pairs">
+      <div class="pair"><h3>Roll to hit</h3><p>You roll your class's hit dice against the monster's Avoidance. Hit it and you deal your damage, every time.</p></div>
+      <div class="pair"><h3>Fixed damage</h3><p>Damage comes from your class and your gear. A better weapon means bigger hits.</p></div>
+      <div class="pair"><h3>Crits and near misses</h3><p>A separate d20 crit die doubles a hit, or can turn a near miss into a hit.</p></div>
+      <div class="pair"><h3>Big Body pools</h3><p>Heroes have 28 to 40 Body and monsters have far more than before. Fights last a few rounds.</p></div>
+      <div class="pair"><h3>Abilities every fight</h3><p>Each hero has abilities on cooldowns (the Cleric spends mana). Using them is the point; the question is when.</p></div>
+      <div class="pair"><h3>No bad luck streaks</h3><p>Every miss in a row makes your next attack more accurate, and badly hurt monsters are easier to finish.</p></div>
+    </div>
+  </section>
+
+  <section id="turn">
+    <h2>Your turn</h2>
+    <ul class="points">
+      <li>On your turn you <strong>move</strong> and take one <strong>action</strong>, in either order: attack, use an ability, cast a spell, search, disarm a trap.</li>
+      <li>A <strong>round</strong> is one full cycle: every hero and every monster takes a turn. Cooldowns are counted in rounds.</li>
+      <li>Movement is rolled as before (2d6 for every hero to start).</li>
+      <li><strong>Drinking a potion is free</strong>: any time, even in the middle of the monsters' turn, between two attacks.</li>
+      <li>Some abilities say <strong>free</strong> (no action needed) or <strong>reaction</strong> (used on the monsters' turn, when something happens to you).</li>
+    </ul>
+  </section>
+
+  <section id="attack">
+    <h2>Attacking</h2>
+    <ol class="steps">
+      <li>Roll your <strong>hit dice</strong> and the <strong>d20 crit die</strong> together. Read them separately.</li>
+      <li>Add your <strong>Accuracy</strong> to the hit dice. If the total <strong>meets or beats</strong> the monster's <strong>Avoidance</strong>, you hit.</li>
+      <li>A hit deals your <strong>damage</strong> in full. Monsters wear no armor.</li>
+      <li>If the crit die lands in your <strong>crit range</strong>:
+        <ul class="points">
+          <li>on a hit, your damage is <strong>doubled</strong>;</li>
+          <li>on a miss, add <strong>+2</strong> to your hit total. If that reaches the Avoidance, it's a hit for normal damage (a near miss).</li>
+        </ul>
+      </li>
+    </ol>
+    <div class="example">
+      <span class="label">Example</span>
+      <p>Papi (hit dice 2d10, Accuracy +2, crit 15-20, damage 6) attacks a monster with Avoidance 14. He rolls 5 and 6 on the hit dice and 17 on the crit die. 11 + 2 = 13 misses by one, but the crit die is in his range, so +2 makes it 15: a hit for 6 damage. Had the hit dice reached 14 on their own, the crit would have doubled it to 12.</p>
+    </div>
+    <div class="pairs">
+      <div class="pair"><h3>Critical miss</h3><p>Every die shows 1 (all hit dice and the crit die). You miss and lose your next turn. Very rare.</p></div>
+      <div class="pair"><h3>Special crit</h3><p>Every die shows its highest face. A crit, with a flourish worth telling: something spectacular happens.</p></div>
+      <div class="pair"><h3>Determination</h3><p>Each miss in a row gives you <strong>+2 Accuracy</strong> on your next attack, up to +4. Any hit resets it. Keep a token or die by your card.</p></div>
+      <div class="pair"><h3>Sure hit</h3><p>Some abilities and a monster that can't defend mean you roll only the crit die: it can't miss, and a crit still doubles.</p></div>
+    </div>
+  </section>
+
+  <section id="defend">
+    <h2>Being attacked</h2>
+    <ol class="steps">
+      <li>The monster rolls its hit dice.</li>
+      <li>You roll your <strong>defense dice</strong> and add your <strong>avoidance</strong> (class plus armor).</li>
+      <li>The monster hits only if it <strong>beats</strong> your total. <strong>Ties go to you.</strong></li>
+      <li>You take its damage minus your <strong>mitigation</strong>. Enough mitigation can bring a hit to 0.</li>
+    </ol>
+    <ul class="points">
+      <li>Monsters can crit too: they also roll 2d20, and <strong>double 20s</strong> double their damage (before your mitigation).</li>
+      <li>If you <strong>can't defend</strong> (some abilities do this to you), you roll no defense dice, but your avoidance still counts.</li>
+      <li>A hero who reaches 0 Body falls. Keep each other alive: potions are free to drink and the Cleric can heal.</li>
+    </ul>
+  </section>
+
+  <section id="mind">
+    <h2>Mind and magic</h2>
+    <p class="intro">Mind is your Will. Armor can turn a blade, but not a curse.</p>
+    <ul class="points">
+      <li>Some attacks are <strong>mental</strong>: spells, curses, fear, the wail of the restless dead. The monster's card says which.</li>
+      <li>Against a mental attack you roll your <strong>defense dice + Mind</strong> instead of defense dice + avoidance. Armor doesn't count. The monster must <strong>beat</strong> your total, and ties go to you.</li>
+      <li>They rarely cost Body. Instead they leave a condition the TV shows on your card, such as <strong>Frightened</strong> (you can't attack that monster on your next turn), <strong>Dazed</strong> (you lose your next action) or <strong>Cursed</strong> (-2 Accuracy for 2 rounds).</li>
+      <li>The Cleric has the strongest Will in the party; the Barbarian, the weakest. Look after each other.</li>
+    </ul>
+  </section>
+
+  <section id="monsters">
+    <h2>Monsters</h2>
+    <p class="intro">You won't know a monster's numbers until you meet it. When you do, the GM can show its card on the TV with everything listed below.</p>
+    <div class="pairs">
+      <div class="pair"><h3>Avoidance</h3><p>The number your hit roll must reach. Always even. Weak monsters are easy to hit; the worst of them are not.</p></div>
+      <div class="pair"><h3>Body</h3><p>How much damage it takes to kill. Big monsters take several hits from the whole party.</p></div>
+      <div class="pair"><h3>Hit dice and damage</h3><p>What it rolls against your defense, and how hard it hits when it gets through.</p></div>
+      <div class="pair"><h3><span class="tag">Wounded</span></h3><p>A monster at a quarter of its Body or less is faltering: its Avoidance drops by 4, so anyone can land the finishing blow.</p></div>
+    </div>
+    <h3>Traits</h3>
+    <p class="intro">Some monsters have special traits. The TV card lists them like this:</p>
+    <div class="traits">
+      <div class="trait"><code>ranged</code><p>Attacks from a distance. Holding a doorway won't keep it off you.</p></div>
+      <div class="trait"><code>reach</code><p>Strikes past heroes holding a doorway.</p></div>
+      <div class="trait"><code>strikes 2 in a line</code><p>Each attack also hits the hero standing behind its target, in a straight line. Each hero defends separately.</p></div>
+      <div class="trait"><code>blast 2 to 2 beside the target</code><p>Its attack also deals light damage to heroes next to the one it targets. Don't bunch up.</p></div>
+      <div class="trait"><code>undead</code><p>Smite deals extra damage to it.</p></div>
+    </div>
+    <ul class="points">
+      <li><strong>Facing</strong>: a monster faces the hero it last attacked. The square on the opposite side is <strong>behind</strong> it (the Rogue loves this).</li>
+      <li>Some monsters have abilities of their own, written on their card.</li>
+    </ul>
+  </section>
+
+  <section id="fights">
+    <h2>Fights, cooldowns and mana</h2>
+    <ul class="points">
+      <li>The GM says when a <strong>fight</strong> starts and ends.</li>
+      <li>An ability's <strong>cooldown</strong> is how many rounds until you can use it again. Used in round 4 with cooldown 3, it's ready in round 7.</li>
+      <li><strong>Out of a fight</strong>, cooldowns keep ticking but stop 1 round short of ready (cooldowns of 1-3) or 2 rounds short (4 or more). They only finish in a fight. Waiting around never fully resets an ability, and an ability you didn't use stays ready.</li>
+      <li>The Cleric's <strong>mana</strong> comes back at the start of every fight round. Out of a fight, only Prayer restores it, so healing up between fights leaves less for the next one.</li>
+      <li>Abilities are meant to be used. The choice is when, not whether.</li>
+    </ul>
+  </section>
+
+  <section id="gear">
+    <h2>Gear, gold and potions</h2>
+    <ul class="points">
+      <li>Your gear is your numbers. Weapons add damage; armor adds avoidance; rare pieces add mitigation, Accuracy or mana.</li>
+      <li>Only <strong>equipped</strong> items count. You keep your old gear when you find something new.</li>
+      <li>Class rules: only the Barbarian uses two-handed weapons and heavy armor; the Rogue always fights with two weapons; only the Ranger uses bows and crossbows; only the Cleric casts spells and carries a shield.</li>
+      <li><strong>Gold is shared</strong> by the whole party: one purse.</li>
+      <li>A <strong>healing potion</strong> restores 8 Body; a <strong>mana potion</strong> 6 mana. Drinking is free.</li>
+    </ul>
+  </section>
+
+  <section id="tv">
+    <h2>The TV</h2>
+    <p class="intro">The GM resolves things on the table, then updates the app while you decide what to do. The TV follows along live and only ever shows what your heroes know.</p>
+    <div class="pairs">
+      <div class="pair"><h3>The map</h3><p>The whole dungeon's walls are drawn. Rooms you've explored turn light; monsters, furniture and doors appear once you can see them.</p></div>
+      <div class="pair"><h3>The party</h3><p>Everyone's Body, Mind and mana, and effects like Raging or Poisoned with rounds left.</p></div>
+      <div class="pair"><h3>Cards</h3><p>Ask the GM to show any monster or hero on the map: its stats, traits and what's affecting it.</p></div>
+      <div class="pair"><h3>What happened</h3><p>A log of the last few things that happened, if you lose track. Traps and secrets never appear there.</p></div>
+    </div>
+  </section>
+
+  <section id="heroes">
+    <h2>Your heroes</h2>
+    <p class="intro">Numbers with your starting gear. The odds row is your chance to hit (near misses included) against each Avoidance.</p>
+    <div class="sheets">
+
+      <article class="sheet" style="--hero: #b91c1c" aria-labelledby="h-brentanamo">
+        <div class="top">
+          <img class="portrait" src="cards/brentanamo.jpg" width="800" height="1066" loading="lazy" alt="Brentanamo Bay's hero card: the barbarian raises a great axe in crumbling halls, shielding a frightened woman.">
+          <div class="top-text">
+        <header><span class="label">Barbarian</span><h3 id="h-brentanamo">Brentanamo Bay</h3></header>
+        <div class="stats">
+          <div class="stat"><span>Body</span><b>40</b></div>
+          <div class="stat"><span>Mind (Will)</span><b>3</b></div>
+          <div class="stat"><span>Move</span><b>2d6</b></div>
+          <div class="stat"><span>Hit roll</span><b>1d20+3</b></div>
+          <div class="stat"><span>Crit</span><b>17-20</b></div>
+          <div class="stat"><span>Damage</span><b>10</b></div>
+          <div class="stat"><span>Defense</span><b>3+1d6</b></div>
+          <div class="stat"><span>Mitigation</span><b>2</b></div>
+        </div>
+          </div>
+        </div>
+        <div class="odds-wrap"><table class="odds">
+          <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
+          <tr><td>To hit</td><td>92%</td><td>82%</td><td>72%</td><td>62%</td><td>52%</td><td>42%</td></tr>
+        </table></div>
+        <div class="abilities">
+          <div class="ability"><div class="head"><span class="name">Unburdened Charge</span><span class="kind">active · cooldown 3</span></div><p>Charge 2-6 spaces in a straight line (a diagonal step costs 2), stopping at the first enemy or wall. The enemy you hit takes your damage plus the spaces charged. Traps on the way trigger but can't hurt you.</p></div>
+          <div class="ability"><div class="head"><span class="name">Unleash Fury</span><span class="kind">active · cooldown 6</span></div><p>Roar to the god of battle and attack the nearest enemy, rolling your hit dice twice and keeping the better; allies within 2 squares get +2 Accuracy on their next attack. For 3 rounds, or until you kill something: +3 damage on every hit and +2 mitigation, but each turn you must move to and attack an enemy if you can.</p></div>
+          <div class="ability"><div class="head"><span class="name">Challenge</span><span class="kind">free · cooldown 4</span></div><p>Monsters around you must attack you on their next turn. Protect the Cleric.</p></div>
+          <div class="ability"><div class="head"><span class="name">Tough as Nails</span><span class="kind">passive</span></div><p>+1 mitigation (already counted above). It can bring a hit to 0.</p></div>
+          <div class="ability"><div class="head"><span class="name">Cleave</span><span class="kind">passive · once a turn</span></div><p>When you kill a monster, you may attack another one around you at once.</p></div>
+        </div>
+        <div><span class="label">Starting gear</span>
+          <ul class="gear"><li>Greataxe (two-handed): +7 damage</li><li>Hide Cuirass (heavy): +1 mitigation</li><li>Iron-shod Boots: +1 avoidance</li></ul>
+        </div>
+      </article>
+
+      <article class="sheet" style="--hero: #ca8a04" aria-labelledby="h-derrick">
+        <div class="top">
+          <img class="portrait" src="cards/derrick.jpg" width="800" height="999" loading="lazy" alt="Derrick Rosewood's hero card: the cleric stands in a ruined chapel with a staff and a holy book, a companion at his side.">
+          <div class="top-text">
+        <header><span class="label">Cleric</span><h3 id="h-derrick">Derrick Rosewood</h3></header>
+        <div class="stats">
+          <div class="stat"><span>Body</span><b>28</b></div>
+          <div class="stat"><span>Mind (Will)</span><b>6</b></div>
+          <div class="stat"><span>Move</span><b>2d6</b></div>
+          <div class="stat"><span>Hit roll</span><b>2d8+4</b></div>
+          <div class="stat"><span>Crit</span><b>20</b></div>
+          <div class="stat"><span>Damage</span><b>5</b></div>
+          <div class="stat"><span>Defense</span><b>4+1d6</b></div>
+          <div class="stat"><span>Mana</span><b>16</b></div>
+          <div class="stat"><span>Mana a round</span><b>+3</b></div>
+        </div>
+          </div>
+        </div>
+        <div class="odds-wrap"><table class="odds">
+          <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
+          <tr><td>Mace</td><td>&gt;99%</td><td>96%</td><td>85%</td><td>68%</td><td>45%</td><td>24%</td></tr>
+          <tr><td>Smite</td><td>&gt;99%</td><td>91%</td><td>81%</td><td>71%</td><td>61%</td><td>50%</td></tr>
+        </table></div>
+        <div class="abilities">
+          <div class="ability"><div class="head"><span class="name">Smite</span><span class="kind">spell · 2 mana</span></div><p>Your main attack, at range (line of sight): roll 1d20+5 to hit, 5 damage, +2 against undead. With mana coming back every fight round, you can Smite every turn.</p></div>
+          <div class="ability"><div class="head"><span class="name">Heal Minor Wounds</span><span class="kind">spell · 6 mana</span></div><p>Heal a hero 12 Body, up to their maximum.</p></div>
+          <div class="ability"><div class="head"><span class="name">Turn Evil</span><span class="kind">spell · 8 mana · cooldown 5</span></div><p>The target skips its next attack and can't defend for a round: every hero's attack on it is a sure hit.</p></div>
+          <div class="ability"><div class="head"><span class="name">Divining</span><span class="kind">spell · 3 mana</span></div><p>Reveal traps, hidden doors and treasure within 6 squares, through walls and doors.</p></div>
+          <div class="ability"><div class="head"><span class="name">Prayer</span><span class="kind">no mana · cooldown 5</span></div><p>Restore half your maximum mana (rounded up). It takes your action, and you can't defend until your next turn. The only way to get mana back outside a fight.</p></div>
+        </div>
+        <div><span class="label">Starting gear</span>
+          <ul class="gear"><li>Mace: +3 damage</li><li>Padded Robes: +1 avoidance</li><li>Holy Tome (off-hand): +1 mana each fight round</li></ul>
+        </div>
+      </article>
+
+      <article class="sheet" style="--hero: #15803d" aria-labelledby="h-mordecai">
+        <div class="top">
+          <img class="portrait" src="cards/mordecai.jpg" width="800" height="1059" loading="lazy" alt="Mordecai Muldoon's hero card: the hooded ranger crouches with a crossbow, a castle and windmill behind him.">
+          <div class="top-text">
+        <header><span class="label">Ranger</span><h3 id="h-mordecai">Mordecai Muldoon</h3></header>
+        <div class="stats">
+          <div class="stat"><span>Body</span><b>30</b></div>
+          <div class="stat"><span>Mind (Will)</span><b>4</b></div>
+          <div class="stat"><span>Move</span><b>2d6</b></div>
+          <div class="stat"><span>Hit roll</span><b>2d10+5</b></div>
+          <div class="stat"><span>Crit</span><b>18-20</b></div>
+          <div class="stat"><span>Damage</span><b>7</b></div>
+          <div class="stat"><span>Defense</span><b>6+1d6</b></div>
+          <div class="stat"><span>Mitigation</span><b>0</b></div>
+        </div>
+          </div>
+        </div>
+        <div class="odds-wrap"><table class="odds">
+          <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
+          <tr><td>To hit</td><td>&gt;99%</td><td>99%</td><td>95%</td><td>86%</td><td>74%</td><td>58%</td></tr>
+        </table></div>
+        <div class="abilities">
+          <div class="ability"><div class="head"><span class="name">Multi-Shot</span><span class="kind">active · cooldown 5</span></div><p>Shoot up to 3 different enemies in line of sight as one action.</p></div>
+          <div class="ability"><div class="head"><span class="name">Aimed Shot</span><span class="kind">active · cooldown 5</span></div><p>A sure hit. The target is marked: every hero gets +2 Accuracy against it until it dies or the fight ends. Your movement is halved this round and next.</p></div>
+          <div class="ability"><div class="head"><span class="name">Rain of Arrows</span><span class="kind">active · cooldown 7</span></div><p>Every enemy within 2 squares of a square you choose is attacked once, with half your Accuracy (rounded down). Roll 1d4 arrows once; each enemy hit takes your damage times the arrows.</p></div>
+        </div>
+        <div><span class="label">Starting gear</span>
+          <ul class="gear"><li>Hunting Bow: +5 damage</li><li>Leather Armor: +2 avoidance</li><li>Archer's Gloves: +1 Accuracy</li></ul>
+        </div>
+      </article>
+
+      <article class="sheet" style="--hero: #6b7280" aria-labelledby="h-papi">
+        <div class="top">
+          <img class="portrait" src="cards/papi.jpg" width="800" height="1137" loading="lazy" alt="Papi Ponzi's hero card: the rogue in a fur-trimmed coat fans a hand of cards beside a forge.">
+          <div class="top-text">
+        <header><span class="label">Rogue</span><h3 id="h-papi">Papi Ponzi</h3></header>
+        <div class="stats">
+          <div class="stat"><span>Body</span><b>28</b></div>
+          <div class="stat"><span>Mind (Will)</span><b>5</b></div>
+          <div class="stat"><span>Move</span><b>2d6</b></div>
+          <div class="stat"><span>Hit roll</span><b>2d10+2</b></div>
+          <div class="stat"><span>Crit</span><b>15-20</b></div>
+          <div class="stat"><span>Damage</span><b>6</b></div>
+          <div class="stat"><span>Defense</span><b>7+1d6</b></div>
+          <div class="stat"><span>Mitigation</span><b>0</b></div>
+        </div>
+          </div>
+        </div>
+        <div class="odds-wrap"><table class="odds">
+          <tr><th>Avoidance</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th></tr>
+          <tr><td>To hit</td><td>98%</td><td>92%</td><td>82%</td><td>69%</td><td>51%</td><td>33%</td></tr>
+        </table></div>
+        <div class="abilities">
+          <div class="ability"><div class="head"><span class="name">Nimble Fingers</span><span class="kind">passive</span></div><p>Disarm a trap on 1d8; you fail only on a 1. Only you can disarm traps.</p></div>
+          <div class="ability"><div class="head"><span class="name">Exploit Opening</span><span class="kind">passive</span></div><p>Crit on 13-20 (instead of 15-20) against a monster you're behind.</p></div>
+          <div class="ability"><div class="head"><span class="name">Fan of Cards</span><span class="kind">active · cooldown 3</span></div><p>Razor-edged cards at every enemy around you: one attack against each, rolled separately.</p></div>
+          <div class="ability"><div class="head"><span class="name">Venom Vial</span><span class="kind">active · cooldown 4</span></div><p>Crack a vial over your blades and strike: a normal attack, and on a hit the target loses 3 Body at the start of each of its next 3 turns (6 on a crit). A new vial restarts the count; it doesn't stack.</p></div>
+          <div class="ability"><div class="head"><span class="name">Vanish From Sight</span><span class="kind">reaction · cooldown 5</span></div><p>When attacked, vanish: that attack is canceled, and no enemy can target you until the monsters' next turn.</p></div>
+          <div class="ability"><div class="head"><span class="name">Riposte</span><span class="kind">reaction · cooldown 2</span></div><p>When a monster's attack on you misses, strike back at once for half your damage (rounded down), no roll.</p></div>
+        </div>
+        <div><span class="label">Starting gear</span>
+          <ul class="gear"><li>Sword: +3 damage and Dirk: +2 damage (always both)</li><li>Leather Jerkin: +2 avoidance</li><li>Soft Boots: +1 avoidance</li></ul>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="glossary">
+    <h2>Glossary</h2>
+    <dl class="glossary">
+      <dt>Accuracy</dt><dd>A flat bonus added to your hit dice.</dd>
+      <dt>Avoidance</dt><dd>For a monster, the number your hit roll must reach. For you, the flat part of your defense (class plus armor).</dd>
+      <dt>Cooldown</dt><dd>Rounds until an ability can be used again. Only finishes during a fight.</dd>
+      <dt>Crit range</dt><dd>The d20 results that crit for you: double damage on a hit, +2 on a miss.</dd>
+      <dt>Defense dice</dt><dd>What you roll, plus your avoidance, when a monster attacks you.</dd>
+      <dt>Determination</dt><dd>+2 Accuracy for each miss in a row, up to +4; any hit resets it.</dd>
+      <dt>Fight</dt><dd>From when the GM says it starts until it's over. Mana comes back and cooldowns finish only in fights.</dd>
+      <dt>Mind</dt><dd>Your Will: defense dice + Mind is your defense against mental attacks.</dd>
+      <dt>Mitigation</dt><dd>Taken off every hit you suffer. Can bring a hit to 0.</dd>
+      <dt>Round</dt><dd>One full cycle in which every hero and monster takes a turn.</dd>
+      <dt>Sure hit</dt><dd>No hit roll: only the crit die is rolled.</dd>
+      <dt>Wounded</dt><dd>A monster at a quarter of its Body or less: Avoidance -4.</dd>
+    </dl>
+  </section>
+
+  <footer>
+    <p>Numbers may still be tuned as we play. When something here and the GM disagree, the GM wins, and this page gets fixed.</p>
+  </footer>
+</div>
