@@ -132,7 +132,7 @@ describe('runFight', () => {
     const goblin: MonsterSpec = { body: 1, avoidance: -100, attack: sureHits(3) };
     const heroes = [newHero(spec())];
     const r = runFight(heroes, [goblin], attackOnly, supplies(), seededRoller(1));
-    expect(r).toEqual({ won: true, rounds: 1 });
+    expect(r).toMatchObject({ won: true, rounds: 1 });
     expect(heroes[0]?.body).toBe(40);
   });
 
@@ -208,6 +208,60 @@ describe('runFight', () => {
     runFight(heroes, [wall], attackOnly, s, seededRoller(5), 1);
     expect(h.body).toBe(15);
     expect(s.healPotions).toBe(0);
+  });
+});
+
+describe('abilities in a fight', () => {
+  const harmless = { ...barbarian, damage: 0 };
+  const wall = (damage: number, over: Partial<MonsterSpec> = {}): MonsterSpec => ({ body: 100, avoidance: 1000, attack: sureHits(damage), ...over });
+
+  test('Riposte: a miss on the Rogue costs the monster half the Rogue\'s weapon damage, no roll', () => {
+    const rogue = newHero(spec({ name: 'Rogue', cls: 'rogue', body: 50, attack: { ...barbarian, damage: 6 }, defense: { ...tough, baseAvoidance: 200 } }));
+    const r = runFight([rogue], [wall(5, { avoidance: 1000 })], { ...DEFAULT_TACTICS, vanish: null }, supplies(), seededRoller(14), 1);
+    expect(r.foesBody).toEqual([97]);
+    expect(rogue.body).toBe(50);
+  });
+
+  test('Venom Vial: on a hit, the target loses 3 Body at the start of each of its next 3 turns', () => {
+    const rogue = newHero(spec({ name: 'Rogue', cls: 'rogue', attack: { ...harmless, critFrom: 20 } }));
+    const r = runFight([rogue], [wall(0, { avoidance: -100 })], { ...DEFAULT_TACTICS, fan: null }, supplies(), seededRoller(19), 4);
+    expect(r.foesBody).toEqual([91]);
+    expect(rogue.uses.vial).toBe(1);
+  });
+
+  test('Venom Vial with weapon: the hit also deals weapon damage', () => {
+    const rogue = newHero(spec({ name: 'Rogue', cls: 'rogue', attack: { ...barbarian, critFrom: 20, critMultiplier: 1, damage: 6 } }));
+    const r = runFight([rogue], [wall(0, { avoidance: -100 })], { ...DEFAULT_TACTICS, fan: null, vial: { cooldown: 4, damage: 3, turns: 3, weapon: true } }, supplies(), seededRoller(20), 1);
+    expect(r.foesBody).toEqual([91]);
+  });
+
+  test('Challenge pulls the melee attacks onto the Barbarian', () => {
+    const barb = newHero(spec({ attack: harmless }));
+    const ally = newHero(spec({ name: 'Ranger', cls: 'ranger', attack: harmless }));
+    runFight([barb, ally], [wall(1), wall(1)], { ...DEFAULT_TACTICS, fury: null, charge: null, multi: null, aimed: null, rain: null }, supplies(), seededRoller(15), 1);
+    expect(barb.body).toBe(38);
+    expect(ally.body).toBe(40);
+  });
+
+  test('Unleash Fury: +3 damage and +2 mitigation while raging', () => {
+    const barb = newHero(spec({ attack: { ...barbarian, critMultiplier: 1 } }));
+    const r = runFight([barb], [wall(5, { avoidance: -100 })], { ...DEFAULT_TACTICS, charge: null, challenge: null }, supplies(), seededRoller(16), 1);
+    expect(r.foesBody).toEqual([87]);
+    expect(barb.body).toBe(37);
+    expect(barb.uses.fury).toBe(1);
+  });
+
+  test('Turn Evil: the target skips its next attack', () => {
+    const cleric = newHero(spec({ name: 'Cleric', cls: 'cleric', body: 30, mana: 20, attack: harmless }));
+    runFight([cleric], [wall(5)], DEFAULT_TACTICS, supplies(), seededRoller(17), 1);
+    expect(cleric.body).toBe(30);
+    expect(cleric.uses.turnEvil).toBe(1);
+  });
+
+  test('every hero action is counted', () => {
+    const barb = newHero(spec());
+    runFight([barb], [{ body: 1, avoidance: -100, attack: sureHits(0) }], { ...DEFAULT_TACTICS, abilities: false }, supplies(), seededRoller(18));
+    expect(barb.uses).toEqual({ attack: 1 });
   });
 });
 

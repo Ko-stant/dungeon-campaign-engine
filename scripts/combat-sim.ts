@@ -1,6 +1,7 @@
 /**
  * Simulates the party through Quest 1, with abilities and attack-only:
  *   bun scripts/combat-sim.ts [runs] [--specter] [--melee=N] [--swap "Room 8=gargoyle,goblin_warlock"]...
+ *     [--with=ability] [--without=fury,riposte,...] [--mana=12] [--heal=10]
  * Numbers come from scripts/combat-config.ts; encounters from the generated JSON
  * (scripts/quest-encounters.ts). The route rooms come first, the rest in a random
  * order each run. --swap replaces a room's monsters (repeatable); --melee sets how
@@ -8,12 +9,34 @@
  */
 
 import { runFight, runQuest, newHero, seededRoller, type MonsterSpec, type QuestPlan, type Tactics } from '../internal/web/src/combat/simulate.ts';
-import { MONSTERS, PARTY, QUEST_1, SUPPLIES, TACTICS } from './combat-config.ts';
+import { MONSTERS, PARTY as BASE_PARTY, QUEST_1, SUPPLIES, TACTICS as BASE_TACTICS, TESTING } from './combat-config.ts';
 
 const args = process.argv.slice(2);
 const runs = Number(args.find((a) => /^\d+$/.test(a)) ?? 4000);
 const without = args.includes('--specter') ? [] : QUEST_1.without;
-const melee = Number(args.find((a) => a.startsWith('--melee='))?.slice('--melee='.length) ?? TACTICS.meleeLimit);
+const flag = (name: string): string | undefined => args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+const list = (name: string): string[] => (flag(name) ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+const melee = Number(flag('melee') ?? BASE_TACTICS.meleeLimit);
+const tested = list('with');
+const dropped = list('without');
+const TACTICS: Tactics = { ...BASE_TACTICS };
+const tacticsMap = TACTICS as unknown as Record<string, unknown>;
+for (const name of tested) {
+  if (!(name in TESTING)) {
+    throw new Error(`--with: no tested ability "${name}" (have ${Object.keys(TESTING).join(', ')})`);
+  }
+  tacticsMap[name] = (TESTING as Record<string, unknown>)[name];
+}
+for (const name of dropped) {
+  if (!(name in TACTICS)) {
+    throw new Error(`--without: no ability "${name}"`);
+  }
+  tacticsMap[name] = typeof tacticsMap[name] === 'boolean' ? false : null;
+}
+if (flag('heal') && TACTICS.heal) {
+  TACTICS.heal = { ...TACTICS.heal, amount: Number(flag('heal')) };
+}
+const PARTY = BASE_PARTY.map((h) => (h.cls === 'cleric' && flag('mana') ? { ...h, mana: Number(flag('mana')) } : h));
 const swaps = new Map<string, string[]>();
 args.forEach((a, i) => {
   const value = a === '--swap' ? args[i + 1] : undefined;
@@ -66,6 +89,7 @@ for (const [mode, tactics] of modes) {
   let flawless = 0;
   let deaths = 0;
   const heroDeaths = new Map<string, number>();
+  const uses = new Map<string, Map<string, number>>();
   const wipes = new Map<string, number>();
   const rounds = new Map<string, number[]>();
   for (let i = 0; i < runs; i++) {
@@ -76,6 +100,13 @@ for (const [mode, tactics] of modes) {
     for (const d of r.deaths) {
       heroDeaths.set(d, (heroDeaths.get(d) ?? 0) + 1);
     }
+    for (const [hero, u] of Object.entries(r.uses)) {
+      const m = uses.get(hero) ?? new Map<string, number>();
+      for (const [what, n] of Object.entries(u)) {
+        m.set(what, (m.get(what) ?? 0) + n);
+      }
+      uses.set(hero, m);
+    }
     if (r.wipedAt) {
       wipes.set(r.wipedAt, (wipes.get(r.wipedAt) ?? 0) + 1);
     }
@@ -83,10 +114,44 @@ for (const [mode, tactics] of modes) {
       rounds.set(f.name, [...(rounds.get(f.name) ?? []), f.rounds]);
     }
   }
-  const notes = [`${runs} runs`, `melee limit ${melee}`, ...(without.length ? [`without ${without.join(', ')}`] : []), ...[...swaps].map(([k, v]) => `${k} = ${v.join(', ')}`)];
+  const notes = [
+    `${runs} runs`,
+    `melee limit ${melee}`,
+    ...(without.length ? [`without ${without.join(', ')}`] : []),
+    ...[...swaps].map(([k, v]) => `${k} = ${v.join(', ')}`),
+    ...(tested.length ? [`testing ${tested.join(', ')}`] : []),
+    ...(dropped.length ? [`no ${dropped.join(', ')}`] : []),
+    ...(flag('mana') ? [`Cleric mana ${flag('mana') ?? ''}`] : []),
+    ...(flag('heal') ? [`heal ${flag('heal') ?? ''}`] : []),
+  ];
   console.log(`\n## ${mode} (${notes.join('; ')})`);
   console.log(`Quest cleared: ${pct(cleared / runs)} | cleared with no deaths: ${pct(flawless / runs)} | average deaths: ${(deaths / runs).toFixed(2)}`);
   console.log(`Death rate by hero: ${PARTY.map((h) => `${h.name} ${pct((heroDeaths.get(h.name) ?? 0) / runs)}`).join(', ')}`);
+
+  if (tactics.abilities) {
+    // Turns spent on each action; "free" abilities ride along with another action.
+    const FREE = new Set(['challenge', 'cleave', 'vanish', 'riposte']);
+    const MAIN: Record<string, string> = { Cleric: 'smite' };
+    table(
+      'How heroes spend their turns (share of turns; free abilities and reactions per 10 turns)',
+      ['Hero', 'Basic attack', 'Abilities', 'Breakdown', 'Free / reactions per 10 turns'],
+      PARTY.map((h) => {
+        const m = uses.get(h.name) ?? new Map<string, number>();
+        const turns = [...m].filter(([k]) => !FREE.has(k)).reduce((n, [, v]) => n + v, 0) || 1;
+        const basic = (m.get('attack') ?? 0) + (m.get(MAIN[h.name] ?? '') ?? 0);
+        const actions = [...m].filter(([k]) => !FREE.has(k) && k !== 'attack' && k !== MAIN[h.name] && k !== 'skip' && k !== 'potion' && k !== 'manaPotion');
+        const abilityTurns = actions.reduce((n, [, v]) => n + v, 0);
+        const free = [...m].filter(([k]) => FREE.has(k));
+        return [
+          h.name,
+          pct(basic / turns) + (MAIN[h.name] ? ` (${pct((m.get('attack') ?? 0) / turns)} plain, rest ${MAIN[h.name] ?? ''})` : ''),
+          pct(abilityTurns / turns),
+          actions.sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${pct(v / turns)}`).join(', '),
+          free.map(([k, v]) => `${k} ${((10 * v) / turns).toFixed(1)}`).join(', '),
+        ];
+      }),
+    );
+  }
 
   // Each encounter alone, against a fresh party: how hard is it on its own?
   const fresh = plan.encounters.map((e) => {

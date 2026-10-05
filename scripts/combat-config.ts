@@ -55,7 +55,7 @@ export const PARTY: HeroSpec[] = [
     body: 28,
     attack: heroAttack('Cleric'),
     defense: { defenseDice: dice('1d6'), baseAvoidance: 4, mitigation: 0 },
-    mana: 12,
+    mana: 16,
     // 2 per round, +1 from the holy tome.
     manaRegen: 3,
   },
@@ -69,8 +69,8 @@ const monster = (body: number, avoidance: number, hitDice: string, damage: numbe
 });
 
 /**
- * Draft monster numbers (step 3, second calibration 2026-10-04: heroes hold doorways, so
- * 2 melee attackers a round; non-fodder Body x1.25 and damage x1.5 over the first draft).
+ * Draft monster numbers (step 3). Third calibration 2026-10-04, for the step 4 kit: non-fodder
+ * Body x1.45 over the second calibration (heroes hold doorways: 2 melee attackers a round).
  * Fodder keeps the original feel (goblins die to any hit); mid and elite monsters get
  * relatively more Body than the original ratios, so four heroes can't fell them in one round.
  */
@@ -79,28 +79,31 @@ export const MONSTERS: Record<string, MonsterSpec> = {
   goblin_archer: monster(5, 6, '1d12', 4, { ranged: true }),
   // Proposed: the warlock's blast also hits 2 heroes beside the target for light damage.
   goblin_warlock: monster(5, 6, '1d12', 5, { ranged: true, splash: { damage: 2, targets: 2 } }),
-  orc: monster(15, 8, '2d8', 9),
-  orc_archer: monster(15, 8, '2d8', 9, { ranged: true }),
-  skeleton: monster(12, 8, '1d12', 6),
-  zombie: monster(15, 10, '1d12+1', 8),
-  abomination: monster(38, 10, '2d8+1', 10),
-  mummy: monster(44, 12, '2d8+1', 10),
-  dread_warrior: monster(75, 12, '2d10+2', 15),
+  orc: monster(22, 8, '2d8', 9),
+  orc_archer: monster(22, 8, '2d8', 9, { ranged: true }),
+  skeleton: monster(17, 8, '1d12', 6, { undead: true }),
+  zombie: monster(22, 10, '1d12+1', 8, { undead: true }),
+  abomination: monster(55, 10, '2d8+1', 10),
+  mummy: monster(64, 12, '2d8+1', 10, { undead: true }),
+  dread_warrior: monster(109, 12, '2d10+2', 15),
   // Proposed: strikes 2 squares in a straight line (the hero behind defends separately).
-  gargoyle: monster(75, 14, '2d10+3', 12, { line: 1 }),
-  specter: monster(75, 14, '2d10+2', 15),
+  gargoyle: monster(109, 14, '2d10+3', 12, { line: 1 }),
+  specter: monster(109, 14, '2d10+2', 15, { undead: true }),
 };
 
-/** Draft spell numbers; abilities keep the simulator's provisional defaults until step 4. */
+/** The agreed ability kit (step 4) with draft numbers; see the simulator's DEFAULT_TACTICS. */
 export const TACTICS: Tactics = {
   ...DEFAULT_TACTICS,
   // After a door opens, about half the party can reach the monsters in the first round.
   openingAttackers: 2,
   // The heroes hold a doorway: 1-2 melee monsters reach them a round.
   meleeLimit: 2,
-  smite: { cost: 2, attack: { hitDice: dice('1d20'), accuracy: 5, damage: 6 } },
+  smite: { cost: 2, attack: { hitDice: dice('1d20'), accuracy: 5, damage: 5 }, undead: 2 },
   heal: { cost: 6, amount: 12 },
 };
+
+/** Abilities being tested, switched on with --with=name (none at the moment). */
+export const TESTING: Partial<Tactics> = {};
 
 /** Quest 1 consumables (note V): 3 healing potions and 1 mana potion. */
 export const SUPPLIES: Supplies = { healPotions: 3, healAmount: 10, manaPotions: 1, manaAmount: 6 };
