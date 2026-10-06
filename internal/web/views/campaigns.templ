@@ -145,6 +145,14 @@ templ appNav(active string) {
 		<a href="/classes" class={ templ.KV("text-amber-400", active == "classes"), "hover:text-amber-400" }>Classes</a>
 		if name, ok := components.SignedIn(ctx); ok {
 			<a href="/lobby" class={ templ.KV("text-amber-400", active == "lobby"), "hover:text-amber-400" }>Play</a>
+			if waiting, admin := components.Admin(ctx); admin {
+				<a href="/members" class={ templ.KV("text-amber-400", active == "members"), "hover:text-amber-400" }>
+					Members
+					if waiting > 0 {
+						<span class="text-amber-400">({ fmt.Sprint(waiting) })</span>
+					}
+				</a>
+			}
 			<form method="post" action="/auth/logout">
 				<button type="submit" class="opacity-70 hover:text-amber-400" title={ "Signed in as " + name }>Sign out</button>
 			</form>

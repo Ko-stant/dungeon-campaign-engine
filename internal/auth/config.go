@@ -33,13 +33,17 @@ type Config struct {
 	SecureCookies bool
 	Discord       Discord
 	// Admins may open and change everything, including things made before
-	// sign-in existed (which have no owner).
+	// sign-in existed (which have no owner). They are always members.
 	Admins []store.IdentityKey
+	// OpenMembership lets in everyone who signs in. Otherwise (the default,
+	// as hosted) a new user waits until an admin approves them.
+	OpenMembership bool
 }
 
 // ConfigFromEnv reads AUTH_MODE (none, discord or dev), PUBLIC_URL (default
-// http://localhost:APP_PORT), DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET and
-// AUTH_ADMINS ("discord:1234, dev:gm"). Errors never include the secret.
+// http://localhost:APP_PORT), DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET,
+// AUTH_ADMINS ("discord:1234, dev:gm") and AUTH_MEMBERS (approve, the
+// default, or open). Errors never include the secret.
 func ConfigFromEnv(getenv func(string) string) (Config, error) {
 	cfg := Config{Mode: strings.TrimSpace(getenv("AUTH_MODE"))}
 	if cfg.Mode == "" {
@@ -69,6 +73,14 @@ func ConfigFromEnv(getenv func(string) string) (Config, error) {
 	cfg.Discord.RedirectURL = public + "/auth/discord/callback"
 	if cfg.Mode == ModeDiscord && (cfg.Discord.ClientID == "" || cfg.Discord.ClientSecret == "") {
 		return Config{}, errors.New("AUTH_MODE=discord needs DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET")
+	}
+
+	switch members := strings.TrimSpace(getenv("AUTH_MEMBERS")); members {
+	case "", "approve":
+	case "open":
+		cfg.OpenMembership = true
+	default:
+		return Config{}, fmt.Errorf("AUTH_MEMBERS must be approve or open, got %q", members)
 	}
 
 	for entry := range strings.SplitSeq(getenv("AUTH_ADMINS"), ",") {

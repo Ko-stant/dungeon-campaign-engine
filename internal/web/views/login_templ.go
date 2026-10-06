@@ -98,7 +98,7 @@ func LoginPage(d LoginData) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"block rounded-md bg-[#5865F2] px-4 py-2 text-center font-semibold text-white hover:bg-[#4752C4]\">Sign in with Discord</a><p class=\"mt-3 text-xs opacity-60\">Only your Discord name and picture are used. Your GM's invite decides which games you can join.</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"block rounded-md bg-[#5865F2] px-4 py-2 text-center font-semibold text-white hover:bg-[#4752C4]\">Sign in with Discord</a><p class=\"mt-3 text-xs opacity-60\">Only your Discord name and picture are used. The first time, you wait until your GM lets you in.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

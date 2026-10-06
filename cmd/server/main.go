@@ -28,11 +28,10 @@ type routesConfig struct {
 func newMux(cfg routesConfig) (*http.ServeMux, func()) {
 	mux := http.NewServeMux()
 	mux.Handle("/static/", web.NoCache(http.StripPrefix("/static/", http.FileServer(http.Dir(cfg.staticDir)))))
-	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(cfg.assetsDir))))
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/campaigns", http.StatusSeeOther)
 	})
-	cleanup := mountApp(mux, cfg.contentDir, cfg.auth)
+	cleanup := mountApp(mux, cfg.contentDir, cfg.assetsDir, cfg.auth)
 	return mux, cleanup
 }
 

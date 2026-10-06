@@ -1,0 +1,111 @@
+package views
+
+import "github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
+
+// MemberRow is one person who has signed in, on the members page.
+type MemberRow struct {
+	ID     string
+	Name   string
+	Avatar string
+	// SignsInAs is how they sign in, e.g. "discord 1234".
+	SignsInAs string
+	// Status is pending, member or refused.
+	Status string
+	Admin  bool
+	Since  string
+}
+
+// WaitingPage is all someone sees until the GM lets them in.
+templ WaitingPage(name string, refused bool) {
+	@components.Page("Waiting for the GM", "") {
+		<main class="mx-auto max-w-md space-y-6 p-6">
+			<h1 class="text-2xl font-bold text-amber-400">Dungeon Campaign Engine</h1>
+			<section class={ cardClass + " space-y-3" }>
+				if refused {
+					<h2 class="text-lg font-semibold">No access</h2>
+					<p class="text-sm">Signed in as <strong>{ name }</strong>. The GM has not let this account in.</p>
+				} else {
+					<h2 class="text-lg font-semibold">Waiting for the GM</h2>
+					<p class="text-sm">Signed in as <strong>{ name }</strong>. The GM lets new players in by hand; once they do, reload this page.</p>
+				}
+				<form method="post" action="/auth/logout">
+					<button type="submit" class={ linkButton }>Sign out</button>
+				</form>
+			</section>
+		</main>
+	}
+}
+
+// MembersPage lets an admin approve or refuse the people who signed in.
+templ MembersPage(rows []MemberRow) {
+	@components.Page("Members", "") {
+		<main class="mx-auto max-w-4xl space-y-6 p-6">
+			<header class="flex items-baseline justify-between">
+				<h1 class="text-2xl font-bold text-amber-400">Members</h1>
+				@appNav("members")
+			</header>
+			<p class="text-sm opacity-70">Anyone can sign in with Discord, but only members see anything here. Let in the people you know.</p>
+			<section class={ cardClass }>
+				if len(rows) == 0 {
+					<p class="text-sm opacity-70">Nobody has signed in yet.</p>
+				}
+				<ul class="divide-y divide-border/40">
+					for _, r := range rows {
+						<li class="flex items-center gap-3 py-2">
+							if r.Avatar != "" {
+								<img src={ r.Avatar } alt="" class="h-8 w-8 rounded-full"/>
+							}
+							<div class="min-w-0 flex-1">
+								<div class="font-semibold">{ r.Name }</div>
+								<div class="text-xs opacity-60">{ r.SignsInAs } · since { r.Since }</div>
+							</div>
+							<span class={ memberBadge(r) }>{ memberLabel(r) }</span>
+							if !r.Admin {
+								<div class="flex gap-2">
+									if r.Status != "member" {
+										<form method="post" action={ templ.SafeURL("/members/" + r.ID) }>
+											<input type="hidden" name="status" value="member"/>
+											<button type="submit" class={ linkButton }>Let in</button>
+										</form>
+									}
+									if r.Status != "refused" {
+										<form method="post" action={ templ.SafeURL("/members/" + r.ID) }>
+											<input type="hidden" name="status" value="refused"/>
+											<button type="submit" class={ linkButton + " text-danger" }>{ refuseLabel(r) }</button>
+										</form>
+									}
+								</div>
+							}
+						</li>
+					}
+				</ul>
+			</section>
+		</main>
+	}
+}
+
+func memberLabel(r MemberRow) string {
+	switch {
+	case r.Admin:
+		return "Admin"
+	case r.Status == "member":
+		return "Member"
+	case r.Status == "refused":
+		return "Refused"
+	}
+	return "Waiting"
+}
+
+func memberBadge(r MemberRow) string {
+	if r.Status == "pending" && !r.Admin {
+		return "rounded-full border border-amber-500 px-2 py-0.5 text-xs text-amber-400"
+	}
+	return "rounded-full border border-border/60 px-2 py-0.5 text-xs opacity-70"
+}
+
+func refuseLabel(r MemberRow) string {
+	if r.Status == "member" {
+		return "Remove"
+	}
+	return "Refuse"
+}

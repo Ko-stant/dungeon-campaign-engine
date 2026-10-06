@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -13,12 +14,16 @@ import (
 )
 
 // Who may use which route when sign-in is on (docs/ONLINE_AND_RULES_PLAN.md,
-// Phase 3). Every app route is registered through a guard that reads what
-// the route touches from its own pattern: a board, quest, campaign, session,
-// custom monster or class named in the path is open to its owner and to
-// admins; routes naming nothing (lists, creating) need only a signed-in
-// user, and the store keeps lists to the viewer's own. With sign-in off
-// (AUTH_MODE=none, the table companion) the guard does nothing.
+// Phases 3 and 6). Every app route is registered through a guard. First,
+// only members get in: someone who signed in but is not yet approved (or was
+// refused) is sent to the waiting page, unless membership is open; admins
+// are always members. Then the guard reads what the route touches from its
+// own pattern: a board, quest, campaign, session, custom monster or class
+// named in the path is open to its owner and to admins; routes naming
+// nothing (lists, creating, the board art) need only a member, and the store
+// keeps lists to the viewer's own. Admin routes (the members page) are for
+// admins only. With sign-in off (AUTH_MODE=none, the table companion) the
+// guard does nothing.
 
 // routeMux is what the register functions add routes to.
 type routeMux interface {
@@ -73,10 +78,22 @@ func accessRule(pattern string) (owned []ownedParam, ok bool) {
 		}
 	}
 	switch path {
-	case "/api/catalog", "/api/boards", "/api/campaigns", "/maps", "/campaigns", "/monsters", "/classes", "/classes/new", "/lobby":
+	case "/api/catalog", "/api/boards", "/api/campaigns", "/maps", "/campaigns", "/monsters", "/classes", "/classes/new", "/lobby", "/assets/":
+		return nil, true
+	}
+	if adminRoute(pattern) {
 		return nil, true
 	}
 	return nil, false
+}
+
+// adminRoute reports whether a route is for admins only.
+func adminRoute(pattern string) bool {
+	_, path, _ := strings.Cut(pattern, " ")
+	if path == "" {
+		path = pattern
+	}
+	return path == "/members" || strings.HasPrefix(path, "/members/")
 }
 
 // guarded registers routes through the guard.
@@ -90,12 +107,12 @@ func (g guarded) HandleFunc(pattern string, h func(http.ResponseWriter, *http.Re
 	if !ok {
 		panic(fmt.Sprintf("app: route %q has no access rule (see guard.go)", pattern))
 	}
-	g.mux.HandleFunc(pattern, g.s.guard(owned, h))
+	g.mux.HandleFunc(pattern, g.s.guard(owned, adminRoute(pattern), h))
 }
 
-// guard checks the signed-in user may use what the route touches, and runs
-// the handler acting for them.
-func (s *Server) guard(owned []ownedParam, h http.HandlerFunc) http.HandlerFunc {
+// guard checks the signed-in user is a member and may use what the route
+// touches (admin: admins only), and runs the handler acting for them.
+func (s *Server) guard(owned []ownedParam, admin bool, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !s.auth.On() {
 			h(w, r)
@@ -106,7 +123,23 @@ func (s *Server) guard(owned []ownedParam, h http.HandlerFunc) http.HandlerFunc 
 			s.notSignedIn(w, r)
 			return
 		}
+		if !s.isMember(user, viewer) {
+			s.notMember(w, r)
+			return
+		}
+		if admin && !viewer.Admin {
+			s.forbidden(w, r)
+			return
+		}
 		ctx := components.WithSignedIn(store.WithViewer(r.Context(), viewer), user.DisplayName)
+		if viewer.Admin && r.Method == http.MethodGet && !strings.HasPrefix(r.URL.Path, "/api/") {
+			// The nav shows admins how many people wait to be let in.
+			waiting, err := s.store.CountWaiting(ctx)
+			if err != nil {
+				log.Printf("app: counting who waits: %v", err)
+			}
+			ctx = components.WithAdmin(ctx, waiting)
+		}
 		for _, o := range owned {
 			if err := s.mayUse(ctx, o.kind, r.PathValue(o.param)); err != nil {
 				if errors.Is(err, store.ErrNotFound) {
@@ -164,6 +197,21 @@ func (s *Server) notSignedIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeError(w, http.StatusUnauthorized, "sign in first")
+}
+
+// isMember reports whether a signed-in user may use the app: admins always,
+// everyone when membership is open, otherwise approved members.
+func (s *Server) isMember(u store.User, v store.Viewer) bool {
+	return v.Admin || s.auth.OpenMembership || u.Status == store.MemberApproved
+}
+
+// notMember sends pages to the waiting page and answers anything else 403.
+func (s *Server) notMember(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet && !strings.HasPrefix(r.URL.Path, "/api/") {
+		http.Redirect(w, r, "/waiting", http.StatusSeeOther)
+		return
+	}
+	writeError(w, http.StatusForbidden, "the GM has not let you in yet")
 }
 
 func (s *Server) forbidden(w http.ResponseWriter, r *http.Request) {

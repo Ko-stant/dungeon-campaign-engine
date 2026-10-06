@@ -39,6 +39,7 @@ func (s *Server) registerSignIn(mux *http.ServeMux) {
 	mux.HandleFunc("POST /auth/dev", s.devLogin)
 	mux.HandleFunc("POST /auth/logout", s.logout)
 	mux.HandleFunc("GET /api/me", s.me)
+	mux.HandleFunc("GET /waiting", s.waitingPage)
 }
 
 // signedIn returns the user of the request's login cookie and the viewer
@@ -66,8 +67,16 @@ func (s *Server) cookie(name, value string, maxAge time.Duration) *http.Cookie {
 	}
 }
 
-// beginLogin signs the browser in as u and goes on to next.
+// beginLogin signs the browser in as u and goes on to next. Admins are
+// members from their first sign-in, so nobody waits on them.
 func (s *Server) beginLogin(w http.ResponseWriter, r *http.Request, u store.User, next string) {
+	if u.Status != store.MemberApproved {
+		if ids, err := s.store.UserIdentities(r.Context(), u.ID); err == nil && s.auth.IsAdmin(ids) {
+			if err := s.store.SetMemberStatus(r.Context(), u.ID, store.MemberApproved); err != nil {
+				log.Printf("app: approving admin %s: %v", u.ID, err)
+			}
+		}
+	}
 	token, hash, err := auth.NewToken()
 	if err == nil {
 		err = s.store.CreateLoginSession(r.Context(), u.ID, hash, time.Now().Add(sessionLength))

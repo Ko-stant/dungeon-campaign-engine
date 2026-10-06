@@ -68,12 +68,13 @@ func (b *browser) sendJSON(method, path string, v any) (*http.Response, string) 
 	return b.do(method, path, strings.NewReader(string(data)), "application/json")
 }
 
-// devServer runs the app with dev sign-in; admins as in AUTH_ADMINS.
+// devServer runs the app with dev sign-in and open membership (anyone who
+// signs in is a member); admins as in AUTH_ADMINS.
 func devServer(t *testing.T, admins ...store.IdentityKey) (*httptest.Server, *Server) {
 	t.Helper()
 	var app *Server
 	srv := testServerWith(t, func(s *Server) {
-		s.SetAuth(auth.Config{Mode: auth.ModeDev, PublicURL: "http://localhost", Admins: admins})
+		s.SetAuth(auth.Config{Mode: auth.ModeDev, PublicURL: "http://localhost", Admins: admins, OpenMembership: true})
 		app = s
 	})
 	return srv, app
@@ -115,6 +116,11 @@ func TestEveryRoutePatternHasAnAccessRule(t *testing.T) {
 	}
 	if _, ok := accessRule("GET /api/secrets"); ok {
 		t.Error("an unknown route must have no rule")
+	}
+	for pattern, admin := range map[string]bool{"GET /members": true, "POST /members/{id}": true, "GET /assets/": false, "GET /lobby": false} {
+		if _, ok := accessRule(pattern); !ok || adminRoute(pattern) != admin {
+			t.Errorf("%s: rule %v, admin %v", pattern, ok, adminRoute(pattern))
+		}
 	}
 	// Registering every real route through the guard must not panic.
 	testServer(t)

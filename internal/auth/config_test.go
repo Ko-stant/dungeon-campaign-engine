@@ -66,3 +66,17 @@ func TestConfigErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestMembersAreApprovedUnlessOpen(t *testing.T) {
+	cfg, err := ConfigFromEnv(env(map[string]string{"AUTH_MODE": "dev"}))
+	if err != nil || cfg.OpenMembership {
+		t.Fatalf("by default the GM approves members: %+v %v", cfg, err)
+	}
+	cfg, err = ConfigFromEnv(env(map[string]string{"AUTH_MODE": "dev", "AUTH_MEMBERS": "open"}))
+	if err != nil || !cfg.OpenMembership {
+		t.Fatalf("open: %+v %v", cfg, err)
+	}
+	if _, err := ConfigFromEnv(env(map[string]string{"AUTH_MODE": "dev", "AUTH_MEMBERS": "everyone"})); err == nil || !strings.Contains(err.Error(), "AUTH_MEMBERS") {
+		t.Errorf("an unknown setting: %v", err)
+	}
+}

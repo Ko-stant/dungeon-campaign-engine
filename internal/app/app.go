@@ -35,6 +35,8 @@ type Server struct {
 	auth auth.Config
 	// seats are the players connected online (see seat.go).
 	seats seatHub
+	// assetsDir holds the board art served under /assets/ (empty: none).
+	assetsDir string
 }
 
 // New creates the app server.
@@ -72,7 +74,16 @@ func (s *Server) Register(serveMux *http.ServeMux) {
 	s.registerAudio(mux)
 	s.registerChapterPages(mux)
 	s.registerLobby(mux)
+	s.registerMembers(mux)
+	if s.assetsDir != "" {
+		// The board art: HeroQuest material, for members only when hosted.
+		mux.HandleFunc("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(s.assetsDir))).ServeHTTP)
+	}
 }
+
+// SetAssetsDir serves the board art from dir under /assets/ (through the
+// guard, so only members see it when sign-in is on).
+func (s *Server) SetAssetsDir(dir string) { s.assetsDir = dir }
 
 type errorResponse struct {
 	Error string `json:"error"`

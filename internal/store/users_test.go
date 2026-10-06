@@ -141,3 +141,36 @@ func TestOwnersAndViewers(t *testing.T) {
 		}
 	}
 }
+
+func TestNewUsersWaitForApproval(t *testing.T) {
+	st, _ := storetest.New(t)
+	ctx := context.Background()
+	sam, _ := st.SignIn(ctx, store.Identity{Provider: "dev", Subject: "sam", DisplayName: "Sam"})
+	jo, _ := st.SignIn(ctx, store.Identity{Provider: "dev", Subject: "jo", DisplayName: "Jo"})
+	if sam.Status != store.MemberPending {
+		t.Fatalf("a new user waits: %+v", sam)
+	}
+	if err := st.SetMemberStatus(ctx, sam.ID, store.MemberApproved); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.SetMemberStatus(ctx, jo.ID, "boss"); err == nil {
+		t.Error("an unknown status is refused")
+	}
+	if err := st.SetMemberStatus(ctx, "0190c6a0-0000-7000-8000-000000000000", store.MemberApproved); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("a missing user: %v", err)
+	}
+	// Signing in again keeps the status; the login session carries it.
+	again, _ := st.SignIn(ctx, store.Identity{Provider: "dev", Subject: "sam", DisplayName: "Sammy"})
+	hash := []byte("0123456789abcdef0123456789abcdef")
+	_ = st.CreateLoginSession(ctx, sam.ID, hash, time.Now().Add(time.Hour))
+	if got, _ := st.LoginSessionUser(ctx, hash); again.Status != store.MemberApproved || got.Status != store.MemberApproved {
+		t.Errorf("status after signing in again %q, from the session %q", again.Status, got.Status)
+	}
+	users, err := st.ListUsers(ctx)
+	if err != nil || len(users) != 2 || users[0].DisplayName != "Jo" || users[0].Status != store.MemberPending || users[1].Status != store.MemberApproved {
+		t.Errorf("users (waiting first) %+v %v", users, err)
+	}
+	if n, err := st.CountWaiting(ctx); err != nil || n != 1 {
+		t.Errorf("waiting %d %v", n, err)
+	}
+}

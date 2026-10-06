@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -15,7 +16,17 @@ type User struct {
 	ID          string
 	DisplayName string
 	AvatarURL   string
+	// Status is MemberPending, MemberApproved or MemberRefused.
+	Status    string
+	CreatedAt time.Time
 }
+
+// Membership statuses: a new user waits until an admin approves or refuses them.
+const (
+	MemberPending  = "pending"
+	MemberApproved = "member"
+	MemberRefused  = "refused"
+)
 
 // IdentityKey names one way a user signs in.
 type IdentityKey struct {
@@ -31,12 +42,48 @@ type Identity struct {
 	AvatarURL   string
 }
 
-const userColumns = `u.id::text, u.display_name, u.avatar_url`
+const userColumns = `u.id::text, u.display_name, u.avatar_url, u.member_status, u.created_at`
 
 func scanUser(row pgx.Row) (User, error) {
 	var u User
-	err := row.Scan(&u.ID, &u.DisplayName, &u.AvatarURL)
+	err := row.Scan(&u.ID, &u.DisplayName, &u.AvatarURL, &u.Status, &u.CreatedAt)
 	return u, notFoundIfNoRows(err)
+}
+
+// SetMemberStatus approves, refuses or puts back a user.
+func (s *Store) SetMemberStatus(ctx context.Context, userID, status string) error {
+	if status != MemberPending && status != MemberApproved && status != MemberRefused {
+		return fmt.Errorf("unknown member status %q", status)
+	}
+	if !validID(userID) {
+		return ErrNotFound
+	}
+	tag, err := s.pool.Exec(ctx, `UPDATE app_user SET member_status = $2, updated_at = now() WHERE id = $1`, userID, status)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// ListUsers lists everyone who has signed in: those waiting first, then
+// members, then the refused, each oldest first.
+func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
+	rows, err := s.pool.Query(ctx, `SELECT `+userColumns+` FROM app_user u
+		ORDER BY CASE u.member_status WHEN 'pending' THEN 0 WHEN 'member' THEN 1 ELSE 2 END, u.created_at, u.id`)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (User, error) { return scanUser(row) })
+}
+
+// CountWaiting counts the users waiting for approval.
+func (s *Store) CountWaiting(ctx context.Context) (int, error) {
+	var n int
+	err := s.pool.QueryRow(ctx, `SELECT count(*) FROM app_user WHERE member_status = 'pending'`).Scan(&n)
+	return n, err
 }
 
 // SignIn returns the user for an identity, creating both the first time,

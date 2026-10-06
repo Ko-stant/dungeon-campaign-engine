@@ -16,7 +16,7 @@ import (
 // mountApp registers the map creator and tracker. It needs DATABASE_URL;
 // without it (or without a reachable database) the app's routes answer 503
 // with instructions. It returns a cleanup function.
-func mountApp(mux *http.ServeMux, contentDir string, authCfg auth.Config) func() {
+func mountApp(mux *http.ServeMux, contentDir, assetsDir string, authCfg auth.Config) func() {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Printf("app: DATABASE_URL is not set; see .env and make db-up")
@@ -55,8 +55,16 @@ func mountApp(mux *http.ServeMux, contentDir string, authCfg auth.Config) func()
 		audioDir = "audio"
 	}
 	server.SetAudioDir(audioDir)
+	server.SetAssetsDir(assetsDir)
 	server.Register(mux)
 	log.Printf("app: read-aloud audio clips in %s", audioDir)
+	if authCfg.On() {
+		members := "approved by an admin"
+		if authCfg.OpenMembership {
+			members = "open to everyone who signs in"
+		}
+		log.Printf("app: membership %s", members)
+	}
 	log.Printf("app: ready (%d furniture, %d monsters, %d heroes, %d traps in catalog)",
 		len(catalog.Furniture), len(catalog.Monsters), len(catalog.Heroes), len(catalog.Traps))
 	return st.Close
