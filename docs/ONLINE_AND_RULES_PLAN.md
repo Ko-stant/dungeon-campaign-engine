@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 20:18 EDT
+**Last Updated**: 2026-10-05 20:41 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -258,8 +258,9 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
        Render service exists, `RENDER_DEPLOY_HOOK`. `2b1424a`: `make push` refuses a
        repository Docker Hub shows publicly (it creates a missing one on the first push,
        possibly public), checking before and after the push. The GM set `DOCKER_IMAGE` and
-       ran `docker login`; the private repository still needs creating on Docker Hub
-       before the first push.
+       ran `docker login`, then created the private repository
+       `kostant/dungeon-campaign-engine`. First image pushed: tag `fb02146` (each tag is
+       the commit it was built from).
      - **Step 2** (`59b3981`): members approved on first sign-in. `/waiting` for those not
        let in (or refused), `/members` for admins (Let in, Refuse, Remove), "Members (n)"
        in an admin's nav, `AUTH_MEMBERS=approve|open` (approve by default), migration 00013
