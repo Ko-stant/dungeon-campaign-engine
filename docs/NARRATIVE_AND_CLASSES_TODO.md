@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-05 18:40 EDT
+**Last Updated**: 2026-10-05 21:00 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -34,6 +34,11 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   is in `docs/campaigns/three-plagues/MAPS.md`.
 
 **Next**
+- **Table Polls, 3 of 4 votes (2026-10-05; Brentanamo's player still to vote):** narration
+  a mix of audio and the Chronicler (3-0); monster Body exact 2-1; critical misses keep
+  (3-0); monster crits keep (3-0); the Chronicler tracks cooldowns and Determination 2-1
+  (one "both"); special crits described by the player 2-1; the TV log always open (3-0),
+  so the player screen now opens with the log showing.
 - **Done 2026-10-05, applied by the GM:** `make fill-campaign CAMPAIGN="Three Plagues"
   APPLY=1` updated the Cleric's Smite text (1d20 + Mind) and added the loot list (the seven
   Quest 1 finds and the two potions) to the campaign. Smite on Mind was
