@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 19:50 EDT
+**Last Updated**: 2026-10-05 20:20 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -604,7 +604,7 @@ Mana: maximum **16**, regenerating 2 each round of a fight, +1 with the holy tom
 | Spell | Cost | Limit | Effect |
 |---|---|---|---|
 | Smite | 2 mana | Repeatable | The Cleric's main attack, at range (line of sight): rolls 1d20 + Mind to hit (faith, not the weapon's hit dice or Accuracy; Determination counts) and deals 5 damage, +2 against undead. |
-| Heal Minor Wounds | 6 mana | Repeatable | Heals the target 10-12 Body (to tune; at least 10), up to their maximum. |
+| Heal Minor Wounds | 6 mana | Repeatable | Heals the target 12 Body, up to their maximum (decided 2026-10-04 with the Quest 1 calibration). |
 | Turn Evil | 8 mana | Cooldown 5 | The target enemy skips its next attack and cannot defend for 1 round: every hero's attack on it is a sure hit. |
 | Divining | 3 mana | Repeatable | Reveals traps, hidden doors and treasure within 6 squares, through walls and doors. |
 | Prayer | Free | Cooldown 5 | Restores half of maximum mana, rounded up. Takes the Cleric's action; they cannot defend until their next turn, then act normally. The only way to regain mana out of a fight. |
