@@ -34,7 +34,7 @@ define with_dotenv
 bash -lc 'set -a; [ -f .env ] && source ./.env; set +a; $$1'
 endef
 
-.PHONY: all tools dev build run test test-race cover lint fmt tidy clean image push deploy \
+.PHONY: all tools dev build run test test-race cover lint fmt tidy clean image push deploy import-audio \
         test-db test-js test-all \
         db-up db-up-all db-down db-destroy db-logs db-psql \
         db-migrate-new db-migrate-up db-migrate-down db-backup db-restore import-content \
@@ -156,6 +156,12 @@ load-script:
 
 # Load the agreed combat numbers (classes, monster stats, starting kits) into a
 # campaign. A dry run unless APPLY=1:
+# Copy read-aloud clips from a folder of <campaign id>/<passage id>.<ext> files (main's
+# AUDIO_DIR layout) into DATABASE_URL, or the database in DB=...; unchanged clips are skipped.
+AUDIO_FOLDER ?= audio
+import-audio:
+	@set -a; [ -f .env ] && . ./.env; set +a; $(GO) run ./cmd/import-audio -dir $(AUDIO_FOLDER) $(if $(DB),-db "$(DB)")
+
 # make fill-campaign CAMPAIGN="Three Plagues" [APPLY=1] [COMBAT_FILE=...]
 COMBAT_FILE ?= docs/campaigns/three-plagues/combat.json
 fill-campaign:

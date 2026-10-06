@@ -108,11 +108,9 @@ type CampaignPageData struct {
 	ScriptError    string
 	ScriptSections int
 	ScriptPassages int
-	// Audio clips for the script; AudioEnabled is false without an audio folder.
-	AudioEnabled bool
-	AudioDir     string
-	AudioClips   []AudioClipRow
-	AudioError   string
+	// Audio clips for the script (kept in the database).
+	AudioClips []AudioClipRow
+	AudioError string
 	// The campaign's own monster stat lines, and every monster type to give one.
 	MonsterStats   []MonsterStatsRow
 	MonsterOptions []MonsterOption

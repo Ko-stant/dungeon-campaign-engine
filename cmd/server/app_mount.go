@@ -50,14 +50,8 @@ func mountApp(mux *http.ServeMux, contentDir, assetsDir string, authCfg auth.Con
 			log.Printf("app: clearing expired sign-ins: %v", err)
 		}
 	}
-	audioDir := os.Getenv("AUDIO_DIR")
-	if audioDir == "" {
-		audioDir = "audio"
-	}
-	server.SetAudioDir(audioDir)
 	server.SetAssetsDir(assetsDir)
 	server.Register(mux)
-	log.Printf("app: read-aloud audio clips in %s", audioDir)
 	if authCfg.On() {
 		members := "approved by an admin"
 		if authCfg.OpenMembership {

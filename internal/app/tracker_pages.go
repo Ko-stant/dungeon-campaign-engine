@@ -158,7 +158,7 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 			}
 		}
 	}
-	if err := s.addAudioPageData(&d, titles); err != nil {
+	if err := s.addAudioPageData(ctx, &d, titles); err != nil {
 		return views.CampaignPageData{}, err
 	}
 

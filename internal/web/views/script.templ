@@ -55,39 +55,35 @@ templ campaignAudio(d CampaignPageData) {
 			<h2 class="text-lg font-semibold">Audio clips</h2>
 			<span class="text-sm opacity-70">{ fmt.Sprintf("%d clips", len(d.AudioClips)) }</span>
 		</div>
-		if !d.AudioEnabled {
-			<p class="text-sm opacity-70">No audio folder is set. Set AUDIO_DIR and restart the server to use clips.</p>
-		} else {
-			<p class="text-xs opacity-60">
-				Name each file after its passage id (<code>Q2-03.mp3</code>); <code>Q3-09a.mp3</code> is extra clip "a" of passage Q3-09.
-				Formats: mp3, m4a, ogg, opus, wav, webm, flac. Uploading an id again replaces its clip.
-				You can also copy files straight into <code>{ d.AudioDir }</code>. The tracker's reader plays them.
-			</p>
-			if d.AudioError != "" {
-				<p class="rounded-md border border-danger/60 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{ d.AudioError }</p>
-			}
-			<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/audio") } enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
-				<input type="file" name="clips" multiple required accept=".mp3,.m4a,.ogg,.opus,.wav,.webm,.flac,audio/*" aria-label="Audio clips" class="text-sm"/>
-				<button type="submit" class={ buttonClass }>Upload</button>
-			</form>
-			if len(d.AudioClips) > 0 {
-				<ul class="divide-y divide-border/40 rounded-md border border-border/40">
-					for _, c := range d.AudioClips {
-						<li class="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
-							<span class="w-40 font-mono text-xs">{ c.File }</span>
-							if c.Passage != "" {
-								<span class="min-w-40 flex-1">{ c.Passage }</span>
-							} else {
-								<span class="min-w-40 flex-1 text-warning">no passage with this id</span>
-							}
-							<audio controls preload="none" src={ c.URL } class="h-8"></audio>
-							<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/audio/" + c.ID + "/delete") }>
-								<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Delete clip " + c.File } onclick="return confirm('Delete this clip?')">Delete</button>
-							</form>
-						</li>
-					}
-				</ul>
-			}
+		<p class="text-xs opacity-60">
+			Name each file after its passage id (<code>Q2-03.mp3</code>); <code>Q3-09a.mp3</code> is extra clip "a" of passage Q3-09.
+			Formats: mp3, m4a, ogg, opus, wav, webm, flac; up to 50 MB each. Uploading an id again replaces its clip.
+			The tracker's reader plays them.
+		</p>
+		if d.AudioError != "" {
+			<p class="rounded-md border border-danger/60 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{ d.AudioError }</p>
+		}
+		<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/audio") } enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
+			<input type="file" name="clips" multiple required accept=".mp3,.m4a,.ogg,.opus,.wav,.webm,.flac,audio/*" aria-label="Audio clips" class="text-sm"/>
+			<button type="submit" class={ buttonClass }>Upload</button>
+		</form>
+		if len(d.AudioClips) > 0 {
+			<ul class="divide-y divide-border/40 rounded-md border border-border/40">
+				for _, c := range d.AudioClips {
+					<li class="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
+						<span class="w-40 font-mono text-xs">{ c.File }</span>
+						if c.Passage != "" {
+							<span class="min-w-40 flex-1">{ c.Passage }</span>
+						} else {
+							<span class="min-w-40 flex-1 text-warning">no passage with this id</span>
+						}
+						<audio controls preload="none" src={ c.URL } class="h-8"></audio>
+						<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/audio/" + c.ID + "/delete") }>
+							<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Delete clip " + c.File } onclick="return confirm('Delete this clip?')">Delete</button>
+						</form>
+					</li>
+				}
+			</ul>
 		}
 	</section>
 }

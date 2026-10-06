@@ -1,22 +1,27 @@
-// Package audio keeps the read-aloud audio clips of each campaign on disk:
-// <dir>/<campaign id>/<passage id>.<ext>, e.g. audio/<uuid>/Q2-03.mp3. A clip
-// named after a passage id plays with that passage; "Q3-09a" is an extra
-// clip of passage Q3-09. Files copied into the folder by hand work too.
+// Package audio names and reads the read-aloud audio clips of a campaign.
+// A clip is named after a script passage id ("Q2-03.mp3" plays with passage
+// Q2-03; "Q3-09a" is an extra clip of passage Q3-09). The clips themselves
+// are kept in the database (internal/store, audio_clip).
 package audio
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
 // Extensions lists the audio formats a clip may use.
 var Extensions = []string{".mp3", ".m4a", ".ogg", ".opus", ".wav", ".webm", ".flac"}
+
+var contentTypes = map[string]string{
+	".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".opus": "audio/ogg",
+	".wav": "audio/wav", ".webm": "audio/webm", ".flac": "audio/flac",
+}
 
 // DefaultMaxBytes bounds one clip.
 const DefaultMaxBytes = 50 << 20
@@ -34,10 +39,7 @@ func ClipName(filename string) (id, ext string, err error) {
 	base := path.Base(strings.ReplaceAll(filename, `\`, "/"))
 	ext = strings.ToLower(path.Ext(base))
 	id = strings.TrimSuffix(base, path.Ext(base))
-	known := false
-	for _, e := range Extensions {
-		known = known || e == ext
-	}
+	_, known := contentTypes[ext]
 	switch {
 	case !known:
 		return "", "", fmt.Errorf("%q is not an audio file (%s)", base, strings.Join(Extensions, ", "))
@@ -47,116 +49,67 @@ func ClipName(filename string) (id, ext string, err error) {
 	return id, ext, nil
 }
 
-// Library is the folder holding every campaign's clips.
-type Library struct {
-	Dir      string
-	MaxBytes int64
-}
-
-// New returns a library rooted at dir.
-func New(dir string) *Library {
-	return &Library{Dir: dir, MaxBytes: DefaultMaxBytes}
-}
-
-func (l *Library) folder(campaign string) (string, error) {
-	if !campaignID.MatchString(campaign) {
-		return "", fmt.Errorf("invalid campaign id %q", campaign)
+// ContentType is the media type of a clip extension.
+func ContentType(ext string) string {
+	if t, ok := contentTypes[strings.ToLower(ext)]; ok {
+		return t
 	}
-	return filepath.Join(l.Dir, campaign), nil
+	return "application/octet-stream"
 }
 
-// List maps each clip id of a campaign to its file name.
-func (l *Library) List(campaign string) (map[string]string, error) {
-	dir, err := l.folder(campaign)
+// ReadClip reads a clip of at most maxBytes.
+func ReadClip(r io.Reader, maxBytes int64) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
 	if err != nil {
 		return nil, err
 	}
-	out := map[string]string{}
+	if int64(len(data)) > maxBytes {
+		return nil, fmt.Errorf("larger than %d MB", maxBytes>>20)
+	}
+	return data, nil
+}
+
+// Found is a clip file found by ScanDir.
+type Found struct {
+	Campaign string
+	ID       string
+	Ext      string
+	Path     string
+}
+
+// ScanDir finds clip files laid out as <dir>/<campaign id>/<clip file>,
+// the folder layout of AUDIO_DIR before clips moved into the database. It
+// returns the clips by campaign and id, and the paths it skipped.
+func ScanDir(dir string) (found []Found, skipped []string, err error) {
 	entries, err := os.ReadDir(dir)
-	if errors.Is(err, os.ErrNotExist) {
-		return out, nil
-	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for _, e := range entries {
-		if e.IsDir() {
+		p := filepath.Join(dir, e.Name())
+		if !e.IsDir() || !campaignID.MatchString(e.Name()) {
+			skipped = append(skipped, p)
 			continue
 		}
-		if id, _, err := ClipName(e.Name()); err == nil {
-			out[id] = e.Name()
+		files, err := os.ReadDir(p)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, f := range files {
+			fp := filepath.Join(p, f.Name())
+			id, ext, err := ClipName(f.Name())
+			if f.IsDir() || err != nil {
+				skipped = append(skipped, fp)
+				continue
+			}
+			found = append(found, Found{Campaign: e.Name(), ID: id, Ext: ext, Path: fp})
 		}
 	}
-	return out, nil
-}
-
-// Save writes a clip from r, replacing any clip with the same id.
-func (l *Library) Save(campaign, filename string, r io.Reader) error {
-	dir, err := l.folder(campaign)
-	if err != nil {
-		return err
-	}
-	id, ext, err := ClipName(filename)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	tmp, err := os.CreateTemp(dir, ".upload-*")
-	if err != nil {
-		return err
-	}
-	// After a successful rename the temp file is gone; otherwise clean it up.
-	defer func() { _ = os.Remove(tmp.Name()) }()
-	n, err := io.Copy(tmp, io.LimitReader(r, l.MaxBytes+1))
-	if cerr := tmp.Close(); err == nil {
-		err = cerr
-	}
-	if err != nil {
-		return err
-	}
-	if n > l.MaxBytes {
-		return fmt.Errorf("%s is larger than %d MB", filename, l.MaxBytes>>20)
-	}
-	if err := l.removeID(dir, id); err != nil {
-		return err
-	}
-	return os.Rename(tmp.Name(), filepath.Join(dir, id+ext))
-}
-
-func (l *Library) removeID(dir, id string) error {
-	for _, ext := range Extensions {
-		if err := os.Remove(filepath.Join(dir, id+ext)); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return err
+	sort.Slice(found, func(i, j int) bool {
+		if found[i].Campaign != found[j].Campaign {
+			return found[i].Campaign < found[j].Campaign
 		}
-	}
-	return nil
-}
-
-// Delete removes a campaign's clip by id.
-func (l *Library) Delete(campaign, id string) error {
-	clips, err := l.List(campaign)
-	if err != nil {
-		return err
-	}
-	if _, ok := clips[id]; !ok {
-		return fmt.Errorf("no clip %q: %w", id, os.ErrNotExist)
-	}
-	dir, _ := l.folder(campaign)
-	return l.removeID(dir, id)
-}
-
-// Path returns the file path of one of a campaign's clips by file name.
-func (l *Library) Path(campaign, name string) (string, error) {
-	clips, err := l.List(campaign)
-	if err != nil {
-		return "", err
-	}
-	id, _, err := ClipName(name)
-	if err != nil || clips[id] != name || path.Base(name) != name {
-		return "", fmt.Errorf("no clip %q: %w", name, os.ErrNotExist)
-	}
-	dir, _ := l.folder(campaign)
-	return filepath.Join(dir, name), nil
+		return found[i].ID < found[j].ID
+	})
+	return found, skipped, nil
 }

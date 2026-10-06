@@ -116,11 +116,9 @@ type CampaignPageData struct {
 	ScriptError    string
 	ScriptSections int
 	ScriptPassages int
-	// Audio clips for the script; AudioEnabled is false without an audio folder.
-	AudioEnabled bool
-	AudioDir     string
-	AudioClips   []AudioClipRow
-	AudioError   string
+	// Audio clips for the script (kept in the database).
+	AudioClips []AudioClipRow
+	AudioError string
 	// The campaign's own monster stat lines, and every monster type to give one.
 	MonsterStats   []MonsterStatsRow
 	MonsterOptions []MonsterOption
@@ -312,7 +310,7 @@ func appNav(active string) templ.Component {
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(waiting))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 152, Col: 57}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 150, Col: 57}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -335,7 +333,7 @@ func appNav(active string) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.ResolveAttributeValue("Signed in as " + name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 157, Col: 96}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 155, Col: 96}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
 			if templ_7745c5c3_Err != nil {
@@ -474,7 +472,7 @@ func CampaignsPage(campaigns []CampaignListItem, formError string) templ.Compone
 				var templ_7745c5c3_Var24 string
 				templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(formError)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 178, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 176, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 				if templ_7745c5c3_Err != nil {
@@ -503,7 +501,7 @@ func CampaignsPage(campaigns []CampaignListItem, formError string) templ.Compone
 				var templ_7745c5c3_Var25 templ.SafeURL
 				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/campaigns/" + c.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 189, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 187, Col: 52}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 				if templ_7745c5c3_Err != nil {
@@ -516,7 +514,7 @@ func CampaignsPage(campaigns []CampaignListItem, formError string) templ.Compone
 				var templ_7745c5c3_Var26 string
 				templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(c.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 189, Col: 114}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 187, Col: 114}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 				if templ_7745c5c3_Err != nil {
@@ -529,7 +527,7 @@ func CampaignsPage(campaigns []CampaignListItem, formError string) templ.Compone
 				var templ_7745c5c3_Var27 string
 				templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d heroes", c.Heroes))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 190, Col: 76}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 188, Col: 76}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 				if templ_7745c5c3_Err != nil {
@@ -548,7 +546,7 @@ func CampaignsPage(campaigns []CampaignListItem, formError string) templ.Compone
 						var templ_7745c5c3_Var28 string
 						templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(s.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 195, Col: 44}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 193, Col: 44}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 						if templ_7745c5c3_Err != nil {
@@ -561,7 +559,7 @@ func CampaignsPage(campaigns []CampaignListItem, formError string) templ.Compone
 						var templ_7745c5c3_Var29 string
 						templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d events", s.Events))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 195, Col: 95}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 193, Col: 95}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 						if templ_7745c5c3_Err != nil {
@@ -583,7 +581,7 @@ func CampaignsPage(campaigns []CampaignListItem, formError string) templ.Compone
 						var templ_7745c5c3_Var31 templ.SafeURL
 						templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/play/" + s.ID))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 196, Col: 49}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 194, Col: 49}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 						if templ_7745c5c3_Err != nil {
@@ -668,7 +666,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(d.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 214, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 212, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 			if templ_7745c5c3_Err != nil {
@@ -694,7 +692,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var36 string
 				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(d.Error)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 219, Col: 115}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 217, Col: 115}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 				if templ_7745c5c3_Err != nil {
@@ -745,7 +743,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var39 string
 					templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(h.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 233, Col: 48}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 231, Col: 48}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 					if templ_7745c5c3_Err != nil {
@@ -758,7 +756,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var40 string
 					templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(h.Player)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 234, Col: 23}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 232, Col: 23}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 					if templ_7745c5c3_Err != nil {
@@ -771,7 +769,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var41 string
 					templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(h.Class)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 236, Col: 19}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 234, Col: 19}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 					if templ_7745c5c3_Err != nil {
@@ -794,7 +792,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var42 string
 					templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.ResolveAttributeValue(h.Equipped)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 241, Col: 57}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 239, Col: 57}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var42)
 					if templ_7745c5c3_Err != nil {
@@ -807,7 +805,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var43 string
 					templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(h.Equipped)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 241, Col: 72}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 239, Col: 72}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 					if templ_7745c5c3_Err != nil {
@@ -820,7 +818,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var44 string
 					templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.ResolveAttributeValue(h.Notes)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 242, Col: 54}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 240, Col: 54}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var44)
 					if templ_7745c5c3_Err != nil {
@@ -833,7 +831,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var45 string
 					templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(h.Notes)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 242, Col: 66}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 240, Col: 66}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 					if templ_7745c5c3_Err != nil {
@@ -846,7 +844,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var46 templ.SafeURL
 					templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/campaigns/" + d.ID + "/heroes/" + h.ID + "/delete"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 244, Col: 106}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 242, Col: 106}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 					if templ_7745c5c3_Err != nil {
@@ -859,7 +857,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var47 string
 					templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.ResolveAttributeValue("Remove " + h.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 245, Col: 108}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 243, Col: 108}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var47)
 					if templ_7745c5c3_Err != nil {
@@ -882,7 +880,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 			var templ_7745c5c3_Var48 templ.SafeURL
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/campaigns/" + d.ID + "/heroes"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 253, Col: 80}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 251, Col: 80}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 			if templ_7745c5c3_Err != nil {
@@ -966,7 +964,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var55 string
 				templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.ResolveAttributeValue(c.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 260, Col: 28}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 258, Col: 28}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 				if templ_7745c5c3_Err != nil {
@@ -979,7 +977,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var56 string
 				templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(setupLabel(c.Name, c.Custom))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 260, Col: 61}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 258, Col: 61}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 				if templ_7745c5c3_Err != nil {
@@ -1068,7 +1066,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var61 string
 					templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.ResolveAttributeValue("chapter-" + ch.QuestID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 278, Col: 39}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 276, Col: 39}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var61)
 					if templ_7745c5c3_Err != nil {
@@ -1081,7 +1079,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var62 string
 					templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(ch.Number))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 279, Col: 81}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 277, Col: 81}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 					if templ_7745c5c3_Err != nil {
@@ -1094,7 +1092,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var63 string
 					templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(ch.QuestName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 281, Col: 51}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 279, Col: 51}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 					if templ_7745c5c3_Err != nil {
@@ -1107,7 +1105,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var64 string
 					templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(ch.BoardName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 282, Col: 64}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 280, Col: 64}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 					if templ_7745c5c3_Err != nil {
@@ -1142,7 +1140,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var67 string
 					templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Status)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 284, Col: 65}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 282, Col: 65}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 					if templ_7745c5c3_Err != nil {
@@ -1165,7 +1163,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 						var templ_7745c5c3_Var69 templ.SafeURL
 						templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/play/" + ch.SessionID))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 286, Col: 57}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 284, Col: 57}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 						if templ_7745c5c3_Err != nil {
@@ -1216,7 +1214,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var72 templ.SafeURL
 					templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinURLErrs(ch.EditURL())
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 294, Col: 30}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 292, Col: 30}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 					if templ_7745c5c3_Err != nil {
@@ -1242,7 +1240,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var74 templ.SafeURL
 					templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/campaigns/" + d.ID + "/chapters/" + ch.QuestID + "/up"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 295, Col: 108}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 293, Col: 108}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 					if templ_7745c5c3_Err != nil {
@@ -1287,7 +1285,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var77 string
 					templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.ResolveAttributeValue("Move " + ch.QuestName + " up")
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 296, Col: 118}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 294, Col: 118}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var77)
 					if templ_7745c5c3_Err != nil {
@@ -1300,7 +1298,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var78 templ.SafeURL
 					templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/campaigns/" + d.ID + "/chapters/" + ch.QuestID + "/down"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 298, Col: 110}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 296, Col: 110}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var78))
 					if templ_7745c5c3_Err != nil {
@@ -1345,7 +1343,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var81 string
 					templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.ResolveAttributeValue("Move " + ch.QuestName + " down")
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 299, Col: 119}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 297, Col: 119}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var81)
 					if templ_7745c5c3_Err != nil {
@@ -1358,7 +1356,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var82 templ.SafeURL
 					templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/campaigns/" + d.ID + "/chapters/" + ch.QuestID + "/remove"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 301, Col: 112}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 299, Col: 112}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 					if templ_7745c5c3_Err != nil {
@@ -1371,7 +1369,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var83 string
 					templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.ResolveAttributeValue("Remove " + ch.QuestName + " from the campaign")
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 302, Col: 135}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 300, Col: 135}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var83)
 					if templ_7745c5c3_Err != nil {
@@ -1394,7 +1392,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 			var templ_7745c5c3_Var84 templ.SafeURL
 			templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/campaigns/" + d.ID + "/maps"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 309, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 307, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var84))
 			if templ_7745c5c3_Err != nil {
@@ -1495,7 +1493,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 			var templ_7745c5c3_Var93 templ.SafeURL
 			templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/campaigns/" + d.ID + "/chapters"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 318, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 316, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var93))
 			if templ_7745c5c3_Err != nil {
@@ -1541,7 +1539,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var96 string
 					templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.ResolveAttributeValue(q.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 325, Col: 29}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 323, Col: 29}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var96)
 					if templ_7745c5c3_Err != nil {
@@ -1554,7 +1552,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var97 string
 					templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs(q.Label)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 325, Col: 41}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 323, Col: 41}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var97))
 					if templ_7745c5c3_Err != nil {
@@ -1631,7 +1629,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var102 templ.SafeURL
 				templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/campaigns/" + d.ID + "/sessions"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 338, Col: 83}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 336, Col: 83}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var102))
 				if templ_7745c5c3_Err != nil {
@@ -1671,7 +1669,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var105 string
 					templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.ResolveAttributeValue(q.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 343, Col: 29}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 341, Col: 29}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var105)
 					if templ_7745c5c3_Err != nil {
@@ -1694,7 +1692,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var106 string
 					templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.JoinStringErrs(q.Label)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 343, Col: 66}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 341, Col: 66}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var106))
 					if templ_7745c5c3_Err != nil {
@@ -1784,7 +1782,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var111 string
 				templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinStringErrs(s.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 363, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 361, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var111))
 				if templ_7745c5c3_Err != nil {
@@ -1797,7 +1795,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var112 string
 				templ_7745c5c3_Var112, templ_7745c5c3_Err = templ.JoinStringErrs(s.Status)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 364, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 362, Col: 56}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var112))
 				if templ_7745c5c3_Err != nil {
@@ -1810,7 +1808,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var113 string
 				templ_7745c5c3_Var113, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d events", s.Events))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 364, Col: 98}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 362, Col: 98}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var113))
 				if templ_7745c5c3_Err != nil {
@@ -1823,7 +1821,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var114 string
 				templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.JoinStringErrs(s.UpdatedAt.Local().Format("Jan 2, 15:04"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 364, Col: 148}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 362, Col: 148}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var114))
 				if templ_7745c5c3_Err != nil {
@@ -1841,7 +1839,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var115 templ.SafeURL
 					templ_7745c5c3_Var115, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/play/" + s.ID + "/open"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 368, Col: 78}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 366, Col: 78}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var115))
 					if templ_7745c5c3_Err != nil {
@@ -1918,7 +1916,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 						var templ_7745c5c3_Var120 templ.SafeURL
 						templ_7745c5c3_Var120, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/play/" + s.ID + "/start"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 378, Col: 80}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 376, Col: 80}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var120))
 						if templ_7745c5c3_Err != nil {
@@ -1969,7 +1967,7 @@ func CampaignPage(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var124 templ.SafeURL
 				templ_7745c5c3_Var124, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/play/" + s.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 385, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 383, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var124))
 				if templ_7745c5c3_Err != nil {
@@ -2063,7 +2061,7 @@ func PlayerScreenPage(sessionID string, title string) templ.Component {
 			var templ_7745c5c3_Var128 string
 			templ_7745c5c3_Var128, templ_7745c5c3_Err = templ.ResolveAttributeValue(sessionID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 404, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 402, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var128)
 			if templ_7745c5c3_Err != nil {
@@ -2124,7 +2122,7 @@ func PlayPage(sessionID string, title string) templ.Component {
 			var templ_7745c5c3_Var131 string
 			templ_7745c5c3_Var131, templ_7745c5c3_Err = templ.ResolveAttributeValue(sessionID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 413, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 411, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var131)
 			if templ_7745c5c3_Err != nil {
@@ -2173,7 +2171,7 @@ func customTag(kind string) templ.Component {
 		var templ_7745c5c3_Var133 string
 		templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.ResolveAttributeValue("custom " + kind)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 421, Col: 129}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `campaigns.templ`, Line: 419, Col: 129}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var133)
 		if templ_7745c5c3_Err != nil {

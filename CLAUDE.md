@@ -89,9 +89,12 @@ Tailwind CSS v4, canvas rendering.
     `docs/campaigns/three-plagues/script/` (`script.Assemble` joins them);
     `make load-script CAMPAIGN="Three Plagues"` saves it to the campaign. Edit one part
     file at a time rather than reading them all.
-  - Audio clips for the script: files named after passage ids in `AUDIO_DIR/<campaign id>/`
-    (default `./audio`, gitignored), `internal/audio`; `GET /api/campaigns/{id}/audio`,
-    `GET /audio/{campaign}/{file}`, upload/delete forms on the campaign page.
+  - Audio clips for the script: named after passage ids (`Q2-03.mp3`; `Q3-09a` is an extra
+    clip of Q3-09), kept in Postgres (table `audio_clip`, `internal/store/audio.go`;
+    naming and formats in `internal/audio`); `GET /api/campaigns/{id}/audio`,
+    `GET /audio/{campaign}/{file}` (ranges and ETag), upload/delete forms on the campaign
+    page. On branch `online`; main still keeps them as files in `AUDIO_DIR/<campaign id>/`,
+    which `make import-audio AUDIO_FOLDER=...` copies into a database.
   - Abilities in play: session heroes copy mana and abilities from their class;
     `ability.use` / `ability.reset` track cooldowns (`cooldowns`: ability id -> ready round).
   - Fights (`internal/tracker/fights.go`): `fight.start`/`fight.end` set `State.Fight`. In a

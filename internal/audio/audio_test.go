@@ -33,83 +33,56 @@ func TestClipName(t *testing.T) {
 	}
 }
 
-func TestLibrary(t *testing.T) {
-	dir := t.TempDir()
-	lib := New(dir)
-
-	clips, err := lib.List(campaign)
-	if err != nil || len(clips) != 0 {
-		t.Fatalf("empty: %v %v", clips, err)
-	}
-	if err := lib.Save(campaign, "Q2-03.mp3", strings.NewReader("mp3 data")); err != nil {
-		t.Fatal(err)
-	}
-	if err := lib.Save(campaign, "Q3-09a.ogg", strings.NewReader("ogg")); err != nil {
-		t.Fatal(err)
-	}
-	// Saving an id again with another format replaces the old file.
-	if err := lib.Save(campaign, "Q2-03.wav", strings.NewReader("wav data")); err != nil {
-		t.Fatal(err)
-	}
-	clips, err = lib.List(campaign)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(clips, map[string]string{"Q2-03": "Q2-03.wav", "Q3-09a": "Q3-09a.ogg"}) {
-		t.Fatalf("clips: %v", clips)
-	}
-	if data, _ := os.ReadFile(filepath.Join(dir, campaign, "Q2-03.wav")); string(data) != "wav data" {
-		t.Fatalf("file on disk: %q", data)
-	}
-
-	// Files copied into the folder by hand count too; other files are ignored.
-	if err := os.WriteFile(filepath.Join(dir, campaign, "E-01.m4a"), []byte("m4a"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, campaign, "notes.txt"), []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if clips, _ = lib.List(campaign); len(clips) != 3 || clips["E-01"] != "E-01.m4a" {
-		t.Fatalf("hand-copied clip: %v", clips)
-	}
-
-	path, err := lib.Path(campaign, "Q2-03.wav")
-	if err != nil || path != filepath.Join(dir, campaign, "Q2-03.wav") {
-		t.Fatalf("path: %q %v", path, err)
-	}
-	for _, name := range []string{"../Q2-03.wav", "notes.txt", "Q9-99.mp3"} {
-		if _, err := lib.Path(campaign, name); err == nil {
-			t.Errorf("Path(%q) should fail", name)
+func TestContentType(t *testing.T) {
+	for ext, want := range map[string]string{".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".opus": "audio/ogg", ".wav": "audio/wav", ".webm": "audio/webm", ".flac": "audio/flac"} {
+		if got := ContentType(ext); got != want {
+			t.Errorf("ContentType(%q) = %q, want %q", ext, got, want)
 		}
 	}
-
-	if err := lib.Delete(campaign, "Q2-03"); err != nil {
-		t.Fatal(err)
-	}
-	if clips, _ = lib.List(campaign); len(clips) != 2 {
-		t.Fatalf("after delete: %v", clips)
-	}
-	if err := lib.Delete(campaign, "Q2-03"); err == nil {
-		t.Fatal("deleting a missing clip should fail")
-	}
-
-	for _, bad := range []string{"", "..", "../other", "not-a-uuid"} {
-		if _, err := lib.List(bad); err == nil {
-			t.Errorf("List(%q) should fail", bad)
-		}
-		if err := lib.Save(bad, "Q1.mp3", strings.NewReader("x")); err == nil {
-			t.Errorf("Save(%q) should fail", bad)
+	for _, ext := range Extensions {
+		if ContentType(ext) == "application/octet-stream" {
+			t.Errorf("%s has no type", ext)
 		}
 	}
 }
 
-func TestSaveLimit(t *testing.T) {
-	lib := New(t.TempDir())
-	lib.MaxBytes = 4
-	if err := lib.Save(campaign, "Q1.mp3", strings.NewReader("12345")); err == nil {
-		t.Fatal("a file over the limit should be refused")
+func TestReadClipHasALimit(t *testing.T) {
+	if data, err := ReadClip(strings.NewReader("12345"), 5); err != nil || string(data) != "12345" {
+		t.Errorf("at the limit: %q %v", data, err)
 	}
-	if clips, _ := lib.List(campaign); len(clips) != 0 {
-		t.Fatalf("a refused file must not be left behind: %v", clips)
+	if _, err := ReadClip(strings.NewReader("123456"), 5); err == nil {
+		t.Error("over the limit should fail")
+	}
+}
+
+func TestScanDirFindsCampaignFolders(t *testing.T) {
+	dir := t.TempDir()
+	write := func(rel string) {
+		p := filepath.Join(dir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(campaign + "/Q2-03.mp3")
+	write(campaign + "/Q3-09a.ogg")
+	write(campaign + "/notes.txt")    // not audio: skipped
+	write("not-a-campaign/Q1-01.mp3") // not a campaign folder: skipped
+	write("Q1-02.mp3")                // loose file: skipped
+	found, skipped, err := ScanDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, f := range found {
+		got = append(got, f.Campaign+"/"+f.ID+f.Ext)
+	}
+	if want := []string{campaign + "/Q2-03.mp3", campaign + "/Q3-09a.ogg"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("found %v, want %v", got, want)
+	}
+	if len(skipped) != 3 {
+		t.Errorf("skipped %v", skipped)
 	}
 }
