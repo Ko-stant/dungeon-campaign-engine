@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 20:41 EDT
+**Last Updated**: 2026-10-05 20:46 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -266,6 +266,12 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
        in an admin's nav, `AUTH_MEMBERS=approve|open` (approve by default), migration 00013
        (`app_user.member_status`; earlier users start as members), admins approved at
        sign-in, and `/assets/` served through the guard. Checked in the browser.
+     - **Step 3** (`aa2bac4`): audio clips in Postgres (migration 00014 `audio_clip`), served
+       with ranges and an ETag; `AUDIO_DIR` is gone from the server. `make import-audio
+       AUDIO_FOLDER=... [DB=...]` copies main's `AUDIO_DIR` folder into a database,
+       skipping unchanged clips (campaign ids match because the databases are copies). The
+       GM will record clips with ElevenLabs from the script text: upload them on main for
+       game night, then import them into `hq_online` or the hosted database.
    - **Exit:** live at `dce.kostant.dev`; anyone not approved is refused everywhere,
      `/assets/` included.
 7. **Structured rules data:**
@@ -321,8 +327,9 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
      Known gaps to expect: ability effects, trap effects and search rewards are resolved by
      the GM (Phase 7); no reaction prompts yet (D10).
   2. **Phase 6, hosting:** decided (Render, a private Docker Hub image, members approved
-     on first sign-in, audio in Postgres). Steps 1 (the image) and 2 (members) are done;
-     next is step 3, audio clips in Postgres.
+     on first sign-in, audio in Postgres). Steps 1-3 (image, members, audio in Postgres)
+     are done; next is step 4, hosting housekeeping (`/healthz`, WebSocket keepalive pings,
+     `PORT`).
 - **Open decisions:** none pending.
 - **Devices (GM, 2026-10-05):** desktop and laptop browsers only; phones aren't supported, so
   browser checks skip phone widths.
@@ -394,7 +401,8 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
   `9ddc831`, Phase 5c: the GM rules console; "Next round" ends the round by the rules.
 - 2026-10-05: Phase 6 decided: Render with a private Docker Hub image that carries the
   content, members approved on first sign-in, audio in Postgres. `7c76a44`, step 1: the
-  image; `2b1424a`, the public-repository guard; `59b3981`, step 2: members.
+  image; `2b1424a`, the public-repository guard; `59b3981`, step 2: members; `aa2bac4`,
+  step 3: audio in Postgres.
   - `a3c9caf`: seats, the seat stream, presence.
   - `569d23b`: the seat page and player lines for rules commands.
   - The seat page's browser check is still to do.
