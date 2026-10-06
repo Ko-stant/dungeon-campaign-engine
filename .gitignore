@@ -4,6 +4,8 @@
 /audio/
 .bin/
 .env
+# The Render service's settings, secrets included (docs/ONLINE_AND_RULES_PLAN.md, Phase 6)
+.env.render
 db/backups/
 tmp/
 internal/web/static/styles/app.css
