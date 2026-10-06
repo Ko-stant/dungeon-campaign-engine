@@ -161,10 +161,5 @@ func (s *Server) playerStream(w http.ResponseWriter, r *http.Request) {
 	}
 	s.playerStreams.add(id, conn)
 	defer s.playerStreams.remove(id, conn)
-	// The screen only listens; read until it goes away so close frames are handled.
-	for {
-		if _, _, err := conn.Read(r.Context()); err != nil {
-			return
-		}
-	}
+	s.listen(r.Context(), conn)
 }

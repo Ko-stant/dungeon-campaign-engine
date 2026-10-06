@@ -688,10 +688,5 @@ func (s *Server) sessionStream(w http.ResponseWriter, r *http.Request) {
 	}
 	s.streams.add(id, conn)
 	defer s.streams.remove(id, conn)
-	// Clients only listen; read until they go away so close frames are handled.
-	for {
-		if _, _, err := conn.Read(r.Context()); err != nil {
-			return
-		}
-	}
+	s.listen(r.Context(), conn)
 }

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/auth"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
@@ -35,6 +36,8 @@ type Server struct {
 	seats seatHub
 	// assetsDir holds the board art served under /assets/ (empty: none).
 	assetsDir string
+	// keepalive is how often idle WebSockets are pinged (0: defaultKeepalive).
+	keepalive time.Duration
 }
 
 // New creates the app server.
@@ -44,6 +47,7 @@ func New(st *store.Store, catalog *content.Catalog) *Server {
 
 // Register mounts the app's routes.
 func (s *Server) Register(serveMux *http.ServeMux) {
+	serveMux.HandleFunc("GET /healthz", s.healthz)
 	s.registerSignIn(serveMux)
 	mux := guarded{s: s, mux: serveMux}
 	mux.HandleFunc("GET /api/catalog", s.getCatalog)

@@ -269,12 +269,7 @@ func (s *Server) seatStream(w http.ResponseWriter, r *http.Request) {
 		s.seats.remove(id, c)
 		s.announcePresence(id)
 	}()
-	// Seats only listen; read until they go away so close frames are handled.
-	for {
-		if _, _, err := conn.Read(r.Context()); err != nil {
-			return
-		}
-	}
+	s.listen(r.Context(), conn)
 }
 
 // announcePresence tells every seat and the GM's tracker who is here.

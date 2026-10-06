@@ -45,7 +45,7 @@ COPY --from=content /monsters ./content/monsters
 COPY --from=content /heroes ./content/heroes
 COPY --from=content /traps ./content/traps
 COPY --from=assets /tiles_cleaned ./assets/tiles_cleaned
-ENV APP_PORT=8080
+ENV PORT=8080
 EXPOSE 8080
 USER nonroot:nonroot
 ENTRYPOINT ["/app/dungeon-campaign-engine"]

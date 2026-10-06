@@ -67,6 +67,9 @@ func Open(ctx context.Context, url string) (*Store, error) {
 }
 
 // Close releases all connections.
+// Ping checks the database answers.
+func (s *Store) Ping(ctx context.Context) error { return s.pool.Ping(ctx) }
+
 func (s *Store) Close() {
 	s.pool.Close()
 }

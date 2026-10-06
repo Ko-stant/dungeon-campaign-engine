@@ -71,3 +71,26 @@ func TestCrossSitePostsAreBlockedWhenSignInIsOn(t *testing.T) {
 		t.Errorf("the table companion is unchanged: %d", code)
 	}
 }
+
+func TestHealthCheckFailsWithoutDatabase(t *testing.T) {
+	rec := httptest.NewRecorder()
+	testRoutes(t).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("GET /healthz = %d, want 503 without a database", rec.Code)
+	}
+}
+
+func TestListenPortPrefersTheHostsPort(t *testing.T) {
+	for _, c := range []struct {
+		env  map[string]string
+		want string
+	}{
+		{map[string]string{}, "8080"},
+		{map[string]string{"APP_PORT": "8090"}, "8090"},
+		{map[string]string{"APP_PORT": "8090", "PORT": "10000"}, "10000"},
+	} {
+		if got := listenPort(func(k string) string { return c.env[k] }); got != c.want {
+			t.Errorf("listenPort(%v) = %q, want %q", c.env, got, c.want)
+		}
+	}
+}

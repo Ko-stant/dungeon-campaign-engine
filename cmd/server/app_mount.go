@@ -68,7 +68,7 @@ func mountUnavailable(mux *http.ServeMux, reason string) {
 	unavailable := func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "Unavailable: "+reason, http.StatusServiceUnavailable)
 	}
-	for _, p := range []string{"/maps", "/maps/", "/campaigns", "/campaigns/", "/play/", "/api/"} {
+	for _, p := range []string{"/maps", "/maps/", "/campaigns", "/campaigns/", "/play/", "/api/", "/healthz"} {
 		mux.HandleFunc(p, unavailable)
 	}
 }

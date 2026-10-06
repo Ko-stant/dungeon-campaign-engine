@@ -35,6 +35,17 @@ func newMux(cfg routesConfig) (*http.ServeMux, func()) {
 	return mux, cleanup
 }
 
+// listenPort is the port to serve on: PORT when the host sets it (Render
+// does), else APP_PORT (.env), else 8080.
+func listenPort(getenv func(string) string) string {
+	for _, k := range []string{"PORT", "APP_PORT"} {
+		if p := getenv(k); p != "" {
+			return p
+		}
+	}
+	return "8080"
+}
+
 // protect blocks cross-site form posts and API calls (another site making a
 // signed-in browser change things here) whenever sign-in is on.
 func protect(h http.Handler, cfg auth.Config) http.Handler {
@@ -48,10 +59,7 @@ func main() {
 	if err := dotenv.Load(".env"); err != nil {
 		log.Printf("warning: reading .env: %v", err)
 	}
-	port := os.Getenv("APP_PORT")
-	if port == "" {
-		port = "8080"
-	}
+	port := listenPort(os.Getenv)
 
 	authCfg, err := auth.ConfigFromEnv(os.Getenv)
 	if err != nil {
