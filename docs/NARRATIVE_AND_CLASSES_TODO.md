@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-05 21:00 EDT
+**Last Updated**: 2026-10-06 19:12 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -27,13 +27,22 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   does not tell the heroes about Soul Gems, plagues or bosses up front. Done: the prologue
   (P0-01 to P0-04), Quest 1 (with notes Q1-N1 to Q1-N3) and Quest 2 (with notes Q2-N1 to
   Q2-N3). The heroes learn the rest from notes left by failed parties.
-- The campaign in the app still has the **old 26-passage script**. Load the revised one
-  only when the GM asks: `make load-script CAMPAIGN="Three Plagues"`.
+- The campaign in the app has the revised 34-passage script (loaded by the GM on
+  2026-10-06). Reload it after script edits only when the GM asks:
+  `make load-script CAMPAIGN="Three Plagues"`.
 - Maps: Quest 1's board ("Adventurers' Herald", quest "Crumbling Halls") is built; Quest
   2's board ("Eastmarch", 48x30) is started; Quest 3's is not. What each map must contain
   is in `docs/campaigns/three-plagues/MAPS.md`.
 
 **Next**
+- **Voiced audio (2026-10-06): the prologue and Quest 1 are done** (10 clips, about 15
+  minutes), made by the GM in ElevenLabs Studio with Eleven v4 and placed in
+  `audio/<campaign id>/` (gitignored; the GM keeps copies elsewhere). `make narration-text
+  ONLY=...` writes paste-ready text; the GM-approved copies with v4 delivery tags are in
+  `docs/campaigns/three-plagues/narration/` (see its README for what worked). Along the way
+  P0-04 gained a Chronicler lead-in (the night at the Tollen Arms, meeting Maren), Q1-01 an
+  ending line, and Q1-02, Q1-N1 and Q1-N3 were brought in line with the GM's quest notes
+  (the chalk safe path is dropped). Quests 2-3 audio waits until after game day.
 - **Table Polls, 3 of 4 votes (2026-10-05; Brentanamo's player still to vote):** narration
   a mix of audio and the Chronicler (3-0); monster Body exact 2-1; critical misses keep
   (3-0); monster crits keep (3-0); the Chronicler tracks cooldowns and Determination 2-1

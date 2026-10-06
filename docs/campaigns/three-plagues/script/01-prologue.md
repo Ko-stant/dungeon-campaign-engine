@@ -1,6 +1,6 @@
 # The Three Plagues - Script: Prologue
 
-**Last Updated**: 2026-10-03 16:01 EDT
+**Last Updated**: 2026-10-06 10:39 EDT
 
 Part of the read-aloud script; see [README.md](README.md) for the format and how to load it.
 Everything above the `##` heading is left out when the script is assembled.
@@ -184,10 +184,33 @@ for the heroes to discover.
 
 ### P0-04 - At the gate
 
-- **When:** the heroes reach the doors of the Crumbling Halls (right before Q1-01).
-- **Speaker:** Maren Ashby.
-- **Voice:** brisk and practical; she has done this before and did not like how it went.
-- **Sound:** dead, still air; a low groan of settling stone.
+- **When:** after P0-03: the night at the Tollen Arms, the walk east with Maren Ashby, and
+  her words at the doors of the Crumbling Halls (right before Q1-01).
+- **Speakers:** Narrator, then Maren Ashby.
+- **Voice (Narrator):** unhurried and a little somber; a quiet breath between the lord's
+  plea and the dark. **Voice (Maren):** brisk and practical; she has done this before and
+  did not like how it went.
+- **Sound:** a quiet inn at night; then dead, still air and a low groan of settling stone.
+
+**Narrator**
+
+> That night, as Sergeant Hale promised, there is a hot meal at the Tollen Arms, and a bed
+> for each of you. The stew is thin, and the ale is thinner, but the innkeeper will not
+> take your coin. Sleep comes slowly. No wind rattles the shutters. There is only the
+> silence.
+>
+> In the gray light of morning, a woman is waiting for you in the inn yard, beside a mule
+> loaded with packs. She is perhaps forty, plainly dressed, her hair pinned back tight, and
+> she looks you over the way a quartermaster counts sacks of flour. Maren Ashby, steward of
+> Voss Keep. She gives you her name, and very little else, before she leads you out of
+> town along the eastern road.
+>
+> It is a long, quiet walk. The fields on either side lie gray and bare, and the road
+> climbs slowly into the shadow of Tollen Hill. At last it ends at a pair of great stone
+> doors, set deep into the hillside, their carvings worn smooth by time. Maren stops before
+> them, and turns to face you.
+
+**Maren Ashby**
 
 > This is as far as the road goes. Past these doors it's Warden stone all the way to the
 > east side of the hill. Or it was.

@@ -1,6 +1,6 @@
 # The Three Plagues - Maps
 
-**Last Updated**: 2026-10-03 16:01 EDT
+**Last Updated**: 2026-10-06 18:09 EDT
 
 What each quest's board has to contain for the story to work, so map building and the
 script stay in step. The story is in [NARRATIVE.md](NARRATIVE.md); the read-aloud text,
@@ -35,8 +35,8 @@ monsters comes later; this file is about layout.
 - **Must contain**: the western doors (start, P0-04 / Q1-01); a Warden burial room with a
   tomb (Q1-02, the scratched verse); a collapsed passage with Tomas Reed (Q1-N1); a room
   near the eastern gate for Bram's warning (Q1-N2); a statue with the pilgrims' chalk mark
-  (Q1-N3); the eastern gate as the exit (Q1-03). Optional: a chalk-marked safe route past
-  a trap; something in the walls that shies from light.
+  (Q1-N3); the eastern gate as the exit (Q1-03). Optional: something in the walls that
+  shies from light.
 - **Leads to**: Quest 2's start, by the Halls' eastern gate.
 
 ## Quest 2 - The Bloated Fields

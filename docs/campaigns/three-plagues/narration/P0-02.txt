@@ -1,0 +1,9 @@
+[warmly, unhurried] Your party nods, and follows Sergeant Hale out of the square and up the winding road toward the hill where the lord's house stands.
+
+[unhurried, observant] Along the way, the town shows you more of itself. A baker's stall with three small loaves on it, and a line of people waiting for them. A child tipping a rain barrel to reach the last of the water at the bottom. [softer] Faces that turn to watch you pass, hollow-eyed and quiet. Nobody calls out. Nobody asks who you are. [pause] [quietly] They have watched strangers ride east before, and they have learned not to hope.
+
+[unhurried, a little somber] Voss Keep stands at the top of the road, a squat gray house of stone behind an old curtain wall. Two guards stand at its gate, spears held a little too tightly. Sergeant Hale calls out to them, and they hurry to draw the bolts. [pause] As you pass between them, neither one will meet your eyes.
+
+[slower, gently] Inside the wall there was a garden once, and a proud one. Rows of fruit trees. Trimmed hedges. A fountain carved as four figures holding up a single basin: one crowned with stone, one with a wave, one with a feather, one with a flame. [pause] [softer, a little sad] The trees are bare now, their leaves curled brown on the ground. The hedges have gone gray and brittle. The fountain is dry, [pause] and a crack runs through all four of the carved figures.
+
+[unhurried, a little somber] Sergeant Hale keeps you moving. Across the courtyard, through a pair of heavy doors, along a hall hung with faded tapestries, until at last he stops before a tall oak door, [pause] [quietly] and knocks twice.

@@ -1,6 +1,6 @@
 # The Three Plagues - Script: Quest 1 - The Crumbling Halls
 
-**Last Updated**: 2026-10-03 16:01 EDT
+**Last Updated**: 2026-10-06 18:09 EDT
 
 Part of the read-aloud script; see [README.md](README.md) for the format and how to load it.
 Everything above the `##` heading is left out when the script is assembled.
@@ -24,7 +24,6 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 - [ ] **Q1-N2** - a note in a room near the eastern gate: "Q1-N2 Bram Greyford: warning
       pinned with a broken knife".
 - [ ] **Q1-N3** - a Statue (furniture) with a note: "Q1-N3 Sister Wenna: chalk mark on the statue".
-      Optional: more chalk notes along a safe route past a trap.
 - [ ] **Q1-03** - exit squares at the eastern gate (the exit tool).
 - [ ] Optional: something in the walls that shies from light (Tomas's note), if the GM
       wants a monster to match it.
@@ -40,7 +39,7 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 
 > The great doors groan shut behind you, and the dark closes in.
 >
-> The Wardens built this gatehouse to last forever. It is dying anyway. Every step you
+> The Wardens built this gatehouse to last forever. But it is dying anyway. Every step you
 > take shakes loose a trickle of dust. Pillars lean like tired old men. Whole passages
 > have fallen in, and others, sealed for centuries, have cracked open to the air. The
 > stone itself is weakening, as if the earth has forgotten how to hold its shape.
@@ -48,6 +47,9 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 > Others have come this way before you. Somewhere in these dark halls, some of them, or at
 > least their bones, are still here. Whatever has made its home down here will not welcome
 > you either. Somewhere on the far side is the eastern gate, and beyond it, the Eastmarch.
+>
+> With a glance at one another, faces grim with determination, you set off. Slow and steady;
+> you will not let this place be the end of you.
 
 **Quest goals**
 - Cross the Crumbling Halls and leave by the eastern gate.
@@ -69,12 +71,12 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 > Beneath them runs a verse, cut deep and careful, as if whoever carved it wanted it never
 > to be forgotten.
 >
-> Three the plagues that bar the way.\
-> Three the stones that turn the key.
+> "Three the plagues that bar the way.\
+> Three the stones that turn the key..."
 >
 > The last two lines are gone. Not worn away by time. Gouged out, stroke after stroke,
 > by something sharp, until the stone beneath is scarred and pale. Someone wanted these
-> words forgotten after all.
+> words forgotten.
 >
 > Of the third line, a single word has survived, near the middle: one.
 >
@@ -84,9 +86,9 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 
 - **When:** the heroes search the room where the GM placed a collapsed passage and a
   soldier's remains. The note is tucked inside a dented Keep-guard helmet.
-- **Speakers:** Narrator, then Tomas Reed.
+- **Speakers:** Narrator, then Tomas Reed, then the Narrator again.
 - **Voice (Tomas):** a young soldier, hoarse and exhausted, trying to stay brave for
-  whoever reads it. He gets quieter toward the end.
+  whoever reads it. He gets quieter toward the end and breaks off mid-sentence.
 - **Sound:** a slow drip; the creak of settling stone.
 
 **Narrator**
@@ -95,6 +97,8 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 > the same as Sergeant Hale's. His legs are pinned beneath a slab of stone, and one hand is
 > still curled around a stub of charcoal. Inside his helmet, folded small, is a scrap of
 > paper covered in cramped, careful writing.
+>
+> It reads:
 
 **Tomas Reed**
 
@@ -107,7 +111,11 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 > It's been two days, I think. Something moves in the walls when the torch gutters. It
 > doesn't come close while there's light. I have one torch left.
 >
-> Tell my mother I wasn't afraid. Tell her I wasn't.
+> Tell my mother I wasn't afraid. Tell her...
+
+**Narrator**
+
+> The writing trails off with a long mark, illegible.
 
 ### Q1-N2 - A warning in red
 
@@ -141,14 +149,15 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 ### Q1-N3 - The pilgrims' mark
 
 - **When:** the heroes search the room where the GM placed a statue. The mark is drawn on
-  its base in white chalk.
+  it in white chalk.
 - **Speakers:** Narrator, then Sister Wenna.
-- **Voice (Wenna):** a calm, warm older woman, sure of her faith. Read it as a blessing.
+- **Voice (Wenna):** a calm, warm older woman, sure of her faith. Read it as a blessing
+  that ends in a plain warning.
 - **Sound:** quiet; a single drip.
 
 **Narrator**
 
-> On the base of a statue, sheltered from the dust, someone has drawn in white chalk a circle cut into
+> On a statue, sheltered from the dust, someone has drawn in white chalk a circle cut into
 > four parts. In each part is a small sign: a mountain, a wave, a feather and a flame. The
 > sign of the Chapel of the Four. Beneath it, in a neat and steady hand, are a few lines of
 > writing.
@@ -159,8 +168,9 @@ Quest notes list (Mark used once found). Start the note text with the passage id
 > third day of our journey. The Four walk with us.
 >
 > We seek the Wardens' fortress on the Rise, where the records say the way to the Chambers
-> begins. If you are of the faith, pray for us. If you are not, follow the chalk. We have
-> marked the safe path.
+> begins. If you are of the faith, pray for us. If you are not, take care: while this
+> place is filled with fine treasure, it is also full of devilish traps, some tainted with
+> ancient magics.
 
 ### Q1-03 - The eastern gate
 

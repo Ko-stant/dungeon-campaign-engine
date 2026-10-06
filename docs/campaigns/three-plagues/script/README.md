@@ -1,6 +1,6 @@
 # The Three Plagues - Read-Aloud Script
 
-**Last Updated**: 2026-09-29 16:39 EDT
+**Last Updated**: 2026-10-06 10:39 EDT
 
 Everything the players hear, in play order, split into one file per part so each part can
 be edited on its own. Each passage is meant to become one audio clip. World, cast and
@@ -47,6 +47,10 @@ to the terminal instead, for pasting into the campaign page's Script box.
   or generate each line separately and join them, or use a tool that supports several
   voices.
 - **Pronunciation** of every name is in the cast table in [NARRATIVE.md](../NARRATIVE.md).
+- **Paste-ready text:** `make narration-text [ONLY=P0,Q1]` writes `narration/` (gitignored):
+  one `<id>.txt` per passage with only the spoken words, and a README.md listing each
+  passage's notes, its speaker turns in order (to assign voices paragraph by paragraph),
+  the voices and the pronunciation of the names spoken.
 - **Quest goals** are table text. Read them out or show them; they are not part of a clip.
 - **Sound** notes are optional background suggestions.
 - **Keep the format** the tracker reads: `### ID - Title` headings, `- **Label:**` notes,
@@ -62,7 +66,7 @@ to the terminal instead, for pasting into the campaign page's Script box.
 | P0-01 | Haldmere Cross | Narrator, Sergeant Hale |
 | P0-02 | The road to Voss Keep | Narrator |
 | P0-03 | The lord's request | Lord Voss, Narrator |
-| P0-04 | At the gate | Maren Ashby |
+| P0-04 | At the gate | Narrator, Maren Ashby |
 | Q1-01 | The Crumbling Halls | Narrator |
 | Q1-02 | The Warden's verse | Narrator |
 | Q1-N1 | The patrol's last watch (note) | Narrator, Tomas Reed |
