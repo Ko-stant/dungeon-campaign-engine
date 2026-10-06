@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 21:32 EDT
+**Last Updated**: 2026-10-06 19:20 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -365,8 +365,9 @@ at the table. Do these at that merge (and keep the list current as the branches 
   and `AUTH_MODE` unset keeps sign-in off, so the table companion should behave as before:
   play a quick table session after the merge, and add the table-mode golden test (Phase 1c)
   if it still isn't written.
-- **Merge main into `online` regularly** (main is ahead by its own commits), so the final
-  merge stays small.
+- **Merge main into `online` regularly**, so the final merge stays small. Last done
+  2026-10-06 (`9cafaa6`: the script revisions for voicing and `narration-text`; one conflict
+  in `CLAUDE.md`).
 
 ## Resume here
 - **Where things stand (2026-10-05, end of a long session):**
@@ -467,3 +468,7 @@ at the table. Do these at that merge (and keep the list current as the branches 
   - `569d23b`: the seat page and player lines for rules commands.
   - The seat page's browser check is still to do.
   - The GM noted the `kostant.dev` domain for hosting.
+- 2026-10-06: the GM's first ElevenLabs clips (P0-01 to P0-04, Q1-01 to Q1-03, Q1-N1 to
+  Q1-N3; 27 MB) imported from main's `audio/` into `hq_online` and the hosted database, each
+  checked byte for byte. Main merged into `online` (`9cafaa6`), and the revised script loaded
+  into both (identical to `hq`'s). A hosted backup was taken first.
