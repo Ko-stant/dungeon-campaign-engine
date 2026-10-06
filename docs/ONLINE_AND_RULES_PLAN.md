@@ -385,9 +385,9 @@ at the table. Do these at that merge (and keep the list current as the branches 
      (Barbarian, Elf...) have no combat stats, so their heroes can't attack in rules mode.
      Known gaps to expect: ability effects, trap effects and search rewards are resolved by
      the GM (Phase 7); no reaction prompts yet (D10).
-  2. **Phase 6, hosting:** decided (Render, a private Docker Hub image, members approved
-     on first sign-in, audio in Postgres). done: live at `dce.kostant.dev` with the GM's
-     data and backups. Deploy changes with `make deploy`; back up with `make hosted-backup`.
+  2. **Phase 6, hosting: done** (Render, a private Docker Hub image, members approved on
+     first sign-in, audio in Postgres): live at `dce.kostant.dev` with the GM's data and
+     backups. Deploy changes with `make deploy`; back up with `make hosted-backup`.
 - **Open decisions:** none pending.
 - **Devices (GM, 2026-10-05):** desktop and laptop browsers only; phones aren't supported, so
   browser checks skip phone widths.
