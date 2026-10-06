@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-06 19:20 EDT
+**Last Updated**: 2026-10-06 19:36 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -472,3 +472,5 @@ at the table. Do these at that merge (and keep the list current as the branches 
   Q1-N3; 27 MB) imported from main's `audio/` into `hq_online` and the hosted database, each
   checked byte for byte. Main merged into `online` (`9cafaa6`), and the revised script loaded
   into both (identical to `hq`'s). A hosted backup was taken first.
+- 2026-10-06: deployed `f36ffd3` (the merge from main, with the player screen's log kept
+  open) with `make deploy`; live within about 30 seconds, `/healthz` ok.
