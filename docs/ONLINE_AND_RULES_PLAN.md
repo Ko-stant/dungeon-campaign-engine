@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 20:49 EDT
+**Last Updated**: 2026-10-05 20:52 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -272,6 +272,9 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
        skipping unchanged clips (campaign ids match because the databases are copies). The
        GM will record clips with ElevenLabs from the script text: upload them on main for
        game night, then import them into `hq_online` or the hosted database.
+     - **Step 4** (`f52714f`): `GET /healthz` (no sign-in; 503 without the database), keepalive
+       pings every 25 s on all three streams (one `listen` loop), and `PORT` before
+       `APP_PORT` (the image sets `PORT=8080`). Checked with the image on `PORT=10000`.
    - **Exit:** live at `dce.kostant.dev`; anyone not approved is refused everywhere,
      `/assets/` included.
 7. **Structured rules data:**
@@ -353,9 +356,9 @@ at the table. Do these at that merge (and keep the list current as the branches 
      Known gaps to expect: ability effects, trap effects and search rewards are resolved by
      the GM (Phase 7); no reaction prompts yet (D10).
   2. **Phase 6, hosting:** decided (Render, a private Docker Hub image, members approved
-     on first sign-in, audio in Postgres). Steps 1-3 (image, members, audio in Postgres)
-     are done; next is step 4, hosting housekeeping (`/healthz`, WebSocket keepalive pings,
-     `PORT`).
+     on first sign-in, audio in Postgres). Steps 1-4 (image, members, audio in Postgres,
+     housekeeping) are done; next is step 5, the Render setup (the GM creates the service and
+     database; we write the settings).
 - **Open decisions:** none pending.
 - **Devices (GM, 2026-10-05):** desktop and laptop browsers only; phones aren't supported, so
   browser checks skip phone widths.
@@ -428,7 +431,7 @@ at the table. Do these at that merge (and keep the list current as the branches 
 - 2026-10-05: Phase 6 decided: Render with a private Docker Hub image that carries the
   content, members approved on first sign-in, audio in Postgres. `7c76a44`, step 1: the
   image; `2b1424a`, the public-repository guard; `59b3981`, step 2: members; `aa2bac4`,
-  step 3: audio in Postgres.
+  step 3: audio in Postgres; `f52714f`, step 4: health check, pings, `PORT`.
   - `a3c9caf`: seats, the seat stream, presence.
   - `569d23b`: the seat page and player lines for rules commands.
   - The seat page's browser check is still to do.
