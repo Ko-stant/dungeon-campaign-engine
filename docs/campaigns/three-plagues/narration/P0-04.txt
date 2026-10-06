@@ -1,0 +1,13 @@
+[gently, unhurried] That night, as Sergeant Hale promised, there is a hot meal at the Tollen Arms, and a bed for each of you. The stew is thin, and the ale is thinner, but the innkeeper will not take your coin. Sleep comes slowly. No wind rattles the shutters. [pause] [quietly] There is only the silence.
+
+[unhurried, observant] In the gray light of morning, a woman is waiting for you in the inn yard, beside a mule loaded with packs. She is perhaps forty, plainly dressed, her hair pinned back tight, and she looks you over the way a quartermaster counts sacks of flour. [pause] Maren Ashby, steward of Voss Keep. She gives you her name, and very little else, before she leads you out of town along the eastern road.
+
+[unhurried, a little somber] It is a long, quiet walk. The fields on either side lie gray and bare, and the road climbs slowly into the shadow of Tollen Hill. At last it ends at a pair of great stone doors, set deep into the hillside, their carvings worn smooth by time. [pause] Maren stops before them, and turns to face you.
+
+[dry, practical, a little weary] This is as far as the road goes. Past these doors it's Warden stone all the way to the east side of the hill. [pause] Or it was.
+
+[dry, practical, a little weary] Listen. [pause] Hear that? [pause] That's the hill settling. It does it more every week.
+
+[dry, practical, a little weary] Lord Voss had me pack what we could spare. It isn't much, so don't waste it.
+
+[dry, practical, a little weary] One more thing. The last patrol we sent in came out with three men instead of five, and none of them would say what they saw. Keep your torches lit and your voices low. If you find anything the others left behind, a pack, a letter, anything, bring it back. Their families deserve to know. [pause] And when you find the far gate, don't look back. Just keep going east.

@@ -1,0 +1,13 @@
+[warmly, unhurried] The wagon lurches to a halt, and the dust it kicked up along the road settles slowly around you. It has nowhere else to go. [pause] There is no wind here. [quietly] None at all. The air hangs heavy and still, and it tastes of grit.
+
+[unhurried, observant] This is Haldmere Cross. It must have been a fine market town once. The square is wide and well paved, ringed with tall timber houses and the painted signs of a dozen trades. [softer, a little sad] But half the shutters are closed, and half the signs have faded past reading. At the well in the middle of the square, a line of townsfolk waits with buckets, and the water that comes up is the color of rust. Beyond the rooftops, the sails of a windmill stand perfectly still against a colorless sky. In the doorway of a smithy, a broad-shouldered smith stares down at a bed of coals that should be glowing, [pause] and is not.
+
+[warmly, unhurried] One of you presses a few coins into the driver's hand. He takes them without a word, turns his wagon around in the square, and whips the horses back the way you came. He does not look back. [pause] [low] Whatever this place is, he has no wish to stay in it a moment longer than he must.
+
+[quietly, uneasy] People are watching you. Not openly. From behind half-closed shutters, from the line at the well, from the shadow of the smithy door. [warmer, unhurried] Then a man in a dented breastplate and a faded blue surcoat crosses the square toward you, one hand raised in greeting. [gently] He is not young, and he looks as though he has not slept well in a very long time.
+
+[gruff but polite, tired, trying to sound hopeful] Welcome to Haldmere. And thank you, all of you, for answering the call. I'm Sergeant Corin Hale, of the Keep guard.
+
+[gruff but polite, tired] Lord Voss is eager to meet you. I'm sorry to rush you. I'm sure you'd give a great deal for a hot meal and a bed at the Tollen Arms, and you'll have both, I promise. [pause] But the lord asked me to bring you straight to him, and time is one thing we don't have much of.
+
+[courteous] This way, if you please.

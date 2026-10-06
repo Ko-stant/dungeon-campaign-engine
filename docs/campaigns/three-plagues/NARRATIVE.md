@@ -1,6 +1,6 @@
 # The Three Plagues - Story Bible
 
-**Last Updated**: 2026-10-03 16:01 EDT
+**Last Updated**: 2026-10-06 18:09 EDT
 
 The world, cast and secrets of the campaign. Everything the players hear is in
 the [script/](script/README.md) folder (one file per part), written to be read aloud or turned into audio. Rules and classes
@@ -163,8 +163,8 @@ rest are still to do.
   home.
 - **The Chapel pilgrims** (about three years ago) - **Sister Wenna** and eight of the
   faithful of the Chapel of the Four, seeking the Wardens' fortress on the Rise, "where the
-  records say the way to the Chambers begins". They chalked the Chapel's sign and a safe
-  path through the Halls (Q1-N3; the GM may let the chalk marks show a way around a trap).
+  records say the way to the Chambers begins". They chalked the Chapel's sign on a statue
+  in the Halls, with a warning of treasure and of traps tainted with ancient magic (Q1-N3).
   They went around the Fields to the north; **Brother Ansel** went into the tithe barn in
   the night and was lost. Wenna's page from the road (Q2-N2) is the first to link the green
   light in the barn with "three stones that turn the key".

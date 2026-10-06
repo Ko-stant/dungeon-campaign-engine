@@ -1,6 +1,6 @@
 # Player screen (TV) plan
 
-**Last Updated**: 2026-10-05 11:40 EDT
+**Last Updated**: 2026-10-05 20:55 EDT
 
 ## Goal
 At the table the GM runs the tracker on the laptop and opens a second Chrome tab, the
@@ -28,7 +28,7 @@ only what the heroes know.
   mid-game) hides it if the players vote that way.
 - **Party panel** on one side: each hero's Body, Mind, Mana, status and effects; the round
   and a Fight badge.
-- **Event feed:** closed by default, opened with a toggle on the TV. It shows a
+- **Event feed:** open by default (the players' vote, 2026-10-05; it was closed before), closed or reopened with the Events toggle on the TV. It shows a
   player-safe line per change and never mentions traps, GM notes, hidden monsters or
   anything the players can't see.
 - **Secrecy on the server:** the player screen has its own API and stream carrying only the

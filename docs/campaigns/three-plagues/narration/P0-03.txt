@@ -1,0 +1,33 @@
+[deep, tired, courteous] Come in, come in, please. Sergeant, close the door on your way out, would you? [lower] I would rather my household did not hear this.
+
+[quietly, unhurried] The door clicks shut behind you. Lord Aldren Voss is a tall man gone thin, gray at the temples, in a coat that was made for someone heavier. The chamber is lined with shelves of ledgers and old maps, and a small fire burns in the grate. It gives light, but almost no warmth. [pause] The lord gestures you toward the chairs by the fire, but he does not sit.
+
+[deep, tired but proud] Thank you for heeding my call. I know how far some of you have come.
+
+[deep, tired but proud] You came through Haldmere Cross to get here, so you have seen it for yourselves. [pause] This country is dying. The wells run low, and what water they give tastes of iron. The wind has not turned a mill sail in two seasons. The forges that made Haldmere Cross the finest market in the east have gone cold. The smiths feed them every scrap of coal they have, and still something draws the heat away, as if the fire itself were being drunk. [pause] [quieter] And now the soil in our fields comes up gray behind the plow.
+
+[deep, weary, quietly proud] My grandfather called this the richest vale in the kingdom. [pause] [low] If nothing changes, my grandchildren, if they live, will know it as a grave.
+
+[quietly, unhurried] He falls quiet, and crosses to the window. Out beyond the town, the sails of the windmill hang motionless. For a long moment he says nothing at all. [pause] His hand tightens on the window ledge. When he turns back to you, he looks older than he did a moment ago.
+
+[deep, tired but proud] My archivist, Brother Tobias, believes he has found the reason. He has spent the better part of a year in the undercroft of the Chapel of the Four, among records nobody has read in generations.
+
+[deep, tired, a little wistful] Long ago, this country was kept by the Wardens. They watched over the Elemental Chambers, somewhere deep in the east, beyond Tollen Hill. Whatever power lay in those Chambers flowed out into this land. It kept our fields full, our wells sweet and our forges burning. It made Haldmere what it was.
+
+[deep, tired but proud] No one has seen a Warden in over a century. And no one has set foot in the Chambers for longer than anyone can remember. The last record Tobias could find says only that they were sealed. Whatever they gave us, it seems, was sealed away with them. [pause] [low] And ever since, this land has been dying. Slowly, at first. [pause] Not slowly any longer.
+
+[quietly, unhurried] He rubs his eyes. When he speaks again, his voice is lower.
+
+[low, deep, tired] I have not simply sat and watched it happen. For ten years I have sent people east. Soldiers. Hunters. Sellswords who were paid far more than they were worth. Priests from the Chapel. Most of them never came back. [pause] The few who did were changed. They would not speak of what they had seen, not to me, not to their own families. [quietly] One of them has not spoken a single word since the day he returned.
+
+[low, deep, tired] And it is getting worse. The farms of the Eastmarch have gone silent. The grain carts stopped coming this spring. The last drovers to make it home swore they were set upon by ogres, great brutes who took every sack of grain and every head of cattle, and would have taken the drovers too, had they been any slower.
+
+[low, deep, tired] Whatever has done this has made its home somewhere beyond the old Warden gatehouse under Tollen Hill. The townsfolk call it the Crumbling Halls now, because the whole place looks ready to come down on anyone foolish enough to go inside. [pause] It is the only road east.
+
+[deep, tired] I cannot spare any more of my people. [pause] And if I am honest, I do not think any of them would go.
+
+[quietly, unhurried] He looks at each of you in turn. [pause] And then the lord of Haldmere does something you did not expect. [pause] He bows his head.
+
+[deep, quiet, humble] So I am asking you. [pause] Please. Go east, through the Halls. Find out what has become of the Elemental Chambers. [pause] And whatever evil has made its home out there, drive it from this land.
+
+[deep, tired but proud] Haldmere has little left to offer. [pause] [softly] But whatever it has is yours, if you can give it back its future.

@@ -43,7 +43,8 @@ async function main(): Promise<void> {
   let feed: PlayerEvent[] = first.events;
   let lastSeq = first.eventSeq;
   let pick: Pick | null = null;
-  let feedOpen = false;
+  // The players voted to keep the log open (Table Polls, 2026-10-05); the Events button still closes it.
+  let feedOpen = true;
   let unread = 0;
   let live = false;
   // Text size, remembered by this browser (the TV's), so it reads from across the room.
