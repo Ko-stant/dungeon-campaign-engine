@@ -34,7 +34,7 @@ define with_dotenv
 bash -lc 'set -a; [ -f .env ] && source ./.env; set +a; $$1'
 endef
 
-.PHONY: all tools dev build run test test-race cover lint fmt tidy clean image push deploy import-audio \
+.PHONY: all tools dev build run test test-race cover lint fmt tidy clean image push deploy import-audio hosted-backup hosted-restore-check hosted-restore \
         test-db test-js test-all \
         db-up db-up-all db-down db-destroy db-logs db-psql \
         db-migrate-new db-migrate-up db-migrate-down db-backup db-restore import-content \
@@ -208,6 +208,18 @@ push: image
 	@if $(hub_public); then echo "$(DOCKER_IMAGE) is PUBLIC on Docker Hub: make it private before pushing."; exit 1; fi
 	docker push $(DOCKER_IMAGE):$(IMAGE_TAG)
 	@if $(hub_public); then echo "WARNING: $(DOCKER_IMAGE) is PUBLIC on Docker Hub. Make it private now (Settings > Visibility)."; exit 1; fi
+
+# Backups of the hosted database (scripts/hosted-db.sh; HOSTED_DATABASE_URL in .env).
+# hosted-backup downloads a dump to db/backups/; hosted-restore-check restores one into a
+# throwaway database and checks its row counts; hosted-restore replaces the hosted database.
+hosted-backup:
+	@set -a; . ./.env; set +a; scripts/hosted-db.sh backup
+
+hosted-restore-check:
+	@scripts/hosted-db.sh check "$(or $(FILE),$$(ls -t db/backups/hosted-*.dump | head -1))"
+
+hosted-restore:
+	@set -a; . ./.env; set +a; scripts/hosted-db.sh restore "$(FILE)"
 
 # Deploys the pushed tag. The hook URL holds a key, so it is never printed.
 deploy: push
