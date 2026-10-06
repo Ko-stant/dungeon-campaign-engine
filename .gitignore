@@ -2,6 +2,7 @@
 /assets/
 /packs/
 /audio/
+/narration/
 .bin/
 .env
 db/backups/

@@ -81,7 +81,8 @@ Tailwind CSS v4, canvas rendering.
     The Three Plagues script is a folder of numbered part files,
     `docs/campaigns/three-plagues/script/` (`script.Assemble` joins them);
     `make load-script CAMPAIGN="Three Plagues"` saves it to the campaign. Edit one part
-    file at a time rather than reading them all.
+    file at a time rather than reading them all. `make narration-text [ONLY=P0,Q1]`
+    (`internal/narration`) writes paste-ready text for voicing it into `narration/`.
   - Audio clips for the script: files named after passage ids in `AUDIO_DIR/<campaign id>/`
     (default `./audio`, gitignored), `internal/audio`; `GET /api/campaigns/{id}/audio`,
     `GET /audio/{campaign}/{file}`, upload/delete forms on the campaign page.

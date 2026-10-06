@@ -33,7 +33,7 @@ endef
         test-db test-js test-all \
         db-up db-up-all db-down db-destroy db-logs db-psql \
         db-migrate-new db-migrate-up db-migrate-down db-backup db-restore import-content \
-        load-script print-script fill-campaign
+        load-script print-script fill-campaign narration-text
 
 all: build
 
@@ -159,6 +159,12 @@ fill-campaign:
 # Write the joined script to the terminal (for pasting into the campaign page).
 print-script:
 	@$(GO) run ./cmd/load-script -dir $(SCRIPT_DIR) -print
+
+# Write paste-ready text for voicing the script (one <id>.txt per passage plus a
+# README.md with speaker turns and pronunciation) into ./narration (gitignored).
+# make narration-text [ONLY=P0,Q1]
+narration-text:
+	@$(GO) run ./cmd/narration-text -dir $(SCRIPT_DIR) $(if $(ONLY),-only "$(ONLY)")
 
 # --- Tailwind commands ---
 tailwind-build:
