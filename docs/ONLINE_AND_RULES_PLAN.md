@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 20:52 EDT
+**Last Updated**: 2026-10-05 21:29 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -275,6 +275,27 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
      - **Step 4** (`f52714f`): `GET /healthz` (no sign-in; 503 without the database), keepalive
        pings every 25 s on all three streams (one `listen` loop), and `PORT` before
        `APP_PORT` (the image sets `PORT=8080`). Checked with the image on `PORT=10000`.
+     - **Step 5** (GM, 2026-10-05): Render is set up. Postgres 18 (`dce`, user `dce_ks_admin`,
+       Virginia, $6 plan with 5 GB), the Starter web service from
+       `docker.io/kostant/dungeon-campaign-engine` with a read-only Docker Hub token, health
+       check `/healthz`, `dce.kostant.dev` (behind Cloudflare DNS), the second Discord
+       redirect. The service's variables are in the worktree's gitignored `.env.render`;
+       `RENDER_DEPLOY_HOOK` and `HOSTED_DATABASE_URL` (the External URL) are in its `.env`.
+       Checked: `/healthz` ok, Discord sign-in works, signed-out visitors are sent to sign-in
+       for pages, `/members` and `/assets/`, and the API answers 401.
+     - **Step 6** (2026-10-05): the GM's data is on the hosted database, copied from main's
+       `hq` (the GM's choice: it had 3 session events newer than `hq_online`):
+       1. `pg_dump -Fc --no-owner --no-privileges` of `hq` (read-only).
+       2. On the hosted database: `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`, then
+          `pg_restore --no-owner --no-privileges` (run from the `hq_postgres_online`
+          container with the URL passed through the environment, never printed).
+       3. A redeploy (the deploy hook) migrated it from 10 to 14.
+       4. `fill-campaign -apply` against it added class reach (nothing else changed).
+       5. The GM's Discord user was made owner of the boards, campaigns and classes.
+       - Counts matched `hq`: 4 campaigns, 5 boards, 4 quests, 3 sessions, 133 events.
+       - **Don't repeat this now that the site is in use:** the copy replaces everything,
+         including members, online sessions and audio clips made there. From here on, data
+         flows to the hosted database by hand (`make import-audio ... DB=...`, or the app).
    - **Exit:** live at `dce.kostant.dev`; anyone not approved is refused everywhere,
      `/assets/` included.
 7. **Structured rules data:**
@@ -356,9 +377,9 @@ at the table. Do these at that merge (and keep the list current as the branches 
      Known gaps to expect: ability effects, trap effects and search rewards are resolved by
      the GM (Phase 7); no reaction prompts yet (D10).
   2. **Phase 6, hosting:** decided (Render, a private Docker Hub image, members approved
-     on first sign-in, audio in Postgres). Steps 1-4 (image, members, audio in Postgres,
-     housekeeping) are done; next is step 5, the Render setup (the GM creates the service and
-     database; we write the settings).
+     on first sign-in, audio in Postgres). Steps 1-6 are done: the site is live at
+     `dce.kostant.dev` with the GM's data. Next is step 7, backups (download a dump to the
+     GM's machine, restore one as practice).
 - **Open decisions:** none pending.
 - **Devices (GM, 2026-10-05):** desktop and laptop browsers only; phones aren't supported, so
   browser checks skip phone widths.
@@ -431,7 +452,8 @@ at the table. Do these at that merge (and keep the list current as the branches 
 - 2026-10-05: Phase 6 decided: Render with a private Docker Hub image that carries the
   content, members approved on first sign-in, audio in Postgres. `7c76a44`, step 1: the
   image; `2b1424a`, the public-repository guard; `59b3981`, step 2: members; `aa2bac4`,
-  step 3: audio in Postgres; `f52714f`, step 4: health check, pings, `PORT`.
+  step 3: audio in Postgres; `f52714f`, step 4: health check, pings, `PORT`. Steps 5 (Render set up by the GM) and 6 (the GM's data
+  copied from `hq`) done the same evening; the site is live.
   - `a3c9caf`: seats, the seat stream, presence.
   - `569d23b`: the seat page and player lines for rules commands.
   - The seat page's browser check is still to do.
