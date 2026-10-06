@@ -194,9 +194,14 @@ image:
 		--build-context content=$(CONTENT_SRC) --build-context assets=$(ASSETS_SRC) \
 		-t $(DOCKER_IMAGE):$(IMAGE_TAG) --load .
 
+# Docker Hub answers 200 to anyone for a public repository (404 if private or missing).
+hub_public = test "$$(curl -s -o /dev/null -w '%{http_code}' https://hub.docker.com/v2/namespaces/$(firstword $(subst /, ,$(DOCKER_IMAGE)))/repositories/$(lastword $(subst /, ,$(DOCKER_IMAGE))))" = 200
+
 push: image
 	@case "$(IMAGE_TAG)" in *-dirty) echo "Commit first: $(IMAGE_TAG) has uncommitted changes."; exit 1;; esac
+	@if $(hub_public); then echo "$(DOCKER_IMAGE) is PUBLIC on Docker Hub: make it private before pushing."; exit 1; fi
 	docker push $(DOCKER_IMAGE):$(IMAGE_TAG)
+	@if $(hub_public); then echo "WARNING: $(DOCKER_IMAGE) is PUBLIC on Docker Hub. Make it private now (Settings > Visibility)."; exit 1; fi
 
 # Deploys the pushed tag. The hook URL holds a key, so it is never printed.
 deploy: push
