@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 21:29 EDT
+**Last Updated**: 2026-10-05 21:32 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -296,6 +296,14 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
        - **Don't repeat this now that the site is in use:** the copy replaces everything,
          including members, online sessions and audio clips made there. From here on, data
          flows to the hosted database by hand (`make import-audio ... DB=...`, or the app).
+     - **Step 7** (`24b726c`): backups. `make hosted-backup` (a dump plus row counts in
+       `db/backups/`), `make hosted-restore-check [FILE=...]` (restores into a throwaway
+       Postgres 18 container and compares counts), `make hosted-restore FILE=...` (replaces
+       the hosted database after typing "replace"; Render's 3-day point-in-time restore
+       first). Practiced: the live database's first backup restored with every count
+       matching. Take a backup after each session.
+   - **Phase 6 done (2026-10-05):** live at `dce.kostant.dev`; anyone not approved is refused
+     everywhere, `/assets/` included.
    - **Exit:** live at `dce.kostant.dev`; anyone not approved is refused everywhere,
      `/assets/` included.
 7. **Structured rules data:**
@@ -362,14 +370,15 @@ at the table. Do these at that merge (and keep the list current as the branches 
 
 ## Resume here
 - **Where things stand (2026-10-05, end of a long session):**
-  - Phases 1-4 are done, and Phase 5 is built through 5c; only its exit (a whole quest
-    online) is left. All committed on `online`; the last code commit is `9ddc831`.
+  - Phases 1-4 and 6 are done (the site is live at `dce.kostant.dev`), and Phase 5 is built
+    through 5c; only its exit (a whole quest online) is left. All committed on `online`; the last code commit is `9ddc831`.
   - Tests: 408 Go (`make test-db`) and 340 bun, with `make lint` clean.
   - The worktree's `.env` has `AUTH_MODE=discord` and `AUTH_ADMINS=discord:<the GM's id>`.
   - Main and the GM's `hq` database were never touched. Main's `.claude/launch.json` is
     restored.
 - **Next, in order:**
-  1. **The Phase 5 exit:** play a whole small quest online (the GM tracker plus seat tabs),
+  1. **The Phase 5 exit, now on the hosted site:** play a whole small quest online (the GM
+     tracker plus friends' seats),
      ideally with the GM and friends signed in with Discord. The GM started Phase 6 first,
      so this can be played on the hosted site once it is up. The GM ran `make fill-campaign`
      on `hq_online`, so its Three Plagues classes have their reach. The catalog classes
@@ -377,9 +386,8 @@ at the table. Do these at that merge (and keep the list current as the branches 
      Known gaps to expect: ability effects, trap effects and search rewards are resolved by
      the GM (Phase 7); no reaction prompts yet (D10).
   2. **Phase 6, hosting:** decided (Render, a private Docker Hub image, members approved
-     on first sign-in, audio in Postgres). Steps 1-6 are done: the site is live at
-     `dce.kostant.dev` with the GM's data. Next is step 7, backups (download a dump to the
-     GM's machine, restore one as practice).
+     on first sign-in, audio in Postgres). done: live at `dce.kostant.dev` with the GM's
+     data and backups. Deploy changes with `make deploy`; back up with `make hosted-backup`.
 - **Open decisions:** none pending.
 - **Devices (GM, 2026-10-05):** desktop and laptop browsers only; phones aren't supported, so
   browser checks skip phone widths.
@@ -453,7 +461,8 @@ at the table. Do these at that merge (and keep the list current as the branches 
   content, members approved on first sign-in, audio in Postgres. `7c76a44`, step 1: the
   image; `2b1424a`, the public-repository guard; `59b3981`, step 2: members; `aa2bac4`,
   step 3: audio in Postgres; `f52714f`, step 4: health check, pings, `PORT`. Steps 5 (Render set up by the GM) and 6 (the GM's data
-  copied from `hq`) done the same evening; the site is live.
+  copied from `hq`) done the same evening; the site is live. `24b726c`, step 7: backups. Phase 6
+  done.
   - `a3c9caf`: seats, the seat stream, presence.
   - `569d23b`: the seat page and player lines for rules commands.
   - The seat page's browser check is still to do.

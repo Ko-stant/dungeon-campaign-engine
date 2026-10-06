@@ -29,6 +29,10 @@ Tailwind CSS v4, canvas rendering.
 - `make push` / `make deploy` - Push the tag to the private Docker Hub repo, then start the
   Render deploy (`RENDER_DEPLOY_HOOK` in `.env`, a secret). The image holds HeroQuest
   material: never push it to GitHub or anywhere public.
+- `make hosted-backup` / `make hosted-restore-check [FILE=...]` / `make hosted-restore FILE=...` -
+  Back up the hosted database (`HOSTED_DATABASE_URL` in `.env`, a secret) to `db/backups/`,
+  practice-restore a backup into a throwaway container, or replace the hosted database (asks
+  first). Never copy local data over the hosted database: it holds members and online play.
 
 ### Testing and quality
 - `make test` - Go tests (database tests skip without a URL)
