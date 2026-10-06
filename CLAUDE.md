@@ -134,6 +134,9 @@ Tailwind CSS v4, canvas rendering.
   - Owners are board, campaign, custom monster and custom class (quests and sessions follow
     theirs).
   - Handlers taking an id from a request body call `mayUseFromRequest`.
+  - Membership: only members get past the guard (`AUTH_MEMBERS=approve`, the default: new
+    users wait on `/waiting` until an admin lets them in on `/members`; `open` lets everyone
+    in). Admin-only routes are listed in `adminRoute`. `/assets/` goes through the guard.
 - Online play in the app (branch `online`): `/lobby`, `/join/{id}`, the seat page
   `/play/{id}/seat` (`pages/seat.ts`, `seat/model.ts`; `tracker.SeatView`, seat API and
   stream in `internal/app/seat.go`), and the GM's rules console in the tracker
