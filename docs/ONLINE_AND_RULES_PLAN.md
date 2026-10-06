@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-05 20:46 EDT
+**Last Updated**: 2026-10-05 20:49 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -309,6 +309,32 @@ Each phase lands in a few sessions, is test-first, and records its commits here.
     - a report on balance gaps, comparing learned and scripted play.
 12. **Content sharing:** packs with owners and visibility, validated by `Quest.Check`.
 13. **Generated campaigns:** packs generated against the same validators.
+
+## Merging back into main
+Nothing here is urgent: `online` merges into main only when the GM wants the online features
+at the table. Do these at that merge (and keep the list current as the branches drift):
+- **Audio clips (GM, 2026-10-05).** Until the merge, **main is the source of truth for clips**:
+  the GM records them with ElevenLabs and uploads them on main (files in main's
+  `AUDIO_DIR/<campaign id>/`), then copies them to this branch with `make import-audio
+  AUDIO_FOLDER=../dungeon-campaign-engine/audio` (unchanged clips are skipped; a clip in the
+  folder replaces one with the same id in the database, so don't upload clips straight
+  into `online`'s campaign page meanwhile).
+  - After the merge main's server no longer reads `AUDIO_DIR`, so the clips must be in `hq`
+    before the next game night. Plan: at merge time, have the server import `AUDIO_DIR` on
+    start when the folder exists (the same skip-unchanged import, logged), so nothing is
+    lost even if the step is forgotten; or run `make import-audio` against `hq` right after
+    the merge. Check the reader plays them, then the folder can be archived.
+  - Code: main's file-based `internal/audio` and `internal/app/audio.go` give way to
+    `online`'s; anything main adds to audio before then is redone on the database version.
+- **Migrations.** `online`'s 00011-00014 (users, session open, members, audio clips) are
+  renumbered after any migrations main adds first; goose applies them to `hq` on the first
+  start after the merge. Back up `hq` first (`make db-backup`).
+- **Table mode.** Rules mode is opt-in per session (`State.Rules == nil` is the table game)
+  and `AUTH_MODE` unset keeps sign-in off, so the table companion should behave as before:
+  play a quick table session after the merge, and add the table-mode golden test (Phase 1c)
+  if it still isn't written.
+- **Merge main into `online` regularly** (main is ahead by its own commits), so the final
+  merge stays small.
 
 ## Resume here
 - **Where things stand (2026-10-05, end of a long session):**
