@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-06 19:12 EDT
+**Last Updated**: 2026-10-07 19:38 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
