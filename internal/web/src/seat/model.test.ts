@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { PlayerState } from '../players/types.ts';
-import { activeHero, clickAction, groupActions, statusLine, turnDetail } from './model.ts';
-import type { Action, SeatHero, SeatState } from './types.ts';
+import { activeHero, clickAction, groupActions, seatFromUpdate, statusLine, turnDetail } from './model.ts';
+import type { Action, SeatHero, SeatState, SeatUpdate } from './types.ts';
 
 const act = (label: string, type: string, payload: Record<string, unknown> = {}): Action => ({ label, command: { type, payload } });
 
@@ -77,5 +77,23 @@ describe('turnDetail', () => {
     expect(turnDetail(hero({ turn: { heroId: 'hero-1', moveRoll: 7, moveLeft: 4 } }))).toBe('Rolled 7: 4 squares left · action ready');
     expect(turnDetail(hero({ turn: { heroId: 'hero-1', moveRoll: 7, moveLeft: 1, acted: true, moveDone: true } }))).toBe('Movement over · action used');
     expect(turnDetail(hero({ turn: { heroId: 'hero-1', acted: true } }))).toBe('Move (roll first) · action used');
+  });
+});
+
+describe('seatFromUpdate', () => {
+  const seat = (names: string[]): SeatState => ({ round: 1, heroes: names.map((name, i) => hero({ id: `hero-${String(i)}`, name })) });
+  const update = (eventSeq: number, names: string[]): SeatUpdate => ({ player: { state: pv, event: null, eventSeq, feed: null }, seat: seat(names) });
+
+  test('a new event brings the new seat', () => {
+    expect(seatFromUpdate(update(6, ['Grom']), 5)?.heroes.map((h) => h.name)).toEqual(['Grom']);
+  });
+
+  test('a seat sent again for the same event is taken: the GM handed this player a hero', () => {
+    expect(seatFromUpdate(update(5, ['Grom', 'Ilsa']), 5)?.heroes.map((h) => h.name)).toEqual(['Grom', 'Ilsa']);
+  });
+
+  test('a seat from an older event, or no seat at all, changes nothing', () => {
+    expect(seatFromUpdate(update(4, ['Grom']), 5)).toBeNull();
+    expect(seatFromUpdate({ presence: [] }, 5)).toBeNull();
   });
 });

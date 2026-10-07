@@ -114,7 +114,12 @@ templ JoinPage(d JoinData) {
 					<ul class="space-y-2 text-sm">
 						for _, h := range d.Free {
 							<li class="flex items-center justify-between">
-								<span><span class="font-semibold">{ h.Name }</span> <span class="opacity-60">{ h.ClassName }</span></span>
+								<span>
+									<span class="font-semibold">{ h.Name }</span> <span class="opacity-60">{ h.ClassName }</span>
+									if h.Player != "" {
+										<span class="text-xs opacity-60">· usually { h.Player }</span>
+									}
+								</span>
 								<form method="post" action={ templ.SafeURL("/join/" + d.SessionID + "/claim/" + h.ID) }>
 									<button type="submit" class={ linkButton }>Play this hero</button>
 								</form>

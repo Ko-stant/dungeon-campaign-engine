@@ -103,7 +103,7 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 	}
 	d := views.CampaignPageData{ID: c.ID, Name: c.Name, Gold: c.Gold}
 	for _, h := range heroes {
-		row := views.HeroRow{ID: h.ID, Name: h.Name, Player: h.Player, Class: h.Class, Equipped: equippedNames(h), Notes: h.Notes}
+		row := views.HeroRow{ID: h.ID, Name: h.Name, Player: h.Player, PlayedBy: h.UserID, Class: h.Class, Equipped: equippedNames(h), Notes: h.Notes}
 		if def, ok := cat.Hero(h.Class); ok {
 			row.Class, row.ClassCustom = def.Name, def.Custom
 			// The totals the hero would start a quest with.
@@ -165,6 +165,11 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 	sessions, err := s.store.ListSessions(ctx, c.ID)
 	if err != nil {
 		return views.CampaignPageData{}, err
+	}
+	if s.auth.On() {
+		if d.Members, err = s.memberChoices(ctx); err != nil {
+			return views.CampaignPageData{}, err
+		}
 	}
 	d.Sessions = sessionLinks(sessions)
 	for i := range d.Sessions {

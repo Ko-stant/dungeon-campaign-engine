@@ -34,6 +34,8 @@ type HeroRow struct {
 	ID          string
 	Name        string
 	Player      string
+	// PlayedBy is the user who plays the hero online ("" when free).
+	PlayedBy    string
 	Class       string
 	ClassCustom bool
 	// Equipped names the hero's equipped items (the old free-text equipment
@@ -94,6 +96,9 @@ type CampaignPageData struct {
 	ID     string
 	Name   string
 	Heroes []HeroRow
+	// Members are who may be given a hero to play online; empty with
+	// sign-in off (the table companion), which hides the Played by choice.
+	Members []MemberChoice
 	// Gold is the party's purse.
 	Gold     int
 	Sessions []SessionLink
@@ -158,6 +163,12 @@ templ appNav(active string) {
 	</nav>
 }
 
+// MemberChoice is a member the GM may give a hero to.
+type MemberChoice struct {
+	ID   string
+	Name string
+}
+
 // CampaignsPage lists campaigns, their active sessions, and a create form.
 templ CampaignsPage(campaigns []CampaignListItem, formError string) {
 	@components.Page("Campaigns", "") {
@@ -166,6 +177,12 @@ templ CampaignsPage(campaigns []CampaignListItem, formError string) {
 				<h1 class="text-2xl font-bold text-amber-400">Campaigns</h1>
 				@appNav("campaigns")
 			</header>
+			if _, signedIn := components.SignedIn(ctx); signedIn && len(campaigns) == 0 {
+				<p class="rounded-lg border border-amber-500/60 bg-amber-500/10 px-4 py-3 text-sm">
+					Here to play? Your GM's games are under <a href="/lobby" class="font-semibold text-amber-400 hover:underline">Play</a>:
+					join one there with a hero. This page is for running your own campaigns.
+				</p>
+			}
 			<section class={ cardClass }>
 				<h2 class="mb-4 text-lg font-semibold">New campaign</h2>
 				<form method="post" action="/campaigns" class="flex gap-3">
@@ -229,7 +246,16 @@ templ CampaignPage(d CampaignPageData) {
 							for _, h := range d.Heroes {
 								<tr>
 									<td class="py-2 font-semibold">{ h.Name }</td>
-									<td>{ h.Player }</td>
+									<td>
+										if len(d.Members) > 0 {
+											@playedBy(d, h)
+											if h.Player != "" {
+												<span class="text-xs opacity-60">usually { h.Player }</span>
+											}
+										} else {
+											{ h.Player }
+										}
+									</td>
 									<td>
 										{ h.Class }
 										if h.ClassCustom {
@@ -363,22 +389,27 @@ templ CampaignPage(d CampaignPageData) {
 							</div>
 							<div class="flex items-center gap-2">
 								if s.Online && s.Status == "active" {
+									if s.Open {
+										<span class="rounded-full border border-positive/60 px-2 py-0.5 text-xs text-positive" title="Listed in the players' lobby: members can join with a hero">Open to players</span>
+									} else {
+										<span class="rounded-full border border-border/60 px-2 py-0.5 text-xs opacity-70" title="Not in the players' lobby: nobody can join">Closed to players</span>
+									}
+									if !s.Started {
+										<form method="post" action={ templ.SafeURL("/play/" + s.ID + "/start") }>
+											<button type="submit" class={ linkButton } title="Turn the rules on and open it to players: they take their turns from their seats">Start online play</button>
+										</form>
+									} else {
+										<span class="text-xs text-amber-400" title="The rules are on">Online</span>
+									}
 									<form method="post" action={ templ.SafeURL("/play/" + s.ID + "/open") }>
 										if s.Open {
 											<input type="hidden" name="open" value="0"/>
-											<button type="submit" class={ linkButton } title="Players see it in the lobby and can join">Close to players</button>
+											<button type="submit" class={ linkButton } title="Take it out of the lobby; players already in keep playing">Close</button>
 										} else {
 											<input type="hidden" name="open" value="1"/>
-											<button type="submit" class={ linkButton } title="List it in the lobby so players can join with a hero">Open to players</button>
+											<button type="submit" class={ linkButton } title="List it in the players' lobby so members can join with a hero">Let players join</button>
 										}
 									</form>
-									if !s.Started {
-										<form method="post" action={ templ.SafeURL("/play/" + s.ID + "/start") }>
-											<button type="submit" class={ linkButton } title="Turn the rules on: players take their turns from their seats">Start online play</button>
-										</form>
-									} else {
-										<span class="text-xs text-amber-400">Online</span>
-									}
 								}
 								<a href={ templ.SafeURL("/play/" + s.ID) } class={ linkButton }>
 									if s.Status == "active" {
@@ -417,4 +448,18 @@ templ PlayPage(sessionID string, title string) {
 // customTag marks a class or monster type made in this app (setup pages only).
 templ customTag(kind string) {
 	<span class="ml-1 rounded border border-brand/50 px-1 text-[0.7rem] uppercase tracking-wide text-brand" title={ "custom " + kind }>custom</span>
+}
+
+// playedBy lets the GM choose who plays a hero online, or free it for
+// anyone joining to pick.
+templ playedBy(d CampaignPageData, h HeroRow) {
+	<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/heroes/" + h.ID + "/player") } class="flex items-center gap-1">
+		<select name="user" aria-label={ "Who plays " + h.Name } class="rounded-md border border-border/60 bg-surface px-2 py-1 text-sm" onchange="this.form.requestSubmit()">
+			<option value="" selected?={ h.PlayedBy == "" }>Nobody (free)</option>
+			for _, m := range d.Members {
+				<option value={ m.ID } selected?={ h.PlayedBy == m.ID }>{ m.Name }</option>
+			}
+		</select>
+		<noscript><button type="submit" class={ linkButton }>Set</button></noscript>
+	</form>
 }

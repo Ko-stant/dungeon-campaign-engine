@@ -6,7 +6,7 @@
 
 import type { TileCoord } from '../board/geometry.ts';
 import type { PlayerState } from '../players/types.ts';
-import type { Action, SeatHero, SeatState } from './types.ts';
+import type { Action, SeatHero, SeatState, SeatUpdate } from './types.ts';
 
 /** The hero the screen acts for: the one whose turn it is, else the one the player picked, else the first. */
 export function activeHero(seat: SeatState, picked: string | null): SeatHero | null {
@@ -94,4 +94,17 @@ export function turnDetail(h: SeatHero): string {
     return 'Move (roll first) and act, in either order';
   }
   return `${move} · ${t.acted ? 'action used' : 'action ready'}`;
+}
+
+/**
+ * The seat an update brings, or null to keep the current one. A seat comes
+ * with the event it was built for: a newer event's seat is taken, and so is
+ * one sent again for the event already shown (the GM handed this player a
+ * hero, which changes no event); an older one is stale.
+ */
+export function seatFromUpdate(u: SeatUpdate, lastSeq: number): SeatState | null {
+  if (!u.seat || (u.player && u.player.eventSeq < lastSeq)) {
+    return null;
+  }
+  return u.seat;
 }

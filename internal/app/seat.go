@@ -93,6 +93,15 @@ func (h *seatHub) list(id string) []*seatConn {
 	return out
 }
 
+// setHeroes renames each connected seat's heroes (who plays which changed).
+func (h *seatHub) setHeroes(id string, heroesOf func(userID string) []string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for c := range h.conns[id] {
+		c.heroes = heroesOf(c.userID)
+	}
+}
+
 // presence lists who is connected to a session, by name, once each.
 func (h *seatHub) presence(id string) []Present {
 	byUser := map[string]*Present{}

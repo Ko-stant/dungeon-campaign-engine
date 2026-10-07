@@ -11,7 +11,7 @@ import { heroChips } from '../players/cards.ts';
 import { feedAfter } from '../players/feed.ts';
 import type { PlayerCatalog, PlayerEvent, PlayerHero, PlayerState } from '../players/types.ts';
 import { playerBoardView } from '../players/view.ts';
-import { activeHero, clickAction, groupActions, statusLine, turnDetail } from '../seat/model.ts';
+import { activeHero, clickAction, groupActions, seatFromUpdate, statusLine, turnDetail } from '../seat/model.ts';
 import type { Action, Present, SeatHero, SeatResponse, SeatState, SeatUpdate } from '../seat/types.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
@@ -210,13 +210,11 @@ async function main(): Promise<void> {
     if (u.presence) {
       presence = u.presence;
     }
+    seat = seatFromUpdate(u, lastSeq) ?? seat;
     if (u.player && u.player.eventSeq > lastSeq) {
       state = u.player.state;
       lastSeq = u.player.eventSeq;
       feed = feedAfter(feed, u.player, FEED_LENGTH);
-      if (u.seat) {
-        seat = u.seat;
-      }
     }
   }
 

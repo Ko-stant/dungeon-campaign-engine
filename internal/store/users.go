@@ -50,6 +50,14 @@ func scanUser(row pgx.Row) (User, error) {
 	return u, notFoundIfNoRows(err)
 }
 
+// GetUser returns one user.
+func (s *Store) GetUser(ctx context.Context, userID string) (User, error) {
+	if !validID(userID) {
+		return User{}, ErrNotFound
+	}
+	return scanUser(s.pool.QueryRow(ctx, `SELECT `+userColumns+` FROM app_user u WHERE u.id = $1`, userID))
+}
+
 // SetMemberStatus approves, refuses or puts back a user.
 func (s *Store) SetMemberStatus(ctx context.Context, userID, status string) error {
 	if status != MemberPending && status != MemberApproved && status != MemberRefused {

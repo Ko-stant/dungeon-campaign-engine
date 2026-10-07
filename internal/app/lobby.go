@@ -32,6 +32,7 @@ func (s *Server) registerLobby(mux routeMux) {
 	mux.HandleFunc("GET /api/sessions/{id}/seat-stream", s.seatStream)
 	mux.HandleFunc("POST /api/sessions/{id}/seat-commands", s.seatCommand)
 	mux.HandleFunc("GET /api/sessions/{id}/presence", s.getPresence)
+	s.registerPlayedBy(mux)
 }
 
 // signedInUser is the request's user. The lobby and seats exist only with
@@ -239,13 +240,20 @@ func (s *Server) openSessionForm(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/campaigns/"+ss.CampaignID, http.StatusSeeOther)
 }
 
-// startOnlineForm turns the rules on with a fresh random seed; starting a
-// game already under the rules just goes back.
+// startOnlineForm turns the rules on with a fresh random seed and opens the
+// session to players (starting online play is for playing with them);
+// starting a game already under the rules just goes back.
 func (s *Server) startOnlineForm(w http.ResponseWriter, r *http.Request) {
 	ss, state, err := s.loadSessionState(r.Context(), r.PathValue("id"))
 	if err != nil {
 		writeStoreError(w, err)
 		return
+	}
+	if state.Rules == nil && !ss.Open {
+		if err := s.store.SetSessionOpen(r.Context(), ss.ID, true); err != nil {
+			writeStoreError(w, err)
+			return
+		}
 	}
 	if state.Rules == nil {
 		var b [4]byte
