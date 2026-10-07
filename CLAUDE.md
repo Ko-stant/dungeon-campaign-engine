@@ -145,7 +145,10 @@ Tailwind CSS v4, canvas rendering.
   - Membership: only members get past the guard (`AUTH_MEMBERS=approve`, the default: new
     users wait on `/waiting` until an admin lets them in on `/members`; `open` lets everyone
     in). Admin-only routes are listed in `adminRoute`. `/assets/` goes through the guard.
-- Online play in the app (branch `online`): `/lobby`, `/join/{id}`, the seat page
+- Online play in the app (branch `online`; how players join, for the GM:
+  `docs/ONLINE_PLAY_GUIDE.md`). Who plays a hero is the campaign hero's `userId` (players
+  pick free heroes; the GM sets any hero's player on the campaign page, `played_by.go`):
+  `/lobby`, `/join/{id}`, the seat page
   `/play/{id}/seat` (`pages/seat.ts`, `seat/model.ts`; `tracker.SeatView`, seat API and
   stream in `internal/app/seat.go`), and the GM's rules console in the tracker
   (`ui/rulesConsole.ts`, `tracker/rules.ts`, from `GET /api/sessions/{id}/actions`). Hero

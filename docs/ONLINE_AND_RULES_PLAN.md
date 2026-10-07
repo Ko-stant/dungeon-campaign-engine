@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-06 19:36 EDT
+**Last Updated**: 2026-10-06 21:33 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -474,3 +474,10 @@ at the table. Do these at that merge (and keep the list current as the branches 
   into both (identical to `hq`'s). A hosted backup was taken first.
 - 2026-10-06: deployed `f36ffd3` (the merge from main, with the player screen's log kept
   open) with `make deploy`; live within about 30 seconds, `/healthz` ok.
+- 2026-10-06: the GM's first test with a friend found an empty lobby: online play was started
+  at 01:12 but the session opened to players only at 01:22. `8ef9da2`: **Start online play**
+  now also opens the session, the row says "Open/Closed to players", and the GM chooses who
+  plays each hero (**Played by** on the campaign page, for covering an absent friend; the
+  hero's usual player is kept). The browser check found and fixed a real bug: the seat page
+  dropped a seat sent for the event it already showed, so a handed-over hero appeared only on
+  reload. How players join, scenario by scenario: `docs/ONLINE_PLAY_GUIDE.md`.
