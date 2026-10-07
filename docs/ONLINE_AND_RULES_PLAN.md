@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-06 21:33 EDT
+**Last Updated**: 2026-10-06 21:37 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -481,3 +481,5 @@ at the table. Do these at that merge (and keep the list current as the branches 
   hero's usual player is kept). The browser check found and fixed a real bug: the seat page
   dropped a seat sent for the event it already showed, so a handed-over hero appeared only on
   reload. How players join, scenario by scenario: `docs/ONLINE_PLAY_GUIDE.md`.
+- 2026-10-06: deployed `3e9517a` (Played by, start-opens, the seat fix) with `make deploy`, which
+  lives only in the online worktree; live within about 30 seconds.
