@@ -1,6 +1,6 @@
 # The Three Plagues - House Rules and Hero Classes (draft)
 
-**Last Updated**: 2026-10-05 20:20 EDT
+**Last Updated**: 2026-10-07 11:44 EDT
 
 Design notes for the campaign's custom rules. Nothing here is final. Values written as
 **N** are still to be decided. Questions are collected under "Open questions" at the end.
@@ -637,6 +637,7 @@ Rogue's movement ends there.
 | Multi-Shot | Active | Cooldown 5 | Shoots up to 3 different enemies in line of sight as one action. |
 | Aimed Shot | Active | Cooldown 5 | A sure hit. The target is marked: every hero has +2 Accuracy against it until it dies or the fight ends. Movement is halved this round and next. (Hunter's Mark is merged into it.) |
 | Rain of Arrows | Active | Cooldown 7 | Every enemy within 2 squares of a chosen square is attacked once, with half the Accuracy bonus (rounded down). Roll 1d4 arrows once; each enemy hit takes weapon damage x arrows (about 17 on average with the starting bow, 28 at most). |
+| Point Blank | Passive | Always on | When the Ranger attacks an adjacent monster: +1 Accuracy and +1 damage. (Added 2026-10-07.) |
 
 **Special item - Aggamand's Quiver**: +1 Accuracy, permanently. A shot whose crit die shows
 **14-17** is charged with elemental energy and deals 1.5x weapon damage, rounded up (not Rain
@@ -653,6 +654,10 @@ crit range of 18-20, a shot is charged 20% of the time and a crit 15%.
   (chests, cupboards and the like) instead of whole rooms; not final.
 - **Secret doors and line of sight** are the GM's to track by hand (things hidden behind
   tall furniture or around corners stay the GM's call); no app support planned for now.
+- **Monster movement** (2026-10-07): monsters keep the base game's movement (Goblin 10, Orc
+  8, Skeleton 6, Zombie 5, Abomination 6, Mummy 4, Dread Warrior 4, Gargoyle 6). Those
+  without one get it on their stat line in combat.json: Goblin Archer 8, Goblin Warlock 6,
+  Orc Archer 6, Specter 8. The tracker shows it on the selected monster ("Move 8 · ...").
 **Items and treasure**
 - Items are made to fit the balance: simulations set target damage and mitigation for the
   starting kit, the end of Quest 1, the end of Quest 2 and the Quest 3 vendor, then items

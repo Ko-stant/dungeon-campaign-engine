@@ -35,6 +35,13 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   is in `docs/campaigns/three-plagues/MAPS.md`.
 
 **Next**
+- **Table testing round (2026-10-07)** on a test copy of the campaign (deleted after): the
+  tracker got a loot quick-add on the campaign page, note letters in Read aloud, a fixed
+  mode bar and hideable sidebars, sections that start closed, green class names on the TV,
+  fight reminders (the fight button pulses), no log line for repeat reveals, monster
+  movement on the selected monster (Goblin Archer 8, Goblin Warlock 6, Orc Archer 6,
+  Specter 8; applied by the GM), red "needs N mana", and the Ranger's Point Blank passive
+  (applied; handbook republished).
 - **Voiced audio (2026-10-06): the prologue and Quest 1 are done** (10 clips, about 15
   minutes), made by the GM in ElevenLabs Studio with Eleven v4 and placed in
   `audio/<campaign id>/` (gitignored; the GM keeps copies elsewhere). `make narration-text
