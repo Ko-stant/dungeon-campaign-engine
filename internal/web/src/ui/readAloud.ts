@@ -6,6 +6,7 @@
 import { passageClips, passageNeighbors, sectionProgress } from '../tracker/script.ts';
 import type { Command, ScriptPassage, ScriptSection } from '../tracker/types.ts';
 import { h } from './dom.ts';
+import { panel } from './panel.ts';
 
 const btn = 'rounded-md border border-border/60 px-3 py-1 text-sm hover:border-amber-500 disabled:opacity-40';
 
@@ -28,12 +29,26 @@ export interface ReadAloudContext {
   playClip: (clipId: string) => void;
   autoplay: boolean;
   setAutoplay: (on: boolean) => void;
+  /** Passage id -> the letters of the quest notes that hold it (on the map). */
+  noteLabels: ReadonlyMap<string, readonly string[]>;
+  /** Whether the panel is open (its header always shows). */
+  panelOpen: boolean;
+  setPanelOpen: (open: boolean) => void;
+}
+
+/** "Note B" (or "Notes B, D") for a passage's quest notes. */
+function noteTag(labels: readonly string[] | undefined): string {
+  if (!labels?.length) {
+    return '';
+  }
+  return `${labels.length === 1 ? 'Note' : 'Notes'} ${labels.join(', ')}`;
 }
 
 export function readAloudPanel(ctx: ReadAloudContext): HTMLElement {
+  const reload = h('button', { type: 'button', class: 'text-xs opacity-60 hover:opacity-100', title: 'Fetch the script again after editing it on the campaign page', onclick: ctx.reload }, 'Reload');
+  const opts = { title: 'Read aloud', open: ctx.panelOpen, onToggle: ctx.setPanelOpen, extra: [reload] };
   if (ctx.sections.length === 0) {
-    return h('section', { class: 'space-y-1' },
-      h('h2', { class: 'text-sm font-semibold' }, 'Read aloud'),
+    return panel(opts,
       h('p', { class: 'text-xs opacity-60' }, 'No script yet. ',
         h('a', { href: `/campaigns/${encodeURIComponent(ctx.campaignId)}#script`, class: 'underline hover:text-amber-400' }, 'Add one on the campaign page'),
         ', then ', h('button', { type: 'button', class: 'underline hover:text-amber-400', onclick: ctx.reload }, 'reload it'), '.'));
@@ -49,6 +64,7 @@ export function readAloudPanel(ctx: ReadAloudContext): HTMLElement {
         sec.title, h('span', { class: 'ml-2 font-normal opacity-60' }, sectionProgress(sec, ctx.read))),
       h('ul', { class: 'mt-1 space-y-0.5' }, ...sec.passages.map((p) => {
         const done = ctx.read.includes(p.id);
+        const tag = noteTag(ctx.noteLabels.get(p.id));
         return h('li', {},
           h('button', {
             type: 'button',
@@ -57,14 +73,11 @@ export function readAloudPanel(ctx: ReadAloudContext): HTMLElement {
           },
             h('span', { class: 'w-12 shrink-0 font-mono text-xs opacity-60' }, p.id),
             h('span', { class: 'min-w-0 flex-1' }, p.title),
+            tag ? h('span', { class: 'shrink-0 rounded border border-amber-500/50 px-1 text-xs font-semibold text-amber-400', title: `On the map as quest ${tag.toLowerCase()}` }, tag) : null,
             done ? h('span', { class: 'text-xs text-positive', 'aria-label': 'read' }, '✓') : null));
       })));
   });
-  return h('section', { class: 'space-y-1' },
-    h('div', { class: 'flex items-baseline justify-between' },
-      h('h2', { class: 'text-sm font-semibold' }, 'Read aloud'),
-      h('button', { type: 'button', class: 'text-xs opacity-60 hover:opacity-100', title: 'Fetch the script again after editing it on the campaign page', onclick: ctx.reload }, 'Reload')),
-    ...groups);
+  return panel(opts, ...groups);
 }
 
 function findPassage(sections: readonly ScriptSection[], id: string): { passage: ScriptPassage; section: ScriptSection } | null {
@@ -117,7 +130,8 @@ export function readerOverlay(ctx: ReadAloudContext, id: string, editable: boole
     h('article', { class: 'flex max-h-full w-full max-w-3xl flex-col rounded-lg border border-border/60 bg-surface shadow-xl' },
       h('header', { class: 'flex items-start justify-between gap-3 border-b border-border/60 px-6 py-4' },
         h('div', {},
-          h('p', { class: 'text-xs uppercase tracking-wide opacity-60' }, `${section.title} · ${passage.id}`),
+          h('p', { class: 'text-xs uppercase tracking-wide opacity-60' }, `${section.title} · ${passage.id}`,
+            noteTag(ctx.noteLabels.get(passage.id)) ? h('span', { class: 'ml-2 rounded border border-amber-500/50 px-1 font-semibold text-amber-400' }, noteTag(ctx.noteLabels.get(passage.id))) : null),
           h('h2', { class: 'text-2xl font-bold text-amber-400' }, passage.title)),
         h('button', { type: 'button', class: btn, 'aria-label': 'Close', onclick: () => { ctx.open(null); } }, 'Close')),
       audioBar,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { currentSection, passageClips, passageNeighbors, sectionProgress } from './script.ts';
+import { currentSection, noteLabels, passageClips, passageNeighbors, passageNotes, sectionProgress } from './script.ts';
 import type { Chapter, ScriptSection } from './types.ts';
 
 const passage = (id: string) => ({ id, title: `Title ${id}`, parts: [{ paragraphs: ['Text.'] }] });
@@ -76,5 +76,51 @@ describe('passageClips', () => {
   test('is empty when the passage has no clip', () => {
     expect(passageClips('P0-01', clips)).toEqual([]);
     expect(passageClips('P0-01', {})).toEqual([]);
+  });
+});
+
+describe('passageNotes', () => {
+  const note = (label: string, text: string) => ({ id: `note-${label}`, label, x: 1, y: 1, text });
+  const notes = [
+    note('A', 'Carved into the lid of a Warden\'s tomb, half buried in rubble, are four signs you have seen before.\n\n"Three the plagues..."'),
+    note('B', 'Half buried under a fall of rubble lies what is left of a soldier. A faded blue surcoat.\n\nIt reads:'),
+    note('E', 'The gate key'),
+    note('G', 'Q1-N9 the GM\'s own marker'),
+  ];
+  const tomb = { id: 'Q1-02', title: 'The verse', parts: [{ paragraphs: ['Carved into the lid of a Warden\'s tomb, half buried in rubble, are four signs you have seen before, on the cracked fountain.'] }] };
+  const soldier = { id: 'Q1-N1', title: 'Tomas', parts: [{ speaker: 'Narrator', paragraphs: ['Half buried under a fall of rubble lies what is left of a soldier.'] }, { speaker: 'Tomas', paragraphs: ['Tomas Reed.'] }] };
+
+  test('a note holding the start of the passage\'s text is its note, ignoring case and punctuation', () => {
+    expect(passageNotes(tomb, notes).map((n) => n.label)).toEqual(['A']);
+    expect(passageNotes({ ...soldier, parts: [{ paragraphs: ['HALF buried -- under a fall of rubble, lies what is left of a soldier!'] }] }, notes).map((n) => n.label)).toEqual(['B']);
+  });
+
+  test('one differing word near the start (grey and gray) still matches on the words after it', () => { // spelling:allow (the GM's note spells it this way)
+    const gate = { id: 'Q1-03', title: 'Gate', parts: [{ paragraphs: ['Daylight. A thin gray line of it, spilling under a pair of iron-bound doors at the end of the hall.'] }] };
+    const withGate = [...notes, note('F', 'Daylight. A thin grey line of it, spilling under a pair of iron-bound doors at the end of the hall. The eastern gate.')]; // spelling:allow
+    expect(passageNotes(gate, withGate).map((n) => n.label)).toEqual(['F']);
+  });
+
+  test('a note that starts with the passage id is its note too', () => {
+    expect(passageNotes({ id: 'Q1-N9', title: 'x', parts: [{ paragraphs: ['Something else entirely, with no match at all.'] }] }, notes).map((n) => n.label)).toEqual(['G']);
+  });
+
+  test('no note: none; short notes never match by accident', () => {
+    expect(passageNotes({ id: 'Q1-01', title: 'Start', parts: [{ paragraphs: ['The great doors groan shut behind you.'] }] }, notes)).toEqual([]);
+    expect(passageNotes({ id: 'X', title: 'x', parts: [{ paragraphs: ['The gate'] }] }, notes)).toEqual([]);
+  });
+
+  test('noteLabels maps each passage id to its note letters, for a whole script', () => {
+    const labels = noteLabels([{ title: 'Quest 1', passages: [tomb, soldier, passage('Q1-01')] }], notes);
+    expect(labels.get('Q1-02')).toEqual(['A']);
+    expect(labels.get('Q1-N1')).toEqual(['B']);
+    expect(labels.has('Q1-01')).toBe(false);
+  });
+
+  test('with a section given, only its passages are matched (the notes belong to the active map)', () => {
+    const script = [{ title: 'Quest 1', passages: [tomb] }, { title: 'Quest 2', passages: [{ ...soldier, id: 'Q2-N2' }] }];
+    expect([...noteLabels(script, notes, 0).keys()]).toEqual(['Q1-02']);
+    expect([...noteLabels(script, notes, 1).keys()]).toEqual(['Q2-N2']);
+    expect([...noteLabels(script, notes, -1).keys()]).toEqual(['Q1-02', 'Q2-N2']);
   });
 });

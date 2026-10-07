@@ -382,3 +382,44 @@ func TestRevealSquaresCanShowMonstersOnThem(t *testing.T) {
 		t.Fatalf("summary: %q", ev.Summary)
 	}
 }
+
+func TestRevealingAgainChangesNothing(t *testing.T) {
+	s := newState(t)
+	s, _ = apply(t, s, cmd(t, "area.reveal", map[string]any{"x": 6, "y": 1}))
+	// The same room again, and squares already revealed: no event, so no log line.
+	for _, c := range []Command{
+		cmd(t, "area.reveal", map[string]any{"x": 6, "y": 1}),
+		cmd(t, "tiles.reveal", map[string]any{"tiles": []map[string]int{{"x": 5, "y": 1}, {"x": 6, "y": 2}}}),
+		cmd(t, "tiles.hide", map[string]any{"tiles": []map[string]int{{"x": 3, "y": 4}}}),
+	} {
+		if _, _, err := Apply(s, c, nil); err == nil || !strings.Contains(err.Error(), "already") {
+			t.Fatalf("%s: want an 'already' error, got %v", c.Type, err)
+		}
+	}
+	// Revealing it again with "show contents" still shows monsters not yet seen.
+	s, ev := apply(t, s, cmd(t, "area.reveal", map[string]any{"x": 6, "y": 1, "seen": true}))
+	if ev.Summary != "Revealed Lair (seen: 2 monsters, 1 piece of furniture)" || s.Monsters[0].Visibility != MonsterSeen {
+		t.Fatalf("contents shown on a second reveal: %q", ev.Summary)
+	}
+	if _, _, err := Apply(s, cmd(t, "area.reveal", map[string]any{"x": 6, "y": 1, "seen": true}), nil); err == nil {
+		t.Fatal("nothing left to reveal or show: no event")
+	}
+	// Partly new squares still reveal (and count only the new ones).
+	_, ev = apply(t, s, cmd(t, "tiles.reveal", map[string]any{"tiles": []map[string]int{{"x": 5, "y": 1}, {"x": 3, "y": 4}}}))
+	if ev.Summary != "Revealed 1 square" {
+		t.Fatalf("partly new: %q", ev.Summary)
+	}
+}
+
+func TestMonstersCarryTheirMovement(t *testing.T) {
+	s := newState(t)
+	for _, m := range s.Monsters {
+		if m.Type == "orc" && m.Movement != 8 {
+			t.Fatalf("a set-up orc keeps the catalog's movement: %+v", m)
+		}
+	}
+	s, _ = apply(t, s, cmd(t, "monster.add", map[string]any{"type": "orc", "x": 3, "y": 2}))
+	if added := s.Monsters[len(s.Monsters)-1]; added.Movement != 8 {
+		t.Fatalf("an added orc keeps the catalog's movement: %+v", added)
+	}
+}

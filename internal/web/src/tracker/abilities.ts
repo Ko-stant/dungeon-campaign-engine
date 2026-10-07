@@ -35,13 +35,16 @@ export function abilityRows(
     const ready = hero.cooldowns?.[ability.id];
     const roundsLeft = ready !== undefined && ready > round ? ready - round : 0;
     const usable = ability.kind !== 'passive';
+    const shortOfMana = (ability.manaCost ?? 0) > (hero.mana ?? 0);
     let status = 'ready';
     if (!usable) {
       status = 'passive';
     } else if (roundsLeft > 0) {
       status = roundsLeft === 1 ? '1 round left' : `${String(roundsLeft)} rounds left`;
+    } else if (shortOfMana) {
+      status = `needs ${String(ability.manaCost ?? 0)} mana`;
     }
-    return { ability, roundsLeft, usable, shortOfMana: (ability.manaCost ?? 0) > (hero.mana ?? 0), status };
+    return { ability, roundsLeft, usable, shortOfMana, status };
   });
 }
 

@@ -190,3 +190,24 @@ func TestWithMonsterStats(t *testing.T) {
 		t.Fatal("no stats: the same catalog")
 	}
 }
+
+func TestWithMonsterStatsMovement(t *testing.T) {
+	cat := &Catalog{Monsters: []MonsterDef{
+		{ID: "orc", Name: "Orc", Movement: 8},
+		{ID: "goblin_archer", Name: "Goblin Archer"},
+		{ID: "stranger", Name: "Stranger"},
+	}}
+	patched := cat.WithMonsterStats(map[string]MonsterStats{
+		"orc":           {Body: 22, MonsterCombat: MonsterCombat{Avoidance: 8, HitDice: "2d8", Damage: 9}},
+		"goblin_archer": {Body: 8, Movement: 10, MonsterCombat: MonsterCombat{Avoidance: 6, HitDice: "1d12", Damage: 5}},
+		"stranger":      {Body: 1, Movement: 4},
+	})
+	for id, want := range map[string]int{"orc": 8, "goblin_archer": 10, "stranger": 4} {
+		if m, _ := patched.Monster(id); m.Movement != want {
+			t.Errorf("%s: movement %d, want %d (a stat line's movement wins, else the catalog's)", id, m.Movement, want)
+		}
+	}
+	if st := (MonsterStats{Body: 1, Movement: 4}); !st.CombatEmpty() || !st.BodyOnly() {
+		t.Fatal("movement is not a combat stat: a body-only line may have it")
+	}
+}

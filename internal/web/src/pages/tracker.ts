@@ -9,7 +9,7 @@ import { monsterPlayLabel, type TrapDoc } from '../maps/types.ts';
 import { BoardRenderer } from '../board/renderer.ts';
 import { ApiError } from '../api/http.ts';
 import { createTrackerApi } from '../tracker/api.ts';
-import { combatLine, combatTotals, determinationAfter, FALTER_PENALTY, falterAt, manaCap, monsterLine, statChange } from '../tracker/combat.ts';
+import { combatLine, combatTotals, determinationAfter, FALTER_PENALTY, falterAt, manaCap, monsterLine, monsterMove, statChange } from '../tracker/combat.ts';
 import { formatEvent, searchEvents } from '../tracker/format.ts';
 import { travelOptions } from '../tracker/travel.ts';
 import { clickCommand, corridorPath, hotkey, paintPending, revealPathCommand, revealSquaresCommand, type ClickTarget, type Mode } from '../tracker/interaction.ts';
@@ -23,7 +23,10 @@ import { abilitySection, inventorySection, purseControl, type SectionContext } f
 import { oddsBlock } from '../ui/odds.ts';
 import { effectSuggestions, effectsBlock } from '../ui/effects.ts';
 import { readAloudPanel, readerOverlay, type ReadAloudContext } from '../ui/readAloud.ts';
-import { currentSection, passageClips } from '../tracker/script.ts';
+import { currentSection, noteLabels, passageClips } from '../tracker/script.ts';
+import { defaultOpen, sidebarsFrom, type Sidebars } from '../tracker/panels.ts';
+import { calmFrom, calmFromStorage, fightHint, type Calm } from '../tracker/fightHint.ts';
+import { panel } from '../ui/panel.ts';
 
 const TRAP_STATES: readonly LiveTrapState[] = ['hidden', 'revealed', 'triggered', 'disarmed', 'removed'];
 const btn = 'rounded-md border border-border/60 px-2 py-1 text-sm hover:border-amber-500 disabled:opacity-40';
@@ -97,17 +100,60 @@ async function main(): Promise<void> {
   } catch {
     // storage unavailable: autoplay stays off
   }
-  // Hero card sections the GM has collapsed ("hero-1:inventory").
-  const closedSections = new Set<string>();
+  // Collapsible sections the GM has opened or closed ("hero-1:inventory", "right:monsters"); the rest use defaultOpen.
+  const openSections = new Map<string, boolean>();
+  const isOpen = (key: string): boolean => openSections.get(key) ?? defaultOpen(key);
+  const setOpen = (key: string, open: boolean): void => { openSections.set(key, open); };
+  // The two sidebars, shown or hidden ([ and ] keys), remembered in this browser.
+  const SIDEBARS_KEY = 'dce.trackerSidebars';
+  let sidebars: Sidebars = { left: true, right: true };
+  try {
+    sidebars = sidebarsFrom(localStorage.getItem(SIDEBARS_KEY));
+  } catch {
+    // storage unavailable: both shown
+  }
+
+  // The calm picture the fight hint compares with: taken when a fight ends or the GM says "not a fight", kept per session in this browser.
+  const CALM_KEY = `dce.fightCalm.${sessionId}`;
+  let calm: Calm | null = null;
+  try {
+    calm = calmFromStorage(localStorage.getItem(CALM_KEY));
+  } catch {
+    // storage unavailable: no calm picture yet
+  }
+  function takeCalm(): void {
+    calm = calmFrom(state);
+    try {
+      localStorage.setItem(CALM_KEY, JSON.stringify(calm));
+    } catch {
+      // storage unavailable: the picture lasts until the page reloads
+    }
+  }
 
   // --- Layout ---
   const canvas = h('canvas', { class: 'block h-full w-full' });
   const header = h('header', { class: 'flex items-center gap-3 overflow-x-auto whitespace-nowrap border-b border-border/60 px-3 py-2' });
-  const modeBar = h('div', { class: 'flex flex-wrap items-center gap-2 px-2 pb-2' });
+  // Two rows of fixed height, so switching modes never resizes the board: the mode buttons, then the mode's options and hint.
+  const modeBar = h('div', { class: 'flex flex-col gap-1 px-2 pb-2' });
   const leftPanel = h('aside', { class: 'w-80 shrink-0 space-y-3 overflow-y-auto border-r border-border/60 p-3' });
   const rightPanel = h('aside', { class: 'w-80 shrink-0 space-y-4 overflow-y-auto border-l border-border/60 p-3' });
   const readerHost = h('div');
   const hoverInfo = h('span', { class: 'pointer-events-none absolute bottom-3 left-3 rounded bg-surface/80 px-2 py-0.5 font-mono text-xs opacity-80 empty:hidden' });
+  function applySidebars(): void {
+    leftPanel.classList.toggle('hidden', !sidebars.left);
+    rightPanel.classList.toggle('hidden', !sidebars.right);
+  }
+  function toggleSidebar(side: keyof Sidebars): void {
+    sidebars = { ...sidebars, [side]: !sidebars[side] };
+    try {
+      localStorage.setItem(SIDEBARS_KEY, JSON.stringify(sidebars));
+    } catch {
+      // storage unavailable: the choice lasts until the page reloads
+    }
+    applySidebars();
+    refresh();
+  }
+  applySidebars();
   replaceChildren(
     root,
     header,
@@ -134,9 +180,13 @@ async function main(): Promise<void> {
     if (res.eventSeq <= lastSeq) {
       return; // already applied (our own change echoed back by the stream)
     }
+    const wasFight = state.fight ?? false;
     state = res.state;
     lastSeq = res.eventSeq;
     events.push(res.event);
+    if (wasFight && !state.fight) {
+      takeCalm(); // whatever is still in sight when a fight ends is calm
+    }
     if (res.event.kind === 'session.complete') {
       status = 'completed';
     } else if (res.event.kind === 'session.reopen') {
@@ -310,6 +360,11 @@ async function main(): Promise<void> {
       refresh();
       return;
     }
+    if ((ev.key === '[' || ev.key === ']') && !ev.metaKey && !ev.ctrlKey && !ev.altKey) {
+      ev.preventDefault();
+      toggleSidebar(ev.key === '[' ? 'left' : 'right');
+      return;
+    }
     const key = hotkey(ev, mode, revealSeen);
     if (key) {
       ev.preventDefault();
@@ -329,7 +384,11 @@ async function main(): Promise<void> {
       // Catch up on anything missed while disconnected.
       void api.session(sessionId ?? '').then((s) => {
         if (s.eventSeq > lastSeq) {
+          const wasFight = state.fight ?? false;
           state = s.state;
+          if (wasFight && !state.fight) {
+            takeCalm();
+          }
           status = s.status;
           void api.events(sessionId ?? '', lastSeq).then((missed) => {
             events.push(...missed);
@@ -403,13 +462,7 @@ async function main(): Promise<void> {
         ? h('span', { class: 'rounded-full border border-danger/60 bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger', title: 'Rounds finish cooldowns, regenerate mana and count effects down' }, 'Fight')
         : null,
       h('button', { type: 'button', class: btn, disabled: completed || busy, onclick: () => { void send({ type: 'round.advance', payload: {} }); } }, 'Next round'),
-      h('button', {
-        type: 'button',
-        class: btn,
-        disabled: completed || busy,
-        title: state.fight ? 'End the fight: effects with a countdown end; cooldowns drop to 1-2 rounds left (a 1-round one is ready) and wait for the next fight' : 'Start a fight: rounds finish cooldowns, regenerate mana and count effects down',
-        onclick: () => { void send({ type: state.fight ? 'fight.end' : 'fight.start', payload: {} }); },
-      }, state.fight ? 'End fight' : 'Start fight'),
+      fightButton(completed),
       h('label', { class: 'flex items-center gap-1 text-sm', title: 'Darken undiscovered squares and fade the furniture, doors, blocked squares and monsters the players have not been shown' },
         h('input', { type: 'checkbox', checked: fog, onchange: (e: Event) => { fog = (e.target as HTMLInputElement).checked; requestDraw(); } }),
         'Show what the heroes have seen'),
@@ -444,6 +497,43 @@ async function main(): Promise<void> {
           },
         }, 'Complete quest'),
     );
+  }
+
+  /**
+   * Start fight / End fight. It pulses when the fight hint suggests pressing
+   * it (a monster in sight or hurt, a missed attack; no monster left in
+   * sight), and "Not a fight" quiets a start suggestion. Nothing is automatic.
+   */
+  function fightButton(completed: boolean): HTMLElement {
+    const hint = completed ? null : fightHint(state, calm);
+    const base = state.fight
+      ? 'End the fight: effects with a countdown end; cooldowns drop to 1-2 rounds left (a 1-round one is ready) and wait for the next fight'
+      : 'Start a fight: rounds finish cooldowns, regenerate mana and count effects down';
+    const nudge = hint?.kind === 'start'
+      ? 'animate-pulse rounded-md border border-danger bg-danger/20 px-2 py-1 text-sm font-semibold text-danger disabled:opacity-40'
+      : hint?.kind === 'end'
+        ? 'animate-pulse rounded-md border border-positive bg-positive/20 px-2 py-1 text-sm font-semibold text-positive disabled:opacity-40'
+        : btn;
+    return h('span', { class: 'flex items-center gap-1' },
+      h('button', {
+        type: 'button',
+        class: nudge,
+        disabled: completed || busy,
+        title: hint ? `${hint.reason}. ${base}` : base,
+        onclick: () => { void send({ type: state.fight ? 'fight.end' : 'fight.start', payload: {} }); },
+      }, state.fight ? 'End fight' : 'Start fight'),
+      hint?.kind === 'start'
+        ? h('button', {
+          type: 'button',
+          class: 'rounded px-1 text-xs opacity-70 hover:text-amber-400 hover:opacity-100',
+          title: `${hint.reason}, but it is not a fight: stop suggesting one until something else changes`,
+          onclick: () => {
+            takeCalm();
+            refresh();
+          },
+        }, 'Not a fight')
+        : null,
+      hint ? h('span', { class: 'text-xs opacity-70', role: 'status' }, hint.reason) : null);
   }
 
   function setMode(m: Mode): void {
@@ -490,14 +580,17 @@ async function main(): Promise<void> {
             : null,
         ]
       : [];
-    const monsterSelect = h('select', {
-      class: field,
-      'aria-label': 'Monster to add',
-      onchange: (e: Event) => {
-        monsterType = (e.target as HTMLSelectElement).value;
-        setMode({ kind: 'addMonster', monsterType });
-      },
-    }, ...catalog.monsters.map((m) => h('option', { value: m.id, selected: m.id === monsterType }, monsterPlayLabel(m))));
+    // The monster picker only shows while adding a monster (a rare action), to keep the bar short.
+    const monsterOptions: (Node | null)[] = mode.kind === 'addMonster'
+      ? [h('select', {
+          class: `${field} py-0.5`,
+          'aria-label': 'Monster to add',
+          onchange: (e: Event) => {
+            monsterType = (e.target as HTMLSelectElement).value;
+            setMode({ kind: 'addMonster', monsterType });
+          },
+        }, ...catalog.monsters.map((m) => h('option', { value: m.id, selected: m.id === monsterType }, monsterPlayLabel(m))))]
+      : [];
     const hint: Record<Mode['kind'], string> = {
       select: 'Click a hero, monster or movable trap (boulder), then a square to move it; press 1 to let go of it. Click a door to select it, then open, close or lock it from the Selected panel. Click furniture or blocked squares to show them to the players.',
       reveal: revealSeen
@@ -506,18 +599,34 @@ async function main(): Promise<void> {
       pickSquares: 'Click or drag across squares to pick them, then reveal them all at once.',
       hide: 'Click a square to hide it again.',
       block: 'Click a square to block it (a falling block, where a boulder stopped). Select an added block to clear it.',
-      addMonster: 'Click a square to place the monster.',
+      addMonster: 'Pick the monster, then click a square to place it. Press 1 or Esc when done.',
+    };
+    const sidebarBtn = (side: keyof Sidebars, label: string, key: string): HTMLButtonElement => {
+      const shown = sidebars[side];
+      return h('button', {
+        type: 'button',
+        class: `${btn} shrink-0 px-1.5`,
+        'aria-label': `${shown ? 'Hide' : 'Show'} the ${label} panel`,
+        'aria-pressed': shown ? 'true' : 'false',
+        title: `${shown ? 'Hide' : 'Show'} the ${label} panel (key ${key})`,
+        onclick: () => { toggleSidebar(side); },
+      }, (side === 'left') === shown ? '◀' : '▶');
     };
     replaceChildren(
       modeBar,
-      modeBtn({ kind: 'select' }, 'Select / move', 'Select pieces, move them, open and close doors; the key also clears the selection', mode.kind === 'select', '1'),
-      modeBtn({ kind: 'reveal', seen: revealSeen }, 'Reveal', 'Mark areas the heroes have discovered', revealing, '2'),
-      ...revealOptions,
-      modeBtn({ kind: 'hide' }, 'Hide', 'Un-discover a square', mode.kind === 'hide', '3'),
-      modeBtn({ kind: 'block' }, 'Block square', 'Put a blocked square down during play'),
-      modeBtn({ kind: 'addMonster', monsterType }, 'Add monster', 'Place a new monster'),
-      monsterSelect,
-      h('span', { class: 'text-xs opacity-60' }, hint[mode.kind]),
+      h('div', { class: 'flex items-center gap-2' },
+        sidebarBtn('left', 'heroes', '['),
+        h('div', { class: 'flex min-w-0 flex-1 items-center gap-2 overflow-x-auto whitespace-nowrap' },
+          modeBtn({ kind: 'select' }, 'Select / move', 'Select pieces, move them, open and close doors; the key also clears the selection', mode.kind === 'select', '1'),
+        modeBtn({ kind: 'reveal', seen: revealSeen }, 'Reveal', 'Mark areas the heroes have discovered', revealing, '2'),
+        modeBtn({ kind: 'hide' }, 'Hide', 'Un-discover a square', mode.kind === 'hide', '3'),
+        modeBtn({ kind: 'block' }, 'Block square', 'Put a blocked square down during play'),
+          modeBtn({ kind: 'addMonster', monsterType }, 'Add monster', 'Place a new monster: pick it, then click a square')),
+        sidebarBtn('right', 'side', ']')),
+      h('div', { class: 'flex h-8 items-center gap-2 overflow-hidden whitespace-nowrap' },
+        ...revealOptions,
+        ...monsterOptions,
+        h('span', { class: 'min-w-0 flex-1 truncate text-xs opacity-60', title: hint[mode.kind] }, hint[mode.kind])),
     );
   }
 
@@ -577,14 +686,8 @@ async function main(): Promise<void> {
       message = text;
       refresh();
     },
-    isOpen: (key) => !closedSections.has(key),
-    setOpen: (key, open) => {
-      if (open) {
-        closedSections.delete(key);
-      } else {
-        closedSections.add(key);
-      }
-    },
+    isOpen,
+    setOpen,
   };
 
   function renderHeroes(): void {
@@ -630,6 +733,14 @@ async function main(): Promise<void> {
     return h('p', { class: 'text-xs opacity-70', title: `With equipped items. Class: ${combatLine(hero.combat)}` }, combatLine(totals));
   }
 
+  /** The selected monster's movement and combat stats on one line ("Move 8 · Avoid 8 · Hit 2d8 · Damage 9"). */
+  function monsterStatsLine(m: Monster): HTMLElement {
+    const move = monsterMove(m, catalog.monsters.find((d) => d.id === m.type));
+    return h('p', { class: 'text-xs opacity-80', title: 'Movement and combat stats from the campaign (or the monster catalog)' },
+      move > 0 ? `Move ${String(move)}` : h('span', { class: 'opacity-70', title: 'No movement set: add it to the campaign\'s stat line for this monster' }, 'Move not set'),
+      m.combat ? ` · ${monsterLine(m.combat)}` : '');
+  }
+
   /** A living monster at or below its Faltering threshold (a quarter of maximum Body). */
   function faltering(m: Monster): boolean {
     return m.alive && m.body > 0 && m.body <= falterAt(m.maxBody);
@@ -651,7 +762,7 @@ async function main(): Promise<void> {
     if (monster) {
       rows.push(
         h('p', { class: 'font-semibold' }, `${monster.name} `, h('span', { class: 'text-xs opacity-60' }, monster.id)),
-        monster.combat ? h('p', { class: 'text-xs opacity-80', title: 'Combat stats from the campaign' }, monsterLine(monster.combat)) : null,
+        monsterStatsLine(monster),
         monster.combat?.abilities ? h('p', { class: 'whitespace-pre-wrap text-xs italic opacity-70', title: "Abilities from the campaign's stat line (on the player screen card)" }, monster.combat.abilities) : null,
         monster.combat && faltering(monster)
           ? h('p', { class: 'text-xs font-semibold text-amber-400' }, `Faltering: Avoidance ${monster.combat.avoidance - FALTER_PENALTY} (at ${falterAt(monster.maxBody)} Body or less)`)
@@ -837,6 +948,12 @@ async function main(): Promise<void> {
       player,
       playClip,
       autoplay,
+      noteLabels: noteLabels(scriptSections, state.quest.notes, currentSection(scriptSections, state, chapters)),
+      panelOpen: isOpen('right:read'),
+      setPanelOpen: (open) => {
+        setOpen('right:read', open);
+        refresh();
+      },
       setAutoplay: (on) => {
         autoplay = on;
         try {
@@ -879,10 +996,25 @@ async function main(): Promise<void> {
       h('li', { class: 'flex items-center justify-between gap-2 text-sm' },
         h('span', { class: removedBlocks.has(r.id) ? 'line-through opacity-50' : '' }, r.hiddenDoor ? 'Secret door ' : 'Blocked ', h('span', { class: 'text-xs opacity-60' }, `${r.id} (${r.x}, ${r.y})`)),
         blockButton(r.id, r.hiddenDoor ?? false)));
-    const notes = state.quest.notes.map((n) =>
-      h('li', { class: 'flex items-start justify-between gap-2 text-sm' },
+    // Each note's read-aloud passage (matched by its text), to open from the list.
+    const passageFor = new Map<string, string>();
+    for (const [id, labels] of noteLabels(scriptSections, state.quest.notes, currentSection(scriptSections, state, chapters))) {
+      for (const label of labels) {
+        passageFor.set(label, id);
+      }
+    }
+    const notes = state.quest.notes.map((n) => {
+      const passage = passageFor.get(n.label);
+      return h('li', { class: 'flex items-start justify-between gap-2 text-sm' },
         h('span', { class: state.consumedNotes.includes(n.id) ? 'line-through opacity-50' : '' }, h('strong', {}, `${n.label}: `), n.text || '(no text)'),
-        noteButton(n.id)));
+        h('span', { class: 'flex shrink-0 flex-col items-end gap-1' },
+          noteButton(n.id),
+          passage
+            ? h('button', { type: 'button', class: `${btn} text-xs`, title: `Open passage ${passage} in the reader`, onclick: () => { openPassage(passage); } }, `▶ ${passage}`)
+            : null));
+    });
+    const section = (key: string, title: string, summary: string, list: HTMLElement): HTMLElement =>
+      panel({ title, summary, open: isOpen(key), onToggle: (open) => { setOpen(key, open); refresh(); } }, list);
     const logItems = (query: string): HTMLElement[] => {
       const found = searchEvents([...events].reverse(), query);
       const items = found.slice(0, 300).map((e) => {
@@ -940,8 +1072,7 @@ async function main(): Promise<void> {
       status !== 'active' ? h('p', { class: 'rounded-md border border-purple-400/60 bg-purple-400/10 p-2 text-sm' }, 'This quest is completed. Reopen it to make changes.') : null,
       renderSelection(),
       readAloudPanel(readAloudContext()),
-      h('section', { class: 'space-y-2' },
-        h('div', { class: 'flex items-center justify-between gap-2' }, h('h2', { class: 'text-sm font-semibold' }, 'Log'), searchToggle),
+      panel({ title: 'Log', open: isOpen('right:log'), onToggle: (open) => { setOpen('right:log', open); refresh(); }, extra: [searchToggle], spacing: 'space-y-2' },
         logSearch,
         logInput,
         h('button', {
@@ -955,10 +1086,10 @@ async function main(): Promise<void> {
           },
         }, 'Add to log'),
         logList),
-      h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, `Monsters (${state.monsters.filter((m) => m.alive).length} alive)`), h('ul', { class: 'space-y-1' }, ...monsters)),
-      traps.length ? h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, 'Traps'), h('ul', { class: 'space-y-2' }, ...traps)) : null,
-      blocks.length ? h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, 'Blocked squares'), h('ul', { class: 'space-y-2' }, ...blocks)) : null,
-      notes.length ? h('section', { class: 'space-y-1' }, h('h2', { class: 'text-sm font-semibold' }, 'Quest notes'), h('ul', { class: 'space-y-2' }, ...notes)) : null,
+      section('right:monsters', 'Monsters', `${String(state.monsters.filter((m) => m.alive).length)} alive`, h('ul', { class: 'space-y-1' }, ...monsters)),
+      traps.length ? section('right:traps', 'Traps', String(traps.length), h('ul', { class: 'space-y-2' }, ...traps)) : null,
+      blocks.length ? section('right:blocks', 'Blocked squares', String(blocks.length), h('ul', { class: 'space-y-2' }, ...blocks)) : null,
+      notes.length ? section('right:notes', 'Quest notes', `${String(state.consumedNotes.length)}/${String(notes.length)} used`, h('ul', { class: 'space-y-2' }, ...notes)) : null,
     );
   }
 

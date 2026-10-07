@@ -101,11 +101,32 @@ func formQuantity(value string) (int, error) {
 	return formInt("quantity", value, 0, tracker.MaxItemQuantity, 0)
 }
 
+// addItemForm adds an item typed on the form, or with loot_id one from the
+// campaign's loot list (its kind, stats, use and notes, unequipped, as the
+// tracker's loot picker does).
 func (s *Server) addItemForm(w http.ResponseWriter, r *http.Request) {
 	s.changeHero(w, r, func(h *tracker.CampaignHero) (bool, error) {
 		qty, err := formQuantity(r.PostFormValue("quantity"))
 		if err != nil {
 			return false, err
+		}
+		if lootID := r.PostFormValue("loot_id"); lootID != "" {
+			loot, err := s.campaignLoot(r.Context(), r.PathValue("id"))
+			if err != nil {
+				return false, err
+			}
+			i := slices.IndexFunc(loot, func(it tracker.Item) bool { return it.ID == lootID })
+			if i < 0 {
+				return false, errors.New("that item is no longer on the loot list")
+			}
+			add := loot[i]
+			add.ID, add.Quantity, add.Equipped = "", qty, false
+			items, _, err := tracker.AddItem(h.Items, add)
+			if err != nil {
+				return false, err
+			}
+			h.Items = items
+			return false, nil
 		}
 		kind, stats, err := formItemStats(r)
 		if err != nil {

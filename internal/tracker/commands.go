@@ -399,7 +399,7 @@ func (a *applier) monsterAdd(payload json.RawMessage) (string, error) {
 	m := Monster{
 		ID: a.nextMonsterID(), Type: def.ID, Name: def.Name, X: p.X, Y: p.Y,
 		Body: def.Body, MaxBody: def.Body, Mind: def.Mind, Visibility: p.Visibility, Alive: true,
-		Color: def.Color, Combat: combatCopy(def.Combat),
+		Color: def.Color, Movement: def.Movement, Combat: combatCopy(def.Combat),
 	}
 	m.Width, m.Height = def.Size()
 	a.s.Monsters = append(a.s.Monsters, m)
@@ -580,12 +580,17 @@ func (a *applier) trapSet(payload json.RawMessage) (string, error) {
 	return fmt.Sprintf("Trap %s (%s): %s → %s", t.ID, a.trapKindLabel(qt), from, p.State), nil
 }
 
-func (a *applier) setDiscovered(indexes []int, discovered bool) {
+// setDiscovered reveals or hides squares and returns how many changed.
+func (a *applier) setDiscovered(indexes []int, discovered bool) int {
 	set := make(map[int]bool, len(a.s.Discovered))
 	for _, i := range a.s.Discovered {
 		set[i] = true
 	}
+	changed := 0
 	for _, i := range indexes {
+		if set[i] != discovered {
+			changed++
+		}
 		if discovered {
 			set[i] = true
 		} else {
@@ -593,6 +598,7 @@ func (a *applier) setDiscovered(indexes []int, discovered bool) {
 		}
 	}
 	a.s.Discovered = sortedKeys(set)
+	return changed
 }
 
 func squares(n int) string {
@@ -615,18 +621,23 @@ func (a *applier) areaReveal(payload json.RawMessage) (string, error) {
 		return "", err
 	}
 	tiles := a.s.areaTiles(p.X, p.Y)
-	a.setDiscovered(tiles, true)
+	changed := a.setDiscovered(tiles, true)
 	shown := ""
 	if p.Seen {
 		shown = a.showContentsOn(tiles)
 	}
+	name := squares(len(tiles))
 	region := a.s.Board.RegionAt(p.X, p.Y)
 	for _, r := range a.s.Board.Rooms {
 		if r.ID == region {
-			return "Revealed " + r.Name + shown, nil
+			name = r.Name
 		}
 	}
-	return "Revealed " + squares(len(tiles)) + shown, nil
+	// Nothing new revealed or shown: no event, so the log gets no repeat line.
+	if changed == 0 && shown == "" {
+		return "", fmt.Errorf("%s is already revealed", name)
+	}
+	return "Revealed " + name + shown, nil
 }
 
 func (a *applier) tilesSet(payload json.RawMessage, discovered bool) (string, error) {
@@ -646,15 +657,24 @@ func (a *applier) tilesSet(payload json.RawMessage, discovered bool) (string, er
 	if len(indexes) == 0 {
 		return "", errors.New("no squares on the board")
 	}
-	a.setDiscovered(indexes, discovered)
+	changed := a.setDiscovered(indexes, discovered)
 	if discovered {
 		shown := ""
 		if p.Seen {
 			shown = a.showContentsOn(indexes)
 		}
-		return "Revealed " + squares(len(indexes)) + shown, nil
+		switch {
+		case changed == 0 && shown == "":
+			return "", errors.New("those squares are already revealed")
+		case changed == 0:
+			return "Revealed " + squares(len(indexes)) + shown, nil
+		}
+		return "Revealed " + squares(changed) + shown, nil
 	}
-	return "Hid " + squares(len(indexes)), nil
+	if changed == 0 {
+		return "", errors.New("those squares are already hidden")
+	}
+	return "Hid " + squares(changed), nil
 }
 
 func (a *applier) noteConsume(payload json.RawMessage) (string, error) {

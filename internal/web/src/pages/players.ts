@@ -151,7 +151,10 @@ async function main(): Promise<void> {
     },
       h('div', { class: 'flex items-baseline justify-between gap-2' },
         h('span', { class: 'text-xl font-semibold' }, hero.name),
-        h('span', { class: 'text-sm opacity-70', style: cls?.color ? `color: ${cls.color}` : null }, hero.status === 'dead' ? 'Fallen' : hero.status === 'escaped' ? 'Escaped' : cls?.name ?? '')),
+        // Class names are green on every card: some class colors (the Rogue's) were hard to read on the TV.
+        down
+          ? h('span', { class: 'text-sm opacity-70' }, hero.status === 'dead' ? 'Fallen' : 'Escaped')
+          : h('span', { class: 'text-sm font-semibold text-positive' }, cls?.name ?? '')),
       h('div', { class: 'flex justify-between text-base' }, h('span', {}, 'Body'), h('span', { class: 'font-mono' }, `${String(hero.body)} / ${String(hero.maxBody)}`)),
       bar(hero.body, hero.maxBody, 'bg-danger'),
       h('div', { class: 'flex justify-between text-sm opacity-80' },

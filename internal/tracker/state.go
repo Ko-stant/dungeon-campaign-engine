@@ -110,6 +110,9 @@ type Monster struct {
 	Width  int    `json:"width"`
 	Height int    `json:"height"`
 	Color  string `json:"color,omitempty"`
+	// Movement in squares, from the campaign's stat line or the catalog, frozen
+	// like Combat; 0 when neither sets it (and on older sessions).
+	Movement int `json:"movement,omitempty"`
 	// Combat is the campaign's combat stats for this monster type, frozen when
 	// the monster is set up or added; nil when the campaign has none.
 	Combat *content.MonsterCombat `json:"combat,omitempty"`
@@ -261,7 +264,7 @@ func (s *State) setUpMap(catalog *content.Catalog) {
 	for _, qm := range s.Quest.Monsters {
 		m := Monster{ID: qm.ID, Type: qm.Type, Name: qm.Type, X: qm.X, Y: qm.Y, Visibility: MonsterHidden, Alive: true, Notes: qm.Notes, Width: 1, Height: 1}
 		if def, ok := catalog.Monster(qm.Type); ok {
-			m.Name, m.Body, m.Mind, m.Color = def.Name, def.Body, def.Mind, def.Color
+			m.Name, m.Body, m.Mind, m.Color, m.Movement = def.Name, def.Body, def.Mind, def.Color, def.Movement
 			m.Width, m.Height = def.Size()
 			m.Combat = combatCopy(def.Combat)
 		}

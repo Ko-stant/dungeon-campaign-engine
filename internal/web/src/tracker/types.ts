@@ -97,6 +97,8 @@ export interface Monster {
   width?: number;
   height?: number;
   color?: string;
+  /** Movement in squares, from the campaign's stat line or the catalog (missing: not set, or an older session). */
+  movement?: number;
   /** The campaign's combat stats for this monster type, frozen when set up or added; missing when the campaign has none. */
   combat?: MonsterCombat | null;
   effects?: Effect[] | null;

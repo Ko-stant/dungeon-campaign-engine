@@ -38,7 +38,8 @@ export function abilitySection(hero: Hero, round: number, ctx: SectionContext): 
   }
   const cooling = rows.filter((r) => r.roundsLeft > 0).length;
   const items = rows.map((r) => {
-    const statusClass = r.roundsLeft > 0 ? 'text-warning' : r.usable ? 'text-positive' : 'opacity-60';
+    // Short of mana is red, cooling down amber, ready green.
+    const statusClass = r.roundsLeft > 0 ? 'text-warning' : r.usable && r.shortOfMana ? 'text-danger' : r.usable ? 'text-positive' : 'opacity-60';
     const limit = abilityLimit(r.ability);
     return h('li', { class: 'space-y-0.5' },
       h('div', { class: 'flex items-center gap-2 text-sm' },
@@ -50,7 +51,7 @@ export function abilitySection(hero: Hero, round: number, ctx: SectionContext): 
         r.usable
           ? h('button', {
             type: 'button',
-            class: `${btn} ${r.roundsLeft > 0 || r.shortOfMana ? 'border-warning/60' : ''}`,
+            class: `${btn} ${r.shortOfMana ? 'border-danger' : r.roundsLeft > 0 ? 'border-warning/60' : ''}`,
             title: r.roundsLeft > 0 ? 'Still cooling down; the use is recorded anyway' : r.shortOfMana ? 'Not enough mana; the use is recorded anyway' : 'Record a use',
             onclick: () => { ctx.send({ type: 'ability.use', payload: { heroId: hero.id, abilityId: r.ability.id } }); },
           }, r.ability.kind === 'spell' ? 'Cast' : 'Use')
@@ -99,7 +100,6 @@ const STAT_INPUTS: [keyof ItemStats, string][] = [
 
 /** An item's kind and stats editor, closed until opened (remembered across re-renders). */
 function itemEditor(hero: Hero, it: Item, ctx: SectionContext): HTMLElement {
-  // Sections default to open, so the remembered key here means "opened".
   const key = `${hero.id}:item:${it.id}`;
   const kind = h('input', { class: `${field} w-full text-xs`, maxlength: 40, value: it.kind ?? '', placeholder: 'Kind: weapon, bow, chest...', 'aria-label': `${it.name} kind` });
   const inputs = STAT_INPUTS.map(([k, label]) => [k, h('input', {
@@ -125,8 +125,8 @@ function itemEditor(hero: Hero, it: Item, ctx: SectionContext): HTMLElement {
   };
   return h('details', {
     class: 'pl-1',
-    open: !ctx.isOpen(key),
-    ontoggle: (e: Event) => { ctx.setOpen(key, !(e.currentTarget as HTMLDetailsElement).open); },
+    open: ctx.isOpen(key),
+    ontoggle: (e: Event) => { ctx.setOpen(key, (e.currentTarget as HTMLDetailsElement).open); },
   },
     h('summary', { class: 'cursor-pointer text-xs opacity-60' }, 'Kind and stats'),
     h('div', { class: 'mt-1 space-y-1' },
