@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-07 22:07 EDT
+**Last Updated**: 2026-10-07 22:10 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -116,6 +116,7 @@ Commits (oldest first):
 | 8e5be3a | players: half-sheet hero cards (class half, hero half) replace the full-page sheet |
 | c51a760 | GM bestiary: monster movement (campaign stat line, else the base game) |
 | 5114f90 | housekeeping: README and roadmap catch-up, legacy content schemas removed, .DS_Store untracked |
+| 6d7b325 | ESLint: browser globals for docs/**/*.js (make lint was failing on the hero cards' heroes.js) |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
