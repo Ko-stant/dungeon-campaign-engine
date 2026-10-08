@@ -17,11 +17,5 @@
       "height": 157,
       "comment": "Actual pixel dimensions of the tile image"
     }
-  },
-  "gameplayProperties": {
-    "searchable": false,
-    "container": false,
-    "interactable": false,
-    "customProperties": {}
   }
 }

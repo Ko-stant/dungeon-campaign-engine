@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-07 19:38 EDT
+**Last Updated**: 2026-10-07 22:05 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -8,7 +8,7 @@ Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, s
 voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House rules and classes:
 `docs/campaigns/three-plagues/RULES_AND_CLASSES.md`.
 
-## Resume here (2026-10-03)
+## Resume here (2026-10-07)
 
 **Where things stand**
 - App features for the campaign are built and committed: dice, custom classes, inventory,

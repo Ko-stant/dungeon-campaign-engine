@@ -1,6 +1,6 @@
 ## Development Notes
 
-**Last Updated**: 2026-10-03 16:01 EDT
+**Last Updated**: 2026-10-07 22:05 EDT
 
 - Server runs on port 8080 by default (configurable via `APP_PORT` env var)
 - Static assets served from `internal/web/static/`
@@ -15,7 +15,7 @@
 - Always run the application locally using `make dev` (start the database first with `make db-up`)
 - Always generate tests for new features as we go. Regression testing is important
 - Client-side (TypeScript) work is test-first: write the failing bun:test before the code
-- Clean up outdated docs and adjust asset_schemas when content data structures change
+- Clean up outdated docs, and adjust `asset_schemas/` (templates for the `content/` furniture, hero, monster and trap files) when `internal/content` reads new fields
 - The app never enforces HeroQuest rules against the GM; checks are advice only
 - Prefer functionally separating new code into individual files where appropriate over making singular large files
 - Never manually update *_templ.go files, only change the .templ file equivalents

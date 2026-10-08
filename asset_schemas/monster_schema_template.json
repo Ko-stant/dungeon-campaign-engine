@@ -24,12 +24,5 @@
     "width": 1,
     "height": 1,
     "comment": "Most monsters are 1x1, but some might be larger"
-  },
-  "gameplayProperties": {
-    "blocksLineOfSight": true,
-    "blocksMovement": true,
-    "faction": "evil",
-    "abilities": [],
-    "customProperties": {}
   }
 }
