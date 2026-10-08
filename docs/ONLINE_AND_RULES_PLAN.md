@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-07 22:09 EDT
+**Last Updated**: 2026-10-07 22:10 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -368,7 +368,8 @@ at the table. Do these at that merge (and keep the list current as the branches 
 - **Merge main into `online` regularly**, so the final merge stays small. Last done
   2026-10-07 (`bc06ee9`: table testing fixes, monster movement, hero sheets, housekeeping;
   the tracker page's imports conflicted, and both branches had added `Monster.Movement`,
-  now one field). Before that 2026-10-06 (`9cafaa6`).
+  now one field), then `2493d61` (the ESLint fix for `docs/**/*.js`). Before that
+  2026-10-06 (`9cafaa6`).
 
 ## Resume here
 - **Where things stand (2026-10-05, end of a long session):**
