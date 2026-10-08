@@ -19,3 +19,5 @@ internal/web/static/dist/
 
 # Original hero card art (large; the handbook publishes the web-sized copies in cards/web/)
 docs/campaigns/three-plagues/players/cards/*.png
+# Printed hero sheets, generated from players/print/*.html (see heroes.js)
+docs/campaigns/three-plagues/players/print/*.pdf
