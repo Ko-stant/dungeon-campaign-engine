@@ -1,9 +1,10 @@
 // Hero data for the printable player cards: class bases from combat.json, ability text as the
 // Players' Handbook words it (second person). Starting gear is left off on purpose: players
-// write their gear in pencil. Shared by every card layout in this folder: sheet.html (the one
-// in use, a Letter page per hero), tent.html and card.html.
+// write their gear in pencil. Shared by the two half-sheet layouts in this folder: split.html
+// and split-title.html (the class title above the art). Each prints a Letter page per hero,
+// cut across the middle into a class half and a hero half.
 // PDF (gitignored): "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless
-//   --no-pdf-header-footer --virtual-time-budget=8000 --print-to-pdf=sheet.pdf file://$PWD/sheet.html
+//   --no-pdf-header-footer --virtual-time-budget=8000 --print-to-pdf=split.pdf file://$PWD/split.html
 // Print at 100% scale.
 window.HEROES = [
   {
