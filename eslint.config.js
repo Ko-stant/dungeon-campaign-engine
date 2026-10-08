@@ -40,6 +40,18 @@ export default defineConfig(
     },
   },
   {
+    // Plain browser scripts for the campaign's static pages (e.g. the printable hero cards),
+    // loaded with <script src>, not as modules.
+    files: ['docs/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'script',
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  {
     // TypeScript client (internal/web/src) and build scripts.
     files: ['**/*.ts'],
     extends: [...tseslint.configs.strictTypeChecked, ...tseslint.configs.stylisticTypeChecked],
