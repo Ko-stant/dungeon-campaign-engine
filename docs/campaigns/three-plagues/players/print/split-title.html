@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hero Half Sheets, Titled</title>
+<link rel="stylesheet" href="print.css">
+<style>
+/* Two half sheets as in split.html, but the class half's title runs
+   across the top above the art, so the art is a little smaller and the class text beside it a
+   little larger. One US Letter page per hero, cut across the middle into two 8.5 x 5.5 in
+   halves. The top half is the class (art, base numbers, abilities: printed, never
+   written on); the bottom half is the hero in this campaign (the pencil ledger: base + gear =
+   total, and the gear list that feeds it). */
+@page { size: letter portrait; margin: 0; }
+.page { width: 8.5in; height: 11in; display: grid; grid-template-rows: 1fr 1fr; }
+.half { padding: 0.36in 0.42in; min-height: 0; overflow: hidden; }
+.cut { position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed var(--ink-soft); }
+
+.kicker { font-family: var(--label); font-size: 8pt; letter-spacing: 0.12em; color: var(--ink-soft); }
+header.top { display: grid; grid-template-columns: 1fr auto; align-items: end; border-bottom: 3px solid var(--hero); padding-bottom: 0.04in; margin-bottom: 0.1in; }
+header.top .name { font-size: 24pt; }
+header.top .cls { font-size: 10pt; }
+h2.sec { font-family: var(--label); font-weight: 700; font-size: 8pt; letter-spacing: 0.12em; color: var(--hero); border-bottom: 1px solid var(--rule); padding-bottom: 0.02in; margin-bottom: 0.05in; }
+
+/* Top half: the class */
+.class { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto 1fr; column-gap: 0.24in; }
+.class > header.top { grid-column: 1 / -1; }
+.class .art { height: 4.08in; width: auto; }
+.class .body { display: grid; grid-template-rows: auto auto 1fr; min-width: 0; }
+.chips { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.05in; margin-bottom: 0.08in; }
+.chips div { border: 1px solid var(--rule); border-radius: 3px; padding: 0.02in 0.06in; display: grid; }
+.chips div.gearable { border-color: var(--hero); border-style: dashed; }
+.chips span { font-family: var(--label); font-size: 7pt; letter-spacing: 0.05em; color: var(--ink-soft); white-space: nowrap; }
+.chips b { font-size: 12pt; font-weight: 700; line-height: 1.15; }
+.chips-note { font-size: 7.8pt; color: var(--ink-soft); margin: -0.03in 0 0.07in; }
+.chips-note i { border-bottom: 1px dashed var(--hero); font-style: normal; }
+.reach { font-size: 8.3pt; font-style: italic; color: var(--ink-soft); margin-bottom: 0.08in; line-height: 1.25; }
+.abilities { font-size: 9.4pt; line-height: 1.25; display: grid; gap: 0.05in; align-content: start; }
+.abilities .ab-tag { font-size: 7.4pt; margin-left: 0.04in; }
+
+/* Bottom half: the hero in this campaign */
+.hero { display: grid; grid-template-columns: 3.05in 1fr; gap: 0.3in; }
+table.ledger { width: 100%; border-collapse: collapse; }
+table.ledger th, table.ledger td { padding: 0.02in 0.03in; text-align: center; vertical-align: middle; }
+table.ledger thead th { font-family: var(--label); font-weight: 500; font-size: 7pt; letter-spacing: 0.06em; color: var(--ink-soft); border-bottom: 1.5px solid var(--hero); }
+table.ledger tbody tr + tr { border-top: 1px solid var(--rule); }
+table.ledger tbody th { text-align: left; font-size: 10pt; font-weight: 700; line-height: 1.1; }
+table.ledger tbody th small { display: block; font-weight: 400; font-size: 6.8pt; color: var(--ink-soft); }
+table.ledger td.base { font-size: 12.5pt; font-weight: 700; width: 0.45in; }
+table.ledger td.op { width: 0.14in; padding: 0; }
+table.ledger .box { width: 0.52in; height: 0.29in; }
+table.ledger .box.total { width: 0.58in; }
+.rolls { display: grid; gap: 0.02in; font-size: 7.6pt; color: var(--ink-soft); margin-top: 0.08in; line-height: 1.25; }
+.rolls b { color: var(--ink); }
+.det { display: flex; align-items: center; gap: 0.06in; font-size: 8pt; margin-top: 0.08in; }
+.det .check { width: 0.15in; height: 0.15in; }
+
+table.gear { width: 100%; border-collapse: collapse; }
+table.gear th { font-family: var(--label); font-weight: 500; font-size: 6.8pt; letter-spacing: 0.05em; color: var(--ink-soft); text-align: center; padding-bottom: 0.02in; }
+table.gear th.item { text-align: left; }
+table.gear td { height: 0.29in; border-bottom: 1px solid var(--rule); }
+table.gear td.n { width: 0.42in; border-left: 1px solid var(--rule); }
+table.gear.wide td.n { width: 0.37in; }
+table.gear td.eq { width: 0.24in; }
+table.gear td.eq .check { width: 0.13in; height: 0.13in; }
+table.gear tfoot td { border-bottom: none; padding-top: 0.05in; text-align: center; height: auto; }
+table.gear tfoot td.lbl { text-align: right; font-family: var(--label); font-size: 7pt; color: var(--ink-soft); padding-right: 0.06in; }
+table.gear tfoot .box { width: 0.36in; height: 0.26in; }
+table.gear.wide tfoot .box { width: 0.32in; }
+.notes { display: grid; grid-auto-rows: 0.27in; }
+.gear-note { font-size: 7.3pt; color: var(--ink-soft); margin-top: 0.04in; line-height: 1.25; }
+</style>
+</head>
+<body>
+<main id="pages"></main>
+<script src="heroes.js"></script>
+<script>
+for (const hero of HEROES) {
+  const classHalf = h("div.half.class",
+    h("header.top", h("div", h("div.kicker", "Your class"), h("h1.name", hero.cls)), h("div.cls", hero.name)),
+    h("img.art", { src: hero.art, alt: `${hero.name}'s hero card` }),
+    h("div.body",
+      h("div",
+        h("div.chips",
+          hero.fixed.map(([l, v]) => h("div", h("span", l), h("b.num", v))),
+          hero.boxed.map(([l, v]) => h("div.gearable", h("span", l), h("b.num", v)))),
+        h("p.chips-note", h("i", "Dashed"), " numbers are your class base, before gear. Your hero sheet adds your gear to them."),
+        h("p.reach", hero.reach)),
+      h("h2.sec", "Abilities"),
+      h("div.abilities", hero.abilities.map(([name, tag, text]) => h("p",
+        h("span.ab-name", name), h("span.ab-tag", tag), " ", text)))));
+
+  const wide = hero.gearCols.length > 4;
+  const heroHalf = h("div.half",
+    h("header.top", h("div", h("div.kicker", "Your hero in The Three Plagues"), h("h1.name", hero.name)), h("div.cls", hero.cls)),
+    h("div.hero",
+      h("div",
+        h("h2.sec", "Stats"),
+        h("table.ledger",
+          h("thead", h("tr", h("th", { style: "text-align:left" }, "Stat"), h("th", "Base"), h("th"), h("th", "Gear"), h("th"), h("th", "Total"))),
+          h("tbody", hero.boxed.map(([label, base, note]) => h("tr",
+            h("th", label, note && h("small", note)),
+            h("td.base.num", base),
+            h("td.op", h("span.op", "+")), h("td", h("span.box")),
+            h("td.op", h("span.op", "=")), h("td", h("span.box.total")))))),
+        h("div.rolls",
+          h("p", h("b", "Hit roll:"), " hit dice + Accuracy total; meet or beat the monster's Avoidance."),
+          h("p", h("b", "Defense:"), " defense dice + Avoidance total; the monster must beat it (ties go to you)."),
+          h("p", h("b", "Hits on you:"), " their damage minus your Mitigation total.")),
+        h("div.det", h("b", "Determination"), h("span.check"), "+2", h("span.check"), "+4",
+          h("span", { style: "color:var(--ink-soft)" }, "(one per miss in a row)")),
+        h("h2.sec", { style: "margin-top:0.14in" }, "Notes"),
+        h("div.notes", h("div.line"), !wide && h("div.line"))),
+      h("div",
+        h("h2.sec", "Gear"),
+        h(wide ? "table.gear.wide" : "table.gear",
+          h("thead", h("tr", h("th", "Eq."), h("th.item", "Item"), hero.gearCols.map(c => h("th", c)))),
+          h("tbody", Array.from({ length: 10 }, () => h("tr", h("td.eq", h("span.check")), h("td"), hero.gearCols.map(() => h("td.n"))))),
+          h("tfoot", h("tr", h("td.lbl", { colspan: 2 }, "Equipped total"), hero.gearCols.map(() => h("td", h("span.box")))))),
+        h("p.gear-note", "Fill the circle for gear you have equipped. Add up each column for the equipped gear and copy it into the Gear box beside that stat."))));
+
+  document.getElementById("pages").append(h("section.page", { style: `--hero:${hero.color}` },
+    classHalf, heroHalf, h("div.cut")));
+}
+</script>
+</body>
+</html>

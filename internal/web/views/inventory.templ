@@ -145,6 +145,18 @@ templ campaignInventory(d CampaignPageData) {
 						</form>
 					</div>
 				}
+				if len(d.Loot) > 0 {
+					<form method="post" action={ heroURL(d, h, "/items") } class="flex flex-wrap items-center gap-2 border-t border-border/40 pt-3 text-sm">
+						<select name="loot_id" required aria-label={ "Add an item from the loot list to " + h.Name } class={ inlineInputClass + " w-64 flex-none" }>
+							<option value="">Add from the loot list…</option>
+							for _, l := range d.Loot {
+								<option value={ l.ID } title={ l.Notes }>{ lootOption(l) }</option>
+							}
+						</select>
+						<input name="quantity" type="number" min="1" max="9999" value="1" aria-label="Quantity" class={ inlineInputClass + " w-20 flex-none" }/>
+						<button type="submit" class={ linkButton }>Add</button>
+					</form>
+				}
 				<form method="post" action={ heroURL(d, h, "/items") } class="flex flex-wrap items-center gap-2 border-t border-border/40 pt-3 text-sm">
 					<input name="name" required maxlength="120" placeholder="Add an item, e.g. Healing Potion" aria-label={ "New item for " + h.Name } class={ inlineInputClass + " w-64 flex-none" }/>
 					<input name="quantity" type="number" min="1" max="9999" value="1" aria-label="Quantity" class={ inlineInputClass + " w-20 flex-none" }/>
@@ -164,6 +176,14 @@ templ campaignInventory(d CampaignPageData) {
 			<p class="text-sm opacity-70">Add heroes to track their items.</p>
 		}
 	</section>
+}
+
+// lootOption is a loot item's name and its kind and stats, for the picker.
+func lootOption(l LootRow) string {
+	if l.Tag == "" {
+		return l.Name
+	}
+	return l.Name + " · " + l.Tag
 }
 
 func equipLabel(it ItemRow) string {

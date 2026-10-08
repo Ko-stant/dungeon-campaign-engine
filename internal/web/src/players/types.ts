@@ -75,6 +75,16 @@ export interface PlayerHero {
   combat?: HeroCombat | null;
   /** Accuracy bonus from misses in a row. */
   determination?: number;
+  /** Usable abilities (no passives) and their cooldowns. */
+  abilities?: PlayerAbility[] | null;
+}
+
+export interface PlayerAbility {
+  name: string;
+  kind: string;
+  manaCost?: number;
+  /** Rounds until ready (missing: ready). */
+  roundsLeft?: number;
 }
 
 export interface PlayerState {

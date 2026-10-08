@@ -21,6 +21,34 @@ export interface Card {
   /** A monster's abilities text from the campaign's stat line. */
   abilities?: string;
   effects: string[];
+  /** A hero's usable abilities and their cooldowns. */
+  cooldowns?: CooldownRow[];
+}
+
+export interface CooldownRow {
+  name: string;
+  /** Its mana cost ("8 mana"), or empty. */
+  detail: string;
+  /** "ready", "3 rounds left" or "needs 8 mana". */
+  status: string;
+  tone: 'ready' | 'cooling' | 'mana';
+}
+
+/** A hero's abilities as rows: cooling down first, then short of mana, else ready (as the GM's tracker shows them). */
+function cooldownRows(h: PlayerHero): CooldownRow[] {
+  return (h.abilities ?? []).map((a) => {
+    const cost = a.manaCost ?? 0;
+    const left = a.roundsLeft ?? 0;
+    const row: CooldownRow = { name: a.name, detail: cost > 0 ? `${String(cost)} mana` : '', status: 'ready', tone: 'ready' };
+    if (left > 0) {
+      row.status = left === 1 ? '1 round left' : `${String(left)} rounds left`;
+      row.tone = 'cooling';
+    } else if (cost > (h.mana ?? 0)) {
+      row.status = `needs ${String(cost)} mana`;
+      row.tone = 'mana';
+    }
+    return row;
+  });
 }
 
 const on = (t: TileCoord) => (p: TileCoord): boolean => p.x === t.x && p.y === t.y;
@@ -99,6 +127,10 @@ export function cardFor(pv: PlayerState, catalog: PlayerCatalog, pick: Pick): Ca
       const cls = catalog.heroes.find((c) => c.id === h.class)?.name;
       if (cls) {
         card.subtitle = cls;
+      }
+      const cooldowns = cooldownRows(h);
+      if (cooldowns.length) {
+        card.cooldowns = cooldowns;
       }
       return card;
     }

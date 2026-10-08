@@ -73,6 +73,7 @@ func parseMonsterStatsForm(r *http.Request, cat *content.Catalog) (string, conte
 		dst         *int
 	}{
 		{"body", "body", 1, 999, &st.Body},
+		{"movement", "movement", 0, 99, &st.Movement},
 		{"avoidance", "avoidance", 0, 99, &st.Avoidance},
 		{"damage", "damage", 0, 99, &st.Damage},
 		{"line (extra heroes struck)", "line", 0, 3, &st.Line},

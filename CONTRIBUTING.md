@@ -6,4 +6,5 @@
 
 - Use only placeholder assets and generic names in examples.
 
-- Keep content packs with protected IP in a private repo or on your local machine.
+- Keep game content with protected IP (`content/`, `assets/`, both gitignored) in a private
+  repo or on your local machine.

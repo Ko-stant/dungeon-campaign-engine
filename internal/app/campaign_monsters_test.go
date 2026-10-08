@@ -26,11 +26,12 @@ func TestCampaignMonsterStatsForms(t *testing.T) {
 
 	withAbilities := orcStatsForm()
 	withAbilities.Set("abilities", "  Shoots from the shadows.  ")
+	withAbilities.Set("movement", "7")
 	resp, _ := postForm(t, client, page+"/monsters", withAbilities)
 	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/campaigns/"+camp.ID+"#monster-stats" {
 		t.Fatalf("save stats: %d %s", resp.StatusCode, resp.Header.Get("Location"))
 	}
-	if code, body := get(t, client, page); code != http.StatusOK || !strings.Contains(body, "Avoid 8 · Hit 2d8 · Damage 9 · ranged") || !strings.Contains(body, "Shoots from the shadows.") {
+	if code, body := get(t, client, page); code != http.StatusOK || !strings.Contains(body, "Move 7 · Avoid 8 · Hit 2d8 · Damage 9 · ranged") || !strings.Contains(body, "Shoots from the shadows.") {
 		t.Fatalf("campaign page: %d", code)
 	}
 
@@ -42,6 +43,7 @@ func TestCampaignMonsterStatsForms(t *testing.T) {
 		"long line":      {"line", "4"},
 		"many targets":   {"splash_targets", "9"},
 		"bad avoidance":  {"avoidance", "-2"},
+		"fast":           {"movement", "100"},
 		"long abilities": {"abilities", strings.Repeat("x", 501)},
 	} {
 		form := orcStatsForm()

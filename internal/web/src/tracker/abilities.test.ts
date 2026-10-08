@@ -30,8 +30,15 @@ describe('abilityRows', () => {
     ]);
     expect(rows[0]?.status).toBe('5 rounds left');
     expect(abilityRows({ ...hero, cooldowns: { 'ability-1': 6 } }, 5)[0]?.status).toBe('1 round left');
-    expect(rows[1]?.status).toBe('ready');
+    expect(rows[1]?.status).toBe('needs 3 mana');
     expect(rows[3]?.status).toBe('passive');
+  });
+
+  test('off cooldown but short of mana says so, instead of "ready"', () => {
+    const rows = abilityRows({ mana: 6, abilities: [heal, { ...heal, id: 'ability-5', name: 'Turn Evil', manaCost: 8, cooldown: 5 }] }, 1);
+    expect(rows.map((r) => r.status)).toEqual(['ready', 'needs 8 mana']);
+    // Cooling down: the rounds left come first.
+    expect(abilityRows({ mana: 0, abilities: [blessing], cooldowns: { 'ability-3': 3 } }, 1)[0]?.status).toBe('2 rounds left');
   });
 
   test('works for heroes from sessions without abilities', () => {

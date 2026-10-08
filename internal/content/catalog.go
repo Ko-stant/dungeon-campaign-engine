@@ -81,10 +81,11 @@ type MonsterCombat struct {
 	Abilities string `json:"abilities,omitempty"`
 }
 
-// MonsterStats is a campaign's stat line for one monster type: its Body and
-// combat stats.
+// MonsterStats is a campaign's stat line for one monster type: its Body,
+// movement and combat stats. Movement 0 keeps the catalog's movement.
 type MonsterStats struct {
-	Body int `json:"body"`
+	Body     int `json:"body"`
+	Movement int `json:"movement,omitempty"`
 	MonsterCombat
 }
 
@@ -101,7 +102,7 @@ func (st MonsterStats) CombatEmpty() bool {
 }
 
 // WithMonsterStats returns a copy of the catalog whose monsters use a
-// campaign's stat lines (Body and combat stats), keyed by monster type. Types
+// campaign's stat lines (Body, movement and combat stats), keyed by monster type. Types
 // the catalog lacks are ignored; with no stats the catalog itself is returned.
 func (c *Catalog) WithMonsterStats(stats map[string]MonsterStats) *Catalog {
 	if len(stats) == 0 {
@@ -112,6 +113,9 @@ func (c *Catalog) WithMonsterStats(stats map[string]MonsterStats) *Catalog {
 	for i, m := range c.Monsters {
 		if st, ok := stats[m.ID]; ok {
 			m.Body, m.Combat = st.Body, nil
+			if st.Movement > 0 {
+				m.Movement = st.Movement
+			}
 			if !st.BodyOnly() {
 				combat := st.MonsterCombat
 				m.Combat = &combat

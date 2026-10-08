@@ -79,6 +79,16 @@ export function combatLine(c: HeroCombat): string {
 }
 
 /** One line, e.g. "Avoid 14 · Hit 2d10+3 · Damage 12 · strikes 2 in a line" (as the campaign page shows it). */
+/**
+ * A monster's movement in squares: frozen on the session monster (from the
+ * campaign's stat line or the catalog), else its catalog type's (older
+ * sessions); 0 when neither sets it.
+ */
+export function monsterMove(m: { movement?: number }, def: { movement: number } | undefined): number {
+  const own = m.movement ?? 0;
+  return own > 0 ? own : def?.movement ?? 0;
+}
+
 export function monsterLine(c: MonsterCombat): string {
   const parts = [`Avoid ${c.avoidance}`, `Hit ${c.hitDice}`, `Damage ${c.damage}`];
   if (c.ranged) {

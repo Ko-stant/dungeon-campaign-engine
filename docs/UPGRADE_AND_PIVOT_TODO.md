@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-06 19:12 EDT
+**Last Updated**: 2026-10-07 22:07 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -108,6 +108,14 @@ Commits (oldest first):
 | 6a87266 | player screen: the log is open by default (poll result) |
 | 87511b2 | make narration-text: paste-ready text for voicing the script |
 | 590b26b | script: voicing the prologue and Quest 1 (lead-ins, quest notes, tagged text) |
+| 4a37800 | tracker: table testing fixes (loot quick-add, note letters, layout, fight reminders, movement) |
+| 9494fa6 | campaign: monster movement and the Ranger's Point Blank |
+| 576c8ed | player screen: hero cooldowns on the card, damage amounts with Body hidden |
+| ed4caed | players: printable hero sheets; handbook: the Cleric can carry shields and tomes |
+| 2c2420a | handbook: the Barbarian's abilities say squares and Mitigation |
+| 8e5be3a | players: half-sheet hero cards (class half, hero half) replace the full-page sheet |
+| c51a760 | GM bestiary: monster movement (campaign stat line, else the base game) |
+| 5114f90 | housekeeping: README and roadmap catch-up, legacy content schemas removed, .DS_Store untracked |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).

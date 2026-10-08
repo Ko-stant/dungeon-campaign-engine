@@ -5,7 +5,7 @@
  * exact odds from internal/web/src/combat/odds.ts. Rerun after changing the
  * numbers:  bun scripts/gm-bestiary.ts
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import combat from '../docs/campaigns/three-plagues/combat.json';
 import { CAMPAIGN_RULES, heroAttack, killOdds, monsterAttack, MONSTER_CRIT_CHANCE, type HeroAttacker } from '../internal/web/src/combat/odds.ts';
 import type { HeroSpec, MonsterSpec } from '../internal/web/src/combat/simulate.ts';
@@ -18,6 +18,7 @@ interface Line {
   avoidance: number;
   hitDice: string;
   damage: number;
+  movement?: number;
   ranged?: boolean;
   reach?: boolean;
   line?: number;
@@ -36,6 +37,19 @@ const one = (n: number): string => (Number.isFinite(n) ? n.toFixed(1) : '-');
 const title = (type: string): string => type.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 const falterAt = (body: number): number => Math.max(1, Math.floor(body / 4));
 const band = (p: number): string => (p >= 0.8 ? 'high' : p >= 0.5 ? 'mid' : 'low');
+
+/**
+ * Squares a monster moves, as the tracker has it: the campaign stat line's movement, else the
+ * base game's from the gitignored content/ catalog (undefined when neither is there).
+ */
+function movement(t: string): number | undefined {
+  const own = LINES[t]?.movement;
+  if (own) return own;
+  const file = `content/monsters/${t}.json`;
+  if (!existsSync(file)) return undefined;
+  const base = (JSON.parse(readFileSync(file, 'utf8')) as { stats?: { movementSquares?: number } }).stats?.movementSquares;
+  return base !== undefined && base > 0 ? base : undefined;
+}
 
 function traits(l: Line): string[] {
   const out: string[] = [];
@@ -114,7 +128,8 @@ function defenseGrid(party: HeroSpec[], caption: string): string {
       const perHit = Math.max(0, m.attack.damage - h.defense.mitigation);
       return `<td class="${band(o.hit)}"><b>${pct(o.hit)}</b><small>${String(perHit)} a hit · ${one(o.expectedDamage)} avg</small></td>`;
     }).join('');
-    return `<tr><th scope="row">${esc(title(t))}<small>rolls ${esc(LINES[t]?.hitDice ?? '')} (${rollRange(m)}), ${String(m.attack.damage)} damage</small></th>${cells}</tr>`;
+    const move = movement(t);
+    return `<tr><th scope="row">${esc(title(t))}<small>rolls ${esc(LINES[t]?.hitDice ?? '')} (${rollRange(m)}), ${String(m.attack.damage)} damage${move ? `, moves ${String(move)}` : ''}</small></th>${cells}</tr>`;
   }).join('\n');
   return `<div class="scroll"><table class="grid"><caption>${caption}</caption><thead><tr><th scope="col">Monster</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -145,11 +160,12 @@ function entry(t: string): string {
   const partyRound = [...best.values()].reduce((n, v) => n + v, 0);
   const tr = traits(l);
   const n = counts.get(t) ?? 0;
+  const move = movement(t);
   return `
   <article class="monster" id="${t}">
     <header>
       <h2>${esc(title(t))}</h2>
-      <p class="line"><span><b>${String(l.body)}</b> Body</span><span>Avoidance <b>${String(l.avoidance)}</b></span><span>Hit <b>${esc(l.hitDice)}</b></span><span>Damage <b>${String(l.damage)}</b></span>${tr.map((x) => `<span class="trait">${esc(x)}</span>`).join('')}</p>
+      <p class="line"><span><b>${String(l.body)}</b> Body</span><span>Avoidance <b>${String(l.avoidance)}</b></span><span>Hit <b>${esc(l.hitDice)}</b></span><span>Damage <b>${String(l.damage)}</b></span>${move ? `<span>Move <b>${String(move)}</b></span>` : ''}${tr.map((x) => `<span class="trait">${esc(x)}</span>`).join('')}</p>
       <p class="meta">Wounded (Avoidance ${String(l.avoidance - CAMPAIGN_RULES.falterPenalty)}) at ${String(falterAt(l.body))} Body or less · crits on double 20s (${(MONSTER_CRIT_CHANCE * 100).toFixed(2)}%) for ${String(l.damage * 2)} · ${n ? `${String(n)} in Quest 1` : t === 'specter' ? 'Quest 1 only if the Stranger is never freed' : 'not in Quest 1'} · the whole party deals about ${one(partyRound)} a round, so about ${one(l.body / partyRound)} rounds to fell it</p>
     </header>
     <div class="cols">
@@ -256,7 +272,7 @@ footer { color: var(--ink-muted); font-size: 0.9rem; border-top: 1px solid var(-
   <nav class="index" aria-label="Monsters">${types.map((t) => `<a href="#${t}">${esc(title(t))}</a>`).join('')}</nav>
   ${types.map(entry).join('\n')}
 
-  <footer>Generated from docs/campaigns/three-plagues/combat.json and scripts/combat-config.ts by scripts/gm-bestiary.ts. "Attacks to kill alone" is one hero's expected attacks to take the monster from full Body to 0 (Determination and Wounded included). The party estimate adds one attack per hero per round (the Cleric's better of mace and Smite) and ignores abilities, so real fights go faster.</footer>
+  <footer>Generated from docs/campaigns/three-plagues/combat.json and scripts/combat-config.ts by scripts/gm-bestiary.ts. "Attacks to kill alone" is one hero's expected attacks to take the monster from full Body to 0 (Determination and Wounded included). The party estimate adds one attack per hero per round (the Cleric's better of mace and Smite) and ignores abilities, so real fights go faster. Move is the campaign's movement where combat.json sets one, otherwise the base game's.</footer>
 </div>
 `;
 

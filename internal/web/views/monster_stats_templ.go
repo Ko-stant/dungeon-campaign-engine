@@ -55,6 +55,15 @@ func MonsterStatsLine(c content.MonsterCombat) string {
 	return strings.Join(parts, " · ")
 }
 
+// monsterStatsRowLine is a saved stat line after its Body: the movement, when
+// the line sets one, then the combat stats.
+func monsterStatsRowLine(st content.MonsterStats) string {
+	if st.Movement > 0 {
+		return "Move " + strconv.Itoa(st.Movement) + " · " + MonsterStatsLine(st.MonsterCombat)
+	}
+	return MonsterStatsLine(st.MonsterCombat)
+}
+
 func monsterStatsURL(d CampaignPageData, rest string) templ.SafeURL {
 	return templ.SafeURL("/campaigns/" + d.ID + "/monsters" + rest)
 }
@@ -113,7 +122,7 @@ func monsterStatsFields(st content.MonsterStats) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(st.HitDice)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 65, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 74, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 		if templ_7745c5c3_Err != nil {
@@ -153,6 +162,10 @@ func monsterStatsFields(st content.MonsterStats) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		templ_7745c5c3_Err = monsterNumber("Splash targets", "splash_targets", numberValue(st.SplashTargets), 0, 8).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = monsterNumber("Move (0: the usual)", "movement", numberValue(st.Movement), 0, 99).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -215,7 +228,7 @@ func monsterStatsFields(st content.MonsterStats) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(st.Abilities)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 81, Col: 142}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 91, Col: 142}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -291,7 +304,7 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(row.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 100, Col: 46}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 110, Col: 46}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -314,7 +327,7 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(row.Stats.Body))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 104, Col: 70}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 114, Col: 70}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -325,9 +338,9 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var13 string
-				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(MonsterStatsLine(row.Stats.MonsterCombat))
+				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(monsterStatsRowLine(row.Stats))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 104, Col: 119}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 114, Col: 108}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -345,7 +358,7 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(row.Stats.Abilities)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 106, Col: 60}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 116, Col: 60}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -363,7 +376,7 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var15 templ.SafeURL
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(monsterStatsURL(d, "/"+row.Type+"/delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 109, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 119, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
@@ -376,7 +389,7 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue("Remove the stat line for " + row.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 110, Col: 125}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 120, Col: 125}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 				if templ_7745c5c3_Err != nil {
@@ -389,7 +402,7 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var17 templ.SafeURL
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(monsterStatsURL(d, ""))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 115, Col: 58}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 125, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
@@ -402,7 +415,7 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(row.Type)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 116, Col: 57}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 126, Col: 57}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 				if templ_7745c5c3_Err != nil {
@@ -451,7 +464,7 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 		var templ_7745c5c3_Var21 templ.SafeURL
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinURLErrs(monsterStatsURL(d, ""))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 125, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 135, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -491,7 +504,7 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.ResolveAttributeValue(m.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 131, Col: 26}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 141, Col: 26}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 			if templ_7745c5c3_Err != nil {
@@ -504,7 +517,7 @@ func campaignMonsterStats(d CampaignPageData) templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(setupLabel(m.Name, m.Custom))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 131, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `monster_stats.templ`, Line: 141, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {

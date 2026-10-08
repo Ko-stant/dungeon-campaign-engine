@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last Updated**: 2026-10-05 19:30 EDT
+**Last Updated**: 2026-10-07 22:05 EDT
 
 The engine is a single-GM companion for in-person HeroQuest: build maps, run a
 quest at the table, and keep a resumable record of what happened. It never
@@ -48,15 +48,38 @@ enforces rules; the GM decides, and the app remembers.
 - Read-aloud script per campaign and a Read aloud panel with a large-type reader in the
   tracker, with audio clip playback per passage (files named after passage ids).
 
+## Done 2026-10-03 to 2026-10-07 (the Three Plagues build-out)
+- Combat stats for custom classes (hit dice, crit range, damage, avoidance, mitigation,
+  mana regeneration), shown on hero cards; each campaign's own monster stat lines (Body,
+  movement, combat stats, abilities text), frozen into sessions.
+- Fights in the tracker: fight start/end, rounds that finish cooldowns, regenerate mana and
+  count effects down, the cooldown floor at the end of a fight, generic effects on heroes
+  and monsters, and a pulsing fight button that suggests starting or ending a fight.
+- Odds hints in the monster panel: each hero's chance to hit and attacks to finish it, and
+  its chance to hit each hero (exact math, advice only).
+- Items with kind and stats, equipped gear adding to hero totals, the party purse, usable
+  items (potions), and a per-campaign loot list with a picker in the tracker.
+- `make fill-campaign` loads class stats, monster stat lines, starting kits and loot from
+  `docs/campaigns/three-plagues/combat.json`.
+- Player screen for the TV, live, with player-safe event lines and sightings.
+- Tracker: collapsible sections, `[` and `]` to hide the sidebars, hotkeys, drag along a
+  corridor to reveal it, sightings taken back when a living monster is removed.
+- Narration text export for voicing the script (`make narration-text`).
+- Players' handbook, table polls, the GM bestiary and printable half-sheet hero cards
+  (`docs/campaigns/three-plagues/`).
+
 ## Next
 ### Table polish
-- [ ] Tracker layout for smaller screens (collapsible side panels, bigger board). (Not yet:
-      the GM's laptop is small, but the layout waits.)
+- [x] Tracker layout for smaller screens: collapsible sections, and `[` / `]` hide the
+      sidebars for a bigger board (2026-10-05).
 - [ ] Drag to move pieces; keyboard nudges for the selected piece.
 - [x] Event log search (2026-10-05): a magnifying-glass button above the log opens a
       search bar (words in any order; "r3" for round 3). Filters by hero or monster are
       covered by typing their name.
-- [ ] Monster detail panel with catalog stats (attack/defend/move) and notes.
+- [ ] Monster detail panel with catalog stats (attack/defend/move) and notes. (Partly done:
+      the selected monster's panel shows movement, the campaign's combat stats, abilities
+      and odds hints; the base game's attack/defend dice and custom monster notes are not
+      shown.)
 - [ ] Map checks for multi-square monsters: `Quest.Check` only checks a monster's
       anchor square, so a 2x2 custom monster hanging off the board or into rock is
       not flagged yet.

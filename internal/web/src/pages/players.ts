@@ -151,7 +151,10 @@ async function main(): Promise<void> {
     },
       h('div', { class: 'flex items-baseline justify-between gap-2' },
         h('span', { class: 'text-xl font-semibold' }, hero.name),
-        h('span', { class: 'text-sm opacity-70', style: cls?.color ? `color: ${cls.color}` : null }, hero.status === 'dead' ? 'Fallen' : hero.status === 'escaped' ? 'Escaped' : cls?.name ?? '')),
+        // Class names are green on every card: some class colors (the Rogue's) were hard to read on the TV.
+        down
+          ? h('span', { class: 'text-sm opacity-70' }, hero.status === 'dead' ? 'Fallen' : 'Escaped')
+          : h('span', { class: 'text-sm font-semibold text-positive' }, cls?.name ?? '')),
       h('div', { class: 'flex justify-between text-base' }, h('span', {}, 'Body'), h('span', { class: 'font-mono' }, `${String(hero.body)} / ${String(hero.maxBody)}`)),
       bar(hero.body, hero.maxBody, 'bg-danger'),
       h('div', { class: 'flex justify-between text-sm opacity-80' },
@@ -183,6 +186,11 @@ async function main(): Promise<void> {
       card.tags.length ? h('div', { class: 'flex flex-wrap gap-2' }, ...card.tags.map((t) => h('span', { class: 'rounded-full border border-danger/60 bg-danger/15 px-3 py-0.5 text-base font-semibold text-danger' }, t))) : null,
       ...card.lines.map((l) => h('p', { class: 'text-lg' }, l)),
       card.abilities ? h('p', { class: 'whitespace-pre-wrap border-t border-border/40 pt-2 text-lg italic' }, card.abilities) : null,
+      card.cooldowns?.length
+        ? h('ul', { class: 'space-y-1 border-t border-border/40 pt-2' }, ...card.cooldowns.map((r) => h('li', { class: 'flex items-baseline justify-between gap-3 text-lg' },
+          h('span', {}, r.name, r.detail ? h('span', { class: 'ml-2 text-base opacity-60' }, r.detail) : null),
+          h('span', { class: `font-semibold ${r.tone === 'ready' ? 'text-positive' : r.tone === 'cooling' ? 'text-warning' : 'text-danger'}` }, r.status))))
+        : null,
       card.effects.length ? h('div', { class: 'flex flex-wrap gap-2 pt-1' }, ...card.effects.map((e) => h('span', { class: 'rounded-full border border-amber-500/60 bg-amber-500/10 px-3 py-0.5 text-base' }, e))) : null));
   }
 

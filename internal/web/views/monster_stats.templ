@@ -47,6 +47,15 @@ func MonsterStatsLine(c content.MonsterCombat) string {
 	return strings.Join(parts, " · ")
 }
 
+// monsterStatsRowLine is a saved stat line after its Body: the movement, when
+// the line sets one, then the combat stats.
+func monsterStatsRowLine(st content.MonsterStats) string {
+	if st.Movement > 0 {
+		return "Move " + strconv.Itoa(st.Movement) + " · " + MonsterStatsLine(st.MonsterCombat)
+	}
+	return MonsterStatsLine(st.MonsterCombat)
+}
+
 func monsterStatsURL(d CampaignPageData, rest string) templ.SafeURL {
 	return templ.SafeURL("/campaigns/" + d.ID + "/monsters" + rest)
 }
@@ -70,6 +79,7 @@ templ monsterStatsFields(st content.MonsterStats) {
 		@monsterNumber("Line (extra heroes struck)", "line", numberValue(st.Line), 0, 3)
 		@monsterNumber("Splash damage", "splash_damage", numberValue(st.SplashDamage), 0, 99)
 		@monsterNumber("Splash targets", "splash_targets", numberValue(st.SplashTargets), 0, 8)
+		@monsterNumber("Move (0: the usual)", "movement", numberValue(st.Movement), 0, 99)
 	</div>
 	<div class="flex flex-wrap gap-4 text-sm">
 		<label class="flex items-center gap-2"><input type="checkbox" name="ranged" checked?={ st.Ranged }/> Ranged</label>
@@ -101,7 +111,7 @@ templ campaignMonsterStats(d CampaignPageData) {
 								if row.Custom {
 									@customTag("monster")
 								}
-								<span class="ml-2 text-sm">Body { strconv.Itoa(row.Stats.Body) } · { MonsterStatsLine(row.Stats.MonsterCombat) }</span>
+								<span class="ml-2 text-sm">Body { strconv.Itoa(row.Stats.Body) } · { monsterStatsRowLine(row.Stats) }</span>
 								if row.Stats.Abilities != "" {
 									<p class="text-xs opacity-70">{ row.Stats.Abilities }</p>
 								}

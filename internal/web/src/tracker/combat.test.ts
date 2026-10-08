@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { combatLine, combatTotals, determinationAfter, falterAt, statChange, gearBonus, itemStatsLine, manaCap, monsterLine, playerMonsterLine } from './combat.ts';
+import { combatLine, combatTotals, determinationAfter, falterAt, statChange, gearBonus, itemStatsLine, manaCap, monsterLine, monsterMove, playerMonsterLine } from './combat.ts';
 import type { Hero, Item } from './types.ts';
 
 describe('combatLine', () => {
@@ -121,5 +121,14 @@ describe('statChange', () => {
         expect(r.error).toContain('e.g.');
       }
     }
+  });
+});
+
+describe('monsterMove', () => {
+  test("the session monster's frozen movement, else its catalog type's, else 0 (not set)", () => {
+    expect(monsterMove({ movement: 10 }, { movement: 8 })).toBe(10);
+    expect(monsterMove({}, { movement: 8 })).toBe(8);
+    expect(monsterMove({ movement: 0 }, { movement: 0 })).toBe(0);
+    expect(monsterMove({}, undefined)).toBe(0);
   });
 });

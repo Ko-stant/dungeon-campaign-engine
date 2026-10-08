@@ -6,7 +6,7 @@ tmp_dir = "tmp"
   cmd = "go build -o ./tmp/main ./cmd/server"
   entrypoint = ["./tmp/main"]
   delay = 1000
-  exclude_dir = ["migrations", "testdata", "assets", "tmp", "build", "vendor", "node_modules", "packs", "docs", ".git", "internal/web/static/dist", "internal/web/src"]
+  exclude_dir = ["migrations", "testdata", "assets", "tmp", "build", "vendor", "node_modules", "docs", ".git", "internal/web/static/dist", "internal/web/src"]
   include_ext = ["go"]
   log = "build-errors.log"
 

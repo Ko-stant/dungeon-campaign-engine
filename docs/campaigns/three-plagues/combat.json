@@ -78,6 +78,11 @@
           "kind": "active",
           "cooldown": 7,
           "text": "Every enemy within 2 squares of a chosen square is attacked once, with half the Accuracy bonus (rounded down). Roll 1d4 arrows once; each enemy hit takes weapon damage x arrows."
+        },
+        {
+          "name": "Point Blank",
+          "kind": "passive",
+          "text": "When attacking an adjacent monster: +1 Accuracy and +1 damage."
         }
       ]
     },
@@ -201,17 +206,17 @@
   ],
   "monsters": {
     "goblin": { "body": 5, "avoidance": 6, "hitDice": "1d12", "damage": 4 },
-    "goblin_archer": { "body": 5, "avoidance": 6, "hitDice": "1d12", "damage": 4, "ranged": true },
-    "goblin_warlock": { "body": 5, "avoidance": 6, "hitDice": "1d12", "damage": 5, "ranged": true, "splashDamage": 2, "splashTargets": 2 },
+    "goblin_archer": { "body": 5, "movement": 8, "avoidance": 6, "hitDice": "1d12", "damage": 4, "ranged": true },
+    "goblin_warlock": { "body": 5, "movement": 6, "avoidance": 6, "hitDice": "1d12", "damage": 5, "ranged": true, "splashDamage": 2, "splashTargets": 2 },
     "orc": { "body": 22, "avoidance": 8, "hitDice": "2d8", "damage": 9 },
-    "orc_archer": { "body": 22, "avoidance": 8, "hitDice": "2d8", "damage": 9, "ranged": true },
+    "orc_archer": { "body": 22, "movement": 6, "avoidance": 8, "hitDice": "2d8", "damage": 9, "ranged": true },
     "skeleton": { "body": 17, "avoidance": 8, "hitDice": "1d12", "damage": 6, "undead": true },
     "zombie": { "body": 22, "avoidance": 10, "hitDice": "1d12+1", "damage": 8, "undead": true },
     "abomination": { "body": 55, "avoidance": 10, "hitDice": "2d8+1", "damage": 10 },
     "mummy": { "body": 64, "avoidance": 12, "hitDice": "2d8+1", "damage": 10, "undead": true },
     "dread_warrior": { "body": 109, "avoidance": 12, "hitDice": "2d10+2", "damage": 15 },
     "gargoyle": { "body": 109, "avoidance": 14, "hitDice": "2d10+3", "damage": 12, "line": 1 },
-    "specter": { "body": 109, "avoidance": 14, "hitDice": "2d10+2", "damage": 15, "undead": true },
+    "specter": { "body": 109, "movement": 8, "avoidance": 14, "hitDice": "2d10+2", "damage": 15, "undead": true },
     "stranger": { "body": 1 }
   },
   "loot": [

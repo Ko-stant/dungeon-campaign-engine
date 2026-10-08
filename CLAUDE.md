@@ -70,7 +70,8 @@ Tailwind CSS v4, canvas rendering.
     monster type (Body and `content.MonsterCombat`), edited on the campaign page
     (`/campaigns/{id}/monsters...`). Session handlers use `Server.campaignCatalog(ctx,
     campaignID)` (catalogFor with the stat lines laid over), and session monsters freeze them
-    as `combat`. A stat line's `abilities` text is shown to the players on the TV card.
+    as `combat`. A stat line's `abilities` text is shown to the players on the TV card. A
+    stat line's `movement` (0 keeps the catalog's) is frozen on session monsters as `movement`.
   - Tracker: `/campaigns`, `/campaigns/{id}`, `/play/{id}`, `/api/campaigns...`, `/api/sessions/{id}/(commands|travel|events|complete|reopen|stream)`
   - Inventory: the party shares one purse (`campaign.gold`, the session's `State.Gold`,
     `gold.set`); campaign heroes carry `items` (name, quantity, notes, kind, stats, equipped)
@@ -79,7 +80,8 @@ Tailwind CSS v4, canvas rendering.
     (`Hero.CombatTotals`, `ManaCap`, `ManaRegen`; TS `combatTotals`, `manaCap`).
     `/campaigns/{id}/gold` and `/campaigns/{id}/heroes/{heroId}/items...` forms, `item.*`
     tracker commands (`item.equip` too). Shared pure helpers in `internal/tracker/inventory.go`.
-    The gold box takes `+25`, `-10` or `=40` (a bare number is refused). Usable items
+    The gold box takes `+25`, `-10` or `=40` (a bare number is refused). The campaign page's
+    item form also takes `loot_id` (a pick from the loot list: its kind, stats and use, unequipped). Usable items
     (`healBody`, `restoreMana`: potions) are spent by `item.use`, which heals in one event.
   - Loot list (`campaign.loot`, migration 00010; `internal/app/loot.go`): items with their
     kind and stats ready, edited on the campaign page (`/campaigns/{id}/loot...`), served by
@@ -88,7 +90,9 @@ Tailwind CSS v4, canvas rendering.
     (matched by name; the GM's own entries stay).
   - Read-aloud script: one Markdown text per campaign (`campaign.script`) parsed by
     `internal/script`; saved with `POST /campaigns/{id}/script`, served parsed by
-    `GET /api/campaigns/{id}/script`; the tracker's Read aloud panel logs `passage.read`.
+    `GET /api/campaigns/{id}/script`; the tracker's Read aloud panel logs `passage.read` and
+    tags each passage with the letters of the active map's quest notes that hold its text
+    (`noteLabels` in `internal/web/src/tracker/script.ts`).
     The Three Plagues script is a folder of numbered part files,
     `docs/campaigns/three-plagues/script/` (`script.Assemble` joins them);
     `make load-script CAMPAIGN="Three Plagues"` saves it to the campaign. Edit one part
@@ -188,6 +192,13 @@ Tailwind CSS v4, canvas rendering.
 - `maps/` - document types + API client. `editor/` - pure editing model, tools, undo history.
 - `tracker/` - session types, view builder, click interaction, event formatting, API client.
 - `pages/` - thin DOM wiring per page (`mapEditor.ts`, `tracker.ts`), bundled to `static/dist/`.
+- Tracker layout: collapsible sections start open or closed per `tracker/panels.ts`
+  (`defaultOpen`; hero abilities and inventory, and the right panel's lists, start closed);
+  `[` and `]` hide the sidebars (remembered in localStorage); the mode bar keeps a fixed
+  height so switching modes never resizes the board. The fight button pulses when
+  `tracker/fightHint.ts` suggests starting a fight (a monster comes into sight or loses
+  Body, or a hero misses; compared with a "calm" picture kept per session in localStorage)
+  or ending one (no living monster in sight). Advice only.
 
 ### Conventions
 - Squares count from **(1,1) at the bottom-left**: x runs 1..width left to right, y runs

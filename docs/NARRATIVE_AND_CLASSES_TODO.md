@@ -1,6 +1,6 @@
 # Campaign Narrative, Custom Classes and Ability Tracking - TODO
 
-**Last Updated**: 2026-10-06 19:12 EDT
+**Last Updated**: 2026-10-07 22:05 EDT
 **Branch**: `main` (the `dce-table-only` branch was merged on 2026-09-28; work happens on `main`)
 
 Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, secrets):
@@ -8,7 +8,7 @@ Goal: run the "Three Plagues" campaign from the app. Story bible (world, cast, s
 voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House rules and classes:
 `docs/campaigns/three-plagues/RULES_AND_CLASSES.md`.
 
-## Resume here (2026-10-03)
+## Resume here (2026-10-07)
 
 **Where things stand**
 - App features for the campaign are built and committed: dice, custom classes, inventory,
@@ -35,6 +35,13 @@ voice notes: `docs/campaigns/three-plagues/script/` (one file per part). House r
   is in `docs/campaigns/three-plagues/MAPS.md`.
 
 **Next**
+- **Table testing round (2026-10-07)** on a test copy of the campaign (deleted after): the
+  tracker got a loot quick-add on the campaign page, note letters in Read aloud, a fixed
+  mode bar and hideable sidebars, sections that start closed, green class names on the TV,
+  fight reminders (the fight button pulses), no log line for repeat reveals, monster
+  movement on the selected monster (Goblin Archer 8, Goblin Warlock 6, Orc Archer 6,
+  Specter 8; applied by the GM), red "needs N mana", and the Ranger's Point Blank passive
+  (applied; handbook republished).
 - **Voiced audio (2026-10-06): the prologue and Quest 1 are done** (10 clips, about 15
   minutes), made by the GM in ElevenLabs Studio with Eleven v4 and placed in
   `audio/<campaign id>/` (gitignored; the GM keeps copies elsewhere). `make narration-text
