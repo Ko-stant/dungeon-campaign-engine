@@ -150,10 +150,11 @@ func TestPlayerSummaries(t *testing.T) {
 		{cmd(t, "fight.end", map[string]any{}), "Fight over"},
 	})
 
-	// With Body hidden, a seen monster's hits are told without numbers.
+	// With Body hidden, a seen monster's hits tell how much, never its Body.
 	s.Players.HideMonsterBody = true
 	run([]step{
-		{cmd(t, "monster.update", map[string]any{"id": "monster-4", "body": 0}), "Orc took damage"},
+		{cmd(t, "monster.update", map[string]any{"id": "monster-4", "body": 0}), "Orc took 1 damage"},
+		{cmd(t, "monster.update", map[string]any{"id": "monster-4", "body": 1}), "Orc recovered 1 Body"},
 	})
 }
 
@@ -181,5 +182,30 @@ func TestSpottedMonstersAreKeptApartForRetraction(t *testing.T) {
 	s, _ = applyWith(t, s, cmd(t, "monster.update", map[string]any{"id": "monster-3", "alive": false}), cat)
 	if _, ev = applyWith(t, s, cmd(t, "monster.remove", map[string]any{"id": "monster-3"}), cat); ev.PlayerRetract != nil {
 		t.Fatalf("remove a dead monster: %+v", ev.PlayerRetract)
+	}
+}
+
+func TestPlayerViewHeroesShowTheirCooldowns(t *testing.T) {
+	s, _ := fightState(t)
+	s.Round = 4
+	s.Heroes[0].Abilities = []content.Ability{
+		{ID: "ability-1", Name: "Smite", Kind: "spell", ManaCost: 2, Text: "secret GM wording"},
+		{ID: "ability-2", Name: "Turn Evil", Kind: "spell", ManaCost: 8, Cooldown: 5},
+		{ID: "ability-3", Name: "Prayer", Kind: "active", Cooldown: 5},
+		{ID: "ability-4", Name: "Tough as Nails", Kind: "passive"},
+	}
+	// Turn Evil ready at round 7 (3 rounds left); Prayer's ready round has passed.
+	s.Heroes[0].Cooldowns = map[string]int{"ability-2": 7, "ability-3": 2}
+	got := PlayerView(s).Heroes[0].Abilities
+	want := []PlayerAbility{
+		{Name: "Smite", Kind: "spell", ManaCost: 2},
+		{Name: "Turn Evil", Kind: "spell", ManaCost: 8, RoundsLeft: 3},
+		{Name: "Prayer", Kind: "active"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("abilities on the player screen (passives left out):\n got %+v\nwant %+v", got, want)
+	}
+	if data, _ := json.Marshal(PlayerView(s)); strings.Contains(string(data), "secret GM wording") {
+		t.Fatal("ability text stays with the GM")
 	}
 }

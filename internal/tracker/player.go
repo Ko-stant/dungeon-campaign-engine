@@ -106,6 +106,35 @@ type PlayerHero struct {
 	Combat *Combat `json:"combat,omitempty"`
 	// Determination is the hero's Accuracy bonus from misses in a row.
 	Determination int `json:"determination,omitempty"`
+	// Abilities are the hero's usable abilities (no passives) and their
+	// cooldowns; their text stays with the GM.
+	Abilities []PlayerAbility `json:"abilities,omitempty"`
+}
+
+// PlayerAbility is one of a hero's abilities as the players see it.
+type PlayerAbility struct {
+	Name     string `json:"name"`
+	Kind     string `json:"kind"`
+	ManaCost int    `json:"manaCost,omitempty"`
+	// RoundsLeft until it is ready again (0: ready).
+	RoundsLeft int `json:"roundsLeft,omitempty"`
+}
+
+// playerAbilities lists a hero's non-passive abilities with the rounds left
+// on each cooldown (ready round = round used + cooldown).
+func playerAbilities(h *Hero, round int) []PlayerAbility {
+	var out []PlayerAbility
+	for _, ab := range h.Abilities {
+		if ab.Kind == "passive" {
+			continue
+		}
+		pa := PlayerAbility{Name: ab.Name, Kind: ab.Kind, ManaCost: ab.ManaCost}
+		if ready, ok := h.Cooldowns[ab.ID]; ok && ready > round {
+			pa.RoundsLeft = ready - round
+		}
+		out = append(out, pa)
+	}
+	return out
 }
 
 // wounded reports a living monster that is hurt and at or below a quarter of
@@ -187,6 +216,7 @@ func PlayerView(s *State) PlayerState {
 			ID: h.ID, Name: h.Name, Class: h.Class, X: h.X, Y: h.Y, Placed: h.Placed,
 			Body: h.Body, MaxBody: h.MaxBody, Mind: h.Mind, MaxMind: h.MaxMind, Mana: h.Mana, ManaCap: h.ManaCap(),
 			Status: h.Status, Effects: slices.Clone(h.Effects), Combat: h.CombatTotals(), Determination: h.Determination,
+			Abilities: playerAbilities(h, s.Round),
 		})
 	}
 	return pv
@@ -316,10 +346,12 @@ func monsterChanges(before, after *State) string {
 		}
 		if b.Body != a.Body && a.Alive {
 			line := fmt.Sprintf("%s: Body %d → %d", a.Name, b.Body, a.Body)
+			// With Body hidden the players hear how much, never how much is left,
+			// so they can work out how tough a monster is as they go.
 			if after.Players.HideMonsterBody {
-				line = a.Name + " took damage"
+				line = fmt.Sprintf("%s took %d damage", a.Name, b.Body-a.Body)
 				if a.Body > b.Body {
-					line = a.Name + " recovered"
+					line = fmt.Sprintf("%s recovered %d Body", a.Name, a.Body-b.Body)
 				}
 			}
 			if wounded(a) && !wounded(b) {

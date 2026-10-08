@@ -120,6 +120,34 @@ describe('cardFor', () => {
   });
 });
 
+describe("a hero's abilities on their card", () => {
+  test('each usable ability with its cost and cooldown: ready, rounds left, or short of mana', () => {
+    const pv = view();
+    const hero = pv.heroes[0];
+    if (!hero) {
+      throw new Error('fixture has a hero');
+    }
+    hero.mana = 6;
+    hero.manaCap = 16;
+    hero.abilities = [
+      { name: 'Smite', kind: 'spell', manaCost: 2 },
+      { name: 'Turn Evil', kind: 'spell', manaCost: 8 },
+      { name: 'Prayer', kind: 'active', roundsLeft: 3 },
+      { name: 'Unleash Fury', kind: 'active', roundsLeft: 1 },
+    ];
+    expect(cardFor(pv, catalog, { kind: 'hero', id: 'hero-1' })?.cooldowns).toEqual([
+      { name: 'Smite', detail: '2 mana', status: 'ready', tone: 'ready' },
+      { name: 'Turn Evil', detail: '8 mana', status: 'needs 8 mana', tone: 'mana' },
+      { name: 'Prayer', detail: '', status: '3 rounds left', tone: 'cooling' },
+      { name: 'Unleash Fury', detail: '', status: '1 round left', tone: 'cooling' },
+    ]);
+  });
+
+  test('a hero without abilities has no list', () => {
+    expect(cardFor(view(), catalog, { kind: 'hero', id: 'hero-1' })?.cooldowns).toBeUndefined();
+  });
+});
+
 describe('addEvent', () => {
   const ev = (seq: number): PlayerEvent => ({ seq, round: 1, summary: `line ${String(seq)}`, createdAt: '' });
   test('keeps the newest lines, without repeats', () => {

@@ -1,6 +1,6 @@
 # Player screen (TV) plan
 
-**Last Updated**: 2026-10-05 20:55 EDT
+**Last Updated**: 2026-10-07 20:04 EDT
 
 ## Goal
 At the table the GM runs the tracker on the laptop and opens a second Chrome tab, the
@@ -25,9 +25,14 @@ only what the heroes know.
   traits such as ranged or "strikes 2 in a line"), effects (Poisoned...), "Wounded" while
   Faltering, and exact Body.
 - **Monster Body** is shown by default; a **tracker toggle** (per session, changeable
-  mid-game) hides it if the players vote that way.
+  mid-game) hides it if the players vote that way. Hidden, the feed still says how much a
+  hit did ("Orc took 7 damage", "Orc recovered 3 Body"), never how much is left, so the
+  players can work out how tough a monster is (2026-10-07).
 - **Party panel** on one side: each hero's Body, Mind, Mana, status and effects; the round
   and a Fight badge.
+- **A hero's card** (picked on the TV, on the board or in the party panel) lists their usable
+  abilities with mana cost and cooldown: ready, rounds left, or short of mana (2026-10-07).
+  Passives and the abilities' text stay off the TV.
 - **Event feed:** open by default (the players' vote, 2026-10-05; it was closed before), closed or reopened with the Events toggle on the TV. It shows a
   player-safe line per change and never mentions traps, GM notes, hidden monsters or
   anything the players can't see.
