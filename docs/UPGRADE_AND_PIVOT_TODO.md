@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-07 21:19 EDT
+**Last Updated**: 2026-10-07 21:42 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -112,6 +112,8 @@ Commits (oldest first):
 | 9494fa6 | campaign: monster movement and the Ranger's Point Blank |
 | 576c8ed | player screen: hero cooldowns on the card, damage amounts with Body hidden |
 | ed4caed | players: printable hero sheets; handbook: the Cleric can carry shields and tomes |
+| 2c2420a | handbook: the Barbarian's abilities say squares and Mitigation |
+| 8e5be3a | players: half-sheet hero cards (class half, hero half) replace the full-page sheet |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
