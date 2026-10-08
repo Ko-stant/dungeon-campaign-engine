@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-07 22:10 EDT
+**Last Updated**: 2026-10-07 22:12 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -485,3 +485,7 @@ at the table. Do these at that merge (and keep the list current as the branches 
   reload. How players join, scenario by scenario: `docs/ONLINE_PLAY_GUIDE.md`.
 - 2026-10-06: deployed `3e9517a` (Played by, start-opens, the seat fix) with `make deploy`, which
   lives only in the online worktree; live within about 30 seconds.
+- 2026-10-07: deployed `84e0994` (the two merges from main: table testing fixes, monster
+  movement, hero sheets, housekeeping, the ESLint fix; no new migrations) with
+  `make deploy`, after a hosted backup (`hosted-20261007-221121.dump`). `/healthz` ok, and the
+  served `tracker.js` matches the image's byte for byte.
