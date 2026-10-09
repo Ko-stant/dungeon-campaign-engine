@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-08 21:10 EDT
+**Last Updated**: 2026-10-08 21:11 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -506,3 +506,9 @@ at the table. Do these at that merge (and keep the list current as the branches 
   2: the server still adds a class from the files when it is not imported yet; step 2 drops
   that and the image's `content/heroes`. `hq_online` imported (9 classes). Main carries
   00016 (`a7a3425`), merged back in `41e02ff`.
+- 2026-10-08: deployed `eb4838a` with `make deploy`, after a hosted backup
+  (`hosted-20261008-211030.dump`); the hosted database migrated to 00016. Then
+  `make import-classes HOSTED=1`: 9 base classes created (a second run: 9 unchanged), no
+  owner, all active; the GM's 4 custom classes untouched, and the Test Campaign's
+  Barbarian and Wizard heroes are backed by rows. Next: step 2 (drop the file fallback and
+  the image's `content/heroes`).
