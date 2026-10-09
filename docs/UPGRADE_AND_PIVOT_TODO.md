@@ -1,6 +1,6 @@
 # Upgrade and Table-Companion Pivot - Progress Tracker
 
-**Last Updated**: 2026-10-08 20:35 EDT
+**Last Updated**: 2026-10-08 21:09 EDT
 **Branch**: `main` (the plan was built on `dce-table-only`, merged into `main` on 2026-09-28)
 
 Living checklist for the upgrade + pivot plan. Each step records what was done and how,
@@ -119,6 +119,7 @@ Commits (oldest first):
 | 6d7b325 | ESLint: browser globals for docs/**/*.js (make lint was failing on the hero cards' heroes.js) |
 | f51d349 | migrations: online's 00011-00014 copied for one shared numbering; classes deactivate instead of delete (00015) |
 | e6ce7bd | deletes from each view (campaign, session, board, quest) behind a Yes/No dialog; every remove asks first |
+| a7a3425 | migrations: online's 00016 copied (custom_hero_class.catalog_id, unused on main) |
 
 Test status after the bottom-left change:
 - `make test`: 102 Go tests, 0 failures (DB tests skip without a URL).
