@@ -9,14 +9,13 @@ import (
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/app"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/auth"
-	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 )
 
 // mountApp registers the map creator and tracker. It needs DATABASE_URL;
 // without it (or without a reachable database) the app's routes answer 503
 // with instructions. It returns a cleanup function.
-func mountApp(mux *http.ServeMux, contentDir, assetsDir string, authCfg auth.Config) func() {
+func mountApp(mux *http.ServeMux, assetsDir string, authCfg auth.Config) func() {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Printf("app: DATABASE_URL is not set; see .env and make db-up")
@@ -37,14 +36,8 @@ func mountApp(mux *http.ServeMux, contentDir, assetsDir string, authCfg auth.Con
 		mountUnavailable(mux, "The database is not reachable. Start it with make db-up and restart the server.")
 		return func() {}
 	}
-	// Board pieces only: hero classes come from the database (make import-content).
-	catalog, err := content.LoadPieces(os.DirFS(contentDir))
-	if err != nil {
-		log.Printf("app: load content catalog: %v; continuing with an empty catalog", err)
-		catalog = &content.Catalog{Furniture: []content.FurnitureDef{}, Monsters: []content.MonsterDef{}, Heroes: []content.HeroDef{}, Traps: []content.TrapDef{}}
-	}
-
-	server := app.New(st, catalog)
+	// The catalog is in the database; the server reads no content/ files.
+	server := app.New(st)
 	server.SetAuth(authCfg)
 	if authCfg.On() {
 		if err := st.DeleteExpiredLoginSessions(ctx); err != nil {
@@ -60,8 +53,10 @@ func mountApp(mux *http.ServeMux, contentDir, assetsDir string, authCfg auth.Con
 		}
 		log.Printf("app: membership %s", members)
 	}
-	log.Printf("app: ready (%d furniture, %d monsters, %d traps in catalog; hero classes from the database)",
-		len(catalog.Furniture), len(catalog.Monsters), len(catalog.Traps))
+	if furniture, err := st.ListCatalogPieces(ctx, store.PieceFurniture); err == nil && len(furniture) == 0 {
+		log.Printf("app: the database has no base game catalog yet: run make import-content (or make import-catalog)")
+	}
+	log.Printf("app: ready (catalog from the database)")
 	return st.Close
 }
 

@@ -476,20 +476,23 @@ func (s *Store) SetChapters(ctx context.Context, campaignID string, questIDs []s
 
 // --- Custom monsters ---
 
-// CustomMonster is a GM-made monster type. Doc holds its color, size and stats.
+// CustomMonster is a monster type kept in the database: a GM-made one (Doc
+// holds its color, size and stats) or a base game one (CatalogID set, e.g.
+// "orc"; Doc is its content.MonsterDef) imported from content/monsters.
 type CustomMonster struct {
 	ID        string
 	Name      string
 	Doc       json.RawMessage
+	CatalogID string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
-const customMonsterColumns = `id::text, name, doc, created_at, updated_at`
+const customMonsterColumns = `id::text, name, doc, coalesce(catalog_id, ''), created_at, updated_at`
 
 func scanCustomMonster(row pgx.Row) (CustomMonster, error) {
 	var m CustomMonster
-	err := row.Scan(&m.ID, &m.Name, &m.Doc, &m.CreatedAt, &m.UpdatedAt)
+	err := row.Scan(&m.ID, &m.Name, &m.Doc, &m.CatalogID, &m.CreatedAt, &m.UpdatedAt)
 	return m, notFoundIfNoRows(err)
 }
 
@@ -500,10 +503,19 @@ func (s *Store) CreateCustomMonster(ctx context.Context, name string, doc json.R
 		name, orEmptyObject(doc), ownerParam(ctx)))
 }
 
-// ListCustomMonsters returns every custom monster by name.
+// GetCustomMonster loads a monster type kept in the database by its row id.
+func (s *Store) GetCustomMonster(ctx context.Context, id string) (CustomMonster, error) {
+	if !validID(id) {
+		return CustomMonster{}, ErrNotFound
+	}
+	return scanCustomMonster(s.pool.QueryRow(ctx, `SELECT `+customMonsterColumns+` FROM custom_monster WHERE id = $1`, id))
+}
+
+// ListCustomMonsters returns the viewer's monsters and the base game's (which
+// everyone sees), by name.
 func (s *Store) ListCustomMonsters(ctx context.Context) ([]CustomMonster, error) {
 	rows, err := s.pool.Query(ctx, `SELECT `+customMonsterColumns+` FROM custom_monster
-		WHERE $1::uuid IS NULL OR owner_id = $1 ORDER BY lower(name), id`, filterParam(ctx))
+		WHERE $1::uuid IS NULL OR owner_id = $1 OR catalog_id IS NOT NULL ORDER BY lower(name), id`, filterParam(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -512,23 +524,26 @@ func (s *Store) ListCustomMonsters(ctx context.Context) ([]CustomMonster, error)
 	})
 }
 
-// UpdateCustomMonster replaces a custom monster's name and doc.
+// UpdateCustomMonster replaces a GM-made monster's name and doc. Base game
+// monsters are read-only here (not found); UpsertCatalogMonster imports them.
 func (s *Store) UpdateCustomMonster(ctx context.Context, id, name string, doc json.RawMessage) (CustomMonster, error) {
 	if !validID(id) {
 		return CustomMonster{}, ErrNotFound
 	}
 	return scanCustomMonster(s.pool.QueryRow(ctx,
-		`UPDATE custom_monster SET name = $2, doc = $3, updated_at = now() WHERE id = $1 RETURNING `+customMonsterColumns,
+		`UPDATE custom_monster SET name = $2, doc = $3, updated_at = now()
+		 WHERE id = $1 AND catalog_id IS NULL RETURNING `+customMonsterColumns,
 		id, name, orEmptyObject(doc)))
 }
 
-// DeleteCustomMonster removes a custom monster. Quests that placed it keep
-// the placement, and running sessions keep their copy of its size and color.
+// DeleteCustomMonster removes a GM-made monster (base game monsters are not
+// found). Quests that placed it keep the placement, and running sessions keep
+// their copy of its size and color.
 func (s *Store) DeleteCustomMonster(ctx context.Context, id string) error {
 	if !validID(id) {
 		return ErrNotFound
 	}
-	tag, err := s.pool.Exec(ctx, `DELETE FROM custom_monster WHERE id = $1`, id)
+	tag, err := s.pool.Exec(ctx, `DELETE FROM custom_monster WHERE id = $1 AND catalog_id IS NULL`, id)
 	if err != nil {
 		return err
 	}

@@ -35,12 +35,12 @@ func testServerWith(t *testing.T, configure func(*Server)) *httptest.Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Hero classes come from the database, as after make import-content.
-	if _, err := seed.ImportClasses(context.Background(), st, catalog.Heroes); err != nil {
+	// The catalog comes from the database, as after make import-content.
+	if _, err := seed.ImportCatalog(context.Background(), st, catalog); err != nil {
 		t.Fatal(err)
 	}
 	mux := http.NewServeMux()
-	app := New(st, catalog)
+	app := New(st)
 	if configure != nil {
 		configure(app)
 	}

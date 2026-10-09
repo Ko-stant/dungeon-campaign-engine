@@ -20,13 +20,14 @@ Tailwind CSS v4, canvas rendering.
 ### Everyday
 - `make db-up` - Start Postgres (host port 5433; see `.env`)
 - `make dev` - Tailwind watch + TS watch + templ proxy + Air hot reload (app on :8080, proxy on :7331)
-- `make import-content [QUEST=base/quests/quest-01.json]` - Import the legacy base board + a quest and the base game's hero classes (idempotent)
-- `make import-classes [DB=... | HOSTED=1]` - Import only the base game's hero classes (`HOSTED=1` reads the hosted URL from `.env`, never printed)
+- `make import-content [QUEST=base/quests/quest-01.json]` - Import the base game's catalog (classes, monsters, furniture, traps) and the legacy base board + a quest (idempotent). A new database needs it: the server reads the catalog only from the database.
+- `make import-catalog [DB=... | HOSTED=1]` - Import only the catalog (`HOSTED=1` reads the hosted URL from `.env`, never printed)
 - `make build` - Production build to `./build/dungeon-campaign-engine`
 
 ### Hosting (branch `online`, docs/ONLINE_AND_RULES_PLAN.md Phase 6)
-- `make image` - Build the app image locally (`Dockerfile`); `content/` and `assets/` go in as
-  named build contexts, only the folders the app reads. Needs `DOCKER_IMAGE` in `.env`.
+- `make image` - Build the app image locally (`Dockerfile`); `assets/tiles_cleaned` goes in
+  from the named build context `assets` (the board art). No `content/`: the catalog is in the
+  database. Needs `DOCKER_IMAGE` in `.env`.
 - `make push` / `make deploy` - Push the tag to the private Docker Hub repo, then start the
   Render deploy (`RENDER_DEPLOY_HOOK` in `.env`, a secret). The image holds HeroQuest
   material: never push it to GitHub or anywhere public.
@@ -59,9 +60,17 @@ Tailwind CSS v4, canvas rendering.
 - `cmd/import-content` - Imports legacy `content/board.json` + quest JSON as map documents.
 - `internal/app` - HTTP layer: JSON APIs, templ pages, per-session command locking, WebSocket stream.
   - Maps: `/maps`, `/maps/{id}/edit`, `/api/boards...`, `/api/quests...`, `/api/catalog`
+  - Catalog (branch `online`): `Server.catalogFor(ctx)` builds the whole catalog from the
+    database on every call; there is no file catalog in the server (`app.New(st)`). The base
+    game's entries are imported from `content/` by `make import-content` / `make
+    import-catalog` (`seed.ImportCatalog`; each stored as its `content` definition):
+    classes and monster types as rows of `custom_hero_class` / `custom_monster` with a
+    `catalog_id` (the ids quests, sessions and heroes already use), furniture and trap kinds
+    in `catalog_piece` (kind, catalog_id). Everyone sees them; they are read-only.
   - Custom monsters: `/monsters` (server-rendered forms; table `custom_monster`). `/api/catalog`
-    merges them into `monsters` with `custom-<uuid>` ids; use `Server.catalogFor(ctx)`, not
-    `s.catalog`, wherever monsters are looked up.
+    merges them into `monsters` with `custom-<uuid>` ids; use `Server.catalogFor(ctx)`
+    wherever monsters are looked up. The base game's monsters are listed read-only below
+    them (the forms refuse them).
   - Custom hero classes: `/classes` (table `custom_hero_class`): dice stats, accuracy, mana,
     class exclusives and abilities (cooldown in rounds and/or mana cost), and the Three Plagues
     combat stats (hit dice, crit range, damage, avoidance, mitigation, mana per fight round),
@@ -70,15 +79,9 @@ Tailwind CSS v4, canvas rendering.
     `/classes/{id}/deactivate` and `/reactivate` set `custom_hero_class.active`; a deactivated
     class (`Inactive` in the catalog) is left out of the add-hero picker, and heroes who have
     it keep it.
-  - Base game classes (branch `online`) are rows of `custom_hero_class` too, keyed by
-    `catalog_id` ("barbarian", the id heroes already use), imported from `content/heroes` by
-    `make import-content` or `make import-classes [HOSTED=1]` (`seed.ImportClasses`;
-    idempotent, keeps a deactivated class deactivated). Everyone sees them; they are
-    read-only (listed on `/classes` with Deactivate; the class form and `make fill-campaign`
-    never touch them). The server reads no class files: `catalogFor` takes every class from
-    the database (base game first), the server loads only the board pieces
-    (`content.LoadPieces`), and the image has no `content/heroes`. A new database needs
-    `make import-content` (or `make import-classes`) for the base classes.
+  - Base game classes (branch `online`, see Catalog): listed on `/classes` with Deactivate
+    (an import keeps a deactivated class deactivated); the class form and `make
+    fill-campaign` never touch them.
   - Deletes: every delete or remove button carries `data-confirm="<question>"` (optionally
     `data-confirm-yes`); `confirm.js` (`pages/confirm.ts`, `ui/confirm.ts`) loads on every page
     and opens a Yes/No dialog where only Yes goes ahead. The TS pages call `confirmDialog`.
@@ -183,9 +186,8 @@ Tailwind CSS v4, canvas rendering.
 - `internal/maps` - Board and quest documents (Go), validation, advisory `Check`, legacy converters.
 - `internal/tracker` - Session `State`, `NewSession`, `Apply(state, command)` -> new state + readable event, `CarryOver`.
 - `internal/store` - Postgres (pgx) persistence; `RecordEvent` atomically saves state + event. `storetest` gives tests a throwaway schema.
-- `internal/content` - Hero/monster/furniture/trap catalogs from `content/` (any `fs.FS`).
-  `Load` reads all four (the import); `LoadPieces` skips heroes (the server: on `online`,
-  hero classes come from the database).
+- `internal/content` - Hero/monster/furniture/trap catalogs from `content/` (any `fs.FS`),
+  read by `make import-content` (on `online` the server reads the catalog from the database).
   Monsters and traps may cover several squares (`gridSize`). A quest trap whose kind has no
   `content/traps/` entry is a single-square marker (e.g. `chest`, `teleport`, `other`).
 - `internal/legacy` - Readers for the original board/quest JSON formats (import only).

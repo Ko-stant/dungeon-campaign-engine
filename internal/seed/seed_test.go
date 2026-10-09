@@ -3,11 +3,13 @@ package seed
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/legacy"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store/storetest"
 )
 
@@ -93,28 +95,52 @@ func TestImportLegacyIsIdempotent(t *testing.T) {
 	}
 }
 
-func TestImportClassesIsIdempotent(t *testing.T) {
+func TestImportCatalogIsIdempotent(t *testing.T) {
 	st, _ := storetest.New(t)
 	ctx := context.Background()
-	heroes := []content.HeroDef{
-		{ID: "barbarian", Name: "Barbarian", Body: 8, Mind: 2, Attack: 3, Defense: 2, MovementDice: 2},
-		{ID: "elf", Name: "Elf", Body: 6, Mind: 4, Attack: 2, Defense: 2, MovementDice: 2},
+	cat := &content.Catalog{
+		Heroes: []content.HeroDef{
+			{ID: "barbarian", Name: "Barbarian", Body: 8, Mind: 2, Attack: 3, Defense: 2, MovementDice: 2},
+			{ID: "elf", Name: "Elf", Body: 6, Mind: 4, Attack: 2, Defense: 2, MovementDice: 2},
+		},
+		Monsters:  []content.MonsterDef{{ID: "orc", Name: "Orc", Body: 1, Attack: 3, Defense: 2, Movement: 10, Image: "assets/tiles_cleaned/monsters/orc.png"}},
+		Furniture: []content.FurnitureDef{{ID: "table", Name: "Table", Width: 3, Height: 2, BlocksMovement: true}},
+		Traps:     []content.TrapDef{{ID: "boulder", Name: "Boulder", Width: 1, Height: 1, Movable: true}},
 	}
-	res, err := ImportClasses(ctx, st, heroes)
-	if err != nil || res.Created != 2 || res.Updated != 0 || res.Unchanged != 0 {
-		t.Fatalf("first import: %+v %v", res, err)
+	res, err := ImportCatalog(ctx, st, cat)
+	if err != nil {
+		t.Fatal(err)
 	}
-	heroes[1].Mind = 5
-	res, err = ImportClasses(ctx, st, heroes)
-	if err != nil || res.Created != 0 || res.Updated != 1 || res.Unchanged != 1 {
-		t.Fatalf("second import: %+v %v", res, err)
+	want := map[string]Counts{"classes": {Created: 2}, "monsters": {Created: 1}, "furniture": {Created: 1}, "traps": {Created: 1}}
+	if got := res.ByKind(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("first import: %+v", got)
 	}
-	list, _ := st.ListCustomHeroClasses(ctx)
-	if len(list) != 2 || list[1].CatalogID != "elf" {
-		t.Fatalf("classes: %+v", list)
+
+	cat.Heroes[1].Mind = 5
+	cat.Traps[0].Movable = false
+	res, err = ImportCatalog(ctx, st, cat)
+	if err != nil {
+		t.Fatal(err)
 	}
+	want = map[string]Counts{"classes": {Updated: 1, Unchanged: 1}, "monsters": {Unchanged: 1}, "furniture": {Unchanged: 1}, "traps": {Updated: 1}}
+	if got := res.ByKind(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("second import: %+v", got)
+	}
+
+	// What is stored reads back as the catalog entries.
+	classes, _ := st.ListCustomHeroClasses(ctx)
 	var elf content.HeroDef
-	if err := json.Unmarshal(list[1].Doc, &elf); err != nil || elf.Mind != 5 || elf.Attack != 2 || elf.MovementDice != 2 {
-		t.Fatalf("the elf's stored stats: %+v %v", elf, err)
+	if err := json.Unmarshal(classes[1].Doc, &elf); err != nil || classes[1].CatalogID != "elf" || elf.Mind != 5 {
+		t.Fatalf("the elf: %+v %v", elf, err)
+	}
+	monsters, _ := st.ListCustomMonsters(ctx)
+	var orc content.MonsterDef
+	if err := json.Unmarshal(monsters[0].Doc, &orc); err != nil || monsters[0].CatalogID != "orc" || orc.Movement != 10 || orc.Image == "" {
+		t.Fatalf("the orc: %+v %v", orc, err)
+	}
+	furniture, _ := st.ListCatalogPieces(ctx, store.PieceFurniture)
+	var table content.FurnitureDef
+	if err := json.Unmarshal(furniture[0].Doc, &table); err != nil || table.Width != 3 || !table.BlocksMovement {
+		t.Fatalf("the table: %+v %v", table, err)
 	}
 }

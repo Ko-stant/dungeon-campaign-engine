@@ -16,13 +16,13 @@ func TestUpsertCatalogHeroClass(t *testing.T) {
 	doc := json.RawMessage(`{"body":8,"mind":2,"attack":3,"defense":2,"movementDice":2}`)
 
 	got, err := st.UpsertCatalogHeroClass(ctx, "barbarian", "Barbarian", doc)
-	if err != nil || got != store.ClassCreated {
+	if err != nil || got != store.ImportCreated {
 		t.Fatalf("first import: %v %v", got, err)
 	}
-	if got, err = st.UpsertCatalogHeroClass(ctx, "barbarian", "Barbarian", doc); err != nil || got != store.ClassUnchanged {
+	if got, err = st.UpsertCatalogHeroClass(ctx, "barbarian", "Barbarian", doc); err != nil || got != store.ImportUnchanged {
 		t.Fatalf("same again: %v %v", got, err)
 	}
-	if got, err = st.UpsertCatalogHeroClass(ctx, "barbarian", "Barbarian", json.RawMessage(`{"body":9}`)); err != nil || got != store.ClassUpdated {
+	if got, err = st.UpsertCatalogHeroClass(ctx, "barbarian", "Barbarian", json.RawMessage(`{"body":9}`)); err != nil || got != store.ImportUpdated {
 		t.Fatalf("changed stats: %v %v", got, err)
 	}
 

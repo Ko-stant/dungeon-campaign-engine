@@ -230,15 +230,22 @@ func (s *Server) createQuest(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, s.questResponse(rec, quest, board))
+	s.writeQuest(w, r, http.StatusCreated, rec, quest, board)
 }
 
-func (s *Server) questResponse(rec store.Quest, quest *maps.Quest, board *maps.Board) QuestResponse {
-	issues := quest.Check(board, s.catalog.FurnitureSize, s.catalog.TrapSize)
+// writeQuest answers with the quest and its advisory checks, which size
+// furniture and traps from the catalog.
+func (s *Server) writeQuest(w http.ResponseWriter, r *http.Request, status int, rec store.Quest, quest *maps.Quest, board *maps.Board) {
+	cat, err := s.catalogFor(r.Context())
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	issues := quest.Check(board, cat.FurnitureSize, cat.TrapSize)
 	if issues == nil {
 		issues = []maps.Issue{}
 	}
-	return QuestResponse{ID: rec.ID, BoardID: rec.BoardID, Name: rec.Name, Quest: *quest, Issues: issues, UpdatedAt: rec.UpdatedAt}
+	writeJSON(w, status, QuestResponse{ID: rec.ID, BoardID: rec.BoardID, Name: rec.Name, Quest: *quest, Issues: issues, UpdatedAt: rec.UpdatedAt})
 }
 
 func (s *Server) getQuest(w http.ResponseWriter, r *http.Request) {
@@ -257,7 +264,7 @@ func (s *Server) getQuest(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, s.questResponse(rec, &quest, board))
+	s.writeQuest(w, r, http.StatusOK, rec, &quest, board)
 }
 
 func (s *Server) updateQuest(w http.ResponseWriter, r *http.Request) {
@@ -305,7 +312,7 @@ func (s *Server) updateQuest(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, s.questResponse(rec, &quest, board))
+	s.writeQuest(w, r, http.StatusOK, rec, &quest, board)
 }
 
 func (s *Server) deleteQuest(w http.ResponseWriter, r *http.Request) {

@@ -18,10 +18,9 @@ import (
 )
 
 type routesConfig struct {
-	staticDir  string
-	assetsDir  string
-	contentDir string
-	auth       auth.Config
+	staticDir string
+	assetsDir string
+	auth      auth.Config
 }
 
 // newMux builds every route. It returns a cleanup function for the database.
@@ -31,7 +30,7 @@ func newMux(cfg routesConfig) (*http.ServeMux, func()) {
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/campaigns", http.StatusSeeOther)
 	})
-	cleanup := mountApp(mux, cfg.contentDir, cfg.assetsDir, cfg.auth)
+	cleanup := mountApp(mux, cfg.assetsDir, cfg.auth)
 	return mux, cleanup
 }
 
@@ -67,7 +66,7 @@ func main() {
 	}
 	log.Printf("sign-in: %s (%d admins)", authCfg.Mode, len(authCfg.Admins))
 
-	mux, cleanup := newMux(routesConfig{staticDir: "internal/web/static", assetsDir: "assets", contentDir: "content", auth: authCfg})
+	mux, cleanup := newMux(routesConfig{staticDir: "internal/web/static", assetsDir: "assets", auth: authCfg})
 	defer cleanup()
 
 	srv := &http.Server{Addr: ":" + port, Handler: protect(mux, authCfg), ReadHeaderTimeout: 10 * time.Second}

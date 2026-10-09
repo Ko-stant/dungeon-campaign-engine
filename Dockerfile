@@ -2,11 +2,12 @@
 #
 # The app as one container (docs/ONLINE_AND_RULES_PLAN.md, Phase 6).
 #
-# HeroQuest content and art are not in this repository. `make image` passes
-# them in as the named build contexts "content" and "assets"; without them
-# the build fails. An image built that way is for the GM's group only: push it
-# only to the private registry (DOCKER_IMAGE), never to GitHub or anywhere
-# public.
+# HeroQuest art is not in this repository. `make image` passes it in as the
+# named build context "assets"; without it the build fails. The catalog
+# (classes, monsters, furniture, traps) is not in the image: it is in the
+# database (make import-content). An image built this way is for the GM's group
+# only: push it only to the private registry (DOCKER_IMAGE), never to GitHub or
+# anywhere public.
 #
 # Run exactly one container: session locks and live connections are kept in
 # memory. Migrations are built into the binary and run on start.
@@ -38,12 +39,8 @@ FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=server /out/dungeon-campaign-engine ./
 COPY --from=web /src/internal/web/static ./internal/web/static
-# Only what the app reads: the board pieces of the catalog (internal/content;
-# hero classes are in the database) and the board tiles it draws (the cleaned
-# ones; card art and scans stay out).
-COPY --from=content /furniture ./content/furniture
-COPY --from=content /monsters ./content/monsters
-COPY --from=content /traps ./content/traps
+# Only the board tiles the app draws (the cleaned ones; card art and scans stay
+# out). The catalog is in the database.
 COPY --from=assets /tiles_cleaned ./assets/tiles_cleaned
 ENV PORT=8080
 EXPOSE 8080

@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -86,40 +85,4 @@ func (s *Store) SetCustomHeroClassActive(ctx context.Context, id string, active 
 		return ErrNotFound
 	}
 	return nil
-}
-
-// ClassImport says what UpsertCatalogHeroClass did.
-type ClassImport int
-
-// The outcomes of UpsertCatalogHeroClass.
-const (
-	ClassUnchanged ClassImport = iota
-	ClassCreated
-	ClassUpdated
-)
-
-// UpsertCatalogHeroClass stores a base game class by its catalog id: it is
-// created, or its name and doc are replaced when they changed. Whether it is
-// active stays as the GM left it. Base classes have no owner (everyone sees
-// them).
-func (s *Store) UpsertCatalogHeroClass(ctx context.Context, catalogID, name string, doc json.RawMessage) (ClassImport, error) {
-	if catalogID == "" {
-		return ClassUnchanged, errors.New("store: a base game class needs its catalog id")
-	}
-	var inserted bool
-	err := s.pool.QueryRow(ctx,
-		`INSERT INTO custom_hero_class (name, doc, catalog_id) VALUES ($1, $2, $3)
-		 ON CONFLICT (catalog_id) DO UPDATE SET name = EXCLUDED.name, doc = EXCLUDED.doc, updated_at = now()
-		 WHERE (custom_hero_class.name, custom_hero_class.doc) IS DISTINCT FROM (EXCLUDED.name, EXCLUDED.doc)
-		 RETURNING xmax = 0`,
-		name, orEmptyObject(doc), catalogID).Scan(&inserted)
-	switch {
-	case errors.Is(err, pgx.ErrNoRows):
-		return ClassUnchanged, nil
-	case err != nil:
-		return ClassUnchanged, err
-	case inserted:
-		return ClassCreated, nil
-	}
-	return ClassUpdated, nil
 }

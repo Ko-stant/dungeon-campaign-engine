@@ -43,7 +43,18 @@ func (s *Server) registerMonsterPages(mux routeMux) {
 	mux.HandleFunc("POST /monsters/{id}/delete", s.deleteMonsterForm)
 }
 
+// customMonsterDef is a stored monster type as a catalog entry: a base game
+// monster keeps its catalog id ("orc") and its stored content.MonsterDef; the
+// GM's own are "custom-<uuid>".
 func customMonsterDef(rec store.CustomMonster) (content.MonsterDef, error) {
+	if rec.CatalogID != "" {
+		var def content.MonsterDef
+		if err := json.Unmarshal(rec.Doc, &def); err != nil {
+			return def, fmt.Errorf("base game monster %s: %w", rec.CatalogID, err)
+		}
+		def.ID, def.Name, def.Custom = rec.CatalogID, rec.Name, false
+		return def, nil
+	}
 	var doc customMonsterDoc
 	if err := json.Unmarshal(rec.Doc, &doc); err != nil {
 		return content.MonsterDef{}, fmt.Errorf("custom monster %s: %w", rec.ID, err)
@@ -55,28 +66,65 @@ func customMonsterDef(rec store.CustomMonster) (content.MonsterDef, error) {
 	}, nil
 }
 
-// catalogFor returns the content catalog plus the GM's custom monsters and
-// hero classes.
+// catalogFor returns the catalog the viewer sees, all from the database: the
+// base game's classes, monsters, furniture and traps (imported by make
+// import-content) and the GM's own classes and monsters, base game first.
 func (s *Server) catalogFor(ctx context.Context) (*content.Catalog, error) {
-	recs, err := s.store.ListCustomMonsters(ctx)
-	if err != nil {
-		return nil, err
-	}
+	out := &content.Catalog{Monsters: []content.MonsterDef{}, Furniture: []content.FurnitureDef{}, Traps: []content.TrapDef{}}
 	classes, err := s.customClasses(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := *s.catalog
 	out.Heroes = baseClassesFirst(classes)
-	out.Monsters = slices.Clone(s.catalog.Monsters)
+
+	recs, err := s.store.ListCustomMonsters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var custom []content.MonsterDef
 	for _, rec := range recs {
 		def, err := customMonsterDef(rec)
 		if err != nil {
 			return nil, err
 		}
-		out.Monsters = append(out.Monsters, def)
+		if def.Custom {
+			custom = append(custom, def)
+		} else {
+			out.Monsters = append(out.Monsters, def)
+		}
 	}
-	return &out, nil
+	out.Monsters = append(out.Monsters, custom...)
+
+	if err := catalogPieces(ctx, s.store, store.PieceFurniture, func(id, name string, def content.FurnitureDef) {
+		def.ID, def.Name = id, name
+		out.Furniture = append(out.Furniture, def)
+	}); err != nil {
+		return nil, err
+	}
+	if err := catalogPieces(ctx, s.store, store.PieceTrap, func(id, name string, def content.TrapDef) {
+		def.ID, def.Name = id, name
+		out.Traps = append(out.Traps, def)
+	}); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// catalogPieces decodes the stored furniture or trap kinds (each doc is its
+// content definition) and hands each to add.
+func catalogPieces[T any](ctx context.Context, st *store.Store, kind store.PieceKind, add func(id, name string, def T)) error {
+	pieces, err := st.ListCatalogPieces(ctx, kind)
+	if err != nil {
+		return err
+	}
+	for _, p := range pieces {
+		var def T
+		if err := json.Unmarshal(p.Doc, &def); err != nil {
+			return fmt.Errorf("%s %s: %w", kind, p.CatalogID, err)
+		}
+		add(p.CatalogID, p.Name, def)
+	}
+	return nil
 }
 
 func (s *Server) getCatalog(w http.ResponseWriter, r *http.Request) {
@@ -146,15 +194,20 @@ func (s *Server) renderMonstersPage(w http.ResponseWriter, r *http.Request, stat
 		return
 	}
 	items := make([]views.MonsterItem, 0, len(recs))
+	var base []content.MonsterDef
 	for _, rec := range recs {
 		def, err := customMonsterDef(rec)
 		if err != nil {
 			writeStoreError(w, err)
 			return
 		}
+		if !def.Custom {
+			base = append(base, def)
+			continue
+		}
 		items = append(items, views.MonsterItem{ID: rec.ID, Form: views.MonsterFormFromDef(def)})
 	}
-	render(w, r, status, views.MonstersPage(items, form, formError))
+	render(w, r, status, views.MonstersPage(items, base, form, formError))
 }
 
 func (s *Server) monstersPage(w http.ResponseWriter, r *http.Request) {
@@ -179,7 +232,25 @@ func (s *Server) createMonsterForm(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/monsters", http.StatusSeeOther)
 }
 
+// refuseBaseMonster answers 400 for a base game monster (read-only); true
+// when it did.
+func (s *Server) refuseBaseMonster(w http.ResponseWriter, r *http.Request) bool {
+	rec, err := s.store.GetCustomMonster(r.Context(), r.PathValue("id"))
+	if err != nil {
+		writeStoreError(w, err)
+		return true
+	}
+	if rec.CatalogID != "" {
+		http.Error(w, "The base game's monsters can't be changed or deleted.", http.StatusBadRequest)
+		return true
+	}
+	return false
+}
+
 func (s *Server) updateMonsterForm(w http.ResponseWriter, r *http.Request) {
+	if s.refuseBaseMonster(w, r) {
+		return
+	}
 	form, name, doc, err := parseMonsterForm(r)
 	if err != nil {
 		s.renderMonstersPage(w, r, http.StatusBadRequest, views.DefaultMonsterForm(), fmt.Sprintf("%s: %v", form.Name, err))
@@ -198,6 +269,9 @@ func (s *Server) updateMonsterForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteMonsterForm(w http.ResponseWriter, r *http.Request) {
+	if s.refuseBaseMonster(w, r) {
+		return
+	}
 	if err := s.store.DeleteCustomMonster(r.Context(), r.PathValue("id")); err != nil {
 		writeStoreError(w, err)
 		return

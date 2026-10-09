@@ -12,7 +12,7 @@ import (
 func testRoutes(t *testing.T) http.Handler {
 	t.Helper()
 	t.Setenv("DATABASE_URL", "") // no database: app routes explain how to start it
-	mux, cleanup := newMux(routesConfig{staticDir: "../../internal/web/static", assetsDir: "../../assets", contentDir: "../../content"})
+	mux, cleanup := newMux(routesConfig{staticDir: "../../internal/web/static", assetsDir: "../../assets"})
 	t.Cleanup(cleanup)
 	return mux
 }

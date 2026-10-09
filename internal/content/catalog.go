@@ -293,20 +293,10 @@ type heroFile struct {
 }
 
 // Load reads furniture/, monsters/, heroes/ and traps/ from fsys. A missing directory
-// yields an empty list. make import-content uses it to import the hero classes.
+// yields an empty list. make import-content uses it to put the base game's catalog in
+// the database (on branch online the server reads the catalog only from there).
 func Load(fsys fs.FS) (*Catalog, error) {
-	return load(fsys, true)
-}
-
-// LoadPieces reads furniture/, monsters/ and traps/ but not heroes/: the
-// server's hero classes come from the database (custom_hero_class, the base
-// game's imported from content/heroes by make import-content).
-func LoadPieces(fsys fs.FS) (*Catalog, error) {
-	return load(fsys, false)
-}
-
-func load(fsys fs.FS, heroes bool) (*Catalog, error) {
-	c := &Catalog{Heroes: []HeroDef{}}
+	c := &Catalog{}
 	var err error
 
 	c.Furniture, err = loadDir(fsys, "furniture", func(f furnitureFile) (FurnitureDef, error) {
@@ -333,16 +323,14 @@ func load(fsys fs.FS, heroes bool) (*Catalog, error) {
 		return nil, err
 	}
 
-	if heroes {
-		c.Heroes, err = loadDir(fsys, "heroes", func(f heroFile) (HeroDef, error) {
-			return HeroDef{
-				ID: f.ID, Name: f.Name, Description: f.Description, Body: f.Stats.BodyPoints, Mind: f.Stats.MindPoints,
-				Attack: f.Stats.AttackDice, Defense: f.Stats.DefenseDice, MovementDice: f.Stats.MovementDice,
-			}, nil
-		})
-		if err != nil {
-			return nil, err
-		}
+	c.Heroes, err = loadDir(fsys, "heroes", func(f heroFile) (HeroDef, error) {
+		return HeroDef{
+			ID: f.ID, Name: f.Name, Description: f.Description, Body: f.Stats.BodyPoints, Mind: f.Stats.MindPoints,
+			Attack: f.Stats.AttackDice, Defense: f.Stats.DefenseDice, MovementDice: f.Stats.MovementDice,
+		}, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	c.Traps, err = loadDir(fsys, "traps", func(f trapFile) (TrapDef, error) {

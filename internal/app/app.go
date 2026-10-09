@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/auth"
-	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store"
 )
 
@@ -25,7 +24,6 @@ const maxNameLength = 120
 // Server holds the app's dependencies.
 type Server struct {
 	store        *store.Store
-	catalog      *content.Catalog
 	sessionLocks sync.Map // session id -> *sync.Mutex
 	streams      streams
 	// playerStreams carries the player screen's filtered view (see player_api.go).
@@ -41,8 +39,10 @@ type Server struct {
 }
 
 // New creates the app server.
-func New(st *store.Store, catalog *content.Catalog) *Server {
-	return &Server{store: st, catalog: catalog, auth: auth.Config{Mode: auth.ModeNone}}
+// The catalog (classes, monsters, furniture, traps) comes from the database
+// (see catalogFor); make import-content puts the base game's there.
+func New(st *store.Store) *Server {
+	return &Server{store: st, auth: auth.Config{Mode: auth.ModeNone}}
 }
 
 // Register mounts the app's routes.
