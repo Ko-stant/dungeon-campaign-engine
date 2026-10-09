@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-08 21:11 EDT
+**Last Updated**: 2026-10-08 21:15 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -365,6 +365,11 @@ at the table. Do these at that merge (and keep the list current as the branches 
   and new migrations on either branch take the next free number (00015,
   `custom_hero_class.active`, came from `main`). A migration made here is copied to `main`
   straight away, and must be additive so main's code can ignore it.
+- **Base game classes (2026-10-08).** `online`'s server reads no class files: the base
+  classes are rows of `custom_hero_class` (`catalog_id`). Right after the merge, run
+  `make import-classes` against `hq` (00016 is already applied there; the import only adds
+  the nine rows), or the base classes drop out of the pickers and the catalog. The GM's
+  Three Plagues classes are unaffected.
 - **Table mode.** Rules mode is opt-in per session (`State.Rules == nil` is the table game)
   and `AUTH_MODE` unset keeps sign-in off, so the table companion should behave as before:
   play a quick table session after the merge, and add the table-mode golden test (Phase 1c)
@@ -512,3 +517,6 @@ at the table. Do these at that merge (and keep the list current as the branches 
   owner, all active; the GM's 4 custom classes untouched, and the Test Campaign's
   Barbarian and Wizard heroes are backed by rows. Next: step 2 (drop the file fallback and
   the image's `content/heroes`).
+- 2026-10-08: `590c661`: step 2 done in code: classes come only from the database, the
+  server loads only the board pieces (`content.LoadPieces`), and the image ships no
+  `content/heroes`. The merge-back checklist gains `make import-classes` for `hq`.
