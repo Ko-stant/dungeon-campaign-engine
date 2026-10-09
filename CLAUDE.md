@@ -192,7 +192,8 @@ Tailwind CSS v4, canvas rendering.
   same number), and new ones on either branch take the next free number. Migrations must be
   additive (new tables, nullable or defaulted columns) so the other branch's code can ignore
   them; `main` carries `online`'s 00011-00014 (users, session open, members, audio clips)
-  unused until the merge.
+  and 00016 (`custom_hero_class.catalog_id`, base classes in the database) unused until the
+  merge.
 
 ### Campaign work in progress
 - The Three Plagues campaign (story, script, maps, rules) lives in
