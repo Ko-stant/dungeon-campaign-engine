@@ -196,9 +196,10 @@ Tailwind CSS v4, canvas rendering.
   `online`:** a migration made on `online` is copied to `main` straight away (byte for byte,
   same number), and new ones on either branch take the next free number. Migrations must be
   additive (new tables, nullable or defaulted columns) so the other branch's code can ignore
-  them; `main` carries `online`'s 00011-00014 (users, session open, members, audio clips)
-  and 00016 (`custom_hero_class.catalog_id`, base classes in the database) unused until the
-  merge.
+  them; `main` carries `online`'s 00011-00014 (users, session open, members, audio clips),
+  00016 (`custom_hero_class.catalog_id`) and 00017 (`custom_monster.catalog_id`,
+  `catalog_piece`): `online` keeps the base game's catalog in the database. Unused on `main`
+  until the merge.
 
 ### Campaign work in progress
 - The Three Plagues campaign (story, script, maps, rules) lives in
