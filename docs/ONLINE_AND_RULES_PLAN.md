@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-08 20:38 EDT
+**Last Updated**: 2026-10-08 20:40 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -496,3 +496,7 @@ at the table. Do these at that merge (and keep the list current as the branches 
   movement, hero sheets, housekeeping, the ESLint fix; no new migrations) with
   `make deploy`, after a hosted backup (`hosted-20261007-221121.dump`). `/healthz` ok, and the
   served `tracker.js` matches the image's byte for byte.
+- 2026-10-08: deployed `e5f83f0` (the merge from main: the shared migration numbering, class
+  deactivation and deletes behind a Yes/No dialog) with `make deploy`, after a hosted backup
+  (`hosted-20261008-203848.dump`). The hosted database migrated to 00015 (4 classes, all
+  active); `/healthz` ok, and the served `confirm.js` (new in this build) matches the image's.
