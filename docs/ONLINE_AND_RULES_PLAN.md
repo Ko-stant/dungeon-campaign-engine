@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-08 21:15 EDT
+**Last Updated**: 2026-10-08 21:18 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -520,3 +520,7 @@ at the table. Do these at that merge (and keep the list current as the branches 
 - 2026-10-08: `590c661`: step 2 done in code: classes come only from the database, the
   server loads only the board pieces (`content.LoadPieces`), and the image ships no
   `content/heroes`. The merge-back checklist gains `make import-classes` for `hq`.
+- 2026-10-08: deployed `bcbf2a6` with `make deploy`, after a hosted backup
+  (`hosted-20261008-211607.dump`). The image's `content/` holds only furniture, monsters and
+  traps; the new instance took over (its database connection replaced the old one's) and
+  `/healthz` is ok. The hosted site now reads hero classes only from the database.
