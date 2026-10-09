@@ -20,7 +20,8 @@ Tailwind CSS v4, canvas rendering.
 ### Everyday
 - `make db-up` - Start Postgres (host port 5433; see `.env`)
 - `make dev` - Tailwind watch + TS watch + templ proxy + Air hot reload (app on :8080, proxy on :7331)
-- `make import-content [QUEST=base/quests/quest-01.json]` - Import the legacy base board + a quest (idempotent)
+- `make import-content [QUEST=base/quests/quest-01.json]` - Import the legacy base board + a quest and the base game's hero classes (idempotent)
+- `make import-classes [DB=... | HOSTED=1]` - Import only the base game's hero classes (`HOSTED=1` reads the hosted URL from `.env`, never printed)
 - `make build` - Production build to `./build/dungeon-campaign-engine`
 
 ### Hosting (branch `online`, docs/ONLINE_AND_RULES_PLAN.md Phase 6)
@@ -69,6 +70,14 @@ Tailwind CSS v4, canvas rendering.
     `/classes/{id}/deactivate` and `/reactivate` set `custom_hero_class.active`; a deactivated
     class (`Inactive` in the catalog) is left out of the add-hero picker, and heroes who have
     it keep it.
+  - Base game classes (branch `online`) are rows of `custom_hero_class` too, keyed by
+    `catalog_id` ("barbarian", the id heroes already use), imported from `content/heroes` by
+    `make import-content` or `make import-classes [HOSTED=1]` (`seed.ImportClasses`;
+    idempotent, keeps a deactivated class deactivated). Everyone sees them; they are
+    read-only (listed on `/classes` with Deactivate; the class form and `make fill-campaign`
+    never touch them). Transitional: `catalogFor` still adds a `content/heroes` class that is
+    not imported yet (`withFileClasses`); drop that and the image's `content/heroes` once
+    every database has them.
   - Deletes: every delete or remove button carries `data-confirm="<question>"` (optionally
     `data-confirm-yes`); `confirm.js` (`pages/confirm.ts`, `ui/confirm.ts`) loads on every page
     and opens a Yes/No dialog where only Yes goes ahead. The TS pages call `confirmDialog`.

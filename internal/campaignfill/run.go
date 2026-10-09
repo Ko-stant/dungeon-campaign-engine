@@ -53,7 +53,8 @@ func Run(ctx context.Context, st *store.Store, d Data, campaign string, apply bo
 	for _, spec := range d.Classes {
 		var rec *store.CustomHeroClass
 		for i := range classes {
-			if strings.EqualFold(classes[i].Name, spec.Name) {
+			// Never a base game class: the base game has a Barbarian too.
+			if classes[i].CatalogID == "" && strings.EqualFold(classes[i].Name, spec.Name) {
 				rec = &classes[i]
 			}
 		}

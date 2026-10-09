@@ -72,7 +72,18 @@ func decodeClassDoc(rec store.CustomHeroClass) (customClassDoc, error) {
 	return doc, nil
 }
 
+// customHeroClassDef is a stored class as a catalog entry: a base game class
+// keeps its catalog id ("barbarian") and its stored content.HeroDef; the GM's
+// own classes are "custom-<uuid>".
 func customHeroClassDef(rec store.CustomHeroClass) (content.HeroDef, error) {
+	if rec.CatalogID != "" {
+		var def content.HeroDef
+		if err := json.Unmarshal(rec.Doc, &def); err != nil {
+			return def, fmt.Errorf("base game class %s: %w", rec.CatalogID, err)
+		}
+		def.ID, def.Name, def.Custom, def.Inactive = rec.CatalogID, rec.Name, false, !rec.Active
+		return def, nil
+	}
 	doc, err := decodeClassDoc(rec)
 	if err != nil {
 		return content.HeroDef{}, err
@@ -281,6 +292,11 @@ func (s *Server) classPage(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
+	if rec.CatalogID != "" {
+		// Base game classes are read-only: their stats show on the list.
+		http.Redirect(w, r, "/classes", http.StatusSeeOther)
+		return
+	}
 	def, err := customHeroClassDef(rec)
 	if err != nil {
 		writeStoreError(w, err)
@@ -312,6 +328,10 @@ func (s *Server) updateClassForm(w http.ResponseWriter, r *http.Request) {
 	rec, err := s.store.GetCustomHeroClass(r.Context(), id)
 	if err != nil {
 		writeStoreError(w, err)
+		return
+	}
+	if rec.CatalogID != "" {
+		http.Error(w, "The base game's classes can't be edited; deactivate one instead.", http.StatusBadRequest)
 		return
 	}
 	old, err := decodeClassDoc(rec)
@@ -356,7 +376,8 @@ func (s *Server) classActiveForm(active bool) http.HandlerFunc {
 	}
 }
 
-// customClasses returns the GM's custom hero classes as catalog entries.
+// customClasses returns the classes kept in the database (the base game's
+// and the GM's own) as catalog entries.
 func (s *Server) customClasses(ctx context.Context) ([]content.HeroDef, error) {
 	recs, err := s.store.ListCustomHeroClasses(ctx)
 	if err != nil {

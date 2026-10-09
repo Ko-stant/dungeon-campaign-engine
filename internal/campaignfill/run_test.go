@@ -3,6 +3,7 @@ package campaignfill
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -99,5 +100,44 @@ func TestRun(t *testing.T) {
 	}
 	if _, err := Run(ctx, st, d, "Nope", false); err == nil {
 		t.Fatal("an unknown campaign should fail")
+	}
+}
+
+// The base game has a Barbarian too (and the real combat.json one): the fill
+// makes or updates the campaign's own class and never touches a base game
+// class of the same name. The fixture's classes are Rogue and Cleric.
+func TestRunLeavesBaseClassesAlone(t *testing.T) {
+	st, _ := storetest.New(t)
+	ctx := context.Background()
+	d := load(t)
+	base := json.RawMessage(`{"body":8,"mind":2,"attack":3,"defense":2,"movementDice":2}`)
+	if _, err := st.UpsertCatalogHeroClass(ctx, "cleric", "Cleric", base); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.CreateCampaign(ctx, "Three Plagues", json.RawMessage(`[]`)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Run(ctx, st, d, "Three Plagues", true); err != nil {
+		t.Fatal(err)
+	}
+	list, _ := st.ListCustomHeroClasses(ctx)
+	clerics := 0
+	for _, c := range list {
+		if c.Name != "Cleric" {
+			continue
+		}
+		clerics++
+		if c.CatalogID != "cleric" {
+			continue
+		}
+		var got, want map[string]any
+		_ = json.Unmarshal(c.Doc, &got)
+		_ = json.Unmarshal(base, &want)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("the base game's Cleric changed: %s", c.Doc)
+		}
+	}
+	if clerics != 2 {
+		t.Errorf("want the base game's Cleric and the campaign's own: %d", clerics)
 	}
 }

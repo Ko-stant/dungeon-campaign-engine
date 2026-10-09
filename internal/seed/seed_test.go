@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/legacy"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store/storetest"
@@ -89,5 +90,31 @@ func TestImportLegacyIsIdempotent(t *testing.T) {
 	quests, _ := st.ListQuests(ctx, "")
 	if len(boards) != 1 || len(quests) != 1 {
 		t.Fatalf("duplicates created: %d boards, %d quests", len(boards), len(quests))
+	}
+}
+
+func TestImportClassesIsIdempotent(t *testing.T) {
+	st, _ := storetest.New(t)
+	ctx := context.Background()
+	heroes := []content.HeroDef{
+		{ID: "barbarian", Name: "Barbarian", Body: 8, Mind: 2, Attack: 3, Defense: 2, MovementDice: 2},
+		{ID: "elf", Name: "Elf", Body: 6, Mind: 4, Attack: 2, Defense: 2, MovementDice: 2},
+	}
+	res, err := ImportClasses(ctx, st, heroes)
+	if err != nil || res.Created != 2 || res.Updated != 0 || res.Unchanged != 0 {
+		t.Fatalf("first import: %+v %v", res, err)
+	}
+	heroes[1].Mind = 5
+	res, err = ImportClasses(ctx, st, heroes)
+	if err != nil || res.Created != 0 || res.Updated != 1 || res.Unchanged != 1 {
+		t.Fatalf("second import: %+v %v", res, err)
+	}
+	list, _ := st.ListCustomHeroClasses(ctx)
+	if len(list) != 2 || list[1].CatalogID != "elf" {
+		t.Fatalf("classes: %+v", list)
+	}
+	var elf content.HeroDef
+	if err := json.Unmarshal(list[1].Doc, &elf); err != nil || elf.Mind != 5 || elf.Attack != 2 || elf.MovementDice != 2 {
+		t.Fatalf("the elf's stored stats: %+v %v", elf, err)
 	}
 }

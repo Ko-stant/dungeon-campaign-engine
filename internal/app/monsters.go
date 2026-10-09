@@ -67,7 +67,7 @@ func (s *Server) catalogFor(ctx context.Context) (*content.Catalog, error) {
 		return nil, err
 	}
 	out := *s.catalog
-	out.Heroes = append(slices.Clone(s.catalog.Heroes), classes...)
+	out.Heroes = withFileClasses(classes, s.catalog.Heroes)
 	out.Monsters = slices.Clone(s.catalog.Monsters)
 	for _, rec := range recs {
 		def, err := customMonsterDef(rec)
@@ -203,4 +203,28 @@ func (s *Server) deleteMonsterForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/monsters", http.StatusSeeOther)
+}
+
+// withFileClasses is the classes kept in the database, base game first, plus
+// any base game class from the content files that is not imported yet (make
+// import-content). Transitional: once every database has the base classes,
+// the server stops reading content/heroes.
+func withFileClasses(stored, files []content.HeroDef) []content.HeroDef {
+	out := make([]content.HeroDef, 0, len(stored)+len(files))
+	for _, h := range stored {
+		if !h.Custom {
+			out = append(out, h)
+		}
+	}
+	for _, f := range files {
+		if !slices.ContainsFunc(stored, func(h content.HeroDef) bool { return h.ID == f.ID }) {
+			out = append(out, f)
+		}
+	}
+	for _, h := range stored {
+		if h.Custom {
+			out = append(out, h)
+		}
+	}
+	return out
 }

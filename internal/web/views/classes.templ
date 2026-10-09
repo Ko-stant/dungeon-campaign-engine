@@ -1,6 +1,7 @@
 package views
 
 import (
+	"fmt"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/web/views/components"
 	"slices"
@@ -326,36 +327,28 @@ templ ClassesPage(items []ClassItem, pageError string) {
 			}
 			<a href="/classes/new" class={ buttonClass + " inline-block" }>New class</a>
 			<section class="space-y-3">
-				if len(items) == 0 {
-					<p class="opacity-70">No custom classes yet. Heroes can still use the standard classes.</p>
+				if !hasClasses(items, true) {
+					<p class="opacity-70">No custom classes yet. Heroes can still use the base game's classes.</p>
 				}
 				for _, it := range items {
-					<div class={ "rounded-lg border border-border/60 p-4", templ.KV("opacity-60", it.Class.Inactive) }>
-						<div class="flex items-center gap-2">
-							<span class="inline-block h-4 w-4 rounded-sm border border-border/60" style={ "background-color: " + it.Class.Color }></span>
-							<a href={ templ.SafeURL("/classes/" + it.ID) } class="font-semibold hover:text-amber-400">{ it.Class.Name }</a>
-							if it.Class.Inactive {
-								<span class="rounded border border-border/60 px-1 text-[0.7rem] uppercase tracking-wide" title="Not offered for new heroes; heroes who have it keep it">deactivated</span>
-							}
-							@classActiveButton(it.ID, !it.Class.Inactive)
-						</div>
-						<p class="mt-1 text-xs opacity-70">{ ClassStats(it.Class) }</p>
-						if len(it.Class.Abilities) > 0 {
-							<ul class="mt-2 space-y-1 text-sm">
-								for _, a := range it.Class.Abilities {
-									<li>
-										<span class="font-semibold">{ a.Name }</span>
-										<span class="text-xs opacity-60">{ abilityKindLabel(a.Kind) }</span>
-										if l := AbilityLimit(a); l != "" {
-											<span class="text-xs opacity-60">· { l }</span>
-										}
-									</li>
-								}
-							</ul>
-						}
-					</div>
+					if it.Class.Custom {
+						@classCard(it)
+					}
 				}
 			</section>
+			if hasClasses(items, false) {
+				<section class="space-y-3">
+					<div>
+						<h2 class="text-lg font-semibold">Base game classes</h2>
+						<p class="text-xs opacity-60">Read-only. Deactivate one to leave it out of the add-hero picker; heroes who have it keep it.</p>
+					</div>
+					for _, it := range items {
+						if !it.Class.Custom {
+							@classCard(it)
+						}
+					}
+				</section>
+			}
 		</main>
 	}
 }
@@ -398,4 +391,61 @@ templ ClassEditPage(id string, form ClassForm, active bool, formError string) {
 			}
 		</main>
 	}
+}
+
+// hasClasses reports whether items has a custom class (custom) or a base game
+// class (!custom).
+func hasClasses(items []ClassItem, custom bool) bool {
+	for _, it := range items {
+		if it.Class.Custom == custom {
+			return true
+		}
+	}
+	return false
+}
+
+// BaseClassStats is a base game class's stat line: combat dice counts, not
+// dice expressions.
+func BaseClassStats(h content.HeroDef) string {
+	return fmt.Sprintf("Body %d · Mind %d · Attack %d dice · Defend %d dice · Move %dd6", h.Body, h.Mind, h.Attack, h.Defense, h.MovementDice)
+}
+
+// classCard is one class on the classes page.
+templ classCard(it ClassItem) {
+	<div class={ "rounded-lg border border-border/60 p-4", templ.KV("opacity-60", it.Class.Inactive) }>
+		<div class="flex items-center gap-2">
+			if it.Class.Custom {
+				<span class="inline-block h-4 w-4 rounded-sm border border-border/60" style={ "background-color: " + it.Class.Color }></span>
+				<a href={ templ.SafeURL("/classes/" + it.ID) } class="font-semibold hover:text-amber-400">{ it.Class.Name }</a>
+			} else {
+				<span class="font-semibold">{ it.Class.Name }</span>
+				<span class="rounded border border-border/60 px-1 text-[0.7rem] uppercase tracking-wide opacity-70">base game</span>
+			}
+			if it.Class.Inactive {
+				<span class="rounded border border-border/60 px-1 text-[0.7rem] uppercase tracking-wide" title="Not offered for new heroes; heroes who have it keep it">deactivated</span>
+			}
+			@classActiveButton(it.ID, !it.Class.Inactive)
+		</div>
+		if it.Class.Custom {
+			<p class="mt-1 text-xs opacity-70">{ ClassStats(it.Class) }</p>
+		} else {
+			<p class="mt-1 text-xs opacity-70">{ BaseClassStats(it.Class) }</p>
+			if it.Class.Description != "" {
+				<p class="mt-1 text-xs opacity-60">{ it.Class.Description }</p>
+			}
+		}
+		if len(it.Class.Abilities) > 0 {
+			<ul class="mt-2 space-y-1 text-sm">
+				for _, a := range it.Class.Abilities {
+					<li>
+						<span class="font-semibold">{ a.Name }</span>
+						<span class="text-xs opacity-60">{ abilityKindLabel(a.Kind) }</span>
+						if l := AbilityLimit(a); l != "" {
+							<span class="text-xs opacity-60">· { l }</span>
+						}
+					</li>
+				}
+			</ul>
+		}
+	</div>
 }

@@ -37,7 +37,7 @@ endef
 .PHONY: all tools dev build run test test-race cover lint fmt tidy clean image push deploy import-audio hosted-backup hosted-restore-check hosted-restore \
         test-db test-js test-all \
         db-up db-up-all db-down db-destroy db-logs db-psql \
-        db-migrate-new db-migrate-up db-migrate-down db-backup db-restore import-content \
+        db-migrate-new db-migrate-up db-migrate-down db-backup db-restore import-content import-classes \
         load-script print-script fill-campaign narration-text
 
 all: build
@@ -146,7 +146,14 @@ db-migrate-down:
 # Override the quest with: make import-content QUEST=base/quests/quest-02.json
 QUEST ?= base/quests/quest-01.json
 import-content:
-	@set -a; [ -f .env ] && . ./.env; set +a; $(GO) run ./cmd/import-content -quest $(QUEST)
+	@set -a; [ -f .env ] && . ./.env; set +a; $(GO) run ./cmd/import-content -quest $(QUEST) $(if $(DB),-db "$(DB)")
+
+# The base game's hero classes only (content/heroes into custom_hero_class), into
+# DATABASE_URL, the database in DB=..., or the hosted one with HOSTED=1 (its URL is
+# read from .env and never printed): make import-classes HOSTED=1
+import-classes:
+	@set -a; [ -f .env ] && . ./.env; set +a; $(GO) run ./cmd/import-content -classes-only \
+		$(if $(HOSTED),-db "$$HOSTED_DATABASE_URL",$(if $(DB),-db "$(DB)"))
 
 # Read-aloud script: join a script folder's numbered files, check them and save them as a
 # campaign's script. make load-script CAMPAIGN="Three Plagues" [SCRIPT_DIR=...]
