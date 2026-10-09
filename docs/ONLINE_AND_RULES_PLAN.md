@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-08 21:36 EDT
+**Last Updated**: 2026-10-08 21:39 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -533,3 +533,9 @@ at the table. Do these at that merge (and keep the list current as the branches 
   carries only the board art. `make import-classes` became `make import-catalog`.
   `hq_online`: 39 monsters, 20 furniture, 8 traps imported; the catalog served matches the
   files field for field. Main carries 00017 (`74bde22`), merged back in `9ee499e`.
+- 2026-10-08: hosted, in this order: a backup (`hosted-20261008-213710.dump`), then
+  `make import-catalog HOSTED=1` (migrated the hosted database to 00017; 39 monsters, 20
+  furniture, 8 traps created, the 9 classes unchanged), then `make deploy` of `b090899`
+  straight after, so the new server never ran without the catalog. The image has no
+  `content/` at all; the new instance took over and `/healthz` is ok. Nothing saved in the
+  minute between import and deploy refers to a base monster row as a custom one.
