@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/maps"
+	"github.com/Ko-stant/dungeon-campaign-engine/internal/seed"
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/store/storetest"
 )
 
@@ -31,6 +33,10 @@ func testServerWith(t *testing.T, configure func(*Server)) *httptest.Server {
 		"traps/long_pit.json":  {Data: []byte(`{"id":"long_pit","name":"Long Pit Trap","gridSize":{"width":1,"height":2}}`)},
 	})
 	if err != nil {
+		t.Fatal(err)
+	}
+	// Hero classes come from the database, as after make import-content.
+	if _, err := seed.ImportClasses(context.Background(), st, catalog.Heroes); err != nil {
 		t.Fatal(err)
 	}
 	mux := http.NewServeMux()

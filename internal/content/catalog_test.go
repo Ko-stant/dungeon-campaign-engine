@@ -211,3 +211,24 @@ func TestWithMonsterStatsMovement(t *testing.T) {
 		t.Fatal("movement is not a combat stat: a body-only line may have it")
 	}
 }
+
+// The server reads only the board pieces: hero classes live in the database
+// (imported with make import-content), so heroes/ is never read, not even a
+// broken file there.
+func TestLoadPiecesSkipsHeroes(t *testing.T) {
+	fsys := fixture()
+	fsys["heroes/broken.json"] = &fstest.MapFile{Data: []byte(`{"id":`)}
+	c, err := LoadPieces(fsys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Heroes) != 0 || c.Heroes == nil {
+		t.Errorf("heroes should be an empty list: %+v", c.Heroes)
+	}
+	if len(c.Furniture) == 0 || len(c.Monsters) == 0 || len(c.Traps) == 0 {
+		t.Errorf("the pieces should load: %d furniture, %d monsters, %d traps", len(c.Furniture), len(c.Monsters), len(c.Traps))
+	}
+	if _, err := Load(fsys); err == nil {
+		t.Error("Load (the import) still reads heroes/")
+	}
+}

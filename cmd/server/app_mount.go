@@ -37,7 +37,8 @@ func mountApp(mux *http.ServeMux, contentDir, assetsDir string, authCfg auth.Con
 		mountUnavailable(mux, "The database is not reachable. Start it with make db-up and restart the server.")
 		return func() {}
 	}
-	catalog, err := content.Load(os.DirFS(contentDir))
+	// Board pieces only: hero classes come from the database (make import-content).
+	catalog, err := content.LoadPieces(os.DirFS(contentDir))
 	if err != nil {
 		log.Printf("app: load content catalog: %v; continuing with an empty catalog", err)
 		catalog = &content.Catalog{Furniture: []content.FurnitureDef{}, Monsters: []content.MonsterDef{}, Heroes: []content.HeroDef{}, Traps: []content.TrapDef{}}
@@ -59,8 +60,8 @@ func mountApp(mux *http.ServeMux, contentDir, assetsDir string, authCfg auth.Con
 		}
 		log.Printf("app: membership %s", members)
 	}
-	log.Printf("app: ready (%d furniture, %d monsters, %d heroes, %d traps in catalog)",
-		len(catalog.Furniture), len(catalog.Monsters), len(catalog.Heroes), len(catalog.Traps))
+	log.Printf("app: ready (%d furniture, %d monsters, %d traps in catalog; hero classes from the database)",
+		len(catalog.Furniture), len(catalog.Monsters), len(catalog.Traps))
 	return st.Close
 }
 

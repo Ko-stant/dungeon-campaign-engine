@@ -38,11 +38,11 @@ FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=server /out/dungeon-campaign-engine ./
 COPY --from=web /src/internal/web/static ./internal/web/static
-# Only what the app reads: the catalog (internal/content) and the board tiles
-# it draws (the cleaned ones; card art and scans stay out).
+# Only what the app reads: the board pieces of the catalog (internal/content;
+# hero classes are in the database) and the board tiles it draws (the cleaned
+# ones; card art and scans stay out).
 COPY --from=content /furniture ./content/furniture
 COPY --from=content /monsters ./content/monsters
-COPY --from=content /heroes ./content/heroes
 COPY --from=content /traps ./content/traps
 COPY --from=assets /tiles_cleaned ./assets/tiles_cleaned
 ENV PORT=8080

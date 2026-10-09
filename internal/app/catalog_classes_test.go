@@ -12,13 +12,15 @@ import (
 	"github.com/Ko-stant/dungeon-campaign-engine/internal/content"
 )
 
-// The base game's classes come from the database (imported from
-// content/heroes); the content files only fill in a class not imported yet.
+// The base game's classes come only from the database (imported from
+// content/heroes by make import-content); the server reads no class files.
 func TestBaseClassesComeFromTheDatabase(t *testing.T) {
 	var elfRow string
 	srv := testServerWith(t, func(s *Server) {
 		ctx := context.Background()
-		// The test catalog's files have an Elf with 6 Body; the database's has 7.
+		// A class in the loaded files that was never imported stays out.
+		s.catalog.Heroes = append(s.catalog.Heroes, content.HeroDef{ID: "ghost", Name: "Ghost"})
+		// The test server imported the test catalog's Elf (6 Body); this import changes it to 7.
 		for id, doc := range map[string]string{
 			"elf":   `{"name":"Elf","body":7,"mind":4,"attack":2,"defense":2,"movementDice":2}`,
 			"dwarf": `{"name":"Dwarf","body":7,"mind":3,"attack":2,"defense":2,"movementDice":2}`,
@@ -55,7 +57,10 @@ func TestBaseClassesComeFromTheDatabase(t *testing.T) {
 	}
 	got := heroes()
 	if elf := got["elf"]; elf.Body != 7 || elf.Custom || elf.Name != "Elf" || elf.Attack != 2 {
-		t.Errorf("the database's Elf should win over the file's: %+v", elf)
+		t.Errorf("the Elf should be the database's: %+v", elf)
+	}
+	if _, ok := got["ghost"]; ok {
+		t.Error("a class only in the files should not be in the catalog")
 	}
 	if dwarf, ok := got["dwarf"]; !ok || dwarf.Body != 7 {
 		t.Errorf("a class only in the database: %+v", dwarf)

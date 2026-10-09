@@ -67,7 +67,7 @@ func (s *Server) catalogFor(ctx context.Context) (*content.Catalog, error) {
 		return nil, err
 	}
 	out := *s.catalog
-	out.Heroes = withFileClasses(classes, s.catalog.Heroes)
+	out.Heroes = baseClassesFirst(classes)
 	out.Monsters = slices.Clone(s.catalog.Monsters)
 	for _, rec := range recs {
 		def, err := customMonsterDef(rec)
@@ -205,26 +205,18 @@ func (s *Server) deleteMonsterForm(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/monsters", http.StatusSeeOther)
 }
 
-// withFileClasses is the classes kept in the database, base game first, plus
-// any base game class from the content files that is not imported yet (make
-// import-content). Transitional: once every database has the base classes,
-// the server stops reading content/heroes.
-func withFileClasses(stored, files []content.HeroDef) []content.HeroDef {
-	out := make([]content.HeroDef, 0, len(stored)+len(files))
-	for _, h := range stored {
-		if !h.Custom {
-			out = append(out, h)
+// baseClassesFirst orders the classes for pickers: the base game's, then the
+// GM's own (each by name, as stored).
+func baseClassesFirst(classes []content.HeroDef) []content.HeroDef {
+	out := slices.Clone(classes)
+	slices.SortStableFunc(out, func(a, b content.HeroDef) int {
+		switch {
+		case a.Custom == b.Custom:
+			return 0
+		case !a.Custom:
+			return -1
 		}
-	}
-	for _, f := range files {
-		if !slices.ContainsFunc(stored, func(h content.HeroDef) bool { return h.ID == f.ID }) {
-			out = append(out, f)
-		}
-	}
-	for _, h := range stored {
-		if h.Custom {
-			out = append(out, h)
-		}
-	}
+		return 1
+	})
 	return out
 }

@@ -75,9 +75,10 @@ Tailwind CSS v4, canvas rendering.
     `make import-content` or `make import-classes [HOSTED=1]` (`seed.ImportClasses`;
     idempotent, keeps a deactivated class deactivated). Everyone sees them; they are
     read-only (listed on `/classes` with Deactivate; the class form and `make fill-campaign`
-    never touch them). Transitional: `catalogFor` still adds a `content/heroes` class that is
-    not imported yet (`withFileClasses`); drop that and the image's `content/heroes` once
-    every database has them.
+    never touch them). The server reads no class files: `catalogFor` takes every class from
+    the database (base game first), the server loads only the board pieces
+    (`content.LoadPieces`), and the image has no `content/heroes`. A new database needs
+    `make import-content` (or `make import-classes`) for the base classes.
   - Deletes: every delete or remove button carries `data-confirm="<question>"` (optionally
     `data-confirm-yes`); `confirm.js` (`pages/confirm.ts`, `ui/confirm.ts`) loads on every page
     and opens a Yes/No dialog where only Yes goes ahead. The TS pages call `confirmDialog`.
@@ -183,6 +184,8 @@ Tailwind CSS v4, canvas rendering.
 - `internal/tracker` - Session `State`, `NewSession`, `Apply(state, command)` -> new state + readable event, `CarryOver`.
 - `internal/store` - Postgres (pgx) persistence; `RecordEvent` atomically saves state + event. `storetest` gives tests a throwaway schema.
 - `internal/content` - Hero/monster/furniture/trap catalogs from `content/` (any `fs.FS`).
+  `Load` reads all four (the import); `LoadPieces` skips heroes (the server: on `online`,
+  hero classes come from the database).
   Monsters and traps may cover several squares (`gridSize`). A quest trap whose kind has no
   `content/traps/` entry is a single-square marker (e.g. `chest`, `teleport`, `other`).
 - `internal/legacy` - Readers for the original board/quest JSON formats (import only).
