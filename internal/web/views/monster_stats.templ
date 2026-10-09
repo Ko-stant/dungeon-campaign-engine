@@ -117,7 +117,7 @@ templ campaignMonsterStats(d CampaignPageData) {
 								}
 							</div>
 							<form method="post" action={ monsterStatsURL(d, "/"+row.Type+"/delete") }>
-								<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove the stat line for " + row.Name }>Remove</button>
+								<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove the stat line for " + row.Name } data-confirm={ "Remove the campaign's stat line for " + row.Name + "? New sessions go back to the catalog's stats for it; sessions already started keep theirs." } data-confirm-yes="Yes, remove">Remove</button>
 							</form>
 						</div>
 						<details>

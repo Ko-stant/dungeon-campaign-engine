@@ -147,6 +147,16 @@ func (l *Library) Delete(campaign, id string) error {
 	return l.removeID(dir, id)
 }
 
+// RemoveCampaign removes a campaign's clip folder (when the campaign is
+// deleted). A campaign without clips has no folder, which is fine.
+func (l *Library) RemoveCampaign(campaign string) error {
+	dir, err := l.folder(campaign)
+	if err != nil {
+		return err
+	}
+	return os.RemoveAll(dir)
+}
+
 // Path returns the file path of one of a campaign's clips by file name.
 func (l *Library) Path(campaign, name string) (string, error) {
 	clips, err := l.List(campaign)

@@ -170,8 +170,14 @@ func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+// deleteBoard deletes a board. A board that still has quests is refused
+// (409) unless ?withQuests=true asks for its quests to go too.
 func (s *Server) deleteBoard(w http.ResponseWriter, r *http.Request) {
-	if err := s.store.DeleteBoard(r.Context(), r.PathValue("id")); err != nil {
+	del := s.store.DeleteBoard
+	if r.URL.Query().Get("withQuests") == "true" {
+		del = s.store.DeleteBoardWithQuests
+	}
+	if err := del(r.Context(), r.PathValue("id")); err != nil {
 		writeStoreError(w, err)
 		return
 	}

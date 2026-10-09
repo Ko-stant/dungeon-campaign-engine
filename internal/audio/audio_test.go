@@ -113,3 +113,36 @@ func TestSaveLimit(t *testing.T) {
 		t.Fatalf("a refused file must not be left behind: %v", clips)
 	}
 }
+
+func TestRemoveCampaign(t *testing.T) {
+	dir := t.TempDir()
+	lib := New(dir)
+	const other = "01a0ea8a-e8d5-7517-94a0-7176179e5bb4"
+	for _, c := range []string{campaign, other} {
+		if err := lib.Save(c, "Q1.mp3", strings.NewReader("x")); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := lib.RemoveCampaign(campaign); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, campaign)); !os.IsNotExist(err) {
+		t.Errorf("the campaign's folder should be gone: %v", err)
+	}
+	if clips, _ := lib.List(other); len(clips) != 1 {
+		t.Errorf("another campaign's clips must stay: %v", clips)
+	}
+	// A campaign without clips has no folder; removing it is fine.
+	if err := lib.RemoveCampaign(campaign); err != nil {
+		t.Errorf("removing a missing folder: %v", err)
+	}
+	for _, bad := range []string{"", "..", "../other", "not-a-uuid"} {
+		if err := lib.RemoveCampaign(bad); err == nil {
+			t.Errorf("RemoveCampaign(%q) should fail", bad)
+		}
+	}
+	if _, err := os.Stat(dir); err != nil {
+		t.Errorf("the audio folder itself must stay: %v", err)
+	}
+}

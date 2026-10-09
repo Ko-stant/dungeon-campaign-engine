@@ -58,6 +58,12 @@ Tailwind CSS v4, canvas rendering.
     `/classes/{id}/deactivate` and `/reactivate` set `custom_hero_class.active`; a deactivated
     class (`Inactive` in the catalog) is left out of the add-hero picker, and heroes who have
     it keep it.
+  - Deletes: every delete or remove button carries `data-confirm="<question>"` (optionally
+    `data-confirm-yes`); `confirm.js` (`pages/confirm.ts`, `ui/confirm.ts`) loads on every page
+    and opens a Yes/No dialog where only Yes goes ahead. The TS pages call `confirmDialog`.
+    Campaigns, sessions and boards (with their quests) are deleted from their pages
+    (`internal/app/delete.go`); quests and boards also from the map editor
+    (`DELETE /api/boards/{id}?withQuests=true`).
   - Campaign monster stats (column `campaign.monster_stats`): a campaign's own stat line per
     monster type (Body and `content.MonsterCombat`), edited on the campaign page
     (`/campaigns/{id}/monsters...`). Session handlers use `Server.campaignCatalog(ctx,

@@ -13,6 +13,10 @@ type MapListItem struct {
 	Width     int
 	Height    int
 	UpdatedAt time.Time
+	// Quests are the quests on the board, and Campaigns the campaigns that
+	// have one of them as a chapter (named in the delete warning).
+	Quests    []string
+	Campaigns []string
 }
 
 // MapCreateForm holds the create form's values and error.
@@ -95,7 +99,12 @@ templ MapsPage(boards []MapListItem, groups []CampaignMapGroup, form MapCreateFo
 									<a href={ templ.SafeURL("/maps/" + b.ID + "/edit") } class="font-semibold hover:text-amber-400">{ b.Name }</a>
 									<div class="text-xs opacity-60">{ fmt.Sprintf("%d × %d", b.Width, b.Height) } · updated { b.UpdatedAt.Local().Format("Jan 2, 2006 15:04") }</div>
 								</div>
-								<a href={ templ.SafeURL("/maps/" + b.ID + "/edit") } class="rounded-md border border-border/60 px-3 py-1 text-sm hover:border-amber-500">Edit</a>
+								<div class="flex items-center gap-3">
+									<a href={ templ.SafeURL("/maps/" + b.ID + "/edit") } class="rounded-md border border-border/60 px-3 py-1 text-sm hover:border-amber-500">Edit</a>
+									<form method="post" action={ templ.SafeURL("/maps/" + b.ID + "/delete") }>
+										<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Delete the board " + b.Name } data-confirm={ boardDeleteWarning(b) }>Delete</button>
+									</form>
+								</div>
 							</li>
 						}
 					</ul>

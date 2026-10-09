@@ -64,6 +64,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	s.registerLoot(mux)
 	s.registerAudio(mux)
 	s.registerChapterPages(mux)
+	s.registerDeletes(mux)
 }
 
 type errorResponse struct {

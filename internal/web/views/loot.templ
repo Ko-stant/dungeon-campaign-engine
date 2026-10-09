@@ -43,7 +43,7 @@ templ campaignLoot(d CampaignPageData) {
 							}
 						</div>
 						<form method="post" action={ lootURL(d, "/"+it.ID+"/delete") }>
-							<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove " + it.Name + " from the loot list" }>Remove</button>
+							<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove " + it.Name + " from the loot list" } data-confirm={ "Remove " + it.Name + " from the loot list?" } data-confirm-yes="Yes, remove">Remove</button>
 						</form>
 					</li>
 				}

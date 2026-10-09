@@ -141,7 +141,7 @@ templ campaignInventory(d CampaignPageData) {
 							<button type="submit" class={ linkButton } aria-label={ equipLabel(it) + " " + it.Name }>{ equipLabel(it) }</button>
 						</form>
 						<form method="post" action={ heroURL(d, h, "/items/"+it.ID+"/delete") }>
-							<button type="submit" class="text-xs text-danger hover:underline" aria-label={ fmt.Sprintf("Remove %s from %s", it.Name, h.Name) }>Remove</button>
+							<button type="submit" class="text-xs text-danger hover:underline" aria-label={ fmt.Sprintf("Remove %s from %s", it.Name, h.Name) } data-confirm={ fmt.Sprintf("Remove %s from %s's inventory?", it.Name, h.Name) } data-confirm-yes="Yes, remove">Remove</button>
 						</form>
 					</div>
 				}

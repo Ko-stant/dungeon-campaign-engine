@@ -82,7 +82,7 @@ templ campaignAudio(d CampaignPageData) {
 							}
 							<audio controls preload="none" src={ c.URL } class="h-8"></audio>
 							<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/audio/" + c.ID + "/delete") }>
-								<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Delete clip " + c.File } onclick="return confirm('Delete this clip?')">Delete</button>
+								<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Delete clip " + c.File } data-confirm={ "Delete the audio clip " + c.File + "? The file is deleted for good." }>Delete</button>
 							</form>
 						</li>
 					}

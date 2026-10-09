@@ -115,7 +115,7 @@ templ MonstersPage(items []MonsterItem, form MonsterForm, formError string) {
 							@monsterFields(m.Form)
 							<div class="flex items-center gap-2">
 								<button type="submit" class={ linkButton }>Save</button>
-								<button type="submit" formaction={ templ.SafeURL("/monsters/" + m.ID + "/delete") } class="rounded-md border border-danger/60 px-3 py-1 text-sm text-danger hover:bg-danger/10" onclick="return confirm('Delete this monster? Quests that placed it keep the placement.')">Delete</button>
+								<button type="submit" formaction={ templ.SafeURL("/monsters/" + m.ID + "/delete") } class="rounded-md border border-danger/60 px-3 py-1 text-sm text-danger hover:bg-danger/10" data-confirm={ "Delete the monster " + m.Form.Name + "? Quests that placed it keep the placement, and sessions already started keep their copy." }>Delete</button>
 							</div>
 						</form>
 					</div>
