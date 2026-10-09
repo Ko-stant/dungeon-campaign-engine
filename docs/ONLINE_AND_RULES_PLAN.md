@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-07 22:12 EDT
+**Last Updated**: 2026-10-08 20:38 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -356,16 +356,23 @@ at the table. Do these at that merge (and keep the list current as the branches 
     start when the folder exists (the same skip-unchanged import, logged), so nothing is
     lost even if the step is forgotten; or run `make import-audio` against `hq` right after
     the merge. Check the reader plays them, then the folder can be archived.
+  - Main's `Library.RemoveCampaign` (a deleted campaign's clip folder) has no counterpart
+    here: `audio_clip` rows go with their campaign.
   - Code: main's file-based `internal/audio` and `internal/app/audio.go` give way to
     `online`'s; anything main adds to audio before then is redone on the database version.
-- **Migrations.** `online`'s 00011-00014 (users, session open, members, audio clips) are
-  renumbered after any migrations main adds first; goose applies them to `hq` on the first
-  start after the merge. Back up `hq` first (`make db-backup`).
+- **Migrations: nothing to do.** Since 2026-10-08 both branches share one numbering: `main`
+  carries `online`'s 00011-00014 byte for byte (applied to `hq` then, unused by main's code),
+  and new migrations on either branch take the next free number (00015,
+  `custom_hero_class.active`, came from `main`). A migration made here is copied to `main`
+  straight away, and must be additive so main's code can ignore it.
 - **Table mode.** Rules mode is opt-in per session (`State.Rules == nil` is the table game)
   and `AUTH_MODE` unset keeps sign-in off, so the table companion should behave as before:
   play a quick table session after the merge, and add the table-mode golden test (Phase 1c)
   if it still isn't written.
 - **Merge main into `online` regularly**, so the final merge stays small. Last done
+  2026-10-08 (`5ecd9ee`: the shared migration numbering, class deactivation (00015) and
+  deletes behind a Yes/No dialog; conflicts in the class, catalog, campaign and script
+  code, and the guard now checks a session delete against the session's owner). Before that
   2026-10-07 (`bc06ee9`: table testing fixes, monster movement, hero sheets, housekeeping;
   the tracker page's imports conflicted, and both branches had added `Monster.Movement`,
   now one field), then `2493d61` (the ESLint fix for `docs/**/*.js`). Before that
