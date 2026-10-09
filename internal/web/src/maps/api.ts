@@ -18,6 +18,10 @@ export function createApi(fetchFn: typeof fetch = fetch.bind(globalThis)) {
     deleteQuest: async (questId: string): Promise<void> => {
       await request<unknown>('DELETE', `/api/quests/${id(questId)}`);
     },
+    /** Deletes the board and every quest on it. */
+    deleteBoard: async (boardId: string): Promise<void> => {
+      await request<unknown>('DELETE', `/api/boards/${id(boardId)}?withQuests=true`);
+    },
   };
 }
 

@@ -2,6 +2,7 @@ package components
 
 // Page is the HTML shell for the app's pages. entry names the bundle built from
 // internal/web/src/pages/<entry>.ts into /static/dist; "" loads no script.
+// confirm.js is on every page: buttons with data-confirm ask Yes/No first.
 templ Page(title string, entry string) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="classic">
@@ -10,6 +11,7 @@ templ Page(title string, entry string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>{ title } - Dungeon Campaign Engine</title>
 			<link rel="stylesheet" href="/static/styles/app.css"/>
+			<script type="module" src="/static/dist/confirm.js"></script>
 			if entry != "" {
 				<script type="module" src={ "/static/dist/" + entry + ".js" }></script>
 			}

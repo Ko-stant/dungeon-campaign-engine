@@ -60,4 +60,10 @@ describe('api client', () => {
     await createApi(fakeFetch(204, undefined, calls)).deleteQuest('q1');
     expect(calls).toEqual([{ url: '/api/quests/q1', method: 'DELETE', body: undefined }]);
   });
+
+  test('deleting a board takes its quests with it', async () => {
+    const calls: Call[] = [];
+    await createApi(fakeFetch(204, undefined, calls)).deleteBoard('b1');
+    expect(calls).toEqual([{ url: '/api/boards/b1?withQuests=true', method: 'DELETE', body: undefined }]);
+  });
 });

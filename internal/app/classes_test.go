@@ -175,24 +175,44 @@ func TestCustomHeroClassPages(t *testing.T) {
 		t.Fatalf("session hero: %+v", h)
 	}
 
-	// A class in use by a campaign is not deleted.
-	resp, body = postForm(t, client, srv.URL+"/classes/"+dbID+"/delete", url.Values{})
-	if resp.StatusCode != http.StatusConflict || !strings.Contains(body, "Three Plagues") {
-		t.Fatalf("delete in use: %d", resp.StatusCode)
+	// Classes are deactivated, never deleted.
+	if resp, _ = postForm(t, client, srv.URL+"/classes/"+dbID+"/delete", url.Values{}); resp.StatusCode == http.StatusSeeOther {
+		t.Fatal("classes can no longer be deleted")
 	}
-	if code, _ = c(http.MethodPut, "/api/campaigns/"+camp.ID, map[string]any{"name": "Three Plagues", "heroes": []tracker.CampaignHero{}}); code != http.StatusOK {
-		t.Fatalf("clear heroes: %d", code)
+	picker := `<option value="` + rogue.ID + `">`
+	if _, body = get(t, client, srv.URL+"/campaigns/"+camp.ID); !strings.Contains(body, picker) {
+		t.Fatal("an active class should be offered for new heroes")
 	}
-	resp, _ = postForm(t, client, srv.URL+"/classes/"+dbID+"/delete", url.Values{})
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("delete: %d", resp.StatusCode)
+	resp, _ = postForm(t, client, srv.URL+"/classes/"+dbID+"/deactivate", url.Values{})
+	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/classes" {
+		t.Fatalf("deactivate: %d %s", resp.StatusCode, resp.Header.Get("Location"))
 	}
-	if list = customClasses(t, c); len(list) != 0 {
-		t.Fatalf("after delete: %+v", list)
+	_, body = get(t, client, srv.URL+"/campaigns/"+camp.ID)
+	if strings.Contains(body, picker) {
+		t.Error("a deactivated class should not be offered for new heroes")
 	}
-	resp, _ = postForm(t, client, srv.URL+"/classes/"+dbID+"/delete", url.Values{})
-	if resp.StatusCode != http.StatusNotFound {
-		t.Fatalf("second delete: %d", resp.StatusCode)
+	if !strings.Contains(body, "Shadow Rogue") {
+		t.Error("a hero who has the deactivated class keeps it")
+	}
+	if list = customClasses(t, c); len(list) != 1 || !list[0].Inactive {
+		t.Fatalf("the catalog keeps a deactivated class, marked: %+v", list)
+	}
+	for _, page := range []string{"/classes", "/classes/" + dbID} {
+		if _, body = get(t, client, srv.URL+page); !strings.Contains(body, `action="/classes/`+dbID+`/reactivate"`) {
+			t.Errorf("%s should offer to reactivate the class", page)
+		}
+	}
+	if resp, _ = postForm(t, client, srv.URL+"/classes/"+dbID+"/reactivate", url.Values{}); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("reactivate: %d", resp.StatusCode)
+	}
+	if _, body = get(t, client, srv.URL+"/campaigns/"+camp.ID); !strings.Contains(body, picker) {
+		t.Error("a reactivated class should be offered again")
+	}
+	if _, body = get(t, client, srv.URL+"/classes/"+dbID); !strings.Contains(body, `action="/classes/`+dbID+`/deactivate"`) {
+		t.Error("the class page should offer to deactivate the class")
+	}
+	if resp, _ = postForm(t, client, srv.URL+"/classes/01a0ea8a-e8d5-7517-94a0-7176179e5bb3/deactivate", url.Values{}); resp.StatusCode != http.StatusNotFound {
+		t.Errorf("deactivate a missing class: %d", resp.StatusCode)
 	}
 }
 

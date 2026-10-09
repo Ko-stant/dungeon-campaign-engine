@@ -302,6 +302,20 @@ templ classesHeader(subtitle string) {
 	</header>
 }
 
+// classActiveButton deactivates an active class or reactivates a deactivated
+// one. Classes are never deleted, so this asks nothing first.
+templ classActiveButton(id string, active bool) {
+	if active {
+		<form method="post" action={ templ.SafeURL("/classes/" + id + "/deactivate") } class="ml-auto">
+			<button type="submit" class={ linkButton } title="Leave it out of the new-hero picker; heroes who have it keep it">Deactivate</button>
+		</form>
+	} else {
+		<form method="post" action={ templ.SafeURL("/classes/" + id + "/reactivate") } class="ml-auto">
+			<button type="submit" class={ linkButton } title="Offer it for new heroes again">Reactivate</button>
+		</form>
+	}
+}
+
 // ClassesPage lists the GM's custom hero classes.
 templ ClassesPage(items []ClassItem, pageError string) {
 	@components.Page("Classes", "") {
@@ -316,13 +330,14 @@ templ ClassesPage(items []ClassItem, pageError string) {
 					<p class="opacity-70">No custom classes yet. Heroes can still use the standard classes.</p>
 				}
 				for _, it := range items {
-					<div class="rounded-lg border border-border/60 p-4">
+					<div class={ "rounded-lg border border-border/60 p-4", templ.KV("opacity-60", it.Class.Inactive) }>
 						<div class="flex items-center gap-2">
 							<span class="inline-block h-4 w-4 rounded-sm border border-border/60" style={ "background-color: " + it.Class.Color }></span>
 							<a href={ templ.SafeURL("/classes/" + it.ID) } class="font-semibold hover:text-amber-400">{ it.Class.Name }</a>
-							<form method="post" action={ templ.SafeURL("/classes/" + it.ID + "/delete") } class="ml-auto">
-								<button type="submit" class="rounded-md border border-danger/60 px-3 py-1 text-sm text-danger hover:bg-danger/10" onclick="return confirm('Delete this class?')">Delete</button>
-							</form>
+							if it.Class.Inactive {
+								<span class="rounded border border-border/60 px-1 text-[0.7rem] uppercase tracking-wide" title="Not offered for new heroes; heroes who have it keep it">deactivated</span>
+							}
+							@classActiveButton(it.ID, !it.Class.Inactive)
 						</div>
 						<p class="mt-1 text-xs opacity-70">{ ClassStats(it.Class) }</p>
 						if len(it.Class.Abilities) > 0 {
@@ -345,8 +360,9 @@ templ ClassesPage(items []ClassItem, pageError string) {
 	}
 }
 
-// ClassEditPage creates (id empty) or edits a custom hero class.
-templ ClassEditPage(id string, form ClassForm, formError string) {
+// ClassEditPage creates (id empty) or edits a custom hero class; active says
+// whether an existing class is offered for new heroes.
+templ ClassEditPage(id string, form ClassForm, active bool, formError string) {
 	@components.Page("Classes", "") {
 		<main class="mx-auto max-w-4xl space-y-6 p-6">
 			if id == "" {
@@ -370,6 +386,16 @@ templ ClassEditPage(id string, form ClassForm, formError string) {
 					<a href="/classes" class="text-sm opacity-70 hover:text-amber-400">Cancel</a>
 				</div>
 			</form>
+			if id != "" {
+				<div class="flex items-center gap-3 text-sm">
+					if active {
+						<span class="opacity-70">Offered for new heroes.</span>
+					} else {
+						<span class="opacity-70">Deactivated: not offered for new heroes; heroes who have it keep it.</span>
+					}
+					@classActiveButton(id, active)
+				</div>
+			}
 		</main>
 	}
 }

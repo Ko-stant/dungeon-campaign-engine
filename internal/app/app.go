@@ -81,6 +81,7 @@ func (s *Server) Register(serveMux *http.ServeMux) {
 		// The board art: HeroQuest material, for members only when hosted.
 		mux.HandleFunc("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(s.assetsDir))).ServeHTTP)
 	}
+	s.registerDeletes(mux)
 }
 
 // SetAssetsDir serves the board art from dir under /assets/ (through the

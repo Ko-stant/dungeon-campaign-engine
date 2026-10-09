@@ -266,7 +266,7 @@ templ CampaignPage(d CampaignPageData) {
 									<td class="max-w-48 truncate" title={ h.Notes }>{ h.Notes }</td>
 									<td class="text-right">
 										<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/heroes/" + h.ID + "/delete") }>
-											<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove " + h.Name }>Remove</button>
+											<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove " + h.Name } data-confirm={ "Remove " + h.Name + " from the campaign? Their items and notes go with them; sessions already started keep their copy." } data-confirm-yes="Yes, remove">Remove</button>
 										</form>
 									</td>
 								</tr>
@@ -323,7 +323,7 @@ templ CampaignPage(d CampaignPageData) {
 									<button type="submit" class={ linkButton } disabled?={ ch.Last } aria-label={ "Move " + ch.QuestName + " down" }>↓</button>
 								</form>
 								<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/chapters/" + ch.QuestID + "/remove") }>
-									<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove " + ch.QuestName + " from the campaign" }>Remove</button>
+									<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Remove " + ch.QuestName + " from the campaign" } data-confirm={ "Remove " + ch.QuestName + " from the campaign's chapters? The map and its quest stay in Maps." } data-confirm-yes="Yes, remove">Remove</button>
 								</form>
 							</li>
 						}
@@ -418,10 +418,20 @@ templ CampaignPage(d CampaignPageData) {
 										View
 									}
 								</a>
+								<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/sessions/" + s.ID + "/delete") }>
+									<button type="submit" class="text-xs text-danger hover:underline" aria-label={ "Delete the session " + s.Name } data-confirm={ sessionDeleteWarning(s) }>Delete</button>
+								</form>
 							</div>
 						</li>
 					}
 				</ul>
+			</section>
+			<section class="rounded-lg border border-danger/40 p-5">
+				<h2 class="mb-1 text-lg font-semibold text-danger">Delete this campaign</h2>
+				<p class="mb-3 text-xs opacity-70">Deletes the campaign with its heroes, chapter list, loot, stat lines, script, sessions and audio clips. The maps stay in Maps.</p>
+				<form method="post" action={ templ.SafeURL("/campaigns/" + d.ID + "/delete") }>
+					<button type="submit" class="rounded-md border border-danger/60 px-3 py-1 text-sm text-danger hover:bg-danger/10" data-confirm={ campaignDeleteWarning(d) }>Delete campaign</button>
+				</form>
 			</section>
 		</main>
 	}

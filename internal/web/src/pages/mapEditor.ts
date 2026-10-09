@@ -6,6 +6,7 @@
 import { pixelToEdge, pixelToTile, type Edge, type Rotation, type TileCoord } from '../board/geometry.ts';
 import { CORRIDOR, VOID, tileAt, tileIndex, type DoorKind } from '../board/model.ts';
 import { BoardRenderer, type Highlights } from '../board/renderer.ts';
+import { boardDeleteQuestion, questDeleteQuestion } from '../editor/deleteQuestions.ts';
 import { History } from '../editor/history.ts';
 import {
   addRoom,
@@ -34,6 +35,7 @@ import { activeOnSquare, describeItem, squareStack } from '../editor/selection.t
 import { applyClick, applyDrag, isDragTool, lineTiles, type ClickTarget, type EditorDoc, type Tool } from '../editor/tools.ts';
 import { ApiError, createApi } from '../maps/api.ts';
 import { MAX_TRAP_LABEL, monsterOptionLabel, type Issue, type ObjectiveDoc, type QuestDoc, type QuestSummary } from '../maps/types.ts';
+import { confirmDialog } from '../ui/confirm.ts';
 import { h, replaceChildren } from '../ui/dom.ts';
 import { piecePreview } from '../ui/piecePreview.ts';
 
@@ -65,6 +67,7 @@ function doorKindLabel(kind: DoorKind): string {
 }
 
 const btn = 'rounded-md border border-border/60 px-2 py-1 text-sm hover:border-amber-500 disabled:opacity-40 disabled:hover:border-border/60';
+const dangerBtn = 'rounded-md border border-danger/60 px-2 py-1 text-sm text-danger hover:bg-danger/10';
 const btnActive = 'rounded-md border border-amber-500 bg-amber-500/15 px-2 py-1 text-sm';
 const field = 'rounded-md border border-border/60 bg-surface px-2 py-1 text-sm';
 const input = `w-full ${field}`;
@@ -131,6 +134,7 @@ async function main(): Promise<void> {
   const redoBtn = h('button', { class: btn, type: 'button', title: 'Redo (Ctrl+Shift+Z)' }, 'Redo');
   const saveBtn = h('button', { class: 'rounded-md bg-amber-600 px-3 py-1 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50', type: 'button', title: 'Save (Ctrl+S)' }, 'Save');
   const statusEl = h('span', { class: 'text-xs opacity-70', role: 'status' });
+  const deleteBoardBtn = h('button', { class: `${dangerBtn} w-full`, type: 'button', title: 'Delete this board and its quests' }, 'Delete board');
   const leftPanel = h('aside', { class: 'w-72 shrink-0 space-y-4 overflow-y-auto border-r border-border/60 p-3' });
   const rightPanel = h('aside', { class: 'w-72 shrink-0 space-y-4 overflow-y-auto border-l border-border/60 p-3' });
   const hoverInfo = h('span', { class: 'pointer-events-none absolute bottom-3 left-3 rounded bg-surface/80 px-2 py-0.5 font-mono text-xs opacity-80 empty:hidden' });
@@ -524,6 +528,48 @@ async function main(): Promise<void> {
     refresh();
   }
 
+  /** Deletes the open quest (after Yes) and goes back to the board alone. */
+  async function deleteQuest(): Promise<void> {
+    const id = questId;
+    if (!id || !(await confirmDialog(questDeleteQuestion(quests.find((q) => q.id === id)?.name ?? questName)))) {
+      return;
+    }
+    try {
+      if (history.dirty) {
+        // Keep the board's unsaved edits; the quest's go with it anyway.
+        await save();
+      }
+      await api.deleteQuest(id);
+      quests = await api.quests(boardId ?? '');
+      const name = questName;
+      questId = null;
+      questName = '';
+      issues = [];
+      selectedId = null;
+      history = new History<EditorDoc>({ board: doc().board, quest: null });
+      layer = 'board';
+      status = `Deleted quest "${name}"`;
+    } catch (err) {
+      status = err instanceof ApiError ? `Delete failed: ${err.message}` : 'Delete failed.';
+    }
+    refresh();
+  }
+
+  /** Deletes the board and its quests (after Yes) and goes back to the maps list. */
+  async function deleteBoard(): Promise<void> {
+    if (!(await confirmDialog(boardDeleteQuestion(boardName, quests.map((q) => q.name))))) {
+      return;
+    }
+    try {
+      await api.deleteBoard(boardId ?? '');
+      boardDeleted = true;
+      location.href = '/maps';
+    } catch (err) {
+      status = err instanceof ApiError ? `Delete failed: ${err.message}` : 'Delete failed.';
+      refresh();
+    }
+  }
+
   function resize(): void {
     const w = Number(widthInput.value);
     const hgt = Number(heightInput.value);
@@ -587,8 +633,11 @@ async function main(): Promise<void> {
     }
   });
 
+  // Set once the board is deleted, so leaving for the maps list asks nothing.
+  let boardDeleted = false;
+  deleteBoardBtn.addEventListener('click', () => { void deleteBoard(); });
   window.addEventListener('beforeunload', (ev) => {
-    if (history.dirty || nameInput.value.trim() !== boardName) {
+    if (!boardDeleted && (history.dirty || nameInput.value.trim() !== boardName)) {
       ev.preventDefault();
     }
   });
@@ -761,6 +810,8 @@ async function main(): Promise<void> {
         children.push(notesList(doc().quest));
       }
     }
+    // At the bottom, away from the tools: deleting the whole board.
+    children.push(h('section', { class: 'border-t border-border/60 pt-4' }, deleteBoardBtn));
     replaceChildren(leftPanel, ...children);
   }
 
@@ -795,6 +846,9 @@ async function main(): Promise<void> {
         questId
           ? h('label', { class: 'block space-y-1 text-sm' }, h('span', { class: 'opacity-80' }, 'Quest name'),
             h('input', { class: input, value: questName, maxlength: 120, oninput: (e: Event) => { questName = (e.target as HTMLInputElement).value; } }))
+          : null,
+        questId
+          ? h('button', { type: 'button', class: dangerBtn, onclick: () => { void deleteQuest(); } }, 'Delete quest')
           : null,
         h('div', { class: 'flex gap-2' }, newQuestName, h('button', {
           type: 'button',

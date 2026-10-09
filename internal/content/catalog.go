@@ -168,6 +168,10 @@ type HeroDef struct {
 	// Reach is what the class's basic attack reaches (Reach*); empty means
 	// adjacent.
 	Reach string `json:"reach,omitempty"`
+
+	// Inactive marks a deactivated custom class: left out of the new-hero
+	// picker, still found for heroes who already have it.
+	Inactive bool `json:"inactive,omitempty"`
 }
 
 // What a basic attack reaches (RULES_AND_CLASSES.md, "Who a basic attack

@@ -65,6 +65,7 @@ func accessRule(pattern string) (owned []ownedParam, ok bool) {
 		{"/api/quests/{id}", []ownedParam{{"id", store.OwnedQuest, false}}},
 		{"/api/campaigns/{id}", []ownedParam{{"id", store.OwnedCampaign, false}}},
 		{"/campaigns/{id}/chapters/{questId}", []ownedParam{{"id", store.OwnedCampaign, false}, {"questId", store.OwnedQuest, false}}},
+		{"/campaigns/{id}/sessions/{sessionId}", []ownedParam{{"id", store.OwnedCampaign, false}, {"sessionId", store.OwnedSession, false}}},
 		{"/campaigns/{id}", []ownedParam{{"id", store.OwnedCampaign, false}}},
 		{"/audio/{campaign}", []ownedParam{{"campaign", store.OwnedCampaign, false}}},
 		{"/api/sessions/{id}", []ownedParam{{"id", store.OwnedSession, false}}},
