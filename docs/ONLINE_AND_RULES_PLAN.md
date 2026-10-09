@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-08 20:40 EDT
+**Last Updated**: 2026-10-08 21:10 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -370,7 +370,7 @@ at the table. Do these at that merge (and keep the list current as the branches 
   play a quick table session after the merge, and add the table-mode golden test (Phase 1c)
   if it still isn't written.
 - **Merge main into `online` regularly**, so the final merge stays small. Last done
-  2026-10-08 (`5ecd9ee`: the shared migration numbering, class deactivation (00015) and
+  2026-10-08 (`41e02ff`: main's copy of 00016). Before that 2026-10-08 (`5ecd9ee`: the shared migration numbering, class deactivation (00015) and
   deletes behind a Yes/No dialog; conflicts in the class, catalog, campaign and script
   code, and the guard now checks a session delete against the session's owner). Before that
   2026-10-07 (`bc06ee9`: table testing fixes, monster movement, hero sheets, housekeeping;
@@ -500,3 +500,9 @@ at the table. Do these at that merge (and keep the list current as the branches 
   deactivation and deletes behind a Yes/No dialog) with `make deploy`, after a hosted backup
   (`hosted-20261008-203848.dump`). The hosted database migrated to 00015 (4 classes, all
   active); `/healthz` ok, and the served `confirm.js` (new in this build) matches the image's.
+- 2026-10-08: `bcb5921`: the base game's hero classes move into the database (00016,
+  `custom_hero_class.catalog_id`), imported from `content/heroes` by `make import-content` or
+  `make import-classes [HOSTED=1]`; read-only, listed on `/classes` with Deactivate. Step 1 of
+  2: the server still adds a class from the files when it is not imported yet; step 2 drops
+  that and the image's `content/heroes`. `hq_online` imported (9 classes). Main carries
+  00016 (`a7a3425`), merged back in `41e02ff`.
