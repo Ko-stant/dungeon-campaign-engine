@@ -43,41 +43,51 @@ func TestCustomHeroClassLifecycle(t *testing.T) {
 		t.Fatalf("list (by name, case-insensitive): %+v %v", list, err)
 	}
 
-	if err := s.DeleteCustomHeroClass(ctx, c.ID); err != nil {
-		t.Fatalf("delete: %v", err)
-	}
-	if err := s.DeleteCustomHeroClass(ctx, c.ID); !errors.Is(err, store.ErrNotFound) {
-		t.Fatalf("second delete: %v", err)
-	}
-	if _, err := s.GetCustomHeroClass(ctx, c.ID); !errors.Is(err, store.ErrNotFound) {
-		t.Fatalf("get deleted: %v", err)
-	}
 	if _, err := s.UpdateCustomHeroClass(ctx, "nope", "x", doc); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("bad id: %v", err)
 	}
 }
 
-func TestCampaignsUsingClass(t *testing.T) {
+func TestCustomHeroClassDeactivateAndReactivate(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
-	heroes := json.RawMessage(`[{"id":"hero-1","name":"Vex","class":"custom-abc"},{"id":"hero-2","name":"Bram","class":"elf"}]`)
-	if _, err := s.CreateCampaign(ctx, "Three Plagues", heroes); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := s.CreateCampaign(ctx, "another", json.RawMessage(`[{"id":"hero-1","name":"Ana","class":"custom-abc"}]`)); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := s.CreateCampaign(ctx, "Unrelated", json.RawMessage(`[{"id":"hero-1","name":"Ana","class":"elf"}]`)); err != nil {
-		t.Fatal(err)
-	}
-	names, err := s.CampaignsUsingClass(ctx, "custom-abc")
+	c, err := s.CreateCustomHeroClass(ctx, "Rogue", json.RawMessage(`{"body":30}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(names) != 2 || names[0] != "another" || names[1] != "Three Plagues" {
-		t.Fatalf("campaigns using class: %v", names)
+	if !c.Active {
+		t.Fatal("a new class should be active")
 	}
-	if names, err = s.CampaignsUsingClass(ctx, "custom-none"); err != nil || len(names) != 0 {
-		t.Fatalf("unused class: %v %v", names, err)
+
+	if err := s.SetCustomHeroClassActive(ctx, c.ID, false); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetCustomHeroClass(ctx, c.ID); got.Active {
+		t.Fatal("the class should be deactivated")
+	}
+	if list, _ := s.ListCustomHeroClasses(ctx); len(list) != 1 || list[0].Active {
+		t.Fatalf("a deactivated class is still listed, as deactivated: %+v", list)
+	}
+
+	// Saving the class (its form, or the campaign fill) keeps it deactivated.
+	upd, err := s.UpdateCustomHeroClass(ctx, c.ID, "Rogue", json.RawMessage(`{"body":35}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if upd.Active {
+		t.Fatal("saving the class should keep it deactivated")
+	}
+	if err := s.SetCustomHeroClassActive(ctx, c.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetCustomHeroClass(ctx, c.ID); !got.Active {
+		t.Fatal("the class should be active again")
+	}
+
+	if err := s.SetCustomHeroClassActive(ctx, "01a0ea8a-e8d5-7517-94a0-7176179e5bb3", false); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("missing class: err = %v, want ErrNotFound", err)
+	}
+	if err := s.SetCustomHeroClassActive(ctx, "nope", false); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("bad id: err = %v, want ErrNotFound", err)
 	}
 }

@@ -58,7 +58,8 @@ func (s *Server) registerClassPages(mux *http.ServeMux) {
 	mux.HandleFunc("POST /classes", s.createClassForm)
 	mux.HandleFunc("GET /classes/{id}", s.classPage)
 	mux.HandleFunc("POST /classes/{id}", s.updateClassForm)
-	mux.HandleFunc("POST /classes/{id}/delete", s.deleteClassForm)
+	mux.HandleFunc("POST /classes/{id}/deactivate", s.classActiveForm(false))
+	mux.HandleFunc("POST /classes/{id}/reactivate", s.classActiveForm(true))
 }
 
 func decodeClassDoc(rec store.CustomHeroClass) (customClassDoc, error) {
@@ -80,6 +81,7 @@ func customHeroClassDef(rec store.CustomHeroClass) (content.HeroDef, error) {
 		AttackDice: doc.Attack, DefenseDice: doc.Defense, Movement: doc.Movement,
 		Accuracy: doc.Accuracy, Mana: doc.Mana, Exclusives: doc.Exclusives, Abilities: doc.Abilities,
 		CritFrom: doc.CritFrom, Damage: doc.Damage, Avoidance: doc.Avoidance, Mitigation: doc.Mitigation, ManaRegen: doc.ManaRegen,
+		Inactive: !rec.Active,
 	}, nil
 }
 
@@ -257,7 +259,7 @@ func (s *Server) classesPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) newClassPage(w http.ResponseWriter, r *http.Request) {
-	render(w, r, http.StatusOK, views.ClassEditPage("", views.DefaultClassForm(), ""))
+	render(w, r, http.StatusOK, views.ClassEditPage("", views.DefaultClassForm(), true, ""))
 }
 
 func (s *Server) classPage(w http.ResponseWriter, r *http.Request) {
@@ -275,7 +277,7 @@ func (s *Server) classPage(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	render(w, r, http.StatusOK, views.ClassEditPage(rec.ID, views.ClassFormFromDef(def), ""))
+	render(w, r, http.StatusOK, views.ClassEditPage(rec.ID, views.ClassFormFromDef(def), rec.Active, ""))
 }
 
 func (s *Server) createClassForm(w http.ResponseWriter, r *http.Request) {
@@ -284,7 +286,7 @@ func (s *Server) createClassForm(w http.ResponseWriter, r *http.Request) {
 	}
 	form, name, doc, err := parseClassForm(r, 1)
 	if err != nil {
-		render(w, r, http.StatusBadRequest, views.ClassEditPage("", form, err.Error()))
+		render(w, r, http.StatusBadRequest, views.ClassEditPage("", form, true, err.Error()))
 		return
 	}
 	s.saveClass(w, r, doc, func(data json.RawMessage) error {
@@ -310,7 +312,7 @@ func (s *Server) updateClassForm(w http.ResponseWriter, r *http.Request) {
 	}
 	form, name, doc, err := parseClassForm(r, old.NextAbility)
 	if err != nil {
-		render(w, r, http.StatusBadRequest, views.ClassEditPage(id, form, err.Error()))
+		render(w, r, http.StatusBadRequest, views.ClassEditPage(id, form, rec.Active, err.Error()))
 		return
 	}
 	s.saveClass(w, r, doc, func(data json.RawMessage) error {
@@ -332,29 +334,17 @@ func (s *Server) saveClass(w http.ResponseWriter, r *http.Request, doc customCla
 	http.Redirect(w, r, "/classes", http.StatusSeeOther)
 }
 
-// deleteClassForm deletes a class unless a campaign's hero still has it.
-func (s *Server) deleteClassForm(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	rec, err := s.store.GetCustomHeroClass(r.Context(), id)
-	if err != nil {
-		writeStoreError(w, err)
-		return
+// classActiveForm deactivates or reactivates a class. Classes are never
+// deleted: a deactivated one is left out of the new-hero picker, and heroes
+// who already have it keep it.
+func (s *Server) classActiveForm(active bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := s.store.SetCustomHeroClassActive(r.Context(), r.PathValue("id"), active); err != nil {
+			writeStoreError(w, err)
+			return
+		}
+		http.Redirect(w, r, "/classes", http.StatusSeeOther)
 	}
-	using, err := s.store.CampaignsUsingClass(r.Context(), customPrefix+rec.ID)
-	if err != nil {
-		writeStoreError(w, err)
-		return
-	}
-	if len(using) > 0 {
-		msg := fmt.Sprintf("%s is still the class of a hero in %s. Change or remove those heroes first.", rec.Name, strings.Join(using, ", "))
-		s.renderClassesPage(w, r, http.StatusConflict, msg)
-		return
-	}
-	if err := s.store.DeleteCustomHeroClass(r.Context(), id); err != nil {
-		writeStoreError(w, err)
-		return
-	}
-	http.Redirect(w, r, "/classes", http.StatusSeeOther)
 }
 
 // customClasses returns the GM's custom hero classes as catalog entries.

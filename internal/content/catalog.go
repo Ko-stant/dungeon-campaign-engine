@@ -165,6 +165,10 @@ type HeroDef struct {
 	Avoidance  int `json:"avoidance,omitempty"`
 	Mitigation int `json:"mitigation,omitempty"`
 	ManaRegen  int `json:"manaRegen,omitempty"`
+
+	// Inactive marks a deactivated custom class: left out of the new-hero
+	// picker, still found for heroes who already have it.
+	Inactive bool `json:"inactive,omitempty"`
 }
 
 // Ability kinds.

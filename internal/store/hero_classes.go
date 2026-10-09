@@ -9,19 +9,22 @@ import (
 )
 
 // CustomHeroClass is a GM-made hero class. Doc holds its stats and abilities.
+// A deactivated class (Active false) is left out of new-hero pickers; heroes
+// who already have it keep it.
 type CustomHeroClass struct {
 	ID        string
 	Name      string
 	Doc       json.RawMessage
+	Active    bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
-const customHeroClassColumns = `id::text, name, doc, created_at, updated_at`
+const customHeroClassColumns = `id::text, name, doc, active, created_at, updated_at`
 
 func scanCustomHeroClass(row pgx.Row) (CustomHeroClass, error) {
 	var c CustomHeroClass
-	err := row.Scan(&c.ID, &c.Name, &c.Doc, &c.CreatedAt, &c.UpdatedAt)
+	err := row.Scan(&c.ID, &c.Name, &c.Doc, &c.Active, &c.CreatedAt, &c.UpdatedAt)
 	return c, notFoundIfNoRows(err)
 }
 
@@ -62,13 +65,12 @@ func (s *Store) UpdateCustomHeroClass(ctx context.Context, id, name string, doc 
 		id, name, orEmptyObject(doc)))
 }
 
-// DeleteCustomHeroClass removes a custom hero class. Running sessions keep
-// their heroes' stats; callers check CampaignsUsingClass first.
-func (s *Store) DeleteCustomHeroClass(ctx context.Context, id string) error {
+// SetCustomHeroClassActive deactivates or reactivates a custom hero class.
+func (s *Store) SetCustomHeroClassActive(ctx context.Context, id string, active bool) error {
 	if !validID(id) {
 		return ErrNotFound
 	}
-	tag, err := s.pool.Exec(ctx, `DELETE FROM custom_hero_class WHERE id = $1`, id)
+	tag, err := s.pool.Exec(ctx, `UPDATE custom_hero_class SET active = $2, updated_at = now() WHERE id = $1`, id, active)
 	if err != nil {
 		return err
 	}
@@ -76,18 +78,4 @@ func (s *Store) DeleteCustomHeroClass(ctx context.Context, id string) error {
 		return ErrNotFound
 	}
 	return nil
-}
-
-// CampaignsUsingClass returns the names of campaigns with a hero of the
-// given class id (a catalog id or "custom-<uuid>"), by name.
-func (s *Store) CampaignsUsingClass(ctx context.Context, classID string) ([]string, error) {
-	match, err := json.Marshal([]map[string]string{{"class": classID}})
-	if err != nil {
-		return nil, err
-	}
-	rows, err := s.pool.Query(ctx, `SELECT name FROM campaign WHERE heroes @> $1::jsonb ORDER BY lower(name), id`, match)
-	if err != nil {
-		return nil, err
-	}
-	return pgx.CollectRows(rows, pgx.RowTo[string])
 }

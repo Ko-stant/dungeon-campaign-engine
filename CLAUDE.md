@@ -54,7 +54,10 @@ Tailwind CSS v4, canvas rendering.
     class exclusives and abilities (cooldown in rounds and/or mana cost), and the Three Plagues
     combat stats (hit dice, crit range, damage, avoidance, mitigation, mana per fight round),
     frozen into session heroes as `Combat`. Merged into the catalog's `heroes` as
-    `custom-<uuid>` by `catalogFor` too; look classes up there.
+    `custom-<uuid>` by `catalogFor` too; look classes up there. Classes are never deleted:
+    `/classes/{id}/deactivate` and `/reactivate` set `custom_hero_class.active`; a deactivated
+    class (`Inactive` in the catalog) is left out of the add-hero picker, and heroes who have
+    it keep it.
   - Campaign monster stats (column `campaign.monster_stats`): a campaign's own stat line per
     monster type (Body and `content.MonsterCombat`), edited on the campaign page
     (`/campaigns/{id}/monsters...`). Session handlers use `Server.campaignCatalog(ctx,
@@ -126,7 +129,12 @@ Tailwind CSS v4, canvas rendering.
   `content/traps/` entry is a single-square marker (e.g. `chest`, `teleport`, `other`).
 - `internal/legacy` - Readers for the original board/quest JSON formats (import only).
 - `internal/seed` - Idempotent legacy import. `internal/dotenv` - `.env` loader. `internal/web` - `NoCache` helper, templ views, static assets, TS sources.
-- `db/migrations` - goose SQL, embedded via `db.Migrations`.
+- `db/migrations` - goose SQL, embedded via `db.Migrations`. **One numbering for `main` and
+  `online`:** a migration made on `online` is copied to `main` straight away (byte for byte,
+  same number), and new ones on either branch take the next free number. Migrations must be
+  additive (new tables, nullable or defaulted columns) so the other branch's code can ignore
+  them; `main` carries `online`'s 00011-00014 (users, session open, members, audio clips)
+  unused until the merge.
 
 ### Campaign work in progress
 - The Three Plagues campaign (story, script, maps, rules) lives in

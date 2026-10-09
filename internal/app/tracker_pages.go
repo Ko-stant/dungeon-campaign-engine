@@ -122,6 +122,9 @@ func (s *Server) campaignPageData(ctx context.Context, id string) (views.Campaig
 		d.Heroes = append(d.Heroes, row)
 	}
 	for _, def := range cat.Heroes {
+		if def.Inactive {
+			continue
+		}
 		d.Classes = append(d.Classes, views.ClassOption{ID: def.ID, Name: def.Name, Custom: def.Custom})
 	}
 
