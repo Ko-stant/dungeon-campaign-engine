@@ -1,6 +1,6 @@
 # Online play, rules engine and bots plan
 
-**Last Updated**: 2026-10-08 21:18 EDT
+**Last Updated**: 2026-10-08 21:36 EDT
 **Branch**: `online` (its own worktree, `../dungeon-campaign-engine-online`)
 
 ## Goal
@@ -365,17 +365,20 @@ at the table. Do these at that merge (and keep the list current as the branches 
   and new migrations on either branch take the next free number (00015,
   `custom_hero_class.active`, came from `main`). A migration made here is copied to `main`
   straight away, and must be additive so main's code can ignore it.
-- **Base game classes (2026-10-08).** `online`'s server reads no class files: the base
-  classes are rows of `custom_hero_class` (`catalog_id`). Right after the merge, run
-  `make import-classes` against `hq` (00016 is already applied there; the import only adds
-  the nine rows), or the base classes drop out of the pickers and the catalog. The GM's
-  Three Plagues classes are unaffected.
+- **The catalog is in the database (2026-10-08).** `online`'s server reads no `content/`
+  files: classes, monsters, furniture and traps are rows (`custom_hero_class` and
+  `custom_monster` with `catalog_id`, and `catalog_piece`). Right after the merge, run
+  `make import-catalog` against `hq` (00016 and 00017 are already applied there; the import
+  only adds rows), or the base game's classes, monsters, furniture and traps drop out of
+  the catalog: the editor, the tracker and the checks would not know them. The GM's own
+  classes, monsters and stat lines are unaffected.
 - **Table mode.** Rules mode is opt-in per session (`State.Rules == nil` is the table game)
   and `AUTH_MODE` unset keeps sign-in off, so the table companion should behave as before:
   play a quick table session after the merge, and add the table-mode golden test (Phase 1c)
   if it still isn't written.
 - **Merge main into `online` regularly**, so the final merge stays small. Last done
-  2026-10-08 (`41e02ff`: main's copy of 00016). Before that 2026-10-08 (`5ecd9ee`: the shared migration numbering, class deactivation (00015) and
+  2026-10-08 (`9ee499e`: main's copy of 00017; before it `41e02ff`, the copy of 00016).
+  Before that 2026-10-08 (`5ecd9ee`: the shared migration numbering, class deactivation (00015) and
   deletes behind a Yes/No dialog; conflicts in the class, catalog, campaign and script
   code, and the guard now checks a session delete against the session's owner). Before that
   2026-10-07 (`bc06ee9`: table testing fixes, monster movement, hero sheets, housekeeping;
@@ -524,3 +527,9 @@ at the table. Do these at that merge (and keep the list current as the branches 
   (`hosted-20261008-211607.dump`). The image's `content/` holds only furniture, monsters and
   traps; the new instance took over (its database connection replaced the old one's) and
   `/healthz` is ok. The hosted site now reads hero classes only from the database.
+- 2026-10-08: `11e89d0`: the whole catalog in the database. 00017 adds
+  `custom_monster.catalog_id` and `catalog_piece` (furniture and trap kinds); `catalogFor`
+  builds everything from the database, the server reads no `content/` files, and the image
+  carries only the board art. `make import-classes` became `make import-catalog`.
+  `hq_online`: 39 monsters, 20 furniture, 8 traps imported; the catalog served matches the
+  files field for field. Main carries 00017 (`74bde22`), merged back in `9ee499e`.
